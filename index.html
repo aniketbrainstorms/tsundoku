@@ -412,7 +412,7 @@ const isTouch = () => window.matchMedia('(hover:none)').matches;
 // Update hint bar text based on device type
 function updateHintBar() {
   const hint = document.getElementById('hintBar');
-  if (hint) hint.textContent = isTouch() ? 'Tap to view · Hold to quick-edit' : 'Hover to quick-edit · Click Edit details to view';
+  if (hint) hint.textContent = isTouch() ? 'Tap to view · Hold to quick-edit' : 'Click to quick-edit';
 }
 
 // ── PALETTES ──
@@ -554,15 +554,14 @@ function renderGrid() {
     card.addEventListener('touchend', e => endPress(e, id, card));
     card.addEventListener('touchcancel', () => cancelPress(card));
 
-    // ── MOUSE (desktop): hover for quick menu only, no click action ──
-    card.addEventListener('mouseenter', () => {
+    // ── MOUSE (desktop): click to toggle quick menu ──
+    card.addEventListener('click', () => {
       if (isTouch()) return;
-      openQuickMenu(id, card);
-    });
-    card.addEventListener('mouseleave', e => {
-      if (isTouch()) return;
-      const menu = document.getElementById('quickMenu');
-      if (!menu.contains(e.relatedTarget)) closeQuickMenu();
+      if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) {
+        closeQuickMenu();
+      } else {
+        openQuickMenu(id, card);
+      }
     });
   });
 }
@@ -587,7 +586,7 @@ function startPress(e, id, card) {
     didLongPress = true; card.classList.remove('pressing'); card.classList.add('long-pressed');
     if (navigator.vibrate) navigator.vibrate(25);
     openQuickMenu(id, card);
-  }, 460);
+  }, 500);
 }
 function endPress(e, id, card) {
   if (!isPressing) return; isPressing = false; clearTimeout(longPressTimer);
@@ -596,6 +595,8 @@ function endPress(e, id, card) {
   didLongPress = false;
 }
 function cancelPress(card) {
+  // On iOS, touchcancel fires during long press — don't cancel if long press already succeeded
+  if (didLongPress) return;
   isPressing = false; clearTimeout(longPressTimer);
   if (card) card.classList.remove('pressing', 'long-pressed');
 }
@@ -613,15 +614,9 @@ function openQuickMenu(id, card) {
   const book = books.find(b => b.id === id);
   menu.querySelectorAll('[data-qm]').forEach(btn => btn.classList.toggle('current-status', book && btn.dataset.qm === book.status));
 
-  if (!isTouch()) {
-    // Desktop: no dismiss overlay, keep open while mouse is over menu
-    menu.onmouseleave = e => {
-      if (!e.relatedTarget || !e.relatedTarget.closest('.book-card')) closeQuickMenu();
-    };
-  } else {
-    // Mobile: activate dismiss overlay for tap-outside-to-close
-    document.getElementById('qmDismiss').classList.add('active');
-  }
+  // Both mobile and desktop: dismiss overlay closes menu on outside click
+  menu.onmouseleave = null;
+  document.getElementById('qmDismiss').classList.add('active');
   menu.classList.add('visible');
 }
 
