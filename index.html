@@ -132,8 +132,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: nowrap; min-width: 0; width: 100%; }
 .filter-tabs { display: flex; gap: 6px; flex: 1 1 0%; min-width: 0; width: 0; overflow-x: auto; scrollbar-width: none; transition: opacity 0.25s ease; }
 .filter-tabs::-webkit-scrollbar { display: none; }
-.tab-btn { padding: 7px 13px; border-radius: 100px; border: 1.5px solid var(--border); background: transparent; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
+.tab-btn { padding: 7px 13px; border-radius: 100px; border: 1.5px solid var(--border); background: transparent; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
 .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tab-btn:not(.active) { border-color: var(--border); }
 .tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tab-count { font-size: 11px; opacity: 0.7; font-weight: 400; }
 .tab-btn.active .tab-count { opacity: 0.85; }
@@ -399,7 +400,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .modal-sheet { width: 100%; background: var(--surface); border-radius: 24px 24px 0 0; padding: 0 max(var(--safe-right),24px) max(calc(var(--safe-bottom) + 24px),40px) max(var(--safe-left),24px); transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); border-top: 1px solid var(--border); max-height: 92%; overflow-y: auto; touch-action: pan-y; }
 .modal-sheet::-webkit-scrollbar { display: none; }
 .modal-overlay.visible .modal-sheet { transform: translateY(0); }
-.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 20px; flex-shrink: 0; }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto; flex-shrink: 0; padding: 16px 0; background-clip: content-box; cursor: grab; }
 .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
 .modal-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 22px; }
 .field-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
@@ -991,7 +992,11 @@ function attachReadingCardEvents(card) {
     e.stopPropagation();
     openProgressModal(id);
   });
-  editBtn.addEventListener('touchend', e => { e.stopPropagation(); });
+  editBtn.addEventListener('touchend', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    openProgressModal(id);
+  });
 
   card.addEventListener('touchstart', e => {
     if (e.target.closest('.rc-edit-btn')) return;
@@ -1129,8 +1134,8 @@ function endPress(e, id, card) {
   if (!isPressing) return; isPressing = false; clearTimeout(longPressTimer);
   card.classList.remove('pressing', 'long-pressed');
   if (!didLongPress) {
-    if (card.classList.contains('reading-card')) openDetailModal(id);
-    else openDetailModal(id);
+    // reading cards: tap does nothing. grid cards: open detail modal.
+    if (!card.classList.contains('reading-card')) openDetailModal(id);
   }
   didLongPress = false;
 }
@@ -1479,51 +1484,71 @@ function handleOverlayClick(e, id) {
 
 // ── SWIPE TO DISMISS MODALS ──
 (function initSwipeDismiss() {
-  const DISMISS_THRESHOLD = 120;
-  const VELOCITY_THRESHOLD = 0.5;
+  const DISMISS_THRESHOLD = 100;
+  const VELOCITY_THRESHOLD = 0.4;
 
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     const sheet = overlay.querySelector('.modal-sheet');
     if (!sheet) return;
-    let startY = 0, currentY = 0, startTime = 0, isDragging = false;
 
     const handle = sheet.querySelector('.modal-handle');
-    const dragTarget = handle || sheet;
+    if (!handle) return; // only handle-driven drag
 
-    dragTarget.addEventListener('touchstart', e => {
-      if (sheet.scrollTop > 0 && !handle) return;
+    let startY = 0, currentY = 0, startTime = 0, isDragging = false;
+
+    handle.addEventListener('touchstart', e => {
       startY = e.touches[0].clientY;
       currentY = startY;
       startTime = Date.now();
       isDragging = true;
       sheet.style.transition = 'none';
+      overlay.style.transition = 'none';
     }, { passive: true });
 
-    dragTarget.addEventListener('touchmove', e => {
+    handle.addEventListener('touchmove', e => {
       if (!isDragging) return;
       currentY = e.touches[0].clientY;
       const delta = Math.max(0, currentY - startY);
       sheet.style.transform = `translateY(${delta}px)`;
+      // fade backdrop as you drag
+      const progress = Math.min(delta / 300, 1);
+      overlay.style.background = `rgba(14,12,10,${0.8 * (1 - progress)})`;
     }, { passive: true });
 
-    dragTarget.addEventListener('touchend', () => {
+    handle.addEventListener('touchend', () => {
       if (!isDragging) return;
       isDragging = false;
       const delta = currentY - startY;
-      const elapsed = Date.now() - startTime;
+      const elapsed = Math.max(Date.now() - startTime, 1);
       const velocity = delta / elapsed;
       sheet.style.transition = '';
+      overlay.style.transition = '';
+      overlay.style.background = '';
 
       if (delta > DISMISS_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
         const modalId = overlay.id;
-        sheet.style.transform = 'translateY(100%)';
+        sheet.style.transition = 'transform 0.28s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transform = 'translateY(110%)';
         setTimeout(() => {
           sheet.style.transform = '';
+          sheet.style.transition = '';
           closeModal(modalId);
-        }, 320);
+        }, 280);
       } else {
+        // snap back
+        sheet.style.transition = 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)';
         sheet.style.transform = '';
+        setTimeout(() => { sheet.style.transition = ''; }, 300);
       }
+    });
+
+    // cancel
+    handle.addEventListener('touchcancel', () => {
+      isDragging = false;
+      sheet.style.transition = '';
+      sheet.style.transform = '';
+      overlay.style.transition = '';
+      overlay.style.background = '';
     });
   });
 })();
