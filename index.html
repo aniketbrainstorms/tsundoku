@@ -446,6 +446,25 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .progress-preview-label { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; }
 .progress-error { font-size: 12px; color: #c06060; margin-top: -10px; margin-bottom: 12px; }
 
+/* DETAIL MODAL HEADER */
+.detail-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.detail-modal-title {
+  font-size: 16px; font-weight: 600; color: var(--text);
+}
+.detail-back-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; transition: border-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.detail-back-btn:hover { border-color: var(--accent); color: var(--accent); }
+.detail-back-btn:active { opacity: 0.7; }
+
 /* DETAIL */
 .detail-cover-row { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; }
 .detail-cover { width: 72px; height: 108px; border-radius: 6px; overflow: hidden; background: var(--surface2); flex-shrink: 0; }
@@ -651,6 +670,13 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   <div class="modal-overlay" id="detailModal" onclick="handleOverlayClick(event,'detailModal')">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
+      <div class="detail-modal-header">
+        <button class="detail-back-btn" onclick="closeModal('detailModal')" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        </button>
+        <span class="detail-modal-title">Edit Book</span>
+        <div style="width:34px"></div>
+      </div>
       <div class="detail-cover-row">
         <div class="detail-cover" id="detailCoverEl"></div>
         <div class="detail-info">
@@ -1133,10 +1159,7 @@ function startPress(e, id, card) {
 function endPress(e, id, card) {
   if (!isPressing) return; isPressing = false; clearTimeout(longPressTimer);
   card.classList.remove('pressing', 'long-pressed');
-  if (!didLongPress) {
-    // reading cards: tap does nothing. grid cards: open detail modal.
-    if (!card.classList.contains('reading-card')) openDetailModal(id);
-  }
+  // tap does nothing on both reading cards and grid cards — only long-press opens quick menu
   didLongPress = false;
 }
 
