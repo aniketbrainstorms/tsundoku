@@ -124,8 +124,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 
 /* FILTER + SEARCH ROW */
-.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: nowrap; min-width: 0; }
-.filter-tabs { display: flex; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: nowrap; min-width: 0; width: 100%; }
+.filter-tabs { display: flex; gap: 6px; flex: 1 1 0%; min-width: 0; width: 0; overflow-x: auto; scrollbar-width: none; }
 .filter-tabs::-webkit-scrollbar { display: none; }
 .tab-btn { padding: 7px 13px; border-radius: 100px; border: 1.5px solid var(--border); background: transparent; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
 .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
