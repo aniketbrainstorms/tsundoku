@@ -389,6 +389,17 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .progress-preview-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s ease; }
 .progress-preview-label { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; }
 
+/* DETAIL BACK BUTTON */
+.detail-back-row { margin-bottom: 14px; }
+.detail-back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; padding: 6px 0;
+  color: var(--accent); font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.detail-back-btn:active { opacity: 0.65; }
+
 /* DETAIL */
 .detail-cover-row { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; }
 .detail-cover { width: 72px; height: 108px; border-radius: 6px; overflow: hidden; background: var(--surface2); flex-shrink: 0; }
@@ -443,6 +454,50 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   text-align: center; color: var(--text-muted); font-size: 13px;
   margin-bottom: 24px; border: 1px dashed var(--border); line-height: 1.6;
 }
+
+/* PROFILE SHELF BUTTON */
+.profile-shelf-btn {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 15px; font-weight: 500; cursor: pointer;
+  transition: border-color 0.2s; text-align: left;
+}
+.profile-shelf-btn:hover, .profile-shelf-btn:active { border-color: var(--accent); }
+.profile-shelf-icon { color: var(--accent); display: flex; align-items: center; flex-shrink: 0; }
+.profile-shelf-count { flex: 1; font-size: 12px; color: var(--text-muted); font-weight: 400; text-align: right; }
+.profile-shelf-chevron { color: var(--text-muted); flex-shrink: 0; }
+
+/* MY SHELF OVERLAY */
+.shelf-overlay {
+  position: absolute; inset: 0;
+  background: var(--bg);
+  z-index: 12;
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  pointer-events: none;
+}
+.shelf-overlay.open {
+  transform: translateX(0);
+  pointer-events: all;
+}
+.shelf-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: max(var(--safe-top),16px) max(var(--safe-right),16px) 14px max(var(--safe-left),16px);
+  flex-shrink: 0;
+}
+.shelf-back-btn {
+  width: 36px; height: 36px; min-width: 36px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.shelf-back-btn:hover { border-color: var(--accent); color: var(--accent); }
+.shelf-header-title { font-size: 17px; font-weight: 700; color: var(--text); flex: 1; }
+.shelf-header-count { font-size: 12px; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
 
 /* QUICK MENU */
 .qm-dismiss { position: absolute; inset: 0; z-index: 19; display: none; }
@@ -513,7 +568,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
           <button class="tab-btn active" data-filter="reading" onclick="setFilter('reading')">Reading <span class="tab-count" id="count-reading">0</span></button>
           <button class="tab-btn" data-filter="read" onclick="setFilter('read')">Read <span class="tab-count" id="count-read">0</span></button>
           <button class="tab-btn" data-filter="unread" onclick="setFilter('unread')">Unread <span class="tab-count" id="count-unread">0</span></button>
-          <button class="tab-btn" data-filter="all" onclick="setFilter('all')">All <span class="tab-count" id="count-all">0</span></button>
         </div>
         <button class="search-btn" id="sortToggleBtn" onclick="openSortMenu(this)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
@@ -636,6 +690,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   <div class="modal-overlay" id="detailModal" onclick="handleDetailOverlayClick(event)">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
+      <div class="detail-back-row">
+        <button class="detail-back-btn" onclick="closeModal('detailModal')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back
+        </button>
+      </div>
       <div class="detail-cover-row">
         <div class="detail-cover" id="detailCoverEl"></div>
         <div class="detail-info">
@@ -712,11 +772,36 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
         </div>
       </div>
       <div class="divider" style="margin:0 0 20px"></div>
+      <p class="profile-section-label">My Library</p>
+      <button class="profile-shelf-btn" onclick="openShelfView()">
+        <span class="profile-shelf-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </span>
+        My Shelf
+        <span class="profile-shelf-count" id="shelfTotalCount">0 books</span>
+        <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <div class="divider" style="margin:16px 0 20px"></div>
       <p class="profile-section-label">coming soon</p>
       <div class="profile-coming-soon">
         Reading stats · Annual reading goal<br>Shelf sharing · Import from Goodreads
       </div>
       <button class="modal-btn secondary" onclick="signOut()">Log Out</button>
+    </div>
+  </div>
+
+  <!-- MY SHELF OVERLAY -->
+  <div class="shelf-overlay" id="shelfOverlay">
+    <div class="shelf-header">
+      <button class="shelf-back-btn" onclick="closeShelfView()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      </button>
+      <span class="shelf-header-title">My Shelf</span>
+      <span class="shelf-header-count" id="shelfOverlayCount"></span>
+    </div>
+    <div class="divider"></div>
+    <div class="grid-container" style="padding-bottom: max(calc(var(--safe-bottom) + 32px),32px)">
+      <div class="book-grid" id="shelfGrid"></div>
     </div>
   </div>
 
@@ -749,7 +834,7 @@ const isTouch = () => window.matchMedia('(hover:none)').matches;
 
 function updateHintBar() {
   const hint = document.getElementById('hintBar');
-  if (hint) hint.textContent = isTouch() ? 'Tap to view · Hold to quick-edit' : 'Click to quick-edit';
+  if (hint) hint.textContent = isTouch() ? 'Hold to quick-edit' : 'Click to quick-edit';
 }
 
 // ── PALETTES ──
@@ -907,12 +992,10 @@ function updateTabCounts() {
   const rc = books.filter(b => b.status === 'reading').length;
   const rd = books.filter(b => b.status === 'read').length;
   const ur = books.filter(b => b.status === 'unread').length;
-  const al = books.length;
   const el = id => document.getElementById(id);
   if (el('count-reading')) el('count-reading').textContent = rc;
   if (el('count-read')) el('count-read').textContent = rd;
   if (el('count-unread')) el('count-unread').textContent = ur;
-  if (el('count-all')) el('count-all').textContent = al;
 }
 
 function renderSkeleton() {
@@ -1056,8 +1139,11 @@ function endPress(e, id, card) {
   if (!isPressing) return; isPressing = false; clearTimeout(longPressTimer);
   card.classList.remove('pressing', 'long-pressed');
   if (!didLongPress) {
-    if (card.classList.contains('reading-card')) openProgressModal(id);
-    else openDetailModal(id);
+    // On touch devices, tap does nothing — only hold to quick-edit
+    if (!isTouch()) {
+      if (card.classList.contains('reading-card')) openProgressModal(id);
+      else openDetailModal(id);
+    }
   }
   didLongPress = false;
 }
@@ -1290,7 +1376,56 @@ function openProfileModal() {
   const initials = getUserInitials(email);
   document.getElementById('profileAvatarLarge').textContent = initials;
   document.getElementById('profileEmailDisplay').textContent = email;
+  const countEl = document.getElementById('shelfTotalCount');
+  if (countEl) countEl.textContent = books.length === 1 ? '1 book' : `${books.length} books`;
   document.getElementById('profileModal').classList.add('visible');
+}
+
+// ── MY SHELF VIEW ──
+function openShelfView() {
+  closeModal('profileModal');
+  renderShelfGrid();
+  document.getElementById('shelfOverlay').classList.add('open');
+}
+
+function closeShelfView() {
+  document.getElementById('shelfOverlay').classList.remove('open');
+}
+
+function renderShelfGrid() {
+  const grid = document.getElementById('shelfGrid');
+  const countEl = document.getElementById('shelfOverlayCount');
+  const all = [...books].sort((a, b) => {
+    if (currentSort === 'title') return (a.title || '').localeCompare(b.title || '');
+    if (currentSort === 'author') return (a.author || '').localeCompare(b.author || '');
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+  if (countEl) countEl.textContent = all.length === 1 ? '1 book' : `${all.length} books`;
+  if (!all.length) {
+    grid.classList.remove('reading-mode');
+    grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>Your shelf is empty.<br>Tap <strong style="color:var(--accent)">+</strong> to add books.</p></div>`;
+    return;
+  }
+  grid.classList.remove('reading-mode');
+  grid.innerHTML = all.map((b, i) => `
+    <div class="book-card" data-id="${b.id}" style="animation-delay:${Math.min(i,12)*0.035}s">
+      ${coverHtml(b)}<div class="status-dot ${b.status}"></div>
+    </div>`).join('');
+
+  grid.querySelectorAll('.book-card').forEach(card => {
+    const id = card.dataset.id;
+    card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
+    card.addEventListener('touchend', e => endPress(e, id, card));
+    card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
+    card.addEventListener('click', () => {
+      if (isTouch()) return;
+      if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) {
+        closeQuickMenu();
+      } else {
+        openQuickMenu(id, card);
+      }
+    });
+  });
 }
 
 // ── BOOK SEARCH (Open Library) ──
