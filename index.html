@@ -331,7 +331,17 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* MODALS */
 .modal-overlay { position: absolute; inset: 0; background: rgba(14,12,10,0.8); backdrop-filter: blur(8px); display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 10; }
 .modal-overlay.visible { opacity: 1; pointer-events: all; }
-.modal-sheet { width: 100%; background: var(--surface); border-radius: 24px 24px 0 0; padding: 0 max(var(--safe-right),24px) max(calc(var(--safe-bottom) + 24px),40px) max(var(--safe-left),24px); transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); border-top: 1px solid var(--border); max-height: 92%; overflow-y: auto; }
+.modal-sheet {
+  width: 100%; background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  padding: 0 max(var(--safe-right),24px) max(calc(var(--safe-bottom) + 24px),40px) max(var(--safe-left),24px);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  border-top: 1px solid var(--border);
+  max-height: 92%; overflow-y: auto;
+  /* extend background below rounded corners to cover safe area */
+  box-shadow: 0 40px 0 40px var(--surface);
+}
 .modal-sheet::-webkit-scrollbar { display: none; }
 .modal-overlay.visible .modal-sheet { transform: translateY(0); }
 .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 20px; flex-shrink: 0; }
@@ -391,6 +401,37 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .status-badge.read { background: rgba(90,138,106,0.15); color: var(--green); }
 .status-badge.unread { background: rgba(122,112,104,0.12); color: var(--text-muted); }
 .status-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* STATUS DROPDOWN in detail modal header */
+.detail-status-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; position: relative; }
+.status-chevron-btn {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, color 0.2s; padding: 0; flex-shrink: 0;
+}
+.status-chevron-btn:hover { border-color: var(--accent); color: var(--accent); }
+.status-dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 5px; min-width: 140px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  z-index: 25; opacity: 0; transform: scale(0.88); transform-origin: top left;
+  pointer-events: none; transition: opacity 0.16s ease, transform 0.18s cubic-bezier(0.34,1.4,0.64,1);
+}
+.status-dropdown.open { opacity: 1; transform: scale(1); pointer-events: all; }
+.sd-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  color: var(--text-dim); border: none; background: none;
+  width: 100%; text-align: left; font-family: 'DM Sans', sans-serif;
+  transition: background 0.12s;
+}
+.sd-item:hover { background: var(--surface2); }
+.sd-item.active { color: var(--accent); }
+.sd-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
 /* PROFILE MODAL */
 .profile-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
@@ -592,7 +633,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   </div>
 
   <!-- DETAIL / EDIT MODAL -->
-  <div class="modal-overlay" id="detailModal" onclick="handleOverlayClick(event,'detailModal')">
+  <div class="modal-overlay" id="detailModal" onclick="handleDetailOverlayClick(event)">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
       <div class="detail-cover-row">
@@ -600,7 +641,17 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
         <div class="detail-info">
           <div class="detail-title" id="detailTitleEl"></div>
           <div class="detail-author" id="detailAuthorEl"></div>
-          <div class="status-badge" id="detailBadge"></div>
+          <div class="detail-status-row">
+            <div class="status-badge" id="detailBadge"></div>
+            <button class="status-chevron-btn" id="statusChevronBtn" onclick="toggleStatusDropdown(event)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="status-dropdown" id="statusDropdown">
+              <button class="sd-item" data-sd="reading" onclick="setEditStatusFromDropdown('reading')"><span class="sd-dot" style="background:var(--accent)"></span>Reading</button>
+              <button class="sd-item" data-sd="read" onclick="setEditStatusFromDropdown('read')"><span class="sd-dot" style="background:var(--green)"></span>Read</button>
+              <button class="sd-item" data-sd="unread" onclick="setEditStatusFromDropdown('unread')"><span class="sd-dot" style="background:var(--text-muted)"></span>Unread</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="divider" style="margin:0 0 20px;"></div>
@@ -615,12 +666,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
         <span>Change cover</span>
       </label>
       <input type="text" id="editCoverUrlInput" class="text-input" style="margin-bottom:18px;margin-top:-10px;padding:10px 14px;font-size:13px" placeholder="...or paste image URL" oninput="handleCoverUrlPaste(event,'edit')" />
-      <p class="field-label">Reading Status</p>
-      <div class="status-pills" id="editPills">
-        <button class="pill" data-status="unread" onclick="setPillStatus('edit','unread')"><span class="pill-icon">📚</span>Unread</button>
-        <button class="pill" data-status="reading" onclick="setPillStatus('edit','reading')"><span class="pill-icon">📖</span>Reading</button>
-        <button class="pill" data-status="read" onclick="setPillStatus('edit','read')"><span class="pill-icon">✅</span>Read</button>
-      </div>
       <button class="modal-btn" id="saveEditBtn" onclick="confirmEdit()">Save Changes</button>
       <button class="modal-btn secondary" onclick="deleteBook()">Remove from Shelf</button>
     </div>
@@ -1127,18 +1172,55 @@ async function deleteFromMenu() {
 }
 
 // ── DETAIL MODAL ──
+const STATUS_LABELS = { reading: 'Reading', read: 'Read', unread: 'Unread' };
+
+function updateDetailBadge(status) {
+  const badge = document.getElementById('detailBadge');
+  badge.className = `status-badge ${status}`;
+  badge.innerHTML = `<span class="status-badge-dot"></span>${STATUS_LABELS[status]}`;
+  document.querySelectorAll('#statusDropdown .sd-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.sd === status);
+  });
+}
+
+function toggleStatusDropdown(e) {
+  e.stopPropagation();
+  document.getElementById('statusDropdown').classList.toggle('open');
+}
+
+function closeStatusDropdown() {
+  document.getElementById('statusDropdown').classList.remove('open');
+}
+
+function setEditStatusFromDropdown(status) {
+  editStatus = status;
+  updateDetailBadge(status);
+  closeStatusDropdown();
+}
+
+function handleDetailOverlayClick(e) {
+  if (e.target === document.getElementById('detailModal')) {
+    closeModal('detailModal');
+    return;
+  }
+  // Close dropdown if clicking outside it inside the modal
+  const dropdown = document.getElementById('statusDropdown');
+  if (dropdown.classList.contains('open') && !dropdown.contains(e.target) && e.target !== document.getElementById('statusChevronBtn')) {
+    closeStatusDropdown();
+  }
+}
+
 function openDetailModal(id) {
   const book = books.find(b => b.id === id); if (!book) return;
   editingId = id; editCoverFile = null;
   document.getElementById('detailTitleEl').textContent = book.title;
   document.getElementById('detailAuthorEl').textContent = book.author || '';
   document.getElementById('detailCoverEl').innerHTML = coverHtml(book, 14);
-  const badge = document.getElementById('detailBadge');
-  badge.className = `status-badge ${book.status}`;
-  badge.innerHTML = `<span class="status-badge-dot"></span>${{ reading: 'Reading', read: 'Read', unread: 'Unread' }[book.status]}`;
+  editStatus = book.status;
+  updateDetailBadge(book.status);
+  closeStatusDropdown();
   document.getElementById('editTitle').value = book.title;
   document.getElementById('editAuthor').value = book.author || '';
-  editStatus = book.status; setPillStatus('edit', book.status);
   document.getElementById('editCoverUpload').innerHTML = book.cover_url
     ? `<img class="cover-preview" src="${book.cover_url}"/><span style="font-size:13px;color:var(--text-dim)">Cover added ✓</span><input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')"/>`
     : `<input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Change cover</span>`;
@@ -1346,6 +1428,7 @@ async function confirmAdd() {
 function closeModal(id) {
   document.getElementById(id).classList.remove('visible');
   if (id === 'addModal') resetAddModal();
+  if (id === 'detailModal') closeStatusDropdown();
 }
 
 function handleOverlayClick(e, id) {
