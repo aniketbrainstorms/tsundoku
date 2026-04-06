@@ -1384,7 +1384,7 @@ function openDetailModal(id) {
   document.getElementById('editCoverUpload').innerHTML = book.cover_url
     ? `<img class="cover-preview" src="${book.cover_url}"/><span style="font-size:13px;color:var(--text-dim)">Cover added ✓</span><input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')"/>`
     : `<input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Change cover</span>`;
-  document.getElementById('editCoverUrlInput').value = ''; editCoverUrl = null;
+  document.getElementById('editCoverUrlInput').value = book.cover_url || ''; editCoverUrl = book.cover_url || null;
   document.getElementById('detailModal').classList.add('visible');
 }
 async function confirmEdit() {
