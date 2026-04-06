@@ -1514,7 +1514,7 @@ async function fetchBookSearch(query) {
     return (data.items || []).map(item => {
       const v = item.volumeInfo || {};
       let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
-      if (cover) cover = cover.replace(/^http:/, 'https:').replace('zoom=1','zoom=3').replace('&edge=curl','');
+      if (cover) cover = cover.replace(/^http:/, 'https:').replace('zoom=1','zoom=1').replace('&edge=curl','');
       return { title: v.title || '', author: (v.authors||[])[0] || '', cover, source: 'google' };
     });
   }
