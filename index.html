@@ -163,7 +163,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* GRID */
 .grid-container {
-  flex: 1; overflow-y: auto; position: relative;
+  flex: 1; overflow-y: auto;
   padding: 16px max(var(--safe-right),16px) max(calc(var(--safe-bottom) + 24px),24px) max(var(--safe-left),16px);
   scrollbar-width: none;
 }
@@ -223,78 +223,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 .skeleton { aspect-ratio: 2/3; border-radius: 8px; background: linear-gradient(90deg, var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-/* ── ALPHA SCROLL BAR ── */
-.alpha-bar {
-  position: absolute;
-  top: 0; right: 0;
-  width: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 15;
-  padding: 6px 0;
-  gap: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.alpha-bar.visible {
-  pointer-events: all;
-  opacity: 1;
-}
-.alpha-bar-letter {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--text-muted);
-  line-height: 1;
-  padding: 1.5px 0;
-  width: 100%;
-  text-align: center;
-  cursor: pointer;
-  transition: color 0.12s, opacity 0.12s;
-  opacity: 0.28;
-  touch-action: none;
-  border-radius: 3px;
-}
-.alpha-bar-letter.has-books {
-  opacity: 1;
-  color: var(--text-dim);
-}
-.alpha-bar-letter.active {
-  color: var(--accent);
-  opacity: 1;
-}
-
-/* floating pip shown while dragging */
-.alpha-pip {
-  position: fixed;
-  right: 28px;
-  background: var(--accent);
-  color: #fff;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  width: 44px;
-  height: 44px;
-  border-radius: 50% 50% 50% 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 300;
-  opacity: 0;
-  transform: scale(0.6) translateX(8px);
-  transition: opacity 0.15s, transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
-  box-shadow: 0 4px 20px rgba(201,113,74,0.5);
-}
-.alpha-pip.visible {
-  opacity: 1;
-  transform: scale(1) translateX(0);
-}
 
 /* BOOK SEARCH OVERLAY */
 .book-search-overlay { position: absolute; inset: 0; background: var(--bg); z-index: 8; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.38s cubic-bezier(0.32,0.72,0,1); pointer-events: none; }
@@ -492,6 +420,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .public-search-input:focus { border-color: var(--accent); }
 .public-search-input::placeholder { color: var(--text-muted); }
 
+/* PUBLIC SORT MENU — reuses quick-menu styles, positioned by JS */
 .public-shelf-empty {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -499,8 +428,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 .public-shelf-empty p { color: var(--text-muted); font-size: 14px; line-height: 1.7; }
 .public-shelf-content {
-  flex: 1; overflow-y: auto; position: relative;
-  padding: 0 max(var(--safe-right),16px) max(calc(var(--safe-bottom)+24px),24px) max(var(--safe-left),16px);
+  flex: 1; overflow-y: auto; padding: 0 max(var(--safe-right),16px) max(calc(var(--safe-bottom)+24px),24px) max(var(--safe-left),16px);
   scrollbar-width: none;
 }
 .public-shelf-content::-webkit-scrollbar { display: none; }
@@ -603,7 +531,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
     </div>
     <div class="divider"></div>
     <div class="hint-bar" id="hintBar">Tap to view · Hold to quick-edit</div>
-    <div class="grid-container" id="mainGridContainer">
+    <div class="grid-container">
       <div class="book-grid" id="bookGrid"></div>
     </div>
   </div>
@@ -686,7 +614,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
     <button class="qm-item" data-sort="author" onclick="setSort('author')">Author (A–Z)</button>
   </div>
 
-  <!-- SHELF SORT MENU -->
+<!-- SHELF SORT MENU -->
   <div class="quick-menu" id="shelfSortMenu">
     <span class="qm-label">Sort by</span>
     <button class="qm-item current-status" data-ssort="recent" onclick="setShelfSort('recent')">Recently Added</button>
@@ -886,13 +814,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
       </button>
     </div>
     <div class="divider"></div>
-    <div class="grid-container" id="shelfGridContainer" style="padding-bottom: max(calc(var(--safe-bottom) + 32px),32px)">
+    <div class="grid-container" style="padding-bottom: max(calc(var(--safe-bottom) + 32px),32px)">
       <div class="book-grid" id="shelfGrid"></div>
     </div>
   </div>
-
-  <!-- Alpha pip (global, shared across all alpha bars) -->
-  <div class="alpha-pip" id="alphaPip"></div>
 
   <div class="toast" id="toast"></div>
 </div>
@@ -1035,7 +960,7 @@ async function signOut() {
 // ── DB ──
 async function loadBooks() {
   renderSkeleton();
-  const { data, error } = await sb.from('books').select('*').order('created_at', { ascending: false });
+  const { data, error } = await sb.from('books').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
   if (error) { showToast('Failed to load books'); return; }
   books = data || [];
   renderGrid();
@@ -1173,7 +1098,7 @@ function renderPublicShelf() {
   let list = [...publicBooks];
   if (q) list = list.filter(b => (b.title||'').toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
 
-  list.sort((a, b) => {
+list.sort((a, b) => {
     if (publicSort === 'author') {
       const cmp = (a.author||'').localeCompare(b.author||'');
       return cmp !== 0 ? cmp : (a.title||'').localeCompare(b.title||'');
@@ -1185,7 +1110,6 @@ function renderPublicShelf() {
   if (!list.length) {
     grid.classList.remove('reading-mode');
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>${q ? 'No results found.' : 'No books yet.'}</p></div>`;
-    publicAlphaScroll && publicAlphaScroll.update([]);
     return;
   }
   grid.classList.remove('reading-mode');
@@ -1194,10 +1118,6 @@ function renderPublicShelf() {
       ${coverHtml(b)}
       <div class="status-dot ${b.status}"></div>
     </div>`).join('');
-
-  if (publicAlphaScroll) {
-    publicAlphaScroll.update(list, publicSort === 'author' ? 'author' : 'title');
-  }
 }
 
 // ── PUBLIC SORT ──
@@ -1235,10 +1155,10 @@ function getSortedFiltered() {
   list.sort((a, b) => {
     if (currentSort === 'title') return (a.title||'').localeCompare(b.title||'');
     if (currentSort === 'author') {
-      const authorCmp = (a.author||'').trim().toLowerCase().localeCompare((b.author||'').trim().toLowerCase());
-      if (authorCmp !== 0) return authorCmp;
-      return (a.title||'').trim().toLowerCase().localeCompare((b.title||'').trim().toLowerCase());
-    }
+  const authorCmp = (a.author||'').trim().toLowerCase().localeCompare((b.author||'').trim().toLowerCase());
+  if (authorCmp !== 0) return authorCmp;
+  return (a.title||'').trim().toLowerCase().localeCompare((b.title||'').trim().toLowerCase());
+}
     return new Date(b.created_at) - new Date(a.created_at);
   });
   return list;
@@ -1305,15 +1225,12 @@ function renderGrid() {
     const q = (document.getElementById('searchInput')?.value || '').trim();
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span>
       <p>${q ? `No results for "<strong>${q}</strong>"` : 'Nothing here yet.'}<br>${!q ? `Tap <strong style="color:var(--accent)">+</strong> to search and add a book.` : ''}</p></div>`;
-    mainAlphaScroll && mainAlphaScroll.update([]);
     return;
   }
   if (currentFilter === 'reading') {
     grid.classList.add('reading-mode');
     grid.innerHTML = filtered.map((b, i) => readingCardHtml(b, i)).join('');
     grid.querySelectorAll('.reading-card').forEach(attachReadingCardEvents);
-    // Reading tab: sort by title for alpha bar
-    mainAlphaScroll && mainAlphaScroll.update(filtered, 'title');
   } else {
     grid.classList.remove('reading-mode');
     grid.innerHTML = filtered.map((b, i) => `
@@ -1331,8 +1248,6 @@ function renderGrid() {
         else openQuickMenu(id, card);
       });
     });
-    const alphaKey = currentSort === 'author' ? 'author' : 'title';
-    mainAlphaScroll && mainAlphaScroll.update(filtered, alphaKey);
   }
 }
 
@@ -1617,7 +1532,6 @@ function renderShelfGrid() {
   if (countEl) countEl.textContent = all.length === 1 ? '1 book' : `${all.length} books`;
   if (!all.length) {
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>Your shelf is empty.<br>Tap <strong style="color:var(--accent)">+</strong> to add books.</p></div>`;
-    shelfAlphaScroll && shelfAlphaScroll.update([]);
     return;
   }
   grid.classList.remove('reading-mode');
@@ -1636,8 +1550,6 @@ function renderShelfGrid() {
       else openQuickMenu(id, card);
     });
   });
-  const alphaKey = shelfSort === 'author' ? 'author' : 'title';
-  shelfAlphaScroll && shelfAlphaScroll.update(all, alphaKey);
 }
 
 // ── BOOK SEARCH ──
@@ -1847,268 +1759,6 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
 }
-
-// ══════════════════════════════════════════════════════
-// ── ALPHA SCROLL BAR ──────────────────────────────────
-// ══════════════════════════════════════════════════════
-
-const ALPHA_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');
-const ARTICLE_RE = /^(the|a|an)\s+/i;
-
-function getAlphaKey(book, sortKey) {
-  let raw = '';
-  if (sortKey === 'author') {
-    // Last-name-first style: take last word of author for initial
-    const author = (book.author || '').trim();
-    const parts = author.split(/\s+/);
-    raw = parts[parts.length - 1] || '';
-  } else {
-    // Title: strip leading articles
-    raw = (book.title || '').trim().replace(ARTICLE_RE, '');
-  }
-  const ch = raw[0]?.toUpperCase() || '';
-  return /[A-Z]/.test(ch) ? ch : '#';
-}
-
-class AlphaScrollBar {
-  constructor({ scrollEl, getGridEl, pip }) {
-    this.scrollEl = scrollEl;   // the scrollable container
-    this.getGridEl = getGridEl; // fn → the grid/list element
-    this.pip = pip;             // shared pip element
-
-    this.bar = null;
-    this.letters = ALPHA_LETTERS;
-    this.letterEls = [];
-    this.activeLetter = null;
-    this.isDragging = false;
-    this.lastLetter = null;
-    this.books = [];
-    this.sortKey = 'title';
-    this.hasLetterSet = new Set();
-
-    this._buildBar();
-    this._bindEvents();
-  }
-
-  _buildBar() {
-    // Remove existing if any
-    if (this.bar) this.bar.remove();
-
-    // The bar needs to be inside the scrollable container's parent,
-    // absolutely positioned relative to it.
-    const parent = this.scrollEl.parentElement || this.scrollEl;
-    // Make parent relative if not already
-    const cs = getComputedStyle(parent);
-    if (cs.position === 'static') parent.style.position = 'relative';
-
-    this.bar = document.createElement('div');
-    this.bar.className = 'alpha-bar';
-
-    this.letterEls = this.letters.map(letter => {
-      const el = document.createElement('div');
-      el.className = 'alpha-bar-letter';
-      el.dataset.letter = letter;
-      el.textContent = letter === '#' ? '#' : letter;
-      this.bar.appendChild(el);
-      return el;
-    });
-
-    // Insert bar inside the scrollEl so it stacks over content
-    // but stays fixed within the viewport area of the scroll container.
-    // We use position:sticky trick: put it as a fixed-positioned child
-    // of the scroll container's parent wrapper.
-    this.scrollEl.parentElement.appendChild(this.bar);
-  }
-
-  _bindEvents() {
-    const bar = this.bar;
-    const pip = this.pip;
-
-    const getLetterFromY = (clientY) => {
-      const barRect = bar.getBoundingClientRect();
-      const relY = clientY - barRect.top;
-      const totalH = barRect.height;
-      const idx = Math.max(0, Math.min(this.letters.length - 1,
-        Math.floor((relY / totalH) * this.letters.length)));
-      return this.letters[idx];
-    };
-
-    const showPip = (letter, clientY) => {
-      pip.textContent = letter;
-      pip.style.top = (clientY - 22) + 'px';
-      pip.classList.add('visible');
-    };
-
-    const hidePip = () => {
-      pip.classList.remove('visible');
-    };
-
-    const jumpTo = (letter) => {
-      if (letter === this.lastLetter) return;
-      this.lastLetter = letter;
-
-      // Haptic on letter change
-      if (navigator.vibrate) navigator.vibrate(8);
-
-      // Highlight active letter
-      this.letterEls.forEach(el => el.classList.toggle('active', el.dataset.letter === letter));
-
-      // Find the first card whose alpha key matches
-      const gridEl = this.getGridEl();
-      if (!gridEl) return;
-
-      // For grid layout, find cards by index
-      const cards = gridEl.querySelectorAll('[data-id]');
-      if (!cards.length) return;
-
-      // Map card index to book
-      let targetCard = null;
-      cards.forEach((card, i) => {
-        if (targetCard) return;
-        const bookId = card.dataset.id;
-        const book = this.books.find(b => b.id === bookId);
-        if (!book) return;
-        const key = getAlphaKey(book, this.sortKey);
-        if (letter === '#') {
-          if (key === '#') targetCard = card;
-        } else {
-          if (key >= letter) targetCard = card;
-        }
-      });
-
-      if (!targetCard) {
-        // Jump to last card if letter is past all books
-        targetCard = cards[cards.length - 1];
-      }
-
-      if (targetCard) {
-        const containerRect = this.scrollEl.getBoundingClientRect();
-        const cardRect = targetCard.getBoundingClientRect();
-        const scrollTop = this.scrollEl.scrollTop + (cardRect.top - containerRect.top) - 8;
-        this.scrollEl.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
-      }
-    };
-
-    // Touch events on bar
-    bar.addEventListener('touchstart', e => {
-      e.preventDefault(); // prevent scroll
-      this.isDragging = true;
-      this.lastLetter = null;
-      const touch = e.touches[0];
-      const letter = getLetterFromY(touch.clientY);
-      showPip(letter, touch.clientY);
-      jumpTo(letter);
-    }, { passive: false });
-
-    bar.addEventListener('touchmove', e => {
-      e.preventDefault();
-      if (!this.isDragging) return;
-      const touch = e.touches[0];
-      const letter = getLetterFromY(touch.clientY);
-      showPip(letter, touch.clientY);
-      jumpTo(letter);
-    }, { passive: false });
-
-    bar.addEventListener('touchend', e => {
-      e.preventDefault();
-      this.isDragging = false;
-      this.lastLetter = null;
-      hidePip();
-      this.letterEls.forEach(el => el.classList.remove('active'));
-    }, { passive: false });
-
-    // Mouse events for desktop
-    bar.addEventListener('mousedown', e => {
-      e.preventDefault();
-      this.isDragging = true;
-      this.lastLetter = null;
-      const letter = getLetterFromY(e.clientY);
-      showPip(letter, e.clientY);
-      jumpTo(letter);
-
-      const onMove = (ev) => {
-        if (!this.isDragging) return;
-        const ltr = getLetterFromY(ev.clientY);
-        showPip(ltr, ev.clientY);
-        jumpTo(ltr);
-      };
-      const onUp = () => {
-        this.isDragging = false;
-        this.lastLetter = null;
-        hidePip();
-        this.letterEls.forEach(el => el.classList.remove('active'));
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseup', onUp);
-      };
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-    });
-
-    // Single tap on a letter
-    bar.addEventListener('click', e => {
-      const letterEl = e.target.closest('.alpha-bar-letter');
-      if (!letterEl) return;
-      this.lastLetter = null;
-      jumpTo(letterEl.dataset.letter);
-      // Brief highlight
-      this.letterEls.forEach(el => el.classList.remove('active'));
-      letterEl.classList.add('active');
-      setTimeout(() => letterEl.classList.remove('active'), 400);
-    });
-  }
-
-  update(books, sortKey = 'title') {
-    this.books = books;
-    this.sortKey = sortKey;
-    this.lastLetter = null;
-
-    // Build set of letters that have matching books
-    this.hasLetterSet = new Set(books.map(b => getAlphaKey(b, sortKey)));
-
-    // Update letter visibility
-    this.letterEls.forEach(el => {
-      const letter = el.dataset.letter;
-      el.classList.toggle('has-books', this.hasLetterSet.has(letter));
-    });
-
-    // Show/hide bar based on book count
-    const show = books.length >= 5;
-    this.bar.classList.toggle('visible', show);
-  }
-
-  destroy() {
-    if (this.bar) this.bar.remove();
-  }
-}
-
-// ── INSTANTIATE ALPHA BARS ──
-let mainAlphaScroll = null;
-let shelfAlphaScroll = null;
-let publicAlphaScroll = null;
-const globalPip = document.getElementById('alphaPip');
-
-// Main grid (inside .grid-container#mainGridContainer)
-window.addEventListener('DOMContentLoaded', () => {
-  // These containers exist in HTML already
-  mainAlphaScroll = new AlphaScrollBar({
-    scrollEl: document.getElementById('mainGridContainer'),
-    getGridEl: () => document.getElementById('bookGrid'),
-    pip: globalPip
-  });
-
-  shelfAlphaScroll = new AlphaScrollBar({
-    scrollEl: document.getElementById('shelfGridContainer'),
-    getGridEl: () => document.getElementById('shelfGrid'),
-    pip: globalPip
-  });
-
-  // Public shelf content area — exists in DOM
-  publicAlphaScroll = new AlphaScrollBar({
-    scrollEl: document.getElementById('publicShelfContent'),
-    getGridEl: () => document.getElementById('publicBookGrid'),
-    pip: globalPip
-  });
-});
 </script>
 </body>
 </html>
