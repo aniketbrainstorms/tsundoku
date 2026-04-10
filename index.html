@@ -481,13 +481,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   pointer-events: auto;
   opacity: 1;
 }
-/* Shelf overlay bar sits inside position:absolute overlay — use absolute there */
-#shelfAlphaBar {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-}
+
 .alpha-track {
   display: flex;
   flex-direction: column;
@@ -667,6 +661,11 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
     <div class="divider"></div>
     <div class="public-shelf-content" id="publicShelfContent">
       <div class="book-grid" id="publicBookGrid"></div>
+      <!-- A–Z bar for public shelf -->
+      <div class="alpha-bar" id="publicAlphaBar">
+        <div class="alpha-track" id="publicAlphaTrack"></div>
+      </div>
+      <div class="alpha-bubble" id="publicAlphaBubble"></div>
     </div>
   </div>
 
@@ -1223,14 +1222,16 @@ list.sort((a, b) => {
   if (!list.length) {
     grid.classList.remove('reading-mode');
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>${q ? 'No results found.' : 'No books yet.'}</p></div>`;
+    if (typeof alphaBarRefresh === 'function') alphaBarRefresh('public');
     return;
   }
   grid.classList.remove('reading-mode');
   grid.innerHTML = list.map((b, i) => `
-    <div class="pub-book-card" style="animation-delay:${Math.min(i,12)*0.035}s">
+    <div class="pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title||'')}" data-author="${escapeAttr(b.author||'')}" style="animation-delay:${Math.min(i,12)*0.035}s">
       ${coverHtml(b)}
       <div class="status-dot ${b.status}"></div>
     </div>`).join('');
+  if (typeof alphaBarRefresh === 'function') alphaBarRefresh('public');
 }
 
 // ── PUBLIC SORT ──
@@ -1626,10 +1627,10 @@ function closeShelfSortMenu() {
 }
 function setShelfSort(s) {
   shelfSort = s;
+  document.querySelectorAll('#shelfSortMenu .qm-item').forEach(btn => btn.classList.toggle('current-status', btn.dataset.ssort === s));
   closeShelfSortMenu();
   document.getElementById('qmDismiss').classList.remove('active');
   renderShelfGrid();
-  if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
 }
 function renderShelfGrid() {
   const grid = document.getElementById('shelfGrid');
@@ -1913,15 +1914,24 @@ function showToast(msg) {
       containerId: 'shelfGridContainer',
       getSort:     () => shelfSort,
     },
+    public: {
+      barId:       'publicAlphaBar',
+      trackId:     'publicAlphaTrack',
+      bubbleId:    'publicAlphaBubble',
+      gridId:      'publicBookGrid',
+      containerId: 'publicShelfContent',
+      getSort:     () => publicSort,
+    },
   };
 
-  const lastLetter  = { main: null, shelf: null };
-  const mouseState  = { main: false, shelf: false };
+  const lastLetter  = { main: null, shelf: null, public: null };
+  const mouseState  = { main: false, shelf: false, public: false };
 
-  // ── Position the main bar so it sits exactly over the grid area ──
-  function positionMainBar() {
-    const bar = document.getElementById('mainAlphaBar');
-    const container = document.getElementById('mainGridContainer');
+  // ── Position the bar so it sits exactly over the grid area ──
+  function positionBar(ctx) {
+    const cfg = CONTEXTS[ctx];
+    const bar = document.getElementById(cfg.barId);
+    const container = document.getElementById(cfg.containerId);
     if (!bar || !container) return;
     const rect = container.getBoundingClientRect();
     bar.style.top    = rect.top + 'px';
@@ -1931,7 +1941,7 @@ function showToast(msg) {
 
   function getCards(ctx) {
     const grid = document.getElementById(CONTEXTS[ctx].gridId);
-    return grid ? Array.from(grid.querySelectorAll('.book-card[data-id]')) : [];
+    return grid ? Array.from(grid.querySelectorAll('.book-card[data-id], .pub-book-card[data-id]')) : [];
   }
 
   function getActiveLetters(ctx) {
@@ -1965,7 +1975,7 @@ function showToast(msg) {
     }
 
     // Position the fixed bar over the exact grid area
-    if (ctx === 'main') positionMainBar();
+    positionBar(ctx);
 
     track.innerHTML = '';
     ALL_LETTERS.forEach(letter => {
@@ -2125,6 +2135,7 @@ function showToast(msg) {
     setTimeout(() => {
       if (ctx === 'main'  || !ctx) buildBar('main');
       if (ctx === 'shelf' || !ctx) buildBar('shelf');
+      if (ctx === 'public'|| !ctx) buildBar('public');
     }, 80);
   };
 
@@ -2133,10 +2144,16 @@ function showToast(msg) {
     setupMouseEvents('main');
     setupTouchEvents('shelf');
     setupMouseEvents('shelf');
+    setupTouchEvents('public');
+    setupMouseEvents('public');
     // Reposition on any layout shift (safe-area changes, keyboard, etc.)
     window.addEventListener('resize', () => {
       const mainBar = document.getElementById('mainAlphaBar');
-      if (mainBar && mainBar.classList.contains('visible')) positionMainBar();
+      if (mainBar && mainBar.classList.contains('visible')) positionBar('main');
+      const shelfBar = document.getElementById('shelfAlphaBar');
+      if (shelfBar && shelfBar.classList.contains('visible')) positionBar('shelf');
+      const publicBar = document.getElementById('publicAlphaBar');
+      if (publicBar && publicBar.classList.contains('visible')) positionBar('public');
     });
   });
 })();
