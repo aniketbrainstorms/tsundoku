@@ -1471,7 +1471,13 @@ async function openScannerModal() {
   document.getElementById('scannerModal').classList.add('visible');
   const video = document.getElementById('scannerVideo');
   try {
-    scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      }
+    });
     video.srcObject = scannerStream;
     await video.play();
 
@@ -1520,10 +1526,15 @@ async function openScannerModal() {
       ]);
       hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
-      const reader = new ZXing.BrowserMultiFormatReader(hints, 200);
+      const reader = new ZXing.BrowserMultiFormatReader(hints, 150);
 
-      // Let ZXing drive its own decode loop against the live video element
-      reader.decodeFromStream(scannerStream, video, (result, err) => {
+      // Wait for video to be playing before handing to ZXing
+      await new Promise(resolve => {
+        if (video.readyState >= 3) { resolve(); return; }
+        video.addEventListener('canplay', resolve, { once: true });
+      });
+
+      reader.decodeFromVideoElement(video, (result, err) => {
         if (result) {
           const isbn = result.getText();
           reader.reset();
@@ -1531,10 +1542,8 @@ async function openScannerModal() {
           document.getElementById('bsInput').value = isbn;
           onBsInput();
         }
-        // err is NotFoundException on every non-decode frame — safe to ignore
       });
 
-      // Store reader so closeScannerModal can reset it
       video._zxingReader = reader;
     }
   } catch (err) {
