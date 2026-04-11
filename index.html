@@ -1492,9 +1492,18 @@ async function openScannerModal() {
     } else {
       // Fallback — ZXing for Safari 16 and below
       showToast('Loading scanner…');
-      const zxing = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/esm/index.js');
-      const hints = new Map();
-      const { BarcodeFormat, DecodeHintType } = await import('https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/esm/index.js');
+      let zxing, BarcodeFormat, DecodeHintType;
+      try {
+        zxing = await import('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/esm/index.js');
+        const zxingLib = await import('https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/esm/index.js');
+        BarcodeFormat = zxingLib.BarcodeFormat;
+        DecodeHintType = zxingLib.DecodeHintType;
+      } catch (importErr) {
+        showToast('Scanner unavailable — enter ISBN manually');
+        closeScannerModal();
+        document.getElementById('bsInput').focus();
+        return;
+      }
       hints.set(DecodeHintType.POSSIBLE_FORMATS, [
         BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A
       ]);
@@ -1512,8 +1521,14 @@ async function openScannerModal() {
       video._zxingReader = reader;
     }
   } catch (err) {
-    showToast('Camera access denied — check Safari settings');
     closeScannerModal();
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      showToast('Camera permission denied — enable in Settings > Safari');
+    } else if (err.name === 'NotFoundError') {
+      showToast('No camera found on this device');
+    } else {
+      showToast('Could not start camera — try again');
+    }
   }
 }
 function closeScannerModal() {
