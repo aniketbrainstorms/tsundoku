@@ -864,6 +864,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   <div class="modal-overlay" id="profileModal" onclick="handleOverlayClick(event,'profileModal')">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
+      <div style="margin-bottom:14px">
+        <button onclick="closeModal('profileModal')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;padding:6px 0;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back
+        </button>
+      </div>
       <div class="profile-header-row">
         <div class="profile-avatar-large" id="profileAvatarLarge">?</div>
         <div>
@@ -935,16 +941,14 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
       <span class="shelf-header-count" id="shelfOverlayCount"></span>
     </div>
     <div style="display:flex;gap:8px;padding:8px 16px 12px;">
-      <div id="shelfStat-reading" onclick="shelfStatClick('reading')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;transition:border-color 0.2s">
+      <div id="shelfStat-reading" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:default">
         <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-reading">0</div>
         <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;font-weight:500">reading</div>
       </div>
-      <div id="shelfStat-read" onclick="shelfStatClick('read')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;transition:border-color 0.2s">
-        <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-read">0</div>
+      <div id="shelfStat-read" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:default">        <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-read">0</div>
         <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;font-weight:500">read</div>
       </div>
-      <div id="shelfStat-unread" onclick="shelfStatClick('unread')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;transition:border-color 0.2s">
-        <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-unread">0</div>
+      <div id="shelfStat-unread" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:default">        <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-unread">0</div>
         <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;font-weight:500">unread</div>
       </div>
     </div>
@@ -1708,16 +1712,6 @@ function openProfileModal() {
 
 // ── MY SHELF VIEW ──
 let shelfSort = 'recent';
-function shelfStatClick(status) {
-  ['reading','read','unread'].forEach(s => {
-    const el = document.getElementById('shelfStat-' + s);
-    if (el) {
-      el.style.borderColor = s === status ? 'var(--accent)' : 'var(--border)';
-      el.style.background = s === status ? 'rgba(201,113,74,0.08)' : 'var(--surface2)';
-      el.querySelector('div').style.color = s === status ? 'var(--accent)' : 'var(--text)';
-    }
-  });
-}
 function updateShelfStats() {
   ['reading','read','unread'].forEach(s => {
     const el = document.getElementById('shelfStatNum-' + s);
