@@ -2865,10 +2865,8 @@ function showToast(msg) {
       });
 
       card.addEventListener('click', e => {
-        // On touch devices the tap is handled by touchend already
-        if (isTouch()) return;
-        if (!didLong) openListDetail(id);
-      });
+  if (!didLong) openListDetail(id);
+});
     });
   }
 
