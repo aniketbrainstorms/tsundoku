@@ -2894,7 +2894,7 @@ function showToast(msg) {
   function loCloseQM() { document.getElementById('loQM').classList.remove('visible'); loQMTargetId = null; }
   
     window.loCloseDim = function () { loCloseQM(); loCloseSheet(); document.getElementById('loDim').classList.remove('on'); };
-    wwindow.loQMOpen = function () {
+    window.loQMOpen = function () {
       const id = loQMTargetId;
       loCloseQM();
       document.getElementById('loDim').classList.remove('on');
@@ -3130,8 +3130,6 @@ function showToast(msg) {
     const ld = document.getElementById('listDetailOverlay');
     const sheet = document.getElementById('loSheet');
     const dim   = document.getElementById('loDim');
-    if (sheet.parentElement !== ld) ld.appendChild(sheet);
-    if (dim.parentElement   !== ld) ld.appendChild(dim);
     sheet.classList.add('open');
     dim.classList.add('on');
     setTimeout(() => document.getElementById('loListNameInput').focus(), 320);
