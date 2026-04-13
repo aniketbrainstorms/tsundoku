@@ -2035,7 +2035,7 @@ function openProfileModal() {
   const countEl = document.getElementById('shelfTotalCount');
   if (countEl) countEl.textContent = books.length === 1 ? '1 book' : `${books.length} books`;
   updateShareUI();
-  if (loLists) updateListsCount();
+  if (typeof updateListsCount === 'function') updateListsCount();
   document.getElementById('profileModal').classList.add('visible');
 }
 
@@ -2694,10 +2694,10 @@ function showToast(msg) {
     return `${Math.floor(days/7)}w ago`;
   }
 
-  function updateListsCount() {
+  window.updateListsCount = function () {
     const el = document.getElementById('listsCount');
     if (el) el.textContent = loLists.length === 1 ? '1 list' : `${loLists.length} lists`;
-  }
+  };
 
   // ── SUPABASE ──
   async function loLoadLists() {
