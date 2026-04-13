@@ -2894,10 +2894,11 @@ function showToast(msg) {
   function loCloseQM() { document.getElementById('loQM').classList.remove('visible'); loQMTargetId = null; }
   
     window.loCloseDim = function () { loCloseQM(); loCloseSheet(); document.getElementById('loDim').classList.remove('on'); };
-    window.loQMOpen = function () {
-    const id = loQMTargetId; loCloseQM();
-    document.getElementById('loDim').classList.remove('on');
-    openListDetail(id);
+    wwindow.loQMOpen = function () {
+      const id = loQMTargetId;
+      loCloseQM();
+      document.getElementById('loDim').classList.remove('on');
+      setTimeout(() => openListDetail(id), 50);
     };
   window.loQMRename = function () {
     const list = loLists.find(l => l.id === loQMTargetId); loCloseQM();
