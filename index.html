@@ -567,6 +567,233 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   opacity: 1;
   transform: scale(1) translateX(0);
 }
+  /* ── MY LISTS OVERLAY ── */
+#listsOverlay {
+  position: absolute; inset: 0; background: var(--bg); z-index: 13;
+  display: flex; flex-direction: column; overflow: hidden;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  pointer-events: none;
+}
+#listsOverlay.open { transform: translateX(0); pointer-events: all; }
+
+.lo-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: max(var(--safe-top),16px) max(var(--safe-right),16px) 14px max(var(--safe-left),16px);
+  flex-shrink: 0;
+}
+.lo-title { font-size: 17px; font-weight: 700; color: var(--text); flex: 1; }
+.lo-new-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--accent); border: none; color: #fff; font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 2px 10px rgba(201,113,74,0.4);
+  line-height: 1; padding: 0; flex-shrink: 0;
+}
+.lo-search-row { padding: 0 max(var(--safe-right),16px) 10px max(var(--safe-left),16px); flex-shrink: 0; }
+.lo-search-wrap { position: relative; }
+.lo-search-input {
+  width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 14px 10px 38px;
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px;
+  outline: none; transition: border-color 0.2s; box-sizing: border-box;
+}
+.lo-search-input:focus { border-color: var(--accent); }
+.lo-search-input::placeholder { color: var(--text-muted); }
+.lo-search-icon {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); pointer-events: none; display: flex; align-items: center;
+}
+.lo-hint {
+  font-size: 11px; color: var(--text-muted); text-align: center;
+  padding: 6px 0 8px; opacity: 0.55; letter-spacing: 0.02em; flex-shrink: 0;
+}
+.lo-scroll {
+  flex: 1; overflow-y: auto; scrollbar-width: none;
+  padding: 12px max(var(--safe-right),16px) max(calc(var(--safe-bottom)+24px),24px) max(var(--safe-left),16px);
+}
+.lo-scroll::-webkit-scrollbar { display: none; }
+
+.lo-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 14px; margin-bottom: 10px; overflow: hidden;
+  cursor: pointer; transition: border-color 0.18s;
+}
+.lo-card.pressing { opacity: 0.72; transform: scale(0.98); transition: transform 0.1s, opacity 0.1s; }
+.lo-card-inner { display: flex; align-items: center; gap: 12px; padding: 14px; }
+.lo-cover-stack { display: flex; position: relative; width: 72px; height: 52px; flex-shrink: 0; }
+.lo-thumb { width: 36px; height: 52px; border-radius: 5px; overflow: hidden; position: absolute; border: 1.5px solid var(--bg); }
+.lo-thumb:nth-child(1) { left: 0; z-index: 3; }
+.lo-thumb:nth-child(2) { left: 18px; z-index: 2; }
+.lo-thumb:nth-child(3) { left: 36px; z-index: 1; }
+.lo-thumb-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.lo-card-info { flex: 1; min-width: 0; }
+.lo-card-name {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
+}
+.lo-card-meta { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.lo-card-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border); }
+.lo-chevron { color: var(--text-muted); flex-shrink: 0; }
+.lo-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 56px 24px; text-align: center; }
+.lo-empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.35; }
+.lo-empty-text { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+
+/* New-list bottom sheet */
+#loSheet {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 16;
+  background: var(--surface); border-radius: 22px 22px 0 0;
+  border-top: 1px solid var(--border);
+  padding: 0 max(var(--safe-right),20px) max(calc(var(--safe-bottom)+32px),40px) max(var(--safe-left),20px);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+}
+#loSheet.open { transform: translateY(0); }
+.lo-sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 20px; }
+.lo-sheet-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.lo-sheet-input {
+  width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 13px 14px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 15px;
+  outline: none; margin-bottom: 14px; box-sizing: border-box; transition: border-color 0.2s;
+}
+.lo-sheet-input:focus { border-color: var(--accent); }
+.lo-sheet-input::placeholder { color: var(--text-muted); }
+.lo-emoji-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; font-weight: 500; }
+.lo-emoji-row { display: flex; gap: 8px; margin-bottom: 18px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.lo-emoji-row::-webkit-scrollbar { display: none; }
+.lo-emoji-opt {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; flex-shrink: 0; transition: border-color 0.15s, background 0.15s;
+}
+.lo-emoji-opt.selected { border-color: var(--accent); background: rgba(201,113,74,0.1); }
+.lo-sheet-btn { width: 100%; padding: 15px; background: var(--accent); border: none; border-radius: 12px; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 10px; }
+.lo-sheet-cancel { width: 100%; padding: 13px; background: transparent; border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-dim); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
+
+/* List QM */
+#loQM {
+  position: absolute; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 6px; min-width: 148px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55); z-index: 17;
+  opacity: 0; transform: scale(0.82); transform-origin: top left;
+  pointer-events: none; transition: opacity 0.18s, transform 0.2s cubic-bezier(0.34,1.4,0.64,1);
+}
+#loQM.visible { opacity: 1; transform: scale(1); pointer-events: all; }
+
+/* List dim overlay */
+#loDim {
+  position: absolute; inset: 0; background: rgba(14,12,10,0.75);
+  backdrop-filter: blur(4px); z-index: 15;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+#loDim.on { opacity: 1; pointer-events: all; }
+
+/* ── LIST DETAIL OVERLAY ── */
+#listDetailOverlay {
+  position: absolute; inset: 0; background: var(--bg); z-index: 14;
+  display: flex; flex-direction: column; overflow: hidden;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  pointer-events: none;
+}
+#listDetailOverlay.open { transform: translateX(0); pointer-events: all; }
+
+.ld-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: max(var(--safe-top),16px) max(var(--safe-right),16px) 10px max(var(--safe-left),16px);
+  flex-shrink: 0;
+}
+.ld-header-title { font-size: 17px; font-weight: 700; color: var(--text); flex: 1; letter-spacing: -0.3px; }
+.ld-more-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; padding: 0; transition: border-color 0.2s;
+}
+.ld-more-btn:active { border-color: var(--accent); }
+
+.ld-hero { flex-shrink: 0; padding: 0 max(var(--safe-right),18px) 18px max(var(--safe-left),18px); display: flex; align-items: flex-end; gap: 16px; }
+.ld-fan-stack { position: relative; width: 88px; height: 108px; flex-shrink: 0; }
+.ld-fan-cover {
+  position: absolute; width: 64px; height: 96px; border-radius: 7px;
+  overflow: hidden; border: 1.5px solid var(--bg);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.5); transform-origin: bottom center;
+}
+.ld-fan-cover:nth-child(1) { left: 0;   top: 6px; transform: rotate(-8deg); z-index: 1; }
+.ld-fan-cover:nth-child(2) { left: 12px; top: 2px; transform: rotate(-2deg); z-index: 2; }
+.ld-fan-cover:nth-child(3) { left: 24px; top: 0;   transform: rotate(4deg);  z-index: 3; }
+.ld-fan-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.ld-hero-info { flex: 1; min-width: 0; padding-bottom: 4px; }
+.ld-hero-emoji { font-size: 22px; line-height: 1; margin-bottom: 5px; }
+.ld-hero-name { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; line-height: 1.15; margin-bottom: 6px; }
+.ld-hero-meta { display: flex; gap: 10px; align-items: center; font-size: 11px; color: var(--text-muted); font-weight: 500; margin-bottom: 10px; }
+.ld-hero-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border); }
+.ld-add-btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px;
+  background: var(--accent); border: none; border-radius: 100px;
+  color: #fff; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+  cursor: pointer; box-shadow: 0 2px 12px rgba(201,113,74,0.35);
+  transition: opacity 0.2s, transform 0.15s;
+}
+.ld-add-btn:active { transform: scale(0.96); opacity: 0.85; }
+
+.ld-progress { margin: 0 max(var(--safe-right),18px) 14px max(var(--safe-left),18px); flex-shrink: 0; }
+.ld-progress-bg { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
+.ld-progress-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+.ld-progress-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); font-weight: 500; }
+.ld-progress-label span:last-child { color: var(--green); }
+
+.ld-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px max(var(--safe-right),18px) 8px max(var(--safe-left),18px); flex-shrink: 0; }
+.ld-filter-row { display: flex; gap: 6px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.ld-filter-row::-webkit-scrollbar { display: none; }
+.ld-chip { padding: 7px 13px; border-radius: 100px; border: 1.5px solid var(--border); background: transparent; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.18s; }
+.ld-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.ld-list-scroll { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 6px max(var(--safe-right),18px) max(calc(var(--safe-bottom)+24px),24px) max(var(--safe-left),18px); }
+.ld-list-scroll::-webkit-scrollbar { display: none; }
+
+.ld-book-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid var(--border); cursor: pointer;
+  opacity: 0; transform: translateY(10px);
+  animation: ldRowIn 0.35s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.ld-book-row:last-child { border-bottom: none; }
+.ld-book-row.pressing { opacity: 0.6; }
+@keyframes ldRowIn { to { opacity: 1; transform: translateY(0); } }
+.ld-drag { color: var(--border); flex-shrink: 0; display: flex; align-items: center; cursor: grab; padding: 0 2px; }
+.ld-cover { width: 38px; height: 56px; border-radius: 5px; overflow: hidden; background: var(--surface2); flex-shrink: 0; }
+.ld-cover-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.ld-book-info { flex: 1; min-width: 0; }
+.ld-book-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ld-book-author { font-size: 11px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-bottom: 4px; }
+.ld-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 100px; font-size: 10px; font-weight: 500; }
+.ld-pill-reading { background: rgba(201,113,74,0.14); color: var(--accent); }
+.ld-pill-read    { background: rgba(90,138,106,0.14);  color: var(--green); }
+.ld-pill-unread  { background: rgba(122,112,104,0.1);  color: var(--text-muted); }
+.ld-pill-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.ld-note-chip { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 2px 7px; border-radius: 5px; background: var(--surface); border: 1px solid var(--border); font-size: 10px; color: var(--text-dim); font-style: italic; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ld-row-chevron { flex-shrink: 0; color: var(--border); display: flex; align-items: center; }
+.ld-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; }
+.ld-empty-icon-wrap { width: 60px; height: 60px; border-radius: 18px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.ld-empty-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.ld-empty-sub { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+
+/* Book QM inside list detail */
+#ldQM {
+  position: absolute; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 6px; min-width: 152px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55); z-index: 17;
+  opacity: 0; transform: scale(0.82) translateY(-4px); transform-origin: top right;
+  pointer-events: none; transition: opacity 0.18s, transform 0.2s cubic-bezier(0.34,1.4,0.64,1);
+}
+#ldQM.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: all; }
+#ldDim { position: absolute; inset: 0; background: rgba(14,12,10,0.6); backdrop-filter: blur(2px); z-index: 15; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+#ldDim.on { opacity: 1; pointer-events: all; }
+
+@keyframes loFadeIn { from { opacity:0; transform:translateY(8px) scale(0.97); } to { opacity:1; transform:none; } }
 </style>
 </head>
 <body>
@@ -893,14 +1120,14 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
         <span class="profile-shelf-count" id="shelfTotalCount">0 books</span>
         <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
-      <button class="profile-shelf-btn" style="opacity:0.55;cursor:default" disabled>
-        <span class="profile-shelf-icon">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        </span>
-        My Lists
-        <span class="profile-shelf-count">coming soon</span>
-        <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
+      <button class="profile-shelf-btn" onclick="openListsOverlay()">
+  <span class="profile-shelf-icon">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  </span>
+  My Lists
+  <span class="profile-shelf-count" id="listsCount">0 lists</span>
+  <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+</button>
 
       <!-- SHARE SHELF -->
       <div class="divider" style="margin:4px 0 16px"></div>
@@ -974,7 +1201,107 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
     </div>
     <div class="alpha-bubble" id="shelfAlphaBubble"></div>
   </div>
+  <!-- MY LISTS OVERLAY -->
+<div class="shelf-overlay" id="listsOverlay">
+  <div class="lo-header">
+    <button class="shelf-back-btn" onclick="closeListsOverlay()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+    </button>
+    <span class="lo-title">My Lists</span>
+    <button class="lo-new-btn" id="loNewBtn">+</button>
+  </div>
+  <div class="lo-search-row">
+    <div class="lo-search-wrap">
+      <span class="lo-search-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+      <input class="lo-search-input" id="loSearchInput" placeholder="Search lists" autocomplete="off" />
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="lo-hint">Hold to rename or delete</div>
+  <div class="lo-scroll" id="loScroll"></div>
 
+  <!-- dim + QM + sheet live INSIDE the overlay so z-index stacks correctly -->
+  <div id="loDim" onclick="loCloseDim()"></div>
+  <div class="quick-menu" id="loQM">
+    <span class="qm-label">List options</span>
+    <button class="qm-item" onclick="loQMRename()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Rename
+    </button>
+    <div class="qm-sep"></div>
+    <button class="qm-item delete-item" onclick="loQMDelete()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      Delete list
+    </button>
+  </div>
+  <div id="loSheet">
+    <div class="lo-sheet-handle"></div>
+    <div class="lo-sheet-title" id="loSheetTitle">New list</div>
+    <input class="lo-sheet-input" id="loListNameInput" placeholder="e.g. Sci-fi favourites" maxlength="40" />
+    <div class="lo-emoji-label">Pick an icon</div>
+    <div class="lo-emoji-row" id="loEmojiRow"></div>
+    <button class="lo-sheet-btn" id="loSheetSaveBtn" onclick="loSaveList()">Create list</button>
+    <button class="lo-sheet-cancel" onclick="loCloseSheet()">Cancel</button>
+  </div>
+</div>
+
+<!-- LIST DETAIL OVERLAY -->
+<div class="shelf-overlay" id="listDetailOverlay">
+  <div class="ld-header">
+    <button class="shelf-back-btn" onclick="closeListDetail()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+    </button>
+    <span class="ld-header-title" id="ldHeaderTitle">List</span>
+    <button class="ld-more-btn" id="ldMoreBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+    </button>
+  </div>
+  <div class="ld-hero">
+    <div class="ld-fan-stack" id="ldFanStack"></div>
+    <div class="ld-hero-info">
+      <div class="ld-hero-emoji" id="ldHeroEmoji">📚</div>
+      <div class="ld-hero-name" id="ldHeroName"></div>
+      <div class="ld-hero-meta">
+        <span id="ldHeroCount"></span>
+        <span class="ld-hero-meta-dot"></span>
+        <span id="ldHeroUpdated"></span>
+      </div>
+      <button class="ld-add-btn" id="ldAddBtn">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add book
+      </button>
+    </div>
+  </div>
+  <div class="ld-progress">
+    <div class="ld-progress-bg"><div class="ld-progress-fill" id="ldProgressFill" style="width:0%"></div></div>
+    <div class="ld-progress-label"><span id="ldProgressLabel">0 of 0 read</span><span id="ldProgressPct">0%</span></div>
+  </div>
+  <div class="divider"></div>
+  <div class="ld-toolbar">
+    <div class="ld-filter-row" id="ldFilterRow">
+      <button class="ld-chip active" data-f="all">All</button>
+      <button class="ld-chip" data-f="reading">Reading</button>
+      <button class="ld-chip" data-f="read">Read</button>
+      <button class="ld-chip" data-f="unread">Unread</button>
+    </div>
+  </div>
+  <div class="ld-list-scroll" id="ldListScroll"></div>
+
+  <div id="ldDim" onclick="ldCloseQM()"></div>
+  <div class="quick-menu" id="ldQM">
+    <span class="qm-label">Book options</span>
+    <button class="qm-item" onclick="ldQMAction('view')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      View details
+    </button>
+    <button class="qm-item" onclick="ldQMAction('remove')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      Remove from list
+    </button>
+  </div>
+</div>
   <div class="toast" id="toast"></div>
 </div>
 
@@ -2272,7 +2599,452 @@ function showToast(msg) {
     window.addEventListener('orientationchange', handleLayoutShift);
   });
 })();
-// ── END A–Z SCROLLBAR ─────────────────────────────────────────────────────
+// ── MY LISTS ──────────────────────────────────────────────────────────────
+;(function () {
+  const LO_EMOJIS = ['📚','🔖','⭐','🌙','🔥','💭','🌿','🗺️','🧠','🎭','🌊','🏔️','🎯','✨','🕯️'];
+  const LO_PALETTES = [
+    ['#4a3728','#c9714a'],['#1e2d3d','#5a8fa8'],['#2d3a2e','#6a9a72'],
+    ['#3a2040','#9a6ac0'],['#3d2a1e','#c0814a'],['#1e1e2d','#6a72c0'],
+    ['#2d1e1e','#c06a6a'],['#1e2d2a','#6ac0b8'],['#3a3020','#b0963c'],['#2a1e2d','#a06ab8']
+  ];
+  let loLists = [];          // loaded from Supabase
+  let ldBooks  = [];          // books in the open list
+  let loSelectedEmoji = LO_EMOJIS[0];
+  let loSheetEditingId = null;
+  let loQMTargetId = null;
+  let ldCurrentListId  = null;
+  let ldCurrentFilter  = 'all';
+  let ldQMTargetId     = null;
+  let loLongTimer = null, ldLongTimer = null;
+
+  // ── HELPERS ──
+  function loPal(i) { return LO_PALETTES[i % LO_PALETTES.length]; }
+
+  function loThumbHtml(palIdx) {
+    const p = loPal(palIdx);
+    return `<div class="lo-thumb">
+      <div class="lo-thumb-inner" style="background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="${p[1]}" opacity="0.55" stroke="${p[1]}" stroke-width="1.5">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" fill="none"/>
+        </svg>
+      </div>
+    </div>`;
+  }
+
+  function ldCoverHtml(book) {
+    const palIdx = (function(str){ let h=0; for(let c of str) h=(h*31+c.charCodeAt(0))>>>0; return h%10; })(book.id);
+    const p = loPal(palIdx);
+    if (book.cover_url) return `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover" />`;
+    return `<div class="ld-cover-inner" style="background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%)">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="${p[1]}" opacity="0.5" stroke="${p[1]}" stroke-width="1.5">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" fill="none"/>
+      </svg>
+    </div>`;
+  }
+
+  function fanCoversFor(list) {
+    // Use first 3 books from this list if available, else placeholder palettes
+    const base = (list._books || []).slice(0, 3);
+    while (base.length < 3) base.push(null);
+    return base.map((b, idx) => {
+      const palIdx = b ? (function(s){let h=0;for(let c of s)h=(h*31+c.charCodeAt(0))>>>0;return h%10;})(b.id) : ((list.id||0)+idx)%10;
+      const p = loPal(palIdx);
+      const inner = b && b.cover_url
+        ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover" />`
+        : `<div class="ld-fan-inner" style="background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="${p[1]}" opacity="0.5" stroke="${p[1]}" stroke-width="1.5">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" fill="none"/>
+            </svg>
+          </div>`;
+      return `<div class="ld-fan-cover">${inner}</div>`;
+    }).join('');
+  }
+
+  function loThumbStackFor(list) {
+    const base = (list._books || []).slice(0, 3);
+    while (base.length < 3) base.push(null);
+    return base.map((b, idx) => {
+      const palIdx = b ? (function(s){let h=0;for(let c of s)h=(h*31+c.charCodeAt(0))>>>0;return h%10;})(b.id) : ((list.id||0)+idx)%10;
+      const p = loPal(palIdx);
+      if (b && b.cover_url) return `<div class="lo-thumb"><img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover"/></div>`;
+      return loThumbHtml(palIdx);
+    }).join('');
+  }
+
+  function timeSince(dateStr) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr);
+    const mins = Math.floor(diff/60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins/60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs/24);
+    if (days < 7) return `${days}d ago`;
+    return `${Math.floor(days/7)}w ago`;
+  }
+
+  function updateListsCount() {
+    const el = document.getElementById('listsCount');
+    if (el) el.textContent = loLists.length === 1 ? '1 list' : `${loLists.length} lists`;
+  }
+
+  // ── SUPABASE ──
+  async function loLoadLists() {
+    if (!currentUser) return;
+    const { data, error } = await sb.from('lists').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+    if (error) { showToast('Could not load lists'); return; }
+    loLists = data || [];
+    // load books for each list to show covers + count
+    await Promise.all(loLists.map(async list => {
+      const { data: lb } = await sb.from('list_books').select('books(*)').eq('list_id', list.id);
+      list._books = (lb || []).map(r => r.books).filter(Boolean);
+    }));
+    updateListsCount();
+  }
+
+  async function loCreateList(name, emoji) {
+    const { data, error } = await sb.from('lists').insert({ user_id: currentUser.id, name, emoji }).select().single();
+    if (error) { showToast(error.message || 'Could not create list'); return null; }
+    data._books = [];
+    return data;
+  }
+
+  async function loUpdateList(id, updates) {
+    const { error } = await sb.from('lists').update(updates).eq('id', id);
+    if (error) showToast('Could not update list');
+    return !error;
+  }
+
+  async function loDeleteList(id) {
+    const { error } = await sb.from('lists').delete().eq('id', id);
+    if (error) showToast('Could not delete list');
+    return !error;
+  }
+
+  async function ldRemoveBook(listId, bookId) {
+    const { error } = await sb.from('list_books').delete().eq('list_id', listId).eq('book_id', bookId);
+    if (error) showToast('Could not remove book');
+    return !error;
+  }
+
+  // ── LISTS OVERLAY ──
+  window.openListsOverlay = async function () {
+    closeModal('profileModal');
+    document.getElementById('loSearchInput').value = '';
+    document.getElementById('listsOverlay').classList.add('open');
+    await loLoadLists();
+    loRenderLists();
+    loBuildEmojiRow();
+  };
+  window.closeListsOverlay = function () {
+    document.getElementById('listsOverlay').classList.remove('open');
+  };
+
+  function loRenderLists() {
+    const q = (document.getElementById('loSearchInput').value || '').toLowerCase().trim();
+    const scroll = document.getElementById('loScroll');
+    const filtered = q ? loLists.filter(l => l.name.toLowerCase().includes(q)) : loLists;
+
+    if (!filtered.length) {
+      scroll.innerHTML = `<div class="lo-empty">
+        <div class="lo-empty-icon">📋</div>
+        <p class="lo-empty-text">${q ? 'No lists match your search.' : 'No lists yet.<br>Tap <strong style="color:var(--accent)">+</strong> to create one.'}</p>
+      </div>`;
+      return;
+    }
+
+    scroll.innerHTML = filtered.map((list, i) => `
+      <div class="lo-card" data-id="${list.id}" style="animation:loFadeIn 0.28s ease ${Math.min(i,8)*0.04}s both">
+        <div class="lo-card-inner">
+          <div class="lo-cover-stack">${loThumbStackFor(list)}</div>
+          <div class="lo-card-info">
+            <div class="lo-card-name">${escapeHtml(list.emoji || '')} ${escapeHtml(list.name)}</div>
+            <div class="lo-card-meta">
+              <span>${(list._books||[]).length} ${(list._books||[]).length === 1 ? 'book' : 'books'}</span>
+              <span class="lo-card-dot"></span>
+              <span>${timeSince(list.updated_at || list.created_at)}</span>
+            </div>
+          </div>
+          <svg class="lo-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>`).join('');
+
+    scroll.querySelectorAll('.lo-card').forEach(card => {
+      const id = card.dataset.id;
+      let didLong = false;
+      card.addEventListener('touchstart', () => {
+        didLong = false; card.classList.add('pressing');
+        loLongTimer = setTimeout(() => { didLong = true; card.classList.remove('pressing'); loOpenQM(id, card); }, 500);
+      }, { passive: true });
+      card.addEventListener('touchend', () => {
+        clearTimeout(loLongTimer); card.classList.remove('pressing');
+        if (!didLong) openListDetail(id);
+      });
+      card.addEventListener('touchcancel', () => { clearTimeout(loLongTimer); card.classList.remove('pressing'); });
+      card.addEventListener('mousedown', () => {
+        didLong = false;
+        loLongTimer = setTimeout(() => { didLong = true; loOpenQM(id, card); }, 500);
+      });
+      card.addEventListener('mouseup', () => { clearTimeout(loLongTimer); });
+      card.addEventListener('click', () => { if (!isTouch() && !didLong) openListDetail(id); });
+      card.addEventListener('mouseleave', () => clearTimeout(loLongTimer));
+    });
+  }
+
+  document.getElementById('loSearchInput').addEventListener('input', loRenderLists);
+
+  // ── LISTS QM ──
+  function loOpenQM(id, card) {
+    loQMTargetId = id;
+    const qm = document.getElementById('loQM');
+    const overlay = document.getElementById('listsOverlay');
+    const or = overlay.getBoundingClientRect();
+    const cr = card.getBoundingClientRect();
+    let top = cr.bottom - or.top + 4;
+    let left = cr.left - or.left + 8;
+    if (left + 152 > or.width - 8) left = or.width - 160;
+    if (top + 140 > or.height - 8) top = (cr.top - or.top) - 146;
+    qm.style.top = top + 'px'; qm.style.left = left + 'px';
+    qm.classList.add('visible');
+    document.getElementById('loDim').classList.add('on');
+  }
+  function loCloseQM() { document.getElementById('loQM').classList.remove('visible'); loQMTargetId = null; }
+  window.loCloseDim = function () { loCloseQM(); loCloseSheet(); document.getElementById('loDim').classList.remove('on'); };
+
+  window.loQMRename = function () {
+    const list = loLists.find(l => l.id === loQMTargetId); loCloseQM();
+    if (!list) return;
+    loSheetEditingId = list.id; loSelectedEmoji = list.emoji || LO_EMOJIS[0];
+    document.getElementById('loSheetTitle').textContent = 'Rename list';
+    document.getElementById('loListNameInput').value = list.name;
+    document.getElementById('loSheetSaveBtn').textContent = 'Save changes';
+    loRefreshEmojiRow(); loOpenSheet();
+  };
+  window.loQMDelete = async function () {
+    const id = loQMTargetId; loCloseQM(); document.getElementById('loDim').classList.remove('on');
+    if (await loDeleteList(id)) { loLists = loLists.filter(l => l.id !== id); updateListsCount(); loRenderLists(); showToast('List deleted'); }
+  };
+
+  // ── SHEET ──
+  function loBuildEmojiRow() {
+    const row = document.getElementById('loEmojiRow');
+    row.innerHTML = LO_EMOJIS.map(e =>
+      `<div class="lo-emoji-opt${e === loSelectedEmoji ? ' selected' : ''}" data-emoji="${e}">${e}</div>`).join('');
+    row.querySelectorAll('.lo-emoji-opt').forEach(el => {
+      el.addEventListener('click', () => { loSelectedEmoji = el.dataset.emoji; loRefreshEmojiRow(); });
+    });
+  }
+  function loRefreshEmojiRow() {
+    document.querySelectorAll('.lo-emoji-opt').forEach(el => el.classList.toggle('selected', el.dataset.emoji === loSelectedEmoji));
+  }
+  function loOpenSheet() {
+    document.getElementById('loSheet').classList.add('open');
+    document.getElementById('loDim').classList.add('on');
+    setTimeout(() => document.getElementById('loListNameInput').focus(), 320);
+  }
+  window.loCloseSheet = function () {
+    document.getElementById('loSheet').classList.remove('open');
+    loSheetEditingId = null; loSelectedEmoji = LO_EMOJIS[0];
+    document.getElementById('loSheetTitle').textContent = 'New list';
+    document.getElementById('loListNameInput').value = '';
+    document.getElementById('loSheetSaveBtn').textContent = 'Create list';
+    loRefreshEmojiRow();
+  };
+  window.loSaveList = async function () {
+    const name = document.getElementById('loListNameInput').value.trim();
+    const inp  = document.getElementById('loListNameInput');
+    if (!name) { inp.style.borderColor = 'var(--accent)'; return; }
+    inp.style.borderColor = '';
+    const btn = document.getElementById('loSheetSaveBtn'); btn.disabled = true; btn.textContent = 'Saving…';
+    if (loSheetEditingId) {
+      const ok = await loUpdateList(loSheetEditingId, { name, emoji: loSelectedEmoji });
+      if (ok) { const l = loLists.find(x => x.id === loSheetEditingId); if (l) { l.name = name; l.emoji = loSelectedEmoji; } showToast('List updated ✓'); }
+    } else {
+      const newList = await loCreateList(name, loSelectedEmoji);
+      if (newList) { loLists.unshift(newList); updateListsCount(); showToast('List created ✓'); }
+    }
+    btn.disabled = false; btn.textContent = 'Create list';
+    loCloseSheet(); document.getElementById('loDim').classList.remove('on'); loRenderLists();
+  };
+
+  document.getElementById('loNewBtn').addEventListener('click', () => {
+    loSheetEditingId = null; loSelectedEmoji = LO_EMOJIS[0];
+    document.getElementById('loSheetTitle').textContent = 'New list';
+    document.getElementById('loListNameInput').value = '';
+    document.getElementById('loSheetSaveBtn').textContent = 'Create list';
+    loRefreshEmojiRow(); loOpenSheet();
+  });
+
+  // ── LIST DETAIL ──
+  window.openListDetail = async function (listId) {
+    const list = loLists.find(l => l.id === listId); if (!list) return;
+    ldCurrentListId = listId; ldCurrentFilter = 'all';
+
+    // Load fresh books for this list
+    const { data: lb } = await sb.from('list_books').select('books(*)').eq('list_id', listId);
+    ldBooks = (lb || []).map(r => r.books).filter(Boolean);
+    list._books = ldBooks;
+
+    document.getElementById('ldHeaderTitle').textContent = list.name;
+    document.getElementById('ldHeroEmoji').textContent   = list.emoji || '📚';
+    document.getElementById('ldHeroName').textContent    = list.name;
+    document.getElementById('ldHeroCount').textContent   = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
+    document.getElementById('ldHeroUpdated').textContent = `updated ${timeSince(list.updated_at || list.created_at)}`;
+
+    // Fan stack
+    document.getElementById('ldFanStack').innerHTML = fanCoversFor(list);
+
+    // Progress
+    const readCount = ldBooks.filter(b => b.status === 'read').length;
+    const total = ldBooks.length;
+    const pct = total ? Math.round(readCount / total * 100) : 0;
+    document.getElementById('ldProgressLabel').textContent = `${readCount} of ${total} read`;
+    document.getElementById('ldProgressPct').textContent   = `${pct}%`;
+    setTimeout(() => { document.getElementById('ldProgressFill').style.width = pct + '%'; }, 120);
+
+    // Reset filter chips
+    ldCurrentFilter = 'all';
+    document.querySelectorAll('#ldFilterRow .ld-chip').forEach(c => c.classList.toggle('active', c.dataset.f === 'all'));
+
+    ldRenderList();
+    document.getElementById('listDetailOverlay').classList.add('open');
+  };
+
+  window.closeListDetail = function () {
+    document.getElementById('listDetailOverlay').classList.remove('open');
+    document.getElementById('ldProgressFill').style.width = '0%';
+    // refresh list cards (cover stacks may have changed)
+    loRenderLists();
+  };
+
+  document.getElementById('ldFilterRow').addEventListener('click', e => {
+    const chip = e.target.closest('.ld-chip'); if (!chip) return;
+    ldCurrentFilter = chip.dataset.f;
+    document.querySelectorAll('#ldFilterRow .ld-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    ldRenderList();
+  });
+
+  function ldRenderList() {
+    const scroll = document.getElementById('ldListScroll');
+    const filtered = ldCurrentFilter === 'all' ? ldBooks : ldBooks.filter(b => b.status === ldCurrentFilter);
+
+    if (!filtered.length) {
+      scroll.innerHTML = `<div class="ld-empty">
+        <div class="ld-empty-icon-wrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <div class="ld-empty-label">Nothing here</div>
+        <div class="ld-empty-sub">No books in this filter yet.</div>
+      </div>`; return;
+    }
+
+    scroll.innerHTML = filtered.map((b, i) => {
+      const pillCls = b.status === 'reading' ? 'ld-pill-reading' : b.status === 'read' ? 'ld-pill-read' : 'ld-pill-unread';
+      const pillLbl = b.status === 'reading' ? 'Reading' : b.status === 'read' ? 'Read' : 'Unread';
+      return `<div class="ld-book-row" data-id="${b.id}" style="animation-delay:${Math.min(i,10)*0.042}s">
+        <div class="ld-drag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="19" r="1" fill="currentColor"/><circle cx="15" cy="5" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="19" r="1" fill="currentColor"/></svg></div>
+        <div class="ld-cover">${ldCoverHtml(b)}</div>
+        <div class="ld-book-info">
+          <div class="ld-book-title">${escapeHtml(b.title)}</div>
+          <div class="ld-book-author">${escapeHtml(b.author || '')}</div>
+          <div class="ld-pill ${pillCls}"><span class="ld-pill-dot"></span>${pillLbl}</div>
+        </div>
+        <div class="ld-row-chevron"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>`;
+    }).join('');
+
+    scroll.querySelectorAll('.ld-book-row').forEach(row => {
+      const id = row.dataset.id;
+      let didLong = false;
+      row.addEventListener('touchstart', () => {
+        didLong = false; row.classList.add('pressing');
+        ldLongTimer = setTimeout(() => { didLong = true; row.classList.remove('pressing'); ldOpenQM(id, row); }, 500);
+      }, { passive: true });
+      row.addEventListener('touchend', () => { clearTimeout(ldLongTimer); row.classList.remove('pressing'); });
+      row.addEventListener('touchcancel', () => { clearTimeout(ldLongTimer); row.classList.remove('pressing'); });
+      row.addEventListener('mousedown', () => { didLong = false; ldLongTimer = setTimeout(() => { didLong = true; ldOpenQM(id, row); }, 500); });
+      row.addEventListener('mouseup', () => clearTimeout(ldLongTimer));
+      row.addEventListener('mouseleave', () => clearTimeout(ldLongTimer));
+      row.addEventListener('click', () => { if (!didLong) openDetailModal(id); });
+    });
+  }
+
+  function ldOpenQM(id, row) {
+    ldQMTargetId = id;
+    const qm = document.getElementById('ldQM');
+    const overlay = document.getElementById('listDetailOverlay');
+    const or = overlay.getBoundingClientRect();
+    const rr = row.getBoundingClientRect();
+    let top = rr.bottom - or.top + 2;
+    if (top + 110 > or.height - 16) top = (rr.top - or.top) - 116;
+    qm.style.top = top + 'px'; qm.style.right = '18px'; qm.style.left = 'auto';
+    qm.classList.add('visible');
+    document.getElementById('ldDim').classList.add('on');
+  }
+  window.ldCloseQM = function () { document.getElementById('ldQM').classList.remove('visible'); document.getElementById('ldDim').classList.remove('on'); ldQMTargetId = null; };
+  window.ldQMAction = async function (action) {
+    if (action === 'view') { ldCloseQM(); openDetailModal(ldQMTargetId); return; }
+    if (action === 'remove') {
+      const id = ldQMTargetId; ldCloseQM();
+      if (await ldRemoveBook(ldCurrentListId, id)) {
+        ldBooks = ldBooks.filter(b => b.id !== id);
+        ldRenderList();
+        // update progress
+        const readCount = ldBooks.filter(b => b.status === 'read').length;
+        const total = ldBooks.length;
+        const pct = total ? Math.round(readCount / total * 100) : 0;
+        document.getElementById('ldProgressFill').style.width = pct + '%';
+        document.getElementById('ldProgressLabel').textContent = `${readCount} of ${total} read`;
+        document.getElementById('ldProgressPct').textContent   = `${pct}%`;
+        document.getElementById('ldHeroCount').textContent = `${total} ${total === 1 ? 'book' : 'books'}`;
+        showToast('Removed from list');
+      }
+    }
+  };
+
+  // Add book button — opens existing book search overlay
+  document.getElementById('ldAddBtn').addEventListener('click', () => {
+    openBookSearch();
+    // After user selects a book from search, wire it into the list.
+    // Override selectBsResult temporarily to also insert into list_books.
+    window._ldPendingListId = ldCurrentListId;
+  });
+
+  // Intercept selectBsResult to optionally add to a list
+  const _origSelectBsResult = window.selectBsResult;  // keep ref
+  // We patch confirmAdd instead — after a book is added, if _ldPendingListId is set, insert it.
+  const _origConfirmAdd = window.confirmAdd;
+  window.confirmAdd = async function () {
+    await _origConfirmAdd();
+    if (window._ldPendingListId && books[0]) {
+      const listId = window._ldPendingListId;
+      window._ldPendingListId = null;
+      await sb.from('list_books').insert({ list_id: listId, book_id: books[0].id });
+      // Refresh if detail overlay is still open
+      if (document.getElementById('listDetailOverlay').classList.contains('open')) {
+        await window.openListDetail(listId);
+      }
+    }
+  };
+
+  // More button — rename current list
+  document.getElementById('ldMoreBtn').addEventListener('click', () => {
+    const list = loLists.find(l => l.id === ldCurrentListId); if (!list) return;
+    loQMTargetId = list.id; loQMRename();
+    // show the sheet on top of detail overlay
+    document.getElementById('loSheet').style.zIndex = '18';
+    document.getElementById('loDim').style.zIndex   = '17';
+    document.getElementById('listsOverlay').style.zIndex = '13';
+    document.getElementById('listDetailOverlay').appendChild(document.getElementById('loSheet'));
+    document.getElementById('listDetailOverlay').appendChild(document.getElementById('loDim'));
+  });
+
+})();
+// ── END MY LISTS ────────────────────────────────────────────────────────────
+  // ── END A–Z SCROLLBAR ─────────────────────────────────────────────────────
 </script>
 </body>
 </html>
