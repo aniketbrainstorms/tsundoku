@@ -642,7 +642,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* New-list bottom sheet */
 #loSheet {
-  position: absolute; bottom: 0; left: 0; right: 0; z-index: 16;
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 65;
   background: var(--surface); border-radius: 22px 22px 0 0;
   border-top: 1px solid var(--border);
   padding: 0 max(var(--safe-right),20px) max(calc(var(--safe-bottom)+32px),40px) max(var(--safe-left),20px);
@@ -686,7 +686,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* List dim overlay */
 #loDim {
   position: absolute; inset: 0; background: rgba(14,12,10,0.75);
-  backdrop-filter: blur(4px); z-index: 15;
+  backdrop-filter: blur(4px); z-index: 64;
   opacity: 0; pointer-events: none; transition: opacity 0.3s;
 }
 #loDim.on { opacity: 1; pointer-events: all; }
@@ -793,6 +793,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .ld-view-toggle { display:flex; gap:4px; flex-shrink:0; }
 .ld-view-btn { width:32px; height:32px; border-radius:8px; background:transparent; border:1.5px solid var(--border); color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; transition:all 0.18s; }
 .ld-view-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+/* ── LIST DETAIL VIEW MENU ── */
+#ldViewMenu { position:absolute; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:6px; min-width:148px; box-shadow:0 8px 32px rgba(0,0,0,0.55); z-index:70; opacity:0; transform:scale(0.82); transform-origin:top right; pointer-events:none; transition:opacity 0.18s, transform 0.2s cubic-bezier(0.34,1.4,0.64,1); }
+#ldViewMenu.visible { opacity:1; transform:scale(1); pointer-events:all; }
 
 /* ── LIST DETAIL GRID VIEW ── */
 .ld-book-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding-bottom:8px; }
@@ -1357,13 +1360,16 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
           <button class="sort-btn" id="ldSortBtn" style="width:32px;height:32px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
           </button>
-          <div class="ld-view-toggle">
-            <button class="ld-view-btn active" id="ldViewList" title="List view">
+          <div class="ld-view-toggle" style="position:relative">
+            <button class="ld-view-btn active" id="ldViewToggleBtn" title="Change view">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             </button>
-            <button class="ld-view-btn" id="ldViewGrid" title="Grid view">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            </button>
+            <div id="ldViewMenu">
+              <span class="qm-label">View</span>
+              <button class="qm-item current-status" data-ldview="list"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>List</button>
+              <button class="qm-item" data-ldview="grid3"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Grid (3 col)</button>
+              <button class="qm-item" data-ldview="grid4"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="16" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/><rect x="16" y="9" width="5" height="5" rx="1"/><rect x="2" y="16" width="5" height="5" rx="1"/><rect x="9" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg>Grid (4 col)</button>
+            </div>
           </div>
         </div>
       </div>
@@ -2778,7 +2784,7 @@ function showToast(msg) {
   let ldCurrentListId = null;
   let ldCurrentFilter = 'all';
   let ldCurrentSort = 'recent';
-  let ldCurrentView = 'list'; // 'list' | 'grid'
+  let ldCurrentView = 'list'; // 'list' | 'grid3' | 'grid4'
   let ldQMTargetId = null;
   let loLongTimer = null, ldLongTimer = null;
   let ldasCurrentTab = 'search';
@@ -2804,7 +2810,7 @@ function showToast(msg) {
   function ldCoverHtml(book) {
     const palIdx = (function(str){ let s=String(str||''); let h=0; for(let c of s) h=(h*31+c.charCodeAt(0))>>>0; return h%10; })(book.id);
     const p = loPal(palIdx);
-    if (book.cover_url) return `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover" />`;
+    if (book.cover_url) return `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;pointer-events:none" draggable="false" />`;
     return `<div class="ld-cover-inner" style="background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%)">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="${p[1]}" opacity="0.5" stroke="${p[1]}" stroke-width="1.5">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"/>
@@ -2908,21 +2914,40 @@ function showToast(msg) {
   // ── OWNED FLAG — stored in list_books as a metadata field ──
   // We store owned state locally for now (no extra DB column needed)
   // using a per-list localStorage key. If you add an `owned` bool column to list_books, swap here.
-  function ldOwnedKey(listId) { return `tsundoku_owned_${listId}`; }
+  // owned state — stored in list_books as owned boolean column
+  // Falls back to localStorage if DB not yet migrated
+  let _ownedCache = {}; // { [listId]: Set of bookId strings }
+
+  async function ldLoadOwned(listId) {
+    const { data } = await sb.from('list_books').select('book_id').eq('list_id', listId).eq('owned', true);
+    if (data) {
+      _ownedCache[listId] = new Set(data.map(r => String(r.book_id)));
+    } else {
+      // fallback: localStorage
+      try { _ownedCache[listId] = new Set(JSON.parse(localStorage.getItem('tsundoku_owned_'+listId) || '[]')); } catch { _ownedCache[listId] = new Set(); }
+    }
+  }
   function ldGetOwned(listId) {
-    try { return JSON.parse(localStorage.getItem(ldOwnedKey(listId)) || '[]'); } catch { return []; }
+    return _ownedCache[listId] ? Array.from(_ownedCache[listId]) : [];
   }
   function ldSetOwned(listId, arr) {
-    try { localStorage.setItem(ldOwnedKey(listId), JSON.stringify(arr)); } catch {}
+    _ownedCache[listId] = new Set(arr.map(String));
+    // persist to localStorage as fallback
+    try { localStorage.setItem('tsundoku_owned_'+listId, JSON.stringify(arr)); } catch {}
   }
-  function ldIsOwned(listId, bookId) { return ldGetOwned(listId).includes(String(bookId)); }
-  function ldToggleOwned(listId, bookId) {
-    const owned = ldGetOwned(listId);
+  function ldIsOwned(listId, bookId) {
+    return (_ownedCache[listId] || new Set()).has(String(bookId));
+  }
+  async function ldToggleOwned(listId, bookId) {
     const id = String(bookId);
-    const idx = owned.indexOf(id);
-    if (idx === -1) owned.push(id); else owned.splice(idx, 1);
-    ldSetOwned(listId, owned);
-    return owned.includes(id);
+    const set = _ownedCache[listId] || new Set();
+    const nowOwned = !set.has(id);
+    if (nowOwned) set.add(id); else set.delete(id);
+    _ownedCache[listId] = set;
+    ldSetOwned(listId, Array.from(set));
+    // try to persist to DB
+    await sb.from('list_books').update({ owned: nowOwned }).eq('list_id', listId).eq('book_id', bookId);
+    return nowOwned;
   }
 
   // ── LISTS OVERLAY ──
@@ -3118,6 +3143,7 @@ function showToast(msg) {
     document.getElementById('ldHeroUpdated').textContent = `updated ${timeSince(list.updated_at || list.created_at)}`;
     document.getElementById('ldFanStack').innerHTML = fanCoversFor(list);
 
+    await ldLoadOwned(listId);
     ldUpdateProgress();
 
     // Reset filter chips
@@ -3125,7 +3151,8 @@ function showToast(msg) {
     // Reset sort
     document.querySelectorAll('#ldSortMenu .qm-item').forEach(i => i.classList.toggle('current-status', i.dataset.ldsort === 'recent'));
     // Reset view
-    ldSetView(ldCurrentView);
+    ldSetView('list');
+    ldCurrentView = 'list';
 
     ldRenderList();
     ldBuildAlphaBar();
@@ -3163,16 +3190,41 @@ function showToast(msg) {
   });
 
   // View toggle
+  // View toggle
   function ldSetView(view) {
     ldCurrentView = view;
-    document.getElementById('ldViewList').classList.toggle('active', view === 'list');
-    document.getElementById('ldViewGrid').classList.toggle('active', view === 'grid');
-    if (view === 'grid') {
-      document.getElementById('ldAlphaBar').classList.remove('visible');
+    const btn = document.getElementById('ldViewToggleBtn');
+    btn.classList.add('active');
+    document.querySelectorAll('#ldViewMenu .qm-item').forEach(i => i.classList.toggle('current-status', i.dataset.ldview === view));
+    // update icon to reflect current view
+    if (view === 'list') {
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
+    } else {
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
     }
+    if (view !== 'list') document.getElementById('ldAlphaBar').classList.remove('visible');
   }
-  document.getElementById('ldViewList').addEventListener('click', () => { ldSetView('list'); ldRenderList(); ldBuildAlphaBar(); });
-  document.getElementById('ldViewGrid').addEventListener('click', () => { ldSetView('grid'); ldRenderList(); });
+  document.getElementById('ldViewToggleBtn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('ldViewMenu');
+    const overlay = document.getElementById('listDetailOverlay');
+    const or = overlay.getBoundingClientRect();
+    const br = this.getBoundingClientRect();
+    menu.style.top = (br.bottom - or.top + 6) + 'px';
+    menu.style.right = '8px';
+    menu.style.left = 'auto';
+    menu.classList.toggle('visible');
+  });
+  document.getElementById('ldViewMenu').addEventListener('click', e => {
+    const btn = e.target.closest('[data-ldview]'); if (!btn) return;
+    document.getElementById('ldViewMenu').classList.remove('visible');
+    ldSetView(btn.dataset.ldview);
+    ldRenderList();
+    if (btn.dataset.ldview === 'list') ldBuildAlphaBar();
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.ld-view-toggle')) document.getElementById('ldViewMenu')?.classList.remove('visible');
+  });
 
   // Sort menu
   document.getElementById('ldSortBtn').addEventListener('click', function () {
@@ -3228,13 +3280,14 @@ function showToast(msg) {
       return;
     }
 
-    if (ldCurrentView === 'grid') {
-      scroll.innerHTML = `<div class="ld-book-grid">${filtered.map((b, i) => {
+    if (ldCurrentView === 'grid3' || ldCurrentView === 'grid4') {
+      const cols = ldCurrentView === 'grid4' ? 4 : 3;
+      scroll.innerHTML = `<div class="ld-book-grid" style="grid-template-columns:repeat(${cols},1fr)">${filtered.map((b, i) => {
         const owned = ownedIds.includes(String(b.id));
         const palIdx = (function(str){let s=String(str||'');let h=0;for(let c of s)h=(h*31+c.charCodeAt(0))>>>0;return h%10;})(b.id);
         const p = loPal(palIdx);
         const coverInner = b.cover_url
-          ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover"/>`
+          ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover;pointer-events:none" draggable="false"/>`
           : `<div style="width:100%;height:100%;background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%);display:flex;align-items:center;justify-content:center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="${p[1]}" opacity="0.5" stroke="${p[1]}" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" fill="none"/></svg>
             </div>`;
@@ -3407,7 +3460,7 @@ function showToast(msg) {
     if (action === 'view') { ldCloseQM(); openDetailModal(ldQMTargetId); return; }
     if (action === 'toggle-owned') {
       const id = ldQMTargetId; ldCloseQM();
-      const now = ldToggleOwned(ldCurrentListId, id);
+      const now = await ldToggleOwned(ldCurrentListId, id);
       ldUpdateProgress();
       ldRenderList();
       showToast(now ? 'Marked as owned ✓' : 'Marked as not owned');
@@ -3606,6 +3659,9 @@ function showToast(msg) {
         if (error) { showToast('Could not add to list'); btn.disabled = false; btn.textContent = '+'; return; }
         const book = books.find(b => String(b.id) === String(bookId));
         if (book) { ldBooks.unshift(book); existingInList.add(String(bookId)); }
+        // mark as owned automatically when adding from shelf
+        const ownedArr = ldGetOwned(ldCurrentListId);
+        if (!ownedArr.includes(String(bookId))) { ownedArr.push(String(bookId)); ldSetOwned(ldCurrentListId, ownedArr); }
         btn.classList.add('added'); btn.textContent = '✓';
         ldUpdateProgress();
         document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
