@@ -2781,22 +2781,36 @@ function showToast(msg) {
     scroll.querySelectorAll('.lo-card').forEach(card => {
       const id = card.dataset.id;
       let didLong = false;
+      let touchActivated = false;
+
       card.addEventListener('touchstart', () => {
-        didLong = false; card.classList.add('pressing');
-        loLongTimer = setTimeout(() => { didLong = true; card.classList.remove('pressing'); loOpenQM(id, card); }, 500);
+        didLong = false; touchActivated = false;
+        card.classList.add('pressing');
+        loLongTimer = setTimeout(() => {
+          didLong = true;
+          card.classList.remove('pressing');
+          loOpenQM(id, card);
+        }, 500);
       }, { passive: true });
+
       card.addEventListener('touchend', () => {
-        clearTimeout(loLongTimer); card.classList.remove('pressing');
-        if (!didLong) { didLong = true; openListDetail(id); }
+        clearTimeout(loLongTimer);
+        card.classList.remove('pressing');
+        if (!didLong) {
+          touchActivated = true;
+          openListDetail(id);
+        }
       });
-      card.addEventListener('touchcancel', () => { clearTimeout(loLongTimer); card.classList.remove('pressing'); });
-      card.addEventListener('mousedown', () => {
-        didLong = false;
-        loLongTimer = setTimeout(() => { didLong = true; loOpenQM(id, card); }, 500);
+
+      card.addEventListener('touchcancel', () => {
+        clearTimeout(loLongTimer);
+        card.classList.remove('pressing');
       });
-      card.addEventListener('mouseup', () => { clearTimeout(loLongTimer); });
-      card.addEventListener('click', () => { if (!didLong) openListDetail(id); });
-      card.addEventListener('mouseleave', () => clearTimeout(loLongTimer));
+
+      card.addEventListener('click', () => {
+        if (touchActivated) { touchActivated = false; return; }
+        if (!didLong) openListDetail(id);
+      });
     });
   }
 
