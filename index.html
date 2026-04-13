@@ -1420,58 +1420,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
         </div>
       </div>
     </div>
-      <div class="ld-header">
-        <button class="shelf-back-btn" onclick="closeListDetail()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-        </button>
-        <span class="ld-header-title" id="ldHeaderTitle">List</span>
-        <button class="ld-more-btn" id="ldMoreBtn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
-        </button>
-      </div>
-      <div class="ld-hero">
-        <div class="ld-fan-stack" id="ldFanStack"></div>
-        <div class="ld-hero-info">
-          <div class="ld-hero-emoji" id="ldHeroEmoji">📚</div>
-          <div class="ld-hero-name" id="ldHeroName"></div>
-          <div class="ld-hero-meta">
-            <span id="ldHeroCount"></span>
-            <span class="ld-hero-meta-dot"></span>
-            <span id="ldHeroUpdated"></span>
-          </div>
-          <button class="ld-add-btn" id="ldAddBtn">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add book
-          </button>
-        </div>
-      </div>
-      <div class="ld-progress">
-        <div class="ld-progress-bg"><div class="ld-progress-fill" id="ldProgressFill" style="width:0%"></div></div>
-        <div class="ld-progress-label"><span id="ldProgressLabel">0 of 0 read</span><span id="ldProgressPct">0%</span></div>
-      </div>
-      <div class="divider"></div>
-      <div class="ld-toolbar">
-        <div class="ld-filter-row" id="ldFilterRow">
-          <button class="ld-chip active" data-f="all">All</button>
-          <button class="ld-chip" data-f="reading">Reading</button>
-          <button class="ld-chip" data-f="read">Read</button>
-          <button class="ld-chip" data-f="unread">Unread</button>
-        </div>
-      </div>
-      <div class="ld-list-scroll" id="ldListScroll"></div>
-      <div id="ldDim" onclick="ldCloseQM()"></div>
-      <div class="quick-menu" id="ldQM">
-        <span class="qm-label">Book options</span>
-        <button class="qm-item" onclick="ldQMAction('view')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          View details
-        </button>
-        <button class="qm-item" onclick="ldQMAction('remove')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          Remove from list
-        </button>
-      </div>
-    </div>
       <div class="toast" id="toast"></div>
     </div>
 </div>
