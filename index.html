@@ -2787,7 +2787,7 @@ function showToast(msg) {
       }, { passive: true });
       card.addEventListener('touchend', () => {
         clearTimeout(loLongTimer); card.classList.remove('pressing');
-        if (!didLong) openListDetail(id);
+        if (!didLong) { didLong = true; openListDetail(id); }
       });
       card.addEventListener('touchcancel', () => { clearTimeout(loLongTimer); card.classList.remove('pressing'); });
       card.addEventListener('mousedown', () => {
@@ -2795,7 +2795,7 @@ function showToast(msg) {
         loLongTimer = setTimeout(() => { didLong = true; loOpenQM(id, card); }, 500);
       });
       card.addEventListener('mouseup', () => { clearTimeout(loLongTimer); });
-      card.addEventListener('click', () => { if (!isTouch() && !didLong) openListDetail(id); });
+      card.addEventListener('click', () => { if (!didLong) openListDetail(id); });
       card.addEventListener('mouseleave', () => clearTimeout(loLongTimer));
     });
   }
