@@ -3228,8 +3228,9 @@ function showToast(msg) {
     ldRenderList();
     if (btn.dataset.ldview === 'list') ldBuildAlphaBar();
   });
+  document.getElementById('ldViewMenu').addEventListener('click', e => e.stopPropagation());
   document.addEventListener('click', e => {
-    if (!e.target.closest('.ld-view-toggle')) document.getElementById('ldViewMenu')?.classList.remove('visible');
+    if (!e.target.closest('.ld-view-toggle') && !e.target.closest('#ldViewMenu')) document.getElementById('ldViewMenu')?.classList.remove('visible');
   });
 
   // Sort menu
