@@ -685,7 +685,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* List dim overlay */
 #loDim {
   position: absolute; inset: 0; background: rgba(14,12,10,0.75);
-  backdrop-filter: blur(4px); z-index: 64;
+  z-index: 64;
   opacity: 0; pointer-events: none; transition: opacity 0.3s;
 }
 #loDim.on { opacity: 1; pointer-events: all; }
@@ -797,11 +797,11 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 #ldViewMenu.visible { opacity:1; transform:scale(1); pointer-events:all; }
 
 /* ── LIST DETAIL GRID VIEW ── */
-.ld-book-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding-bottom:8px; }
-.ld-book-grid-card { display:flex; flex-direction:column; gap:4px; cursor:pointer; }
-.ld-book-grid-cover { aspect-ratio:2/3; border-radius:7px; overflow:hidden; background:var(--surface2); position:relative; }
+.ld-book-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding-bottom:8px; }
+.ld-book-grid-card { display:flex; flex-direction:column; gap:0; cursor:pointer; }
+.ld-book-grid-cover { aspect-ratio:2/3; border-radius:8px; overflow:hidden; background:var(--surface2); position:relative; }
 .ld-book-grid-cover img { width:100%; height:100%; object-fit:cover; }
-.ld-book-grid-info { padding:0 1px; }
+.ld-book-grid-info { display:none; }
 .ld-book-grid-title { font-size:10px; font-weight:600; color:var(--text); line-height:1.3; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .ld-book-grid-author { font-size:9px; color:var(--text-muted); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; margin-top:1px; }
 .ld-grid-dot { position:absolute; top:4px; right:4px; width:7px; height:7px; border-radius:50%; border:1.5px solid rgba(0,0,0,0.4); }
@@ -1366,8 +1366,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
             <div id="ldViewMenu">
               <span class="qm-label">View</span>
               <button class="qm-item current-status" data-ldview="list"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>List</button>
-              <button class="qm-item" data-ldview="grid3"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Grid (3 col)</button>
-              <button class="qm-item" data-ldview="grid4"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="16" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/><rect x="16" y="9" width="5" height="5" rx="1"/><rect x="2" y="16" width="5" height="5" rx="1"/><rect x="9" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg>Grid (4 col)</button>
+              <button class="qm-item" data-ldview="grid4"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="16" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/><rect x="16" y="9" width="5" height="5" rx="1"/><rect x="2" y="16" width="5" height="5" rx="1"/><rect x="9" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg>Grid</button>
             </div>
           </div>
         </div>
@@ -2101,6 +2100,10 @@ async function confirmAddToList(listId, bookId) {
   const list = (window._getLoLists ? window._getLoLists() : []).find(l => String(l.id) === String(listId));
   const book = books.find(b => b.id === bookId);
   if (list && book) list._books = [...(list._books || []), book];
+  if (window._ldGetOwned && window._ldSetOwned) {
+    const ownedArr = window._ldGetOwned(listId);
+    if (!ownedArr.includes(String(bookId))) { ownedArr.push(String(bookId)); window._ldSetOwned(listId, ownedArr); }
+  }
   showToast('Added to list ✓');
 }
   
@@ -2929,11 +2932,13 @@ function showToast(msg) {
   function ldGetOwned(listId) {
     return _ownedCache[listId] ? Array.from(_ownedCache[listId]) : [];
   }
+  window._ldGetOwned = ldGetOwned;
   function ldSetOwned(listId, arr) {
     _ownedCache[listId] = new Set(arr.map(String));
     // persist to localStorage as fallback
     try { localStorage.setItem('tsundoku_owned_'+listId, JSON.stringify(arr)); } catch {}
   }
+  window._ldSetOwned = ldSetOwned;
   function ldIsOwned(listId, bookId) {
     return (_ownedCache[listId] || new Set()).has(String(bookId));
   }
@@ -3209,9 +3214,11 @@ function showToast(msg) {
     const overlay = document.getElementById('listDetailOverlay');
     const or = overlay.getBoundingClientRect();
     const br = this.getBoundingClientRect();
+    const menuWidth = 160; const margin = 8;
+    const left = Math.min(br.right - or.left - menuWidth, or.width - menuWidth - margin);
     menu.style.top = (br.bottom - or.top + 6) + 'px';
-    menu.style.right = '8px';
-    menu.style.left = 'auto';
+    menu.style.left = Math.max(margin, left) + 'px';
+    menu.style.right = 'auto';
     menu.classList.toggle('visible');
   });
   document.getElementById('ldViewMenu').addEventListener('click', e => {
