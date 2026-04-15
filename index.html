@@ -676,7 +676,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 #loQM {
   position: absolute; background: var(--surface); border: 1px solid var(--border);
   border-radius: 14px; padding: 6px; min-width: 148px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.55); z-index: 17;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55); z-index: 66;
   opacity: 0; transform: scale(0.82); transform-origin: top left;
   pointer-events: none; transition: opacity 0.18s, transform 0.2s cubic-bezier(0.34,1.4,0.64,1);
 }
@@ -3046,11 +3046,10 @@ function showToast(msg) {
     const qm = document.getElementById('loQM');
     const overlay = document.getElementById('listsOverlay');
     const or = overlay.getBoundingClientRect();
-    const cr = card.getBoundingClientRect();
-    let top = cr.bottom - or.top + 4;
-    let left = cr.left - or.left + 8;
-    if (left + 152 > or.width - 8) left = or.width - 160;
-    if (top + 140 > or.height - 8) top = (cr.top - or.top) - 146;
+    const qmW = 180;
+    const left = (or.width - qmW) / 2;
+    const top = (or.height - 140) / 2;
+    qm.style.width = qmW + 'px';
     qm.style.top = top + 'px'; qm.style.left = left + 'px';
     qm.classList.add('visible');
     document.getElementById('loDim').classList.add('on');
