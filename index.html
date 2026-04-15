@@ -320,6 +320,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .sd-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
 /* PROFILE */
+#profileModal { align-items: stretch; justify-content: flex-end; }
+#profileModal .modal-sheet { height: 100%; max-height: 100%; border-radius: 0; transform: translateX(100%); border-top: none; padding-top: max(var(--safe-top), 24px); box-shadow: -40px 0 40px var(--surface); }
+#profileModal.modal-overlay.visible .modal-sheet { transform: translateX(0); }
+#profileModal .modal-handle { display: none; }
 .profile-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
 .profile-email-text { font-size: 15px; font-weight: 500; color: var(--text); word-break: break-all; }
 .profile-role { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
@@ -381,11 +385,11 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* MY SHELF OVERLAY */
 .shelf-overlay { position: absolute; inset: 0; background: var(--bg); z-index: 12; display: flex; flex-direction: column; overflow: hidden; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); pointer-events: none; }
 .shelf-overlay.open { transform: translateX(0); pointer-events: all; }
-.shelf-header { display: flex; align-items: center; gap: 10px; padding: max(var(--safe-top),16px) max(var(--safe-right),16px) 14px max(var(--safe-left),16px); flex-shrink: 0; }
-.shelf-back-btn { width: 36px; height: 36px; min-width: 36px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s; flex-shrink: 0; }
-.shelf-back-btn:hover { border-color: var(--accent); color: var(--accent); }
-.shelf-header-title { font-size: 17px; font-weight: 700; color: var(--text); flex: 1; }
-.shelf-header-count { font-size: 12px; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.shelf-header { display: flex; align-items: center; justify-content: space-between; position: relative; gap: 10px; padding: max(var(--safe-top),16px) max(var(--safe-right),16px) 14px max(var(--safe-left),16px); flex-shrink: 0; }
+.shelf-back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; padding: 6px 0; color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; flex-shrink: 0; }
+.shelf-back-btn:active { opacity: 0.65; }
+.shelf-header-title { font-size: 17px; font-weight: 700; color: var(--text); position: absolute; left: 50%; transform: translateX(-50%); }
+.shelf-header-count { font-size: 12px; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; margin-left: auto; }
 
 /* ── PUBLIC SHELF OVERLAY ── */
 .public-shelf-screen {
@@ -578,11 +582,11 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 #listsOverlay.open { transform: translateX(0); pointer-events: all; }
 
 .lo-header {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; justify-content: space-between; position: relative; gap: 10px;
   padding: max(var(--safe-top),16px) max(var(--safe-right),16px) 14px max(var(--safe-left),16px);
   flex-shrink: 0;
 }
-.lo-title { font-size: 17px; font-weight: 700; color: var(--text); flex: 1; }
+.lo-title { font-size: 17px; font-weight: 700; color: var(--text); position: absolute; left: 50%; transform: translateX(-50%); }
 .lo-new-btn {
   width: 36px; height: 36px; border-radius: 50%;
   background: var(--accent); border: none; color: #fff; font-size: 22px;
@@ -717,11 +721,11 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 #listDetailOverlay { transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); pointer-events: none; }
 #listDetailOverlay.open { transform: translateX(0); pointer-events: all; }
 .ld-header {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; justify-content: space-between; position: relative; gap: 10px;
   padding: max(var(--safe-top),16px) max(var(--safe-right),16px) 10px max(var(--safe-left),16px);
   flex-shrink: 0;
 }
-.ld-header-title { font-size: 17px; font-weight: 700; color: var(--text); flex: 1; letter-spacing: -0.3px; }
+.ld-header-title { font-size: 17px; font-weight: 700; color: var(--text); position: absolute; left: 50%; transform: translateX(-50%); letter-spacing: -0.3px; }
 .ld-more-btn {
   width: 32px; height: 32px; border-radius: 50%;
   background: var(--surface2); border: 1px solid var(--border);
@@ -1277,7 +1281,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   <div class="shelf-overlay" id="shelfOverlay">
     <div class="shelf-header">
       <button class="shelf-back-btn" onclick="closeShelfView()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back
       </button>
       <span class="shelf-header-title">My Shelf</span>
       <span class="shelf-header-count" id="shelfOverlayCount"></span>
@@ -1320,7 +1325,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 <div class="shelf-overlay" id="listsOverlay">
   <div class="lo-header">
     <button class="shelf-back-btn" onclick="closeListsOverlay()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back
     </button>
     <span class="lo-title">My Lists</span>
     <button class="lo-new-btn" id="loNewBtn">+</button>
@@ -1368,7 +1374,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
     <div id="listDetailOverlay" style="position:absolute;inset:0;background:var(--bg);z-index:60;display:flex;flex-direction:column;overflow:hidden;">
       <div class="ld-header">
         <button class="shelf-back-btn" onclick="closeListDetail()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back
         </button>
         <span class="ld-header-title" id="ldHeaderTitle">List</span>
         <button class="ld-more-btn" id="ldMoreBtn">
@@ -1804,9 +1811,13 @@ function setPublicSort(s) {
 }
 
 // ── RENDER ──
+function isHiddenFromShelf(b) {
+  return b.total_pages === -1;
+}
 function getSortedFiltered() {
   const q = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
   let list = q ? [...books] : books.filter(b => b.status === currentFilter);
+  list = list.filter(b => !isHiddenFromShelf(b));
   if (q) list = list.filter(b => (b.title||'').toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
   list.sort((a, b) => {
     if (currentSort === 'title') return (a.title||'').localeCompare(b.title||'');
@@ -1821,9 +1832,10 @@ function getSortedFiltered() {
 }
 function updateTabCounts() {
   const el = id => document.getElementById(id);
-  if (el('count-reading')) el('count-reading').textContent = books.filter(b => b.status === 'reading').length;
-  if (el('count-read')) el('count-read').textContent = books.filter(b => b.status === 'read').length;
-  if (el('count-unread')) el('count-unread').textContent = books.filter(b => b.status === 'unread').length;
+  const visible = books.filter(b => !isHiddenFromShelf(b));
+  if (el('count-reading')) el('count-reading').textContent = visible.filter(b => b.status === 'reading').length;
+  if (el('count-read')) el('count-read').textContent = visible.filter(b => b.status === 'read').length;
+  if (el('count-unread')) el('count-unread').textContent = visible.filter(b => b.status === 'unread').length;
 }
 function renderSkeleton() {
   const grid = document.getElementById('bookGrid');
@@ -2106,8 +2118,7 @@ async function quickSetStatus(status) {
 function editFromMenu() { const id = qmBookId; closeQuickMenu(); openDetailModal(id); }
 async function deleteFromMenu() {
   const id = qmBookId; closeQuickMenu();
-  books = books.filter(b => b.id !== id); renderGrid();
-  await dbDelete(id);
+  await removeOrHideBook(id);
 }
 // ── ADD TO LIST FROM QUICK MENU ──
 function addToListFromMenu() {
@@ -2201,11 +2212,36 @@ async function confirmEdit() {
   if (ok) { const book = books.find(b => b.id === editingId); if (book) Object.assign(book, updates); closeModal('detailModal'); renderGrid(); showToast('Changes saved ✓'); }
   btn.disabled = false; btn.textContent = 'Save Changes';
 }
+async function removeOrHideBook(id) {
+  const lists = window._getLoLists ? window._getLoLists() : [];
+  let inList = false;
+  for (const l of lists) {
+    if ((l._books || []).some(b => String(b.id) === String(id))) { inList = true; break; }
+  }
+  if (inList) {
+    const book = books.find(b => String(b.id) === String(id));
+    if (book) book.total_pages = -1;
+    for (const l of lists) {
+      if (window._ldIsOwned && window._ldIsOwned(l.id, id)) {
+        await sb.from('list_books').update({ owned: false }).eq('list_id', l.id).eq('book_id', id);
+        try { _ownedCache[l.id].delete(String(id)); } catch(e){}
+      }
+    }
+    await sb.from('books').update({ total_pages: -1 }).eq('id', id);
+    renderGrid();
+    if (typeof renderShelfGrid === 'function') renderShelfGrid();
+    showToast('Book removed from shelf');
+  } else {
+    books = books.filter(b => String(b.id) !== String(id));
+    renderGrid();
+    if (typeof renderShelfGrid === 'function') renderShelfGrid();
+    await dbDelete(id); showToast('Book removed');
+  }
+}
 async function deleteBook() {
   const id = editingId;
-  books = books.filter(b => b.id !== id);
-  closeModal('detailModal'); renderGrid();
-  await dbDelete(id); showToast('Book removed');
+  closeModal('detailModal');
+  await removeOrHideBook(id);
 }
 
 // ── PROGRESS ──
@@ -2257,13 +2293,13 @@ function openProfileModal() {
 // ── MY SHELF VIEW ──
 let shelfSort = 'recent';
 function updateShelfStats() {
+  const visible = books.filter(b => !isHiddenFromShelf(b));
   ['reading','read','unread'].forEach(s => {
     const el = document.getElementById('shelfStatNum-' + s);
-    if (el) el.textContent = books.filter(b => b.status === s).length;
+    if (el) el.textContent = visible.filter(b => b.status === s).length;
   });
 }
 function openShelfView() {
-  closeModal('profileModal');
   const si = document.getElementById('shelfSearchInput');
   if (si) { si.value = ''; document.getElementById('shelfSearchClear').classList.remove('visible'); }
   updateShelfStats();
@@ -2302,7 +2338,7 @@ function renderShelfGrid() {
   const grid = document.getElementById('shelfGrid');
   const countEl = document.getElementById('shelfOverlayCount');
   const q = (document.getElementById('shelfSearchInput')?.value || '').toLowerCase().trim();
-  let all = [...books];
+  let all = books.filter(b => !isHiddenFromShelf(b));
   if (q) all = all.filter(b => (b.title||'').toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
   document.getElementById('shelfSearchClear')?.classList.toggle('visible', q.length > 0);
   all.sort((a, b) => {
@@ -2989,6 +3025,8 @@ function showToast(msg) {
   function ldIsOwned(listId, bookId) {
     return (_ownedCache[listId] || new Set()).has(String(bookId));
   }
+  window._ldIsOwned = ldIsOwned;
+
   async function ldToggleOwned(listId, bookId) {
     const id = String(bookId);
     const set = _ownedCache[listId] || new Set();
@@ -2996,6 +3034,21 @@ function showToast(msg) {
     if (nowOwned) set.add(id); else set.delete(id);
     _ownedCache[listId] = set;
     ldSetOwned(listId, Array.from(set));
+
+    // PERMANENT PROMOTION/DEMOTION TO SHELF
+    const book = books.find(b => String(b.id) === id);
+    if (nowOwned && book && book.total_pages === -1) {
+      book.total_pages = 0;
+      await sb.from('books').update({ total_pages: 0 }).eq('id', id);
+    } else if (!nowOwned && book && book.total_pages === 0 && book.pages_read === 0) {
+      book.total_pages = -1;
+      await sb.from('books').update({ total_pages: -1 }).eq('id', id);
+    }
+    
+    // Auto-refresh background grids to reflect owned status shift
+    if (typeof renderGrid === 'function') renderGrid();
+    if (typeof renderShelfGrid === 'function') renderShelfGrid();
+    
     // try to persist to DB
     await sb.from('list_books').update({ owned: nowOwned }).eq('list_id', listId).eq('book_id', bookId);
     return nowOwned;
@@ -3003,7 +3056,6 @@ function showToast(msg) {
 
   // ── LISTS OVERLAY ──
   window.openListsOverlay = async function () {
-    closeModal('profileModal');
     document.getElementById('loSearchInput').value = '';
     document.getElementById('listsOverlay').classList.add('open');
     await loLoadLists();
@@ -3725,7 +3777,7 @@ function closeListBookDetail() {
         if (!item) return;
         btn.disabled = true; btn.textContent = '…';
         // Add book to main books list via dbAdd
-        const newBook = await dbAdd({ title: item.title, author: item.author, status: 'unread', cover_url: item.cover || null, pages_read: 0, total_pages: 0 });
+        const newBook = await dbAdd({ title: item.title, author: item.author, status: 'unread', cover_url: item.cover || null, pages_read: 0, total_pages: -1 });
         if (!newBook) { btn.disabled = false; btn.textContent = '+'; return; }
         books.unshift(newBook);
         // Link to list
@@ -3801,7 +3853,7 @@ function closeListBookDetail() {
       const author = (document.getElementById('ldasManAuthor').value || '').trim();
       const btn = document.getElementById('ldasManSave');
       btn.disabled = true; btn.textContent = 'Adding…';
-      const newBook = await dbAdd({ title, author, status: 'unread', cover_url: null, pages_read: 0, total_pages: 0 });
+      const newBook = await dbAdd({ title, author, status: 'unread', cover_url: null, pages_read: 0, total_pages: -1 });
       if (!newBook) { btn.disabled = false; btn.textContent = 'Add to list'; return; }
       books.unshift(newBook);
       const { error } = await sb.from('list_books').insert({ list_id: ldCurrentListId, book_id: newBook.id });
