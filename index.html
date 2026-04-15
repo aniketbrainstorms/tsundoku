@@ -674,13 +674,36 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* List QM */
 #loQM {
-  position: absolute; background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; padding: 6px; min-width: 148px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.55); z-index: 66;
-  opacity: 0; transform: scale(0.82); transform-origin: top left;
-  pointer-events: none; transition: opacity 0.18s, transform 0.2s cubic-bezier(0.34,1.4,0.64,1);
+  position: absolute;
+  background: rgba(30,27,23,0.82);
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 18px; padding: 0; min-width: 240px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.4);
+  z-index: 66; overflow: hidden;
+  opacity: 0; transform: scale(0.72);
+  transform-origin: center center;
+  pointer-events: none;
+  transition: opacity 0.22s cubic-bezier(0.4,0,0.2,1), transform 0.28s cubic-bezier(0.34,1.4,0.64,1);
 }
 #loQM.visible { opacity: 1; transform: scale(1); pointer-events: all; }
+#loQM .qm-label {
+  font-size: 12px; color: rgba(255,255,255,0.35);
+  padding: 12px 16px 6px; display: block;
+  border-bottom: none; margin-bottom: 0;
+  letter-spacing: 0.04em;
+}
+#loQM .qm-item {
+  padding: 13px 16px; font-size: 16px; font-weight: 400;
+  color: var(--text); border-radius: 0; gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+#loQM .qm-item:last-child { border-bottom: none; }
+#loQM .qm-item:active { background: rgba(255,255,255,0.1); }
+#loQM .qm-item svg { width: 18px; height: 18px; opacity: 0.75; flex-shrink: 0; }
+#loQM .qm-item.delete-item { color: #ff6b6b; }
+#loQM .qm-sep { display: none; }
 
 /* List dim overlay */
 #loDim {
@@ -3006,17 +3029,21 @@ function showToast(msg) {
         didLong = false;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        card.classList.add('pressing');
+        card.style.transition = 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1)';
+        card.style.transform = 'scale(1.04)';
         loLongTimer = setTimeout(() => {
           didLong = true;
-          card.classList.remove('pressing');
+          if (navigator.vibrate) navigator.vibrate([10, 40, 10]);
+          try { const hap = new (window.AudioContext || window.webkitAudioContext)(); const o = hap.createOscillator(); const g = hap.createGain(); o.connect(g); g.connect(hap.destination); o.frequency.value = 1200; g.gain.setValueAtTime(0.12, hap.currentTime); g.gain.exponentialRampToValueAtTime(0.001, hap.currentTime + 0.08); o.start(); o.stop(hap.currentTime + 0.08); } catch(e) {}
+          card.style.transform = 'scale(1.0)';
           loOpenQM(id, card);
-        }, 500);
+        }, 480);
       }, { passive: true });
 
       card.addEventListener('touchend', e => {
         clearTimeout(loLongTimer);
-        card.classList.remove('pressing');
+        card.style.transform = '';
+        card.style.transition = '';
         if (didLong) return;
         const dx = e.changedTouches[0].clientX - touchStartX;
         const dy = e.changedTouches[0].clientY - touchStartY;
@@ -3028,7 +3055,8 @@ function showToast(msg) {
 
       card.addEventListener('touchcancel', () => {
         clearTimeout(loLongTimer);
-        card.classList.remove('pressing');
+        card.style.transform = '';
+        card.style.transition = '';
         didLong = true;
       });
 
