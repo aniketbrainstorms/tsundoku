@@ -875,7 +875,32 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 </head>
 <body>
 <div id="app">
+  
+<!-- LIST BOOK DETAIL MODAL -->
+<div class="modal-overlay" id="listBookDetailModal" onclick="if(event.target===this)closeListBookDetail()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="detail-back-row">
+      <button class="detail-back-btn" onclick="closeListBookDetail()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back
+      </button>
+    </div>
+    <div class="detail-cover-row">
+      <div class="detail-cover" id="lbdCoverEl"></div>
+      <div class="detail-info">
+        <div class="detail-title" id="lbdTitleEl"></div>
+        <div class="detail-author" id="lbdAuthorEl"></div>
+        <div style="margin-top:10px" id="lbdOwnedBadge"></div>
+      </div>
+    </div>
+    <div class="divider" style="margin:16px 0 20px;"></div>
+    <button class="modal-btn" id="lbdToggleOwnedBtn" onclick="lbdToggleOwned()">Mark as owned</button>
+    <button class="modal-btn ghost" onclick="closeListBookDetail()">Close</button>
+  </div>
+</div>
 
+  
   <!-- LOADING -->
   <div class="loading-screen" id="loadingScreen">
     <img src="https://raw.githubusercontent.com/aniketbrainstorms/bookshelf/main/tsundoku.png" alt="Tsundoku" style="width:180px;margin-bottom:28px" onerror="this.style.display='none'">
@@ -3081,6 +3106,9 @@ function showToast(msg) {
     if (top + qmH > or.height - 24) top = (cr.top - or.top) - qmH - 10;
     qm.style.width = qmW + 'px';
     qm.style.top = top + 'px'; qm.style.left = left + 'px';
+    const isOwned = ldIsOwned(ldCurrentListId, id);
+    const toggleBtn = qm.querySelector('[onclick*="toggle-owned"]');
+    if (toggleBtn) toggleBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>${isOwned ? 'Mark as not owned' : 'Mark as owned'}`;
     qm.classList.add('visible');
     document.getElementById('loDim').classList.add('on');
   }
@@ -3482,8 +3510,12 @@ function showToast(msg) {
     let top = rr.bottom - or.top + 2;
     if (top + 130 > or.height - 16) top = (rr.top - or.top) - 136;
     qm.style.top = top + 'px'; qm.style.right = '18px'; qm.style.left = 'auto';
-    qm.classList.add('visible');
-    document.getElementById('ldDim').classList.add('on');
+    // Update toggle-owned label based on current state
+  const isOwned = ldIsOwned(ldCurrentListId, id);
+  const toggleBtn = qm.querySelector('[onclick*="toggle-owned"]');
+  if (toggleBtn) toggleBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>${isOwned ? 'Mark as not owned' : 'Mark as owned'}`;
+  qm.classList.add('visible');
+  document.getElementById('ldDim').classList.add('on');
   }
   window.ldCloseQM = function () {
     document.getElementById('ldQM').classList.remove('visible');
@@ -3492,8 +3524,53 @@ function showToast(msg) {
     document.getElementById('ldSortMenu').classList.remove('visible');
     ldQMTargetId = null;
   };
+
+  // ── LIST BOOK DETAIL (read-only, no status change) ──
+let lbdBookId = null;
+function openListBookDetail(id) {
+  const book = ldBooks.find(b => String(b.id) === String(id));
+  if (!book) return;
+  lbdBookId = id;
+  
+  // Cover
+  const coverEl = document.getElementById('lbdCoverEl');
+  coverEl.innerHTML = book.cover_url
+    ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:contain;background:var(--surface2)">`
+    : makePlaceholder(book, 14);
+  
+  document.getElementById('lbdTitleEl').textContent = book.title;
+  document.getElementById('lbdAuthorEl').textContent = book.author || '';
+  
+  lbdRefreshOwnedState();
+  document.getElementById('listBookDetailModal').classList.add('visible');
+}
+
+function lbdRefreshOwnedState() {
+  const owned = ldIsOwned(ldCurrentListId, lbdBookId);
+  const badge = document.getElementById('lbdOwnedBadge');
+  badge.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:500;background:${owned ? 'rgba(90,138,106,0.15)' : 'rgba(122,112,104,0.1)'};color:${owned ? 'var(--green)' : 'var(--text-muted)'}">
+    <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
+    ${owned ? 'Owned' : 'Not owned'}
+  </span>`;
+  const btn = document.getElementById('lbdToggleOwnedBtn');
+  btn.textContent = owned ? 'Mark as not owned' : 'Mark as owned';
+}
+
+async function lbdToggleOwned() {
+  const nowOwned = await ldToggleOwned(ldCurrentListId, lbdBookId);
+  lbdRefreshOwnedState();
+  ldUpdateProgress();
+  ldRenderList();
+  showToast(nowOwned ? 'Marked as owned ✓' : 'Marked as not owned');
+}
+
+function closeListBookDetail() {
+  document.getElementById('listBookDetailModal').classList.remove('visible');
+  lbdBookId = null;
+}
+  
   window.ldQMAction = async function (action) {
-    if (action === 'view') { ldCloseQM(); openDetailModal(ldQMTargetId); return; }
+    if (action === 'view') { ldCloseQM(); openListBookDetail(ldQMTargetId); return; }
     if (action === 'toggle-owned') {
       const id = ldQMTargetId; ldCloseQM();
       const now = await ldToggleOwned(ldCurrentListId, id);
