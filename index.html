@@ -184,8 +184,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 @media (min-width: 900px) and (orientation: landscape) { .book-grid { grid-template-columns: repeat(8, 1fr); } }
 
 .book-card { aspect-ratio: 2/3; border-radius: 8px; overflow: hidden; position: relative; background: var(--surface2); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; animation: bookIn 0.32s ease both; touch-action: manipulation; }
-.book-card.pressing { transform: scale(1.06); }
-.book-card.long-pressed { transform: scale(1.0); }
+.book-card.pressing { transform: scale(0.92); }
+.book-card.long-pressed { transform: scale(0.88); box-shadow: 0 0 0 2.5px var(--accent); border-radius: 10px; }
 @keyframes bookIn { from { opacity: 0; transform: scale(0.88) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 .book-card img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 .status-dot { position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.5); }
@@ -449,50 +449,15 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* QUICK MENU */
 .qm-dismiss { position: absolute; inset: 0; z-index: 19; display: none; }
 .qm-dismiss.active { display: block; }
-.quick-menu {
-  position: absolute;
-  background: rgba(28,25,20,0.85);
-  backdrop-filter: blur(32px) saturate(1.9);
-  -webkit-backdrop-filter: blur(32px) saturate(1.9);
-  border: 1px solid rgba(255,255,255,0.09);
-  border-radius: 18px; padding: 0; min-width: 260px;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.4);
-  z-index: 20; overflow: hidden;
-  opacity: 0; transform: scale(0.78);
-  transform-origin: top left;
-  pointer-events: none;
-  transition: opacity 0.2s cubic-bezier(0.4,0,0.2,1), transform 0.26s cubic-bezier(0.34,1.45,0.64,1);
-}
+.quick-menu { position: absolute; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 6px; min-width: 148px; box-shadow: 0 8px 32px rgba(0,0,0,0.55); z-index: 20; opacity: 0; transform: scale(0.82); transform-origin: top left; pointer-events: none; transition: opacity 0.18s ease, transform 0.2s cubic-bezier(0.34,1.4,0.64,1); }
 .quick-menu.visible { opacity: 1; transform: scale(1); pointer-events: all; }
-.qm-label {
-  font-size: 12px; font-weight: 500; letter-spacing: 0.01em;
-  color: rgba(255,255,255,0.38); padding: 11px 16px 7px;
-  display: block; border-bottom: 1px solid rgba(255,255,255,0.07);
-  margin-bottom: 0; text-transform: none;
-}
-.qm-item {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; padding: 13px 16px;
-  border-radius: 0; border-bottom: 1px solid rgba(255,255,255,0.06);
-  font-size: 16px; font-weight: 400; cursor: pointer;
-  color: var(--text); border-left: none; border-right: none; border-top: none;
-  background: none; width: 100%; text-align: left;
-  font-family: 'DM Sans', sans-serif;
-  transition: background 0.1s;
-}
-.qm-item:last-child { border-bottom: none; }
-.qm-item:active { background: rgba(255,255,255,0.09); }
-.qm-item:hover { background: rgba(255,255,255,0.05); }
-.qm-item-icon {
-  width: 28px; height: 28px; border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; flex-shrink: 0; order: -1;
-  background: rgba(255,255,255,0.08);
-}
+.qm-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); padding: 4px 8px 6px; display: block; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.qm-item { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-dim); border: none; background: none; width: 100%; text-align: left; font-family: 'DM Sans', sans-serif; transition: background 0.12s; }
+.qm-item:hover { background: var(--surface2); }
 .qm-item.current-status { color: var(--accent); }
-.qm-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.qm-sep { display: none; }
-.qm-item.delete-item { color: #ff6b6b; }
+.qm-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.qm-sep { height: 1px; background: var(--border); margin: 4px 0; }
+.qm-item.delete-item { color: #c06060; }
 
 /* TOAST */
 .toast { position: absolute; bottom: calc(24px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 18px; font-size: 13px; color: var(--text-dim); white-space: nowrap; opacity: 0; transition: all 0.3s ease; z-index: 30; pointer-events: none; }
@@ -1091,33 +1056,15 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   <!-- NEW -->
   <!-- QUICK MENU -->
   <div class="quick-menu" id="quickMenu">
-    <span class="qm-label" id="quickMenuLabel">Move to…</span>
-    <button class="qm-item" data-qm="reading" onclick="quickSetStatus('reading')">
-      <span>Reading</span>
-      <span class="qm-item-icon" style="background:rgba(201,113,74,0.18)"><span class="qm-dot" style="background:var(--accent)"></span></span>
-    </button>
-    <button class="qm-item" data-qm="read" onclick="quickSetStatus('read')">
-      <span>Read</span>
-      <span class="qm-item-icon" style="background:rgba(90,138,106,0.18)"><span class="qm-dot" style="background:var(--green)"></span></span>
-    </button>
-    <button class="qm-item" data-qm="unread" onclick="quickSetStatus('unread')">
-      <span>Unread</span>
-      <span class="qm-item-icon" style="background:rgba(122,112,104,0.12)"><span class="qm-dot" style="background:var(--text-muted)"></span></span>
-    </button>
-    <button class="qm-item" onclick="editFromMenu()">
-      <span>Edit details</span>
-      <span class="qm-item-icon">✏️</span>
-    </button>
-    <button class="qm-item" onclick="addToListFromMenu()">
-      <span>Add to list</span>
-      <span class="qm-item-icon">📋</span>
-    </button>
-    <button class="qm-item delete-item" onclick="deleteFromMenu()">
-      <span>Remove</span>
-      <span class="qm-item-icon" style="background:rgba(255,107,107,0.15)">🗑</span>
-    </button>
+    <span class="qm-label">Move to</span>
+    <button class="qm-item" data-qm="reading" onclick="quickSetStatus('reading')"><span class="qm-dot" style="background:var(--accent)"></span>Reading</button>
+    <button class="qm-item" data-qm="read" onclick="quickSetStatus('read')"><span class="qm-dot" style="background:var(--green)"></span>Read</button>
+    <button class="qm-item" data-qm="unread" onclick="quickSetStatus('unread')"><span class="qm-dot" style="background:var(--text-muted)"></span>Unread</button>
+    <div class="qm-sep"></div>
+    <button class="qm-item" onclick="editFromMenu()"><span style="font-size:14px">✏️</span>Edit details</button>
+    <button class="qm-item" onclick="addToListFromMenu()"><span style="font-size:14px">📋</span>Add to list</button>
+    <button class="qm-item delete-item" onclick="deleteFromMenu()"><span style="font-size:14px">🗑</span>Remove</button>
   </div>
-
   <!-- ADD TO LIST PICKER -->
   <div class="modal-overlay" id="addToListModal" onclick="if(event.target===this)closeModal('addToListModal')">
     <div class="modal-sheet">
@@ -1952,19 +1899,16 @@ function clearSearch() {
 
 // ── PRESS ──
 function startPress(e, id, card) {
-  isPressing = true; didLongPress = false;
-  card.style.transition = 'transform 0.15s cubic-bezier(0.34,1.56,0.64,1)';
-  card.style.transform = 'scale(1.06)';
+  isPressing = true; didLongPress = false; card.classList.add('pressing');
   longPressTimer = setTimeout(() => {
-    didLongPress = true;
-    card.style.transform = 'scale(1.0)';
-    if (navigator.vibrate) navigator.vibrate([8, 40, 8]);
+    didLongPress = true; card.classList.remove('pressing'); card.classList.add('long-pressed');
+    if (navigator.vibrate) navigator.vibrate(25);
     openQuickMenu(id, card);
-  }, 480);
+  }, 500);
 }
 function endPress(e, id, card) {
   if (!isPressing) return; isPressing = false; clearTimeout(longPressTimer);
-  card.style.transform = ''; card.style.transition = '';
+  card.classList.remove('pressing', 'long-pressed');
   if (!didLongPress && !isTouch()) {
     if (card.classList.contains('reading-card')) openProgressModal(id);
     else openDetailModal(id);
@@ -1974,7 +1918,7 @@ function endPress(e, id, card) {
 function cancelPress(card) {
   if (didLongPress) return;
   isPressing = false; clearTimeout(longPressTimer);
-  if (card) { card.style.transform = ''; card.style.transition = ''; }
+  if (card) card.classList.remove('pressing', 'long-pressed');
 }
 
 // ── QUICK MENU ──
