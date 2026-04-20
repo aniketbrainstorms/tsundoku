@@ -805,6 +805,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .ldas-result-add { width:28px; height:28px; border-radius:50%; background:var(--accent); border:none; color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; line-height:1; padding:0; }
 .ldas-result-add.added { background:var(--green); font-size:13px; }
 .ldas-footer { padding:12px 20px max(calc(var(--safe-bottom)+16px),20px); border-top:1px solid var(--border); flex-shrink:0; }
+/* Desktop-only sidebar elements */
+.sidebar-organize-section { display: none; }
 
 /* ══════════════════════════════════════════════
    DESKTOP LAYOUT  ≥ 1024px — sidebar + main
@@ -923,6 +925,11 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   /* Toolbar: dissolve wrapper, sort btn lives in desktop-main header row */
   .toolbar { display: contents; }
   .sort-btn { display: none; } /* hidden from sidebar; shown in main area */
+  .sidebar-organize-section {
+    display: block;
+    padding: 0 8px;
+    margin-top: 6px;
+  }
 
   /* ── ORGANIZE section ── */
   .sidebar-organize-section {
