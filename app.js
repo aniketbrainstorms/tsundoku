@@ -111,22 +111,73 @@ function switchAuthTab(mode) {
   authMode = mode;
   document.getElementById('loginTab').classList.toggle('active', mode === 'login');
   document.getElementById('signupTab').classList.toggle('active', mode === 'signup');
-  document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Sign In' : 'Create Account';
+  document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'sign in' : 'create account';
+  document.getElementById('authConfirmWrap').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('authForgotLink').style.display = mode === 'login' ? 'flex' : 'none';
   document.getElementById('authError').textContent = '';
+}
+function toggleAuthPw() {
+  const input = document.getElementById('authPassword');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+function showForgotPanel() {
+  document.getElementById('authPanel').style.display = 'none';
+  document.getElementById('authForgotPanel').style.display = 'block';
+  document.getElementById('authResetError').textContent = '';
+  document.getElementById('authResetEmail').value = document.getElementById('authEmail').value;
+}
+function hideForgotPanel() {
+  document.getElementById('authForgotPanel').style.display = 'none';
+  document.getElementById('authPanel').style.display = 'block';
+}
+function hideConfirmPanel() {
+  document.getElementById('authConfirmPanel').style.display = 'none';
+  document.getElementById('authPanel').style.display = 'block';
+}
+async function handleForgotPassword() {
+  const email = document.getElementById('authResetEmail').value.trim();
+  const errEl = document.getElementById('authResetError');
+  const btn = document.getElementById('authResetBtn');
+  if (!email) { errEl.style.color = '#c06060'; errEl.textContent = 'please enter your email.'; return; }
+  btn.disabled = true; btn.textContent = 'sending…'; errEl.textContent = '';
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://aniketbrainstorms.github.io/tsundoku/' });
+  btn.disabled = false; btn.textContent = 'send reset link';
+  if (error) { errEl.style.color = '#c06060'; errEl.textContent = error.message; return; }
+  errEl.style.color = 'var(--green)'; errEl.textContent = 'reset link sent — check your inbox';
+}
+async function handleGoogleAuth() {
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: 'https://aniketbrainstorms.github.io/tsundoku/' } });
+  if (error) showToast(error.message);
+}
+async function handleResend() {
+  const email = document.getElementById('authConfirmEmailPill').textContent;
+  const btn = document.querySelector('.auth-resend-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'sending…'; }
+  await sb.auth.resend({ type: 'signup', email });
+  if (btn) { btn.disabled = false; btn.textContent = 'resend email'; }
+  showToast('confirmation email resent');
 }
 async function handleAuth() {
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value;
   const btn = document.getElementById('authSubmitBtn');
   const errEl = document.getElementById('authError');
-  if (!email || !password) { errEl.style.color = '#c06060'; errEl.textContent = 'Please fill in all fields.'; return; }
-  btn.disabled = true; btn.textContent = authMode === 'login' ? 'Signing in…' : 'Creating account…'; errEl.textContent = '';
+  if (!email || !password) { errEl.style.color = '#c06060'; errEl.textContent = 'please fill in all fields.'; return; }
+  if (authMode === 'signup') {
+    const confirm = document.getElementById('authConfirmPassword').value;
+    if (password !== confirm) { errEl.style.color = '#c06060'; errEl.textContent = 'passwords don\'t match.'; return; }
+  }
+  btn.disabled = true; btn.textContent = authMode === 'login' ? 'signing in…' : 'creating account…'; errEl.textContent = '';
   const { error } = authMode === 'login'
     ? await sb.auth.signInWithPassword({ email, password })
     : await sb.auth.signUp({ email, password });
-  btn.disabled = false; btn.textContent = authMode === 'login' ? 'Sign In' : 'Create Account';
+  btn.disabled = false; btn.textContent = authMode === 'login' ? 'sign in' : 'create account';
   if (error) { errEl.style.color = '#c06060'; errEl.textContent = error.message; return; }
-  if (authMode === 'signup') { errEl.style.color = 'var(--green)'; errEl.textContent = 'Account created! Signing you in…'; }
+  if (authMode === 'signup') {
+    document.getElementById('authConfirmEmailPill').textContent = email;
+    document.getElementById('authPanel').style.display = 'none';
+    document.getElementById('authConfirmPanel').style.display = 'block';
+  }
 }
 async function signOut() {
   closeModal('profileModal');
