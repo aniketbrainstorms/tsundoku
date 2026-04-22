@@ -145,8 +145,8 @@ function dsOnTouchMove(e) {
   }
 
   dsSetTranslate(newTranslate, false);
-  // Prevent page scroll
-  if (delta !== 0) e.preventDefault();
+  // Prevent page scroll only if no other modal is on top
+  if (delta !== 0 && !document.getElementById('progressModal').classList.contains('visible')) e.preventDefault();
 }
 
 function dsOnTouchEnd(e) {
