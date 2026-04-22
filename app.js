@@ -1345,6 +1345,7 @@ function showToast(msg) {
 
     bar.addEventListener('touchstart', e => {
       e.stopPropagation();
+      if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
       const t = e.touches[0];
       const letter = letterFromY(ctx, t.clientY);
       if (letter) activateLetter(ctx, letter, t.clientY);
@@ -2116,6 +2117,7 @@ function showToast(msg) {
     }
 
     bar.addEventListener('touchstart', e => {
+      if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
       const l = letterFromY(e.touches[0].clientY); if (l) activateLd(l, e.touches[0].clientY);
     }, { passive: true });
     bar.addEventListener('touchmove', e => {
