@@ -520,8 +520,8 @@ function endPress(e, id, card) {
     const dx = touch ? Math.abs(touch.clientX - _pressStartX) : 0;
     const dy = touch ? Math.abs(touch.clientY - _pressStartY) : 0;
     if (dx > 6 || dy > 6) { didLongPress = false; return; }
-    if (card.classList.contains('reading-card')) openProgressModal(id);
-    else openQuickMenu(id, card);
+    if (card.classList.contains('reading-card')) openDetailModal(id);
+    else openDetailModal(id);
   }
   didLongPress = false;
 }
@@ -842,12 +842,11 @@ async function confirmProgress() {
   const btn = document.getElementById('saveProgressBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
   const ok = await dbUpdate(progressBookId, { pages_read: pagesRead, total_pages: totalPages });
-  if (ok) {
-    const book = books.find(b => b.id === progressBookId);
-    if (book) { book.pages_read = pagesRead; book.total_pages = totalPages; }
-    closeModal('progressModal'); renderGrid(); showToast('Progress saved ✓');
-  }
   btn.disabled = false; btn.textContent = 'Save Progress';
+  if (!ok) { showToast('Could not save — check connection'); return; }
+  const book = books.find(b => b.id === progressBookId);
+  if (book) { book.pages_read = pagesRead; book.total_pages = totalPages; }
+  closeModal('progressModal'); renderGrid(); showToast('Progress saved ✓');
 }
 
 // ── PROFILE ──
