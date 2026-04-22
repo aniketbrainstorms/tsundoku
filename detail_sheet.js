@@ -67,16 +67,16 @@ function dsSnapTo(expanded, animate = true) {
 function dsOpen() {
   const overlay = document.getElementById('detailModal');
   const sheet = document.getElementById('detailSheet');
-  // Start from bottom (translateY = full sheet height = 92vh)
   const sheetH = window.innerHeight * 0.92;
   dsSetTranslate(sheetH, false);
   overlay.classList.add('visible');
-  DS.isOpen = true;
+  DS.isOpen = false; // keep false until animation settles
   DS.isExpanded = false;
-  // Animate into HALF position
+  DS.isDragging = false;
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       dsSnapTo(false, true);
+      setTimeout(() => { DS.isOpen = true; }, 400);
     });
   });
 }
