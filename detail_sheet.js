@@ -487,14 +487,14 @@ function openDetailModal(id) {
 
 // ── OVERRIDE closeModal for detailModal ──
 const _origCloseModal = closeModal;
-function closeModal(id) {
+window.closeModal = function closeModal(id) {
   if (id === 'detailModal') {
     dsClose();
     closeStatusDropdown();
     return;
   }
   _origCloseModal(id);
-}
+};
 
 // ── Overlay click handler override ──
 function handleDetailOverlayClick(e) {
