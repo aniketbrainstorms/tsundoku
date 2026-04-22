@@ -474,7 +474,7 @@ function renderGrid() {
     grid.querySelectorAll('.book-card').forEach(card => {
       const id = card.dataset.id;
       card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
-      card.addEventListener('touchend', e => endPress(e, id, card));
+      card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
       card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
       card.addEventListener('click', () => {
         if (isTouch()) return;
@@ -928,7 +928,7 @@ function renderShelfGrid() {
   grid.querySelectorAll('.book-card').forEach(card => {
     const id = card.dataset.id;
     card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
-    card.addEventListener('touchend', e => endPress(e, id, card));
+    card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
     card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
     card.addEventListener('click', () => {
       if (isTouch()) return;
