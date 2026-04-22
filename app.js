@@ -503,6 +503,7 @@ function clearSearch() {
 // ── PRESS ──
 function startPress(e, id, card) {
   isPressing = true; didLongPress = false; card.classList.add('pressing');
+  DS._pressStartY = e.touches ? e.touches[0].clientY : 0;
   longPressTimer = setTimeout(() => {
     didLongPress = true; card.classList.remove('pressing'); card.classList.add('long-pressed');
     if (navigator.vibrate) navigator.vibrate(25);
@@ -513,8 +514,12 @@ function endPress(e, id, card) {
   if (!isPressing) return; isPressing = false; clearTimeout(longPressTimer);
   card.classList.remove('pressing', 'long-pressed');
   if (!didLongPress) {
+    const touch = e.changedTouches ? e.changedTouches[0] : null;
+    const startY = DS._pressStartY || 0;
+    const moved = touch ? Math.abs(touch.clientY - startY) : 0;
+    if (moved > 8) { didLongPress = false; return; } // was a scroll, ignore
     if (card.classList.contains('reading-card')) openProgressModal(id);
-    else openDetailModal(id);
+    else openQuickMenu(id, card);
   }
   didLongPress = false;
 }
