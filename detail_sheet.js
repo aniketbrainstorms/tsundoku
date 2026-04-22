@@ -76,7 +76,7 @@ function dsOpen() {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       dsSnapTo(false, true);
-      setTimeout(() => { DS.isOpen = true; }, 400);
+      setTimeout(() => { DS.isOpen = true; }, 600);
     });
   });
 }
@@ -507,7 +507,7 @@ function handleDetailOverlayClick(e) {
 document.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('detailModal');
   overlay.addEventListener('click', e => {
-    if (e.target === overlay) closeModal('detailModal');
+    if (e.target === overlay && DS.isOpen) closeModal('detailModal');
   });
 });
 
