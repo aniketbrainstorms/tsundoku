@@ -520,6 +520,7 @@ function endPress(e, id, card) {
     const dx = touch ? Math.abs(touch.clientX - _pressStartX) : 0;
     const dy = touch ? Math.abs(touch.clientY - _pressStartY) : 0;
     if (dx > 6 || dy > 6) { didLongPress = false; return; }
+    if (e && e.cancelable) e.preventDefault();
     if (card.classList.contains('reading-card')) openDetailModal(id);
     else openDetailModal(id);
   }
