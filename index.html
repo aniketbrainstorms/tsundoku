@@ -21,7 +21,7 @@
 </head>
 <body>
 <div id="app">
-  
+
 <!-- LIST BOOK DETAIL MODAL -->
 <div class="modal-overlay" id="listBookDetailModal" onclick="if(event.target===this)closeListBookDetail()">
   <div class="modal-sheet">
@@ -46,7 +46,6 @@
   </div>
 </div>
 
-  
   <!-- LOADING -->
   <div class="loading-screen" id="loadingScreen">
     <img src="https://raw.githubusercontent.com/aniketbrainstorms/bookshelf/main/tsundoku.png" alt="Tsundoku" style="width:180px;margin-bottom:28px" onerror="this.style.display='none'">
@@ -55,7 +54,6 @@
 
   <!-- AUTH SCREEN -->
   <div class="auth-screen" id="authScreen" style="display:none">
-    <!-- Login / Signup panel -->
     <div id="authPanel">
       <div class="auth-logo-wrap">
         <img src="https://raw.githubusercontent.com/aniketbrainstorms/bookshelf/main/tsundoku_by_aniket.png"
@@ -78,7 +76,6 @@
           </button>
         </div>
         <button class="auth-forgot-link" id="authForgotLink" onclick="showForgotPanel()">forgot password?</button>
-        <!-- signup-only confirm password -->
         <div id="authConfirmWrap" style="display:none">
           <p class="auth-field-label">Confirm Password</p>
           <input type="password" class="auth-input" id="authConfirmPassword" placeholder="••••••••" />
@@ -92,7 +89,6 @@
         </button>
       </div>
     </div>
-    <!-- Forgot password panel -->
     <div id="authForgotPanel" style="display:none">
       <div class="auth-form">
         <button class="auth-back-btn" onclick="hideForgotPanel()">
@@ -107,7 +103,6 @@
         <button class="auth-btn" id="authResetBtn" onclick="handleForgotPassword()">send reset link</button>
       </div>
     </div>
-    <!-- Email confirmation panel -->
     <div id="authConfirmPanel" style="display:none">
       <div class="auth-form auth-confirm-panel">
         <div class="auth-confirm-icon">
@@ -136,8 +131,6 @@
           <button class="profile-avatar" id="profileAvatarBtn" onclick="openProfileModal()">?</button>
         </div>
       </div>
-
-      <!-- Persistent search bar + add button -->
       <div class="search-row">
         <div class="search-row-input-wrap">
           <span class="search-row-icon">
@@ -148,8 +141,6 @@
         </div>
         <button class="add-btn-header" id="addBtn" onclick="openBookSearch()">+</button>
       </div>
-
-      <!-- Tabs + sort -->
       <div class="toolbar">
         <div class="filter-tabs">
           <button class="tab-btn active" data-filter="reading" onclick="setFilter('reading')">Reading <span class="tab-count" id="count-reading">0</span></button>
@@ -165,7 +156,6 @@
     <div class="hint-bar" id="hintBar">Tap to view · Hold to quick-edit</div>
     <div class="grid-container" id="mainGridContainer">
       <div class="book-grid" id="bookGrid"></div>
-      <!-- A–Z bar for main shelf -->
       <div class="alpha-bar" id="mainAlphaBar">
         <div class="alpha-track" id="mainAlphaTrack"></div>
       </div>
@@ -197,7 +187,6 @@
     <div class="public-shelf-content" id="publicShelfContent">
       <div class="book-grid" id="publicBookGrid"></div>
     </div>
-    <!-- A–Z bar for public shelf -->
     <div class="alpha-bar" id="publicAlphaBar">
       <div class="alpha-track" id="publicAlphaTrack"></div>
     </div>
@@ -256,7 +245,7 @@
     <button class="qm-item" data-sort="author" onclick="setSort('author')">Author (A–Z)</button>
   </div>
 
-<!-- SHELF SORT MENU -->
+  <!-- SHELF SORT MENU -->
   <div class="quick-menu" id="shelfSortMenu">
     <span class="qm-label">Sort by</span>
     <button class="qm-item current-status" data-ssort="recent" onclick="setShelfSort('recent')">Recently Added</button>
@@ -272,8 +261,6 @@
   </div>
 
   <!-- QUICK MENU -->
-  <!-- NEW -->
-  <!-- QUICK MENU -->
   <div class="quick-menu" id="quickMenu">
     <span class="qm-label">Move to</span>
     <button class="qm-item" data-qm="reading" onclick="quickSetStatus('reading')"><span class="qm-dot" style="background:var(--accent)"></span>Reading</button>
@@ -284,6 +271,7 @@
     <button class="qm-item" onclick="addToListFromMenu()"><span style="font-size:14px">📋</span>Add to list</button>
     <button class="qm-item delete-item" onclick="deleteFromMenu()"><span style="font-size:14px">🗑</span>Remove</button>
   </div>
+
   <!-- ADD TO LIST PICKER -->
   <div class="modal-overlay" id="addToListModal" onclick="if(event.target===this)closeModal('addToListModal')">
     <div class="modal-sheet">
@@ -322,48 +310,110 @@
     </div>
   </div>
 
-  <!-- DETAIL / EDIT MODAL -->
+  <!-- ════════════════════════════════════════════
+       DETAIL BOTTOM SHEET (Apple Maps / Spotify style)
+       ════════════════════════════════════════════ -->
   <div class="modal-overlay" id="detailModal" onclick="handleDetailOverlayClick(event)">
-    <div class="modal-sheet">
-      <div class="modal-handle"></div>
-      <div class="detail-back-row">
-        <button class="detail-back-btn" onclick="closeModal('detailModal')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-          Back
-        </button>
+    <div class="detail-sheet" id="detailSheet">
+
+      <!-- Drag handle (touch target for dragging) -->
+      <div class="ds-handle-wrap" id="dsHandleWrap">
+        <div class="ds-handle"></div>
       </div>
-      <div class="detail-cover-row">
-        <div class="detail-cover" id="detailCoverEl"></div>
-        <div class="detail-info">
-          <div class="detail-title" id="detailTitleEl"></div>
-          <div class="detail-author" id="detailAuthorEl"></div>
-          <div class="detail-status-row">
-            <div class="status-badge" id="detailBadge"></div>
-            <button class="status-chevron-btn" id="statusChevronBtn" onclick="toggleStatusDropdown(event)">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="status-dropdown" id="statusDropdown">
-              <button class="sd-item" data-sd="reading" onclick="setEditStatusFromDropdown('reading')"><span class="sd-dot" style="background:var(--accent)"></span>Reading</button>
-              <button class="sd-item" data-sd="read" onclick="setEditStatusFromDropdown('read')"><span class="sd-dot" style="background:var(--green)"></span>Read</button>
-              <button class="sd-item" data-sd="unread" onclick="setEditStatusFromDropdown('unread')"><span class="sd-dot" style="background:var(--text-muted)"></span>Unread</button>
+
+      <!-- ── STICKY TOP SECTION ── -->
+      <div class="ds-top" id="dsTop">
+
+        <!-- Back row + Edit toggle -->
+        <div class="ds-back-row">
+          <button class="detail-back-btn" onclick="closeModal('detailModal')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back
+          </button>
+          <button class="ds-edit-toggle" id="dsEditToggle" onclick="toggleDetailEdit()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+        </div>
+
+        <!-- Book info -->
+        <div class="ds-book-row">
+          <div class="ds-cover" id="detailCoverEl"></div>
+          <div class="ds-info">
+            <div class="ds-title" id="detailTitleEl"></div>
+            <div class="ds-author" id="detailAuthorEl"></div>
+            <div class="ds-year-pub" id="detailYearPub"></div>
+            <div class="ds-status-row">
+              <div class="status-badge" id="detailBadge"></div>
+              <button class="status-chevron-btn" id="statusChevronBtn" onclick="toggleStatusDropdown(event)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="status-dropdown" id="statusDropdown">
+                <button class="sd-item" data-sd="reading" onclick="setEditStatusFromDropdown('reading')"><span class="sd-dot" style="background:var(--accent)"></span>Reading</button>
+                <button class="sd-item" data-sd="read" onclick="setEditStatusFromDropdown('read')"><span class="sd-dot" style="background:var(--green)"></span>Read</button>
+                <button class="sd-item" data-sd="unread" onclick="setEditStatusFromDropdown('unread')"><span class="sd-dot" style="background:var(--text-muted)"></span>Unread</button>
+              </div>
             </div>
+            <div class="ds-genre" id="detailGenre"></div>
+            <div class="ds-rating" id="detailRating"></div>
           </div>
         </div>
+
+        <!-- Context-aware CTA buttons -->
+        <div class="ds-cta-area">
+          <button class="ds-primary-btn btn-accent" id="dsPrimaryBtn" onclick="doPrimaryAction()">
+            <!-- Content set by JS -->
+          </button>
+          <button class="ds-secondary-btn" id="dsSecondaryBtn" onclick="doSecondaryAction()">
+            <!-- Content set by JS -->
+          </button>
+        </div>
       </div>
-      <div class="divider" style="margin:0 0 20px;"></div>
-      <p class="field-label">Title</p>
-      <input type="text" class="text-input" id="editTitle" />
-      <p class="field-label">Author</p>
-      <input type="text" class="text-input" id="editAuthor" />
-      <p class="field-label">Cover Photo</p>
-      <label class="cover-upload" id="editCoverUpload">
-        <input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')" />
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span>Change cover</span>
-      </label>
-      <input type="text" id="editCoverUrlInput" class="text-input" style="margin-bottom:18px;margin-top:-10px;padding:10px 14px;font-size:13px" placeholder="...or paste image URL" oninput="handleCoverUrlPaste(event,'edit')" />
-      <button class="modal-btn" id="saveEditBtn" onclick="confirmEdit()">Save Changes</button>
-      <button class="modal-btn secondary" onclick="deleteBook()">Remove from Shelf</button>
+
+      <!-- ── SCROLLABLE BODY ── -->
+      <div class="ds-scroll" id="dsScroll">
+
+        <!-- Summary section -->
+        <div class="ds-section" id="dsSummarySection">
+          <div class="ds-section-header">
+            <span class="ds-section-label">Summary</span>
+            <button class="ds-expand-btn" id="dsSummaryExpandBtn" onclick="toggleDetailSummary()">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+          <div class="ds-summary-text" id="dsSummaryPreview"></div>
+          <button class="ds-read-more" id="dsSummaryReadMore" onclick="toggleDetailSummary()" style="display:none">Show less</button>
+        </div>
+
+        <!-- Edit form (hidden by default, shown when Edit toggled) -->
+        <div class="ds-edit-divider" id="dsEditDivider" style="display:none"></div>
+        <div class="ds-edit-form" id="dsEditForm" style="display:none">
+          <p class="field-label">Title</p>
+          <input type="text" class="text-input" id="editTitle" />
+          <p class="field-label">Author</p>
+          <input type="text" class="text-input" id="editAuthor" />
+          <p class="field-label">Cover Photo</p>
+          <label class="cover-upload" id="editCoverUpload">
+            <input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')" />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Change cover</span>
+          </label>
+          <input type="text" id="editCoverUrlInput" class="text-input" style="margin-bottom:18px;margin-top:-10px;padding:10px 14px;font-size:13px" placeholder="...or paste image URL" oninput="handleCoverUrlPaste(event,'edit')" />
+          <button class="modal-btn" id="saveEditBtn" onclick="confirmEdit()">Save Changes</button>
+          <button class="modal-btn secondary" onclick="deleteBook()">Remove from Shelf</button>
+        </div>
+
+        <!-- Bottom padding for safe area -->
+        <div style="height:max(calc(var(--safe-bottom) + 16px),24px)"></div>
+      </div>
+
+      <!-- Scroll-up hint (shown in HALF state) -->
+      <div class="ds-scroll-hint" id="dsScrollHint">
+        <div class="ds-scroll-hint-dots">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -430,15 +480,13 @@
         <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
       <button class="profile-shelf-btn" onclick="openListsOverlay()">
-  <span class="profile-shelf-icon">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-  </span>
-  My Lists
-  <span class="profile-shelf-count" id="listsCount">0 lists</span>
-  <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-</button>
-
-      <!-- SHARE SHELF -->
+        <span class="profile-shelf-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </span>
+        My Lists
+        <span class="profile-shelf-count" id="listsCount">0 lists</span>
+        <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
       <div class="divider" style="margin:4px 0 16px"></div>
       <p class="profile-section-label">Share My Shelf</p>
       <div class="share-slug-row">
@@ -457,7 +505,6 @@
           <div class="share-toggle-knob"></div>
         </button>
       </div>
-
       <div class="divider" style="margin:16px 0 20px"></div>
       <p class="profile-section-label">coming soon</p>
       <div class="profile-coming-soon">
@@ -478,14 +525,16 @@
       <span class="shelf-header-count" id="shelfOverlayCount"></span>
     </div>
     <div style="display:flex;gap:8px;padding:8px 16px 12px;">
-      <div id="shelfStat-reading" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:default">
+      <div id="shelfStat-reading" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;">
         <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-reading">0</div>
         <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;font-weight:500">reading</div>
       </div>
-      <div id="shelfStat-read" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:default">        <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-read">0</div>
+      <div id="shelfStat-read" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-read">0</div>
         <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;font-weight:500">read</div>
       </div>
-      <div id="shelfStat-unread" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;cursor:default">        <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-unread">0</div>
+      <div id="shelfStat-unread" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;">
+        <div style="font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;line-height:1" id="shelfStatNum-unread">0</div>
         <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;font-weight:500">unread</div>
       </div>
     </div>
@@ -505,70 +554,70 @@
     <div class="grid-container" style="padding-bottom: max(calc(var(--safe-bottom) + 32px),32px)" id="shelfGridContainer">
       <div class="book-grid" id="shelfGrid"></div>
     </div>
-    <!-- A–Z bar for shelf overlay -->
     <div class="alpha-bar" id="shelfAlphaBar">
       <div class="alpha-track" id="shelfAlphaTrack"></div>
     </div>
     <div class="alpha-bubble" id="shelfAlphaBubble"></div>
   </div>
-  <!-- MY LISTS OVERLAY -->
-<div class="shelf-overlay" id="listsOverlay">
-  <div class="lo-header">
-    <button class="shelf-back-btn" onclick="closeListsOverlay()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-      Back
-    </button>
-    <span class="lo-title">My Lists</span>
-    <button class="lo-new-btn" id="loNewBtn">+</button>
-  </div>
-  <div class="lo-search-row">
-    <div class="lo-search-wrap">
-      <span class="lo-search-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </span>
-      <input class="lo-search-input" id="loSearchInput" placeholder="Search lists" autocomplete="off" />
-    </div>
-  </div>
-  <div class="divider"></div>
-  <div class="lo-hint">Hold to rename or delete</div>
-  <div class="lo-scroll" id="loScroll"></div>
 
-  <!-- dim + QM + sheet live INSIDE the overlay so z-index stacks correctly -->
-  <div id="loDim" onclick="loCloseDim()"></div>
-  <div class="quick-menu" id="loQM">
-    <span class="qm-label">List options</span>
-    <button class="qm-item" onclick="loQMOpen()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-      Open list
-    </button>
-    <button class="qm-item" onclick="loQMRename()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      Rename
-    </button>
-    <div class="qm-sep"></div>
-    <button class="qm-item delete-item" onclick="loQMDelete()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-      Delete list
-    </button>
-  </div>
-  <div class="modal-overlay" id="loSheetOverlay" style="z-index: 68;" onclick="if(event.target===this)loCloseSheet()">
-    <div class="modal-sheet">
-      <div class="modal-handle"></div>
-      <div class="detail-back-row">
-        <button class="detail-back-btn" onclick="loCloseSheet()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-          Back
-        </button>
-      </div>
-      <h2 class="modal-title" id="loSheetTitle">New list</h2>
-      <p class="field-label" style="margin-top:20px;">List Name</p>
-      <input type="text" class="text-input" id="loListNameInput" placeholder="e.g. Sci-fi favourites" maxlength="40" style="margin-bottom:20px;" />
-      <p class="field-label">Pick an icon</p>
-      <div class="lo-emoji-row" id="loEmojiRow" style="margin-bottom: 24px;"></div>
-      <button class="modal-btn" id="loSheetSaveBtn" onclick="loSaveList()">Create list</button>
+  <!-- MY LISTS OVERLAY -->
+  <div class="shelf-overlay" id="listsOverlay">
+    <div class="lo-header">
+      <button class="shelf-back-btn" onclick="closeListsOverlay()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back
+      </button>
+      <span class="lo-title">My Lists</span>
+      <button class="lo-new-btn" id="loNewBtn">+</button>
     </div>
-  </div>
-     <!-- LIST DETAIL OVERLAY — must be INSIDE listsOverlay -->
+    <div class="lo-search-row">
+      <div class="lo-search-wrap">
+        <span class="lo-search-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <input class="lo-search-input" id="loSearchInput" placeholder="Search lists" autocomplete="off" />
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="lo-hint">Hold to rename or delete</div>
+    <div class="lo-scroll" id="loScroll"></div>
+
+    <div id="loDim" onclick="loCloseDim()"></div>
+    <div class="quick-menu" id="loQM">
+      <span class="qm-label">List options</span>
+      <button class="qm-item" onclick="loQMOpen()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        Open list
+      </button>
+      <button class="qm-item" onclick="loQMRename()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Rename
+      </button>
+      <div class="qm-sep"></div>
+      <button class="qm-item delete-item" onclick="loQMDelete()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        Delete list
+      </button>
+    </div>
+    <div class="modal-overlay" id="loSheetOverlay" style="z-index: 68;" onclick="if(event.target===this)loCloseSheet()">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="detail-back-row">
+          <button class="detail-back-btn" onclick="loCloseSheet()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back
+          </button>
+        </div>
+        <h2 class="modal-title" id="loSheetTitle">New list</h2>
+        <p class="field-label" style="margin-top:20px;">List Name</p>
+        <input type="text" class="text-input" id="loListNameInput" placeholder="e.g. Sci-fi favourites" maxlength="40" style="margin-bottom:20px;" />
+        <p class="field-label">Pick an icon</p>
+        <div class="lo-emoji-row" id="loEmojiRow" style="margin-bottom: 24px;"></div>
+        <button class="modal-btn" id="loSheetSaveBtn" onclick="loSaveList()">Create list</button>
+      </div>
+    </div>
+
+    <!-- LIST DETAIL OVERLAY -->
     <div id="listDetailOverlay" style="position:absolute;inset:0;background:var(--bg);z-index:60;display:flex;flex-direction:column;overflow:hidden;">
       <div class="ld-header">
         <button class="shelf-back-btn" onclick="closeListDetail()">
@@ -623,7 +672,6 @@
         <button class="qm-item current-status" data-ldview="list"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>List</button>
         <button class="qm-item" data-ldview="grid4"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="16" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/><rect x="16" y="9" width="5" height="5" rx="1"/><rect x="2" y="16" width="5" height="5" rx="1"/><rect x="9" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg>Grid</button>
       </div>
-      <!-- Sort menu for list detail -->
       <div id="ldSortMenu">
         <span class="qm-label">Sort by</span>
         <button class="qm-item current-status" data-ldsort="recent">Recently Added</button>
@@ -631,7 +679,6 @@
         <button class="qm-item" data-ldsort="author">Author (A–Z)</button>
       </div>
       <div class="ld-list-scroll" id="ldListScroll"></div>
-      <!-- A–Z bar for list detail -->
       <div class="alpha-bar" id="ldAlphaBar">
         <div class="alpha-track" id="ldAlphaTrack"></div>
       </div>
@@ -652,7 +699,6 @@
           Remove from list
         </button>
       </div>
-      <!-- Add Book Sheet -->
       <div id="ldAddSheetDim" onclick="ldCloseAddSheet()"></div>
       <div id="ldAddSheet">
         <div class="ldas-handle"></div>
@@ -676,10 +722,11 @@
         </div>
       </div>
     </div>
-      <div class="toast" id="toast"></div>
-    </div>
+    <div class="toast" id="toast"></div>
+  </div>
 </div>
 
 <script src="app.js"></script>
+<script src="detail_sheet.js"></script>
 </body>
 </html>
