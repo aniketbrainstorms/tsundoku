@@ -501,9 +501,11 @@ function clearSearch() {
 }
 
 // ── PRESS ──
+let _pressStartX = 0, _pressStartY = 0;
 function startPress(e, id, card) {
   isPressing = true; didLongPress = false; card.classList.add('pressing');
-  DS._pressStartY = e.touches ? e.touches[0].clientY : 0;
+  _pressStartX = e.touches ? e.touches[0].clientX : 0;
+  _pressStartY = e.touches ? e.touches[0].clientY : 0;
   longPressTimer = setTimeout(() => {
     didLongPress = true; card.classList.remove('pressing'); card.classList.add('long-pressed');
     if (navigator.vibrate) navigator.vibrate(25);
@@ -515,9 +517,9 @@ function endPress(e, id, card) {
   card.classList.remove('pressing', 'long-pressed');
   if (!didLongPress) {
     const touch = e.changedTouches ? e.changedTouches[0] : null;
-    const startY = DS._pressStartY || 0;
-    const moved = touch ? Math.abs(touch.clientY - startY) : 0;
-    if (moved > 8) { didLongPress = false; return; } // was a scroll, ignore
+    const dx = touch ? Math.abs(touch.clientX - _pressStartX) : 0;
+    const dy = touch ? Math.abs(touch.clientY - _pressStartY) : 0;
+    if (dx > 6 || dy > 6) { didLongPress = false; return; }
     if (card.classList.contains('reading-card')) openProgressModal(id);
     else openQuickMenu(id, card);
   }
