@@ -99,6 +99,7 @@ function dsClose() {
 function dsOnTouchStart(e) {
   if (DS.animating) return;
   if (!DS.isOpen) return;
+  if (document.getElementById('progressModal').classList.contains('visible')) return;
   if (!e.target.closest('#detailSheet')) return;
   // In FULL state, only allow drag from handle area
   if (DS.isExpanded) {
