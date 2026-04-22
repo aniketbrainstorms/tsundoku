@@ -64,15 +64,17 @@ function dsSnapTo(expanded, animate = true) {
   }
 }
 
+let _dsOpenTime = 0;
 function dsOpen() {
   const overlay = document.getElementById('detailModal');
   const sheet = document.getElementById('detailSheet');
   const sheetH = window.innerHeight * 0.92;
   dsSetTranslate(sheetH, false);
   overlay.classList.add('visible');
-  DS.isOpen = false; // keep false until animation settles
+  DS.isOpen = false;
   DS.isExpanded = false;
   DS.isDragging = false;
+  _dsOpenTime = Date.now();
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       dsSnapTo(false, true);
@@ -507,7 +509,7 @@ function handleDetailOverlayClick(e) {
 document.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('detailModal');
   overlay.addEventListener('click', e => {
-    if (e.target === overlay && DS.isOpen) closeModal('detailModal');
+    if (e.target === overlay && DS.isOpen && (Date.now() - _dsOpenTime > 500)) closeModal('detailModal');
   });
 });
 
