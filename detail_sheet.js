@@ -485,18 +485,22 @@ function openDetailModal(id) {
   document.getElementById('detailAuthorEl').textContent = book.author || '';
   document.getElementById('detailCoverEl').innerHTML = coverHtml(book, 14);
 
-  // Year / publisher (not in DB, skip if empty)
+  // Render from DB values immediately
+  dsRenderMetaGrid(book);
+  dsRenderTagline(book.status);
   const yearPub = document.getElementById('detailYearPub');
-  if (yearPub) yearPub.textContent = '';
-
-  // Genre (not in DB — clear)
-  const genreEl = document.getElementById('detailGenre');
-  if (genreEl) genreEl.textContent = '';
-
-  // Rating — not stored in DB, skip
+  if (yearPub) {
+    const parts = [book.year, book.publisher].filter(Boolean);
+    yearPub.textContent = parts.join(' • ');
+  }
   const ratingEl = document.getElementById('detailRating');
   if (ratingEl) ratingEl.innerHTML = '';
 
+  // Edit form new fields
+  document.getElementById('editYear').value = book.year || '';
+  document.getElementById('editPublisher').value = book.publisher || '';
+  document.getElementById('editGenre').value = book.genre || '';
+  document.getElementById('editPageCount').value = book.page_count || '';
   updateDetailBadge(book.status);
   closeStatusDropdown();
   dsRenderCTA(book.status);
@@ -524,11 +528,31 @@ function openDetailModal(id) {
   // Open sheet
   dsOpen();
 
-  // Fetch summary in background
-  fetchBookSummary(book.title, book.author).then(text => {
-    dsBuildSummary(text);
-    // Only update if same book still open
-    if (editingId === id) dsRenderSummary();
+  // Fetch meta in background
+  fetchBookMeta(book.title, book.author).then(async meta => {
+    if (editingId !== id) return;
+    dsBuildSummary(meta.description);
+    dsRenderSummary();
+    dsRenderRating(meta.rating);
+    // Fill gaps from API only if DB fields are empty
+    const apiUpdates = {};
+    if (!book.year && meta.year)           { apiUpdates.year = meta.year; book.year = meta.year; }
+    if (!book.publisher && meta.publisher) { apiUpdates.publisher = meta.publisher; book.publisher = meta.publisher; }
+    if (!book.genre && meta.genre)         { apiUpdates.genre = meta.genre; book.genre = meta.genre; }
+    if (!book.page_count && meta.pageCount){ apiUpdates.page_count = parseInt(meta.pageCount); book.page_count = parseInt(meta.pageCount); }
+    if (Object.keys(apiUpdates).length) {
+      dsRenderMetaGrid(book);
+      const yearPub = document.getElementById('detailYearPub');
+      if (yearPub) {
+        const parts = [book.year, book.publisher].filter(Boolean);
+        yearPub.textContent = parts.join(' • ');
+      }
+      document.getElementById('editYear').value = book.year || '';
+      document.getElementById('editPublisher').value = book.publisher || '';
+      document.getElementById('editGenre').value = book.genre || '';
+      document.getElementById('editPageCount').value = book.page_count || '';
+      await dbUpdate(id, apiUpdates);
+    }
   });
 }
 
