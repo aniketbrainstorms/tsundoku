@@ -379,13 +379,12 @@ async function fetchBookMeta(title, author) {
             publisher: v.publisher || '',
             genre: (v.categories || []).join(', '),
             pageCount: v.pageCount ? String(v.pageCount) : '',
-            rating: v.averageRating || null,
           };
           _metaCache[cacheKey] = meta;
           return meta;
         }
+        const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
         _metaCache[cacheKey] = empty;
-        return empty;
       });
     return _metaInFlight[cacheKey];
   } catch { return { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null }; }
@@ -421,19 +420,40 @@ function dsRenderSummary() {
   if (expandBtn) expandBtn.classList.remove('open');
 }
 
-function dsRenderRating(rating) {
+let _userRating = 0;
+
+function setUserRating(val) {
+  _userRating = val;
+  document.querySelectorAll('.star-btn').forEach(btn => {
+    btn.classList.toggle('active', +btn.dataset.star <= val);
+  });
+}
+
+function dsRenderRating(book) {
   const el = document.getElementById('detailRating');
   if (!el) return;
-  if (!rating) { el.innerHTML = ''; return; }
-  const full = Math.floor(rating);
-  const half = rating - full >= 0.5;
+  // Only show rating if book is 'read' and has a rating
+  if (book.status !== 'read' || !book.rating) { el.innerHTML = ''; return; }
+  const full = Math.floor(book.rating);
   let stars = '';
   for (let i = 1; i <= 5; i++) {
-    if (i <= full) stars += `<span class="ds-star">★</span>`;
-    else if (i === full + 1 && half) stars += `<span class="ds-star">☆</span>`;
-    else stars += `<span class="ds-star empty">★</span>`;
+    stars += `<span class="ds-star${i <= full ? '' : ' empty'}">★</span>`;
   }
-  el.innerHTML = `<span class="ds-rating-label">Rating</span><span class="ds-rating-score">${rating}/5</span>${stars}`;
+  el.innerHTML = `<span class="ds-rating-label">Your rating</span><span class="ds-rating-score">${book.rating}/5</span>${stars}`;
+}
+
+function dsInitStarInput(book) {
+  _userRating = book.rating || 0;
+  const label = document.getElementById('editRatingLabel');
+  const input = document.getElementById('starRatingInput');
+  // Only show rating input when status is 'read'
+  const show = editStatus === 'read';
+  if (label) label.style.display = show ? 'block' : 'none';
+  if (input) input.style.display = show ? 'flex' : 'none';
+  setUserRating(_userRating);
+  document.querySelectorAll('.star-btn').forEach(btn => {
+    btn.onclick = () => setUserRating(+btn.dataset.star);
+  });
 }
 
 function dsRenderMetaGrid(book) {
