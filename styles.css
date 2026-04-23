@@ -1105,3 +1105,19 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   white-space: pre-line; padding: 6px 0 2px; opacity: 0.85;
   font-weight: 500;
 }
+
+.star-rating-input {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 18px;
+}
+.star-btn {
+  font-size: 28px; background: none; border: none;
+  color: var(--border); cursor: pointer; padding: 0; line-height: 1;
+  transition: color 0.15s, transform 0.12s;
+}
+.star-btn.active { color: var(--accent); }
+.star-btn:active { transform: scale(1.25); }
+.star-clear-btn {
+  font-size: 13px; background: none; border: none;
+  color: var(--text-muted); cursor: pointer; padding: 4px;
+  margin-left: 4px; opacity: 0.6;
+}
