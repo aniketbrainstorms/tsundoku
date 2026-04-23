@@ -388,8 +388,8 @@ async function fetchBookMeta(title, author) {
           _metaCache[cacheKey] = meta;
           return meta;
         }
-        const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
-        _metaCache[cacheKey] = empty;
+        const emptyFallback = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
+        _metaCache[cacheKey] = emptyFallback;
       });
     return _metaInFlight[cacheKey];
   } catch { return { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null }; }
