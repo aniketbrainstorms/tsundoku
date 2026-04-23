@@ -351,29 +351,40 @@ function toggleDetailEdit() {
 }
 
 // ── Summary fetching via Google Books ──
-const _summaryCache = {};
-const _summaryInFlight = {};
+const _metaCache = {};
+const _metaInFlight = {};
 
-async function fetchBookSummary(title, author) {
+async function fetchBookMeta(title, author) {
   const cacheKey = `${title}__${author || ''}`.toLowerCase();
-  if (_summaryCache[cacheKey] !== undefined) return _summaryCache[cacheKey];
-  if (_summaryInFlight[cacheKey]) return _summaryInFlight[cacheKey];
+  if (_metaCache[cacheKey] !== undefined) return _metaCache[cacheKey];
+  if (_metaInFlight[cacheKey]) return _metaInFlight[cacheKey];
   try {
     const q = encodeURIComponent(`${title} ${author || ''}`.trim());
-    _summaryInFlight[cacheKey] = fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=3&langRestrict=en`)
+    _metaInFlight[cacheKey] = fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=3&langRestrict=en`)
       .then(async res => {
-        delete _summaryInFlight[cacheKey];
-        if (!res.ok) { _summaryCache[cacheKey] = ''; return ''; }
-    const data = await res.json();
+        delete _metaInFlight[cacheKey];
+        const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null };
+        if (!res.ok) { _metaCache[cacheKey] = empty; return empty; }
+        const data = await res.json();
         for (const item of (data.items || [])) {
-          const desc = item.volumeInfo?.description;
-          if (desc && desc.length > 40) { _summaryCache[cacheKey] = desc; return desc; }
+          const v = item.volumeInfo || {};
+          if (!v.description || v.description.length < 40) continue;
+          const meta = {
+            description: v.description || '',
+            year: v.publishedDate ? v.publishedDate.slice(0, 4) : '',
+            publisher: v.publisher || '',
+            genre: (v.categories || []).join(', '),
+            pageCount: v.pageCount ? String(v.pageCount) : '',
+            rating: v.averageRating || null,
+          };
+          _metaCache[cacheKey] = meta;
+          return meta;
         }
-        _summaryCache[cacheKey] = '';
-        return '';
+        _metaCache[cacheKey] = empty;
+        return empty;
       });
-    return _summaryInFlight[cacheKey];
-  } catch { return ''; }
+    return _metaInFlight[cacheKey];
+  } catch { return { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null }; }
 }
 
 function dsBuildSummary(text) {
@@ -382,10 +393,8 @@ function dsBuildSummary(text) {
     DS.summaryShort = 'No summary available.';
     return;
   }
-  // Strip HTML tags
   const plain = text.replace(/<[^>]+>/g, '').trim();
   DS.summaryFull = plain;
-  // Short = first ~280 chars, ending at word boundary
   if (plain.length <= 280) {
     DS.summaryShort = plain;
   } else {
@@ -417,10 +426,45 @@ function dsRenderRating(rating) {
   let stars = '';
   for (let i = 1; i <= 5; i++) {
     if (i <= full) stars += `<span class="ds-star">★</span>`;
-    else if (i === full + 1 && half) stars += `<span class="ds-star">½</span>`;
+    else if (i === full + 1 && half) stars += `<span class="ds-star">☆</span>`;
     else stars += `<span class="ds-star empty">★</span>`;
   }
-  el.innerHTML = `${stars}<span class="ds-rating-num">${rating}/5</span>`;
+  el.innerHTML = `<span class="ds-rating-label">Rating</span><span class="ds-rating-score">${rating}/5</span>${stars}`;
+}
+
+function dsRenderMetaGrid(book) {
+  const yearPub = document.getElementById('detailYearPub');
+  const genreEl = document.getElementById('detailGenre');
+  const metaGrid = document.getElementById('detailMetaGrid');
+  if (yearPub) {
+    const parts = [book.year, book.publisher].filter(Boolean);
+    yearPub.textContent = parts.join(' • ');
+  }
+  if (genreEl) genreEl.textContent = book.genre || '';
+  if (metaGrid) {
+    const pages = book.page_count ? `${book.page_count} pages` : '';
+    const genre = book.genre || '';
+    if (pages || genre) {
+      metaGrid.style.display = 'grid';
+      document.getElementById('detailMetaGenre').textContent = genre || '—';
+      document.getElementById('detailMetaPages').textContent = pages || '—';
+    } else {
+      metaGrid.style.display = 'none';
+    }
+  }
+}
+
+function dsRenderTagline(status) {
+  const el = document.getElementById('detailTagline');
+  if (!el) return;
+  const map = {
+    reading: { text: "You're in the middle of the journey.\nNext step: Finish it.", color: 'var(--accent)' },
+    read:    { text: "You've finished it.\nRevisit or start again.", color: 'var(--green)' },
+    unread:  { text: "Haven't started yet.\nBegin the journey.", color: 'var(--text-muted)' },
+  };
+  const t = map[status] || map.unread;
+  el.style.color = t.color;
+  el.textContent = t.text;
 }
 
 // ── OVERRIDE openDetailModal ── 
