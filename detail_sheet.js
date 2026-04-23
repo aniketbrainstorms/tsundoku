@@ -69,18 +69,19 @@ function dsOpen() {
   const overlay = document.getElementById('detailModal');
   const sheet = document.getElementById('detailSheet');
   const sheetH = window.innerHeight * 0.92;
-  dsSetTranslate(sheetH, false);
-  overlay.classList.add('visible');
   DS.isOpen = false;
   DS.isExpanded = false;
   DS.isDragging = false;
   _dsOpenTime = Date.now();
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      dsSnapTo(false, true);
-      setTimeout(() => { DS.isOpen = true; }, 400);
-    });
-  });
+  // Set off-screen with no transition, force reflow, then animate in
+  sheet.style.transition = 'none';
+  sheet.style.transform = `translateY(${sheetH}px)`;
+  DS.currentTranslate = sheetH;
+  overlay.classList.add('visible');
+  // Force reflow so browser paints the off-screen position before animating
+  void sheet.offsetHeight;
+  dsSnapTo(false, true);
+  setTimeout(() => { DS.isOpen = true; }, 400);
 }
 
 function dsClose() {
