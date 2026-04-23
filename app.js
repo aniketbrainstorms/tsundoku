@@ -751,7 +751,17 @@ function updateDetailBadge(status) {
 }
 function toggleStatusDropdown(e) { e.stopPropagation(); document.getElementById('statusDropdown').classList.toggle('open'); }
 function closeStatusDropdown() { document.getElementById('statusDropdown').classList.remove('open'); }
-function setEditStatusFromDropdown(status) { editStatus = status; updateDetailBadge(status); closeStatusDropdown(); }
+function setEditStatusFromDropdown(status) {
+  editStatus = status;
+  updateDetailBadge(status);
+  closeStatusDropdown();
+  // Show/hide rating input based on new status
+  const label = document.getElementById('editRatingLabel');
+  const input = document.getElementById('starRatingInput');
+  const show = status === 'read';
+  if (label) label.style.display = show ? 'block' : 'none';
+  if (input) input.style.display = show ? 'flex' : 'none';
+}
 function handleDetailOverlayClick(e) {
   if (e.target === document.getElementById('detailModal')) { closeModal('detailModal'); return; }
   const dropdown = document.getElementById('statusDropdown');
