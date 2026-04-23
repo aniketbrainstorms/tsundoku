@@ -1471,7 +1471,7 @@ function showToast(msg) {
   function ldCoverHtml(book) {
     const palIdx = (function(str){ let s=String(str||''); let h=0; for(let c of s) h=(h*31+c.charCodeAt(0))>>>0; return h%10; })(book.id);
     const p = loPal(palIdx);
-    if (book.cover_url) return `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:contain;background:var(--surface2);pointer-events:none" draggable="false" />`;
+    if (book.cover_url) return `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;pointer-events:none" draggable="false" />`;
     return `<div class="ld-cover-inner" style="background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%)">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="${p[1]}" opacity="0.5" stroke="${p[1]}" stroke-width="1.5">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"/>
@@ -1490,7 +1490,7 @@ function showToast(msg) {
       const palIdx = b ? (function(s){let st=String(s||'');let h=0;for(let c of st)h=(h*31+c.charCodeAt(0))>>>0;return h%10;})(b.id) : (listIdNum+idx)%10;
       const p = loPal(palIdx || 0);
       const inner = b && b.cover_url
-        ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:contain;background:var(--surface2)" />`
+        ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover" />`
         : `<div class="ld-fan-inner" style="background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="${p[1]}" opacity="0.5" stroke="${p[1]}" stroke-width="1.5">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"/>
@@ -1511,7 +1511,7 @@ function showToast(msg) {
       const palIdx = b
         ? (function(s){let st=String(s||'');let h=0;for(let c of st)h=(h*31+c.charCodeAt(0))>>>0;return h%10;})(b.id)
         : (listIdNum + idx) % 10;
-      if (b && b.cover_url) return `<div class="lo-thumb"><img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:contain;background:var(--surface2)"/></div>`;
+      if (b && b.cover_url) return `<div class="lo-thumb"><img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover"/></div>`;
       return loThumbHtml(palIdx);
     }).join('');
   }
@@ -1993,7 +1993,7 @@ function showToast(msg) {
         const palIdx = (function(str){let s=String(str||'');let h=0;for(let c of s)h=(h*31+c.charCodeAt(0))>>>0;return h%10;})(b.id);
         const p = loPal(palIdx);
         const coverInner = b.cover_url
-          ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:contain;background:var(--surface2);pointer-events:none" draggable="false"/>`
+          ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover;pointer-events:none" draggable="false"/>`
           : `<div style="width:100%;height:100%;background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%);display:flex;align-items:center;justify-content:center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="${p[1]}" opacity="0.5" stroke="${p[1]}" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" fill="none"/></svg>
             </div>`;
