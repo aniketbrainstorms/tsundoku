@@ -26,7 +26,7 @@ const DS = {
 };
 
 function dsGetHalfY() {
-  const sheetH = window.innerHeight * 0.92;
+  const sheetH = Math.min(window.innerHeight * 0.92, document.getElementById('detailSheet')?.offsetHeight || window.innerHeight * 0.92);
   return sheetH * DS.HALF_RATIO;
 }
 function dsGetFullY() {
@@ -69,7 +69,8 @@ function dsOpen() {
   const overlay = document.getElementById('detailModal');
   const sheet = document.getElementById('detailSheet');
   if (!overlay || !sheet) return;
-  const sheetH = window.innerHeight * 0.92;
+  const sheetEl = document.getElementById('detailSheet');
+  const sheetH = sheetEl ? sheetEl.offsetHeight : window.innerHeight * 0.92;
   DS.isOpen = false;
   DS.isExpanded = false;
   DS.isDragging = false;
@@ -87,7 +88,8 @@ function dsOpen() {
 }
 
 function dsClose() {
-  const sheetH = window.innerHeight * 0.92;
+  const sheetEl = document.getElementById('detailSheet');
+  const sheetH = sheetEl ? sheetEl.offsetHeight : window.innerHeight * 0.92;
   dsSetTranslate(sheetH, true);
   const overlay = document.getElementById('detailModal');
   overlay.classList.remove('ds-expanded');
@@ -103,7 +105,7 @@ function dsClose() {
 // ── Touch / drag handling ──
 function dsOnTouchStart(e) {
   if (DS.animating) return;
-  if (!DS.isOpen) return;
+  if (!DS.isOpen && Date.now() - _dsOpenTime < 600) return;
   if (document.getElementById('progressModal').classList.contains('visible')) return;
   if (!e.target.closest('#detailSheet')) return;
   // In FULL state, only allow drag from handle area
