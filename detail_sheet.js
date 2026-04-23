@@ -73,15 +73,19 @@ function dsOpen() {
   DS.isExpanded = false;
   DS.isDragging = false;
   _dsOpenTime = Date.now();
-  // Set off-screen with no transition, force reflow, then animate in
+  // Reset to off-screen with no transition before overlay becomes visible
   sheet.style.transition = 'none';
   sheet.style.transform = `translateY(${sheetH}px)`;
   DS.currentTranslate = sheetH;
   overlay.classList.add('visible');
-  // Force reflow so browser paints the off-screen position before animating
-  void sheet.offsetHeight;
-  dsSnapTo(false, true);
-  setTimeout(() => { DS.isOpen = true; }, 400);
+  // Two rAFs: first lets the browser paint the off-screen position,
+  // second fires after that paint so the transition animates from it
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      dsSnapTo(false, true);
+      setTimeout(() => { DS.isOpen = true; }, 420);
+    });
+  });
 }
 
 function dsClose() {
