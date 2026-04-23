@@ -787,6 +787,7 @@ async function confirmEdit() {
     publisher: document.getElementById('editPublisher').value.trim() || null,
     genre: document.getElementById('editGenre').value.trim() || null,
     page_count: parseInt(document.getElementById('editPageCount').value) || null,
+    rating: editStatus === 'read' ? (_userRating || null) : null,
   };
   if (editCoverFile) { const url = await uploadCover(editCoverFile, editingId); if (url) updates.cover_url = url; }
   else if (editCoverUrl) { updates.cover_url = editCoverUrl; }
