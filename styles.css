@@ -911,20 +911,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-bottom: 5px;
-  position: relative;
-  flex-wrap: wrap;
+  margin-bottom: 6px;
 }
-.ds-genre {
-  font-size: 11px;
-  color: var(--text-muted);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  margin-bottom: 5px;
-  line-height: 1.4;
-}
+.ds-genre { display: none; }
 .ds-rating {
   display: flex;
   align-items: center;
@@ -1004,19 +993,19 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   overflow: hidden; /* locked in HALF — JS unlocks to auto */
   overscroll-behavior: contain;
   scrollbar-width: none;
-  padding: 20px 20px 0;
+  padding: 14px 20px 0;
 }
 .ds-scroll.unlocked { overflow-y: auto; }
 .ds-scroll::-webkit-scrollbar { display: none; }
 
 /* Summary section */
 /* Summary section */
-.ds-section { margin-bottom: 20px; }
+.ds-section { margin-bottom: 16px; }
 .ds-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 9px;
   padding: 10px 14px;
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -1115,8 +1104,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 .ds-meta-grid {
   display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px; margin: 8px 0; padding: 10px 0;
-  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  gap: 10px; margin: 0 0 14px; padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
 }
 .ds-meta-col { display: flex; flex-direction: column; gap: 3px; }
 .ds-meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 500; }
@@ -1124,11 +1115,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .ds-rating { display: flex; align-items: center; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 .ds-rating-label { font-size: 11px; color: var(--text-muted); margin-right: 2px; }
 .ds-rating-score { font-size: 12px; color: var(--text-dim); font-weight: 600; margin-right: 4px; }
-.ds-tagline {
-  font-size: 11.5px; text-align: center; line-height: 1.6;
-  white-space: pre-line; padding: 4px 0 0; opacity: 0.6;
-  font-weight: 400;
-}
+/* .ds-tagline removed — tagline disabled per design */
 
 .star-rating-input {
   display: flex; align-items: center; gap: 6px; margin-bottom: 18px;
