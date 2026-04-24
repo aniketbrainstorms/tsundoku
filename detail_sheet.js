@@ -95,6 +95,11 @@ function dsClose() {
   dsSetTranslate(sheetH, true);
   const overlay = document.getElementById('detailModal');
   overlay.classList.remove('ds-expanded');
+  // Collapse summary immediately on close
+  const section = document.getElementById('dsSummarySection');
+  const expandBtn = document.getElementById('dsSummaryExpandBtn');
+  if (section) section.classList.remove('expanded');
+  if (expandBtn) expandBtn.classList.remove('open');
   setTimeout(() => {
     overlay.classList.remove('visible');
     DS.isOpen = false;
@@ -323,24 +328,20 @@ async function doSecondaryAction() {
 }
 
 // ── Summary expand / collapse ──
+// ── Summary expand / collapse ──
 function toggleDetailSummary() {
   DS.summaryExpanded = !DS.summaryExpanded;
+  const section = document.getElementById('dsSummarySection');
   const preview = document.getElementById('dsSummaryPreview');
-  const readMore = document.getElementById('dsSummaryReadMore');
   const expandBtn = document.getElementById('dsSummaryExpandBtn');
 
   if (DS.summaryExpanded) {
-    preview.textContent = DS.summaryFull;
-    preview.classList.add('expanded');
-    if (readMore) { readMore.style.display = 'block'; readMore.textContent = 'Show less'; }
+    // Show full text before expanding so height animates to real content
+    preview.textContent = DS.summaryFull || DS.summaryShort || 'No summary available.';
+    section.classList.add('expanded');
     if (expandBtn) expandBtn.classList.add('open');
-    // Auto-expand sheet to FULL when reading summary
-    if (!DS.isExpanded) dsSnapTo(true);
   } else {
-    preview.textContent = DS.summaryShort;
-    preview.classList.remove('expanded');
-    if (readMore) readMore.style.display = DS.summaryFull.length > DS.summaryShort.length ? 'block' : 'none';
-    if (readMore) readMore.textContent = 'Read more';
+    section.classList.remove('expanded');
     if (expandBtn) expandBtn.classList.remove('open');
   }
 }
@@ -415,16 +416,14 @@ function dsBuildSummary(text) {
 
 function dsRenderSummary() {
   const preview = document.getElementById('dsSummaryPreview');
-  const readMore = document.getElementById('dsSummaryReadMore');
-  if (!preview) return;
-  preview.textContent = DS.summaryShort || 'Loading summary…';
-  preview.classList.remove('expanded');
-  if (readMore) {
-    readMore.style.display = DS.summaryFull && DS.summaryFull.length > DS.summaryShort.length ? 'block' : 'none';
-    readMore.textContent = 'Read more';
-  }
+  const section = document.getElementById('dsSummarySection');
   const expandBtn = document.getElementById('dsSummaryExpandBtn');
+  if (!preview) return;
+  // Always reset to collapsed — text is loaded but hidden until tapped
+  preview.textContent = DS.summaryFull || DS.summaryShort || 'No summary available.';
+  if (section) section.classList.remove('expanded');
   if (expandBtn) expandBtn.classList.remove('open');
+  DS.summaryExpanded = false;
 }
 
 let _userRating = 0;
