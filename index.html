@@ -385,15 +385,15 @@
       <!-- ── SCROLLABLE BODY ── -->
       <div class="ds-scroll" id="dsScroll">
 
-        <!-- Summary section -->
+<!-- Summary section -->
         <div class="ds-section" id="dsSummarySection">
-          <div class="ds-section-header">
+          <div class="ds-section-header" onclick="toggleDetailSummary()">
             <span class="ds-section-label">Summary</span>
-            <button class="ds-expand-btn" id="dsSummaryExpandBtn" onclick="toggleDetailSummary()">
+            <button class="ds-expand-btn" id="dsSummaryExpandBtn" tabindex="-1">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
           </div>
-          <div class="ds-summary-text" id="dsSummaryPreview"></div>
+          <div class="ds-summary-text ds-summary-preview" id="dsSummaryPreview"></div>
           <button class="ds-read-more" id="dsSummaryReadMore" onclick="toggleDetailSummary()" style="display:none">Show less</button>
         </div>
 
