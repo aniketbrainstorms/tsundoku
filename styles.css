@@ -999,28 +999,46 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .ds-scroll::-webkit-scrollbar { display: none; }
 
 /* Summary section */
-/* Summary section */
 .ds-section { margin-bottom: 16px; }
+
+/* The whole summary box — animates height */
+#dsSummarySection {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  height: 44px;
+  transition: height 0.28s cubic-bezier(0.32,0.72,0,1),
+              border-color 0.2s,
+              box-shadow 0.2s;
+}
+#dsSummarySection.expanded {
+  height: 248px;
+  border-color: rgba(201,113,74,0.3);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+
+/* Header row — always visible tap target */
 .ds-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 9px;
-  padding: 10px 14px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  padding: 0 14px;
+  height: 44px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.16s, border-color 0.16s;
+  flex-shrink: 0;
 }
-.ds-section-header:active { background: rgba(58,53,48,0.9); border-color: var(--text-muted); }
+.ds-section-header:active { background: rgba(58,53,48,0.6); }
+
 .ds-section-label {
-  font-size: 13px;
-  color: var(--text-dim);
-  font-weight: 500;
-  letter-spacing: -0.1px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  font-weight: 600;
 }
+
 .ds-expand-btn {
   width: 22px; height: 22px;
   border-radius: 6px;
@@ -1030,39 +1048,30 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; padding: 0;
   pointer-events: none;
-  transition: transform 0.22s ease, color 0.18s;
+  transition: transform 0.26s cubic-bezier(0.32,0.72,0,1), color 0.18s;
   flex-shrink: 0;
 }
 .ds-expand-btn.open { transform: rotate(180deg); color: var(--accent); }
 
+/* Scrollable text area inside box */
 .ds-summary-text {
   font-size: 13.5px;
   color: var(--text-dim);
-  line-height: 1.8;
-  padding: 0 2px;
-  margin-top: 10px;
+  line-height: 1.75;
+  padding: 0 14px 14px;
+  max-height: 192px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  opacity: 0;
+  transition: opacity 0.2s ease 0.06s;
 }
-.ds-summary-preview {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.ds-summary-preview.expanded { display: block; -webkit-line-clamp: unset; }
-.ds-summary-full { }
+.ds-summary-text::-webkit-scrollbar { display: none; }
+#dsSummarySection.expanded .ds-summary-text { opacity: 1; }
 
-.ds-read-more {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 8px 0 2px;
-  display: block;
-  text-align: left;
-}
+/* Remove old preview/read-more classes — no longer used */
+.ds-summary-preview { display: block; }
+.ds-summary-preview.expanded { display: block; }
+.ds-read-more { display: none !important; }
 
 /* Scroll hint */
 .ds-scroll-hint {
