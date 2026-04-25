@@ -55,9 +55,15 @@ function dsSnapTo(expanded, animate = true) {
   const scroll = document.getElementById('dsScroll');
   scroll.classList.toggle('unlocked', expanded);
   const hint = document.getElementById('dsScrollHint');
-  if (hint) hint.classList.add('hidden'); // always hide hint
+  if (hint) hint.classList.add('hidden');
   if (!expanded) {
     document.getElementById('dsTop').classList.remove('scrolled');
+  }
+  // CTA always anchors to bottom of sheet — no repositioning needed,
+  // flex column layout handles it. Just ensure scroll area contracts correctly.
+  const dsScroll = document.getElementById('dsScroll');
+  if (dsScroll) {
+    dsScroll.style.transition = animate ? 'flex 0.38s cubic-bezier(0.32,0.72,0,1)' : 'none';
   }
 }
 
