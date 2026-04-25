@@ -490,7 +490,7 @@
         <div style="height:8px"></div>
       </div>
 
-      <!-- ── SUMMARY — expands upward, above CTA ── -->
+<!-- ── SUMMARY — fixed between scroll body and CTA, expands upward ── -->
       <div class="summary-section" id="dsSummarySection">
         <button class="summary-header" id="dsSummaryHeader" type="button" onclick="toggleDetailSummary()">
           <span class="summary-label">Summary</span>
@@ -502,16 +502,12 @@
           <div class="summary-scroll" id="dsSummaryPreview"></div>
         </div>
       </div>
+      <div class="ds-summary-gap"></div>
 
-      <!-- ── FIXED CTA ── -->
+      <!-- ── FIXED CTA — always at bottom ── -->
       <div class="ds-cta-area sheet-footer">
         <button class="ds-primary-btn btn-accent" id="dsPrimaryBtn" onclick="doPrimaryAction()"></button>
         <button class="ds-secondary-btn" id="dsSecondaryBtn" onclick="doSecondaryAction()"></button>
-      </div>
-
-      <!-- Scroll hint (half-state) -->
-      <div class="ds-scroll-hint" id="dsScrollHint">
-        <div class="ds-scroll-hint-dots"><span></span><span></span><span></span></div>
       </div>
 
     </div>
