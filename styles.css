@@ -931,13 +931,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* ── SCROLLABLE BODY ── */
 .ds-scroll {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
   padding: 0 20px;
   min-height: 0;
 }
-.ds-scroll.unlocked { overflow-y: auto; }
 .ds-scroll::-webkit-scrollbar { display: none; }
 .sheet-content { padding-bottom: 16px; }
 
@@ -1014,7 +1013,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 .summary-scroll {
   padding: 2px 14px 16px;
-  max-height: 200px;
+  max-height: 240px;
   overflow-y: auto;
   scrollbar-width: none;
   font-size: 13.5px;
@@ -1022,6 +1021,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   color: var(--text-dim);
   opacity: 0;
   transition: opacity 0.18s ease 0.1s;
+  overscroll-behavior: contain;
 }
 .summary-scroll::-webkit-scrollbar { display: none; }
 .summary-section.expanded .summary-scroll { opacity: 1; }
@@ -1035,9 +1035,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   padding: 8px 20px max(calc(var(--safe-bottom) + 14px), 20px);
   background: var(--surface);
   border-top: 1px solid var(--border);
+  z-index: 3;
 }
 
-/* Remove the old absolute .sheet-footer */
 .sheet-footer { all: unset; display: contents; }
 
 .ds-primary-btn {
