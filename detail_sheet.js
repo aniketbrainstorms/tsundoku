@@ -319,7 +319,6 @@ async function doSecondaryAction() {
 }
 
 // ── Summary expand / collapse ──
-// ── Summary expand / collapse ──
 function toggleDetailSummary() {
   DS.summaryExpanded = !DS.summaryExpanded;
   const section = document.getElementById('dsSummarySection');
@@ -330,11 +329,11 @@ function toggleDetailSummary() {
     preview.textContent = DS.summaryFull || DS.summaryShort || 'No summary available.';
     preview.scrollTop = 0;
     section.classList.add('expanded');
-    // Snap to full sheet when summary opens
+    // Expand the sheet upward to make room — do NOT close or scroll
     dsSnapTo(true, true);
   } else {
     section.classList.remove('expanded');
-    // Snap back to half when summary closes
+    // Collapse back to half
     dsSnapTo(false, true);
   }
 }
