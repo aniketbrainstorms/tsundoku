@@ -285,27 +285,65 @@
 
   <!-- ADD MODAL -->
   <div class="modal-overlay" id="addModal" onclick="handleOverlayClick(event,'addModal')">
-    <div class="modal-sheet">
+    <div class="modal-sheet edit-sheet">
       <div class="modal-handle"></div>
-      <h2 class="modal-title">Add a Book</h2>
-      <p class="modal-subtitle">What's going on your shelf?</p>
-      <p class="field-label">Book Title</p>
-      <input type="text" class="text-input" id="addTitle" placeholder="e.g. The Midnight Library" />
-      <p class="field-label">Author</p>
-      <input type="text" class="text-input" id="addAuthor" placeholder="e.g. Matt Haig" />
-      <p class="field-label">Cover Photo</p>
-      <label class="cover-upload" id="addCoverUpload">
-        <input type="file" accept="image/*" onchange="handleCoverUpload(event,'add')" />
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span>Upload cover image</span>
-      </label>
-      <input type="text" id="addCoverUrlInput" class="text-input" style="margin-bottom:18px;margin-top:-10px;padding:10px 14px;font-size:13px" placeholder="...or paste image URL" oninput="handleCoverUrlPaste(event,'add')" />
-      <p class="field-label">Reading Status</p>
-      <div class="status-pills" id="addPills">
-        <button class="pill active" data-status="unread" onclick="setPillStatus('add','unread')"><span class="pill-icon">📚</span>Unread</button>
-        <button class="pill" data-status="reading" onclick="setPillStatus('add','reading')"><span class="pill-icon">📖</span>Reading</button>
-        <button class="pill" data-status="read" onclick="setPillStatus('add','read')"><span class="pill-icon">✅</span>Read</button>
+      <div class="edit-sheet-header">
+        <button class="detail-back-btn" onclick="closeModal('addModal')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back
+        </button>
+        <span class="edit-sheet-title">Add a book</span>
+        <div style="width:60px"></div>
       </div>
+
+      <!-- COVER -->
+      <p class="ef-section-label">Cover</p>
+      <div class="ef-cover-row">
+        <div class="ef-cover-thumb" id="addCoverThumb">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <div class="ef-cover-actions">
+          <p class="ef-cover-hint">Change cover</p>
+          <p class="ef-cover-sub">Choose how you want to add the cover</p>
+          <label class="ef-cover-url-wrap">
+            <span class="ef-cover-url-label">Paste image link</span>
+            <div class="ef-cover-url-row">
+              <input type="text" id="addCoverUrlInput" class="ef-url-input" placeholder="https://example.com/cover.jpg" oninput="handleCoverUrlPaste(event,'add')" />
+            </div>
+          </label>
+          <div class="ef-or">OR</div>
+          <label class="ef-upload-btn" id="addCoverUpload">
+            <input type="file" accept="image/*" onchange="handleCoverUpload(event,'add')" style="position:absolute;inset:0;opacity:0;cursor:pointer" />
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload image
+            <span class="ef-upload-hint">JPG, PNG or WebP. Max 5MB</span>
+          </label>
+          <div class="ef-cover-ready" id="addCoverReadyMsg" style="display:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Cover ready
+          </div>
+        </div>
+      </div>
+
+      <!-- DETAILS -->
+      <p class="ef-section-label">Details</p>
+      <div class="ef-field">
+        <span class="ef-field-label">Title</span>
+        <input type="text" class="ef-input" id="addTitle" placeholder="e.g. The Midnight Library" />
+      </div>
+      <div class="ef-field">
+        <span class="ef-field-label">Author</span>
+        <input type="text" class="ef-input" id="addAuthor" placeholder="e.g. Matt Haig" />
+      </div>
+
+      <!-- STATUS -->
+      <p class="ef-section-label">Status</p>
+      <div class="ef-status-seg" id="addPills">
+        <button class="ef-seg-btn ef-seg-active" data-status="unread" onclick="setPillStatus('add','unread')">Unread</button>
+        <button class="ef-seg-btn" data-status="reading" onclick="setPillStatus('add','reading')">Reading</button>
+        <button class="ef-seg-btn" data-status="read" onclick="setPillStatus('add','read')">Read</button>
+      </div>
+
       <button class="modal-btn" id="addBookBtn" onclick="confirmAdd()">Add to Shelf</button>
     </div>
   </div>
@@ -361,36 +399,93 @@
       <div class="ds-scroll sheet-content" id="dsScroll">
         <div class="ds-edit-divider" id="dsEditDivider" style="display:none"></div>
         <div class="ds-edit-form" id="dsEditForm" style="display:none">
-          <p class="field-label">Title</p>
-          <input type="text" class="text-input" id="editTitle" />
-          <p class="field-label">Author</p>
-          <input type="text" class="text-input" id="editAuthor" />
-          <p class="field-label">Year</p>
-          <input type="text" class="text-input" id="editYear" placeholder="e.g. 2002" />
-          <p class="field-label">Publisher</p>
-          <input type="text" class="text-input" id="editPublisher" placeholder="e.g. Vintage Books" />
-          <p class="field-label">Genre</p>
-          <input type="text" class="text-input" id="editGenre" placeholder="e.g. Magical Realism" />
-          <p class="field-label">Page Count</p>
-          <input type="number" class="text-input" id="editPageCount" placeholder="e.g. 505" />
-          <p class="field-label" id="editRatingLabel" style="display:none">Your Rating</p>
-          <div class="star-rating-input" id="starRatingInput" style="display:none">
-            <button class="star-btn" data-star="1">★</button>
-            <button class="star-btn" data-star="2">★</button>
-            <button class="star-btn" data-star="3">★</button>
-            <button class="star-btn" data-star="4">★</button>
-            <button class="star-btn" data-star="5">★</button>
-            <button class="star-clear-btn" onclick="setUserRating(0)">✕</button>
+
+          <!-- COVER -->
+          <p class="ef-section-label">Cover</p>
+          <div class="ef-cover-row">
+            <div class="ef-cover-thumb" id="editCoverThumbWrap"></div>
+            <div class="ef-cover-actions">
+              <p class="ef-cover-hint">Change cover</p>
+              <p class="ef-cover-sub">Choose how you want to add the cover</p>
+              <label class="ef-cover-url-wrap">
+                <span class="ef-cover-url-label">Paste image link</span>
+                <div class="ef-cover-url-row">
+                  <input type="text" id="editCoverUrlInput" class="ef-url-input" placeholder="https://example.com/cover.jpg" oninput="handleCoverUrlPaste(event,'edit')" />
+                </div>
+              </label>
+              <div class="ef-or">OR</div>
+              <label class="ef-upload-btn" id="editCoverUpload">
+                <input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')" style="position:absolute;inset:0;opacity:0;cursor:pointer" />
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload image
+                <span class="ef-upload-hint">JPG, PNG or WebP. Max 5MB</span>
+              </label>
+              <div class="ef-cover-ready" id="editCoverReadyMsg" style="display:none">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Cover ready
+              </div>
+            </div>
           </div>
-          <p class="field-label">Cover Photo</p>
-          <label class="cover-upload" id="editCoverUpload">
-            <input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')" />
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span>Change cover</span>
-          </label>
-          <input type="text" id="editCoverUrlInput" class="text-input" style="margin-bottom:18px;margin-top:-10px;padding:10px 14px;font-size:13px" placeholder="...or paste image URL" oninput="handleCoverUrlPaste(event,'edit')" />
+
+          <!-- DETAILS -->
+          <p class="ef-section-label">Details</p>
+          <div class="ef-field">
+            <span class="ef-field-label">Title</span>
+            <input type="text" class="ef-input" id="editTitle" placeholder="Book title" />
+          </div>
+          <div class="ef-field">
+            <span class="ef-field-label">Author</span>
+            <input type="text" class="ef-input" id="editAuthor" placeholder="Author name" />
+          </div>
+          <div class="ef-field-row">
+            <div class="ef-field ef-field-half">
+              <span class="ef-field-label">Year</span>
+              <input type="text" class="ef-input" id="editYear" placeholder="e.g. 2002" />
+            </div>
+            <div class="ef-field ef-field-half">
+              <span class="ef-field-label">Publisher</span>
+              <input type="text" class="ef-input" id="editPublisher" placeholder="e.g. Vintage Books" />
+            </div>
+          </div>
+          <div class="ef-field-row">
+            <div class="ef-field ef-field-half">
+              <span class="ef-field-label">Genre</span>
+              <input type="text" class="ef-input" id="editGenre" placeholder="e.g. Magical Realism" />
+            </div>
+            <div class="ef-field ef-field-half">
+              <span class="ef-field-label">Pages</span>
+              <input type="number" class="ef-input" id="editPageCount" placeholder="e.g. 505" />
+            </div>
+          </div>
+
+          <!-- RATING -->
+          <div id="editRatingSection" style="display:none">
+            <p class="ef-section-label">Rating</p>
+            <div class="ef-rating-row" id="starRatingInput">
+              <button class="ef-star-btn" data-star="1">★</button>
+              <button class="ef-star-btn" data-star="2">★</button>
+              <button class="ef-star-btn" data-star="3">★</button>
+              <button class="ef-star-btn" data-star="4">★</button>
+              <button class="ef-star-btn" data-star="5">★</button>
+              <span class="ef-rating-val" id="editRatingVal">4.0 / 5</span>
+              <button class="ef-rating-clear" onclick="setUserRating(0)">✕</button>
+            </div>
+          </div>
+
+          <!-- STATUS -->
+          <p class="ef-section-label">Status</p>
+          <div class="ef-status-seg" id="editStatusSeg">
+            <button class="ef-seg-btn" data-seg="unread" onclick="setEditStatusFromDropdown('unread')">Unread</button>
+            <button class="ef-seg-btn" data-seg="reading" onclick="setEditStatusFromDropdown('reading')">Reading</button>
+            <button class="ef-seg-btn ef-seg-active" data-seg="read" onclick="setEditStatusFromDropdown('read')">Read</button>
+          </div>
+
+          <!-- ACTIONS -->
           <button class="modal-btn" id="saveEditBtn" onclick="confirmEdit()">Save Changes</button>
-          <button class="modal-btn secondary" onclick="deleteBook()">Remove from Shelf</button>
+          <button class="modal-btn ef-delete-btn" onclick="deleteBook()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            Delete Book
+          </button>
         </div>
         <div style="height:8px"></div>
       </div>
