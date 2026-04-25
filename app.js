@@ -773,6 +773,7 @@ function setEditStatusFromDropdown(status) {
   document.querySelectorAll('.ef-star-btn, .star-btn').forEach(btn => {
     btn.onclick = () => setUserRating(+btn.dataset.star);
   });
+}
 function handleDetailOverlayClick(e) {
   if (e.target === document.getElementById('detailModal')) { closeModal('detailModal'); return; }
   const dropdown = document.getElementById('statusDropdown');
