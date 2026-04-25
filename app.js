@@ -755,13 +755,24 @@ function setEditStatusFromDropdown(status) {
   editStatus = status;
   updateDetailBadge(status);
   closeStatusDropdown();
-  // Show/hide rating input based on new status
-  const label = document.getElementById('editRatingLabel');
+  // Sync segmented control
+  document.querySelectorAll('#editStatusSeg .ef-seg-btn').forEach(btn => {
+    btn.classList.toggle('ef-seg-active', btn.dataset.seg === status);
+  });
+  // Show/hide rating section based on status
+  const ratingSection = document.getElementById('editRatingSection');
   const input = document.getElementById('starRatingInput');
-  const show = status === 'read';
-  if (label) label.style.display = show ? 'block' : 'none';
+  const show = editStatus === 'read';
+  if (ratingSection) ratingSection.style.display = show ? 'block' : 'none';
   if (input) input.style.display = show ? 'flex' : 'none';
-}
+  // Sync segmented control to current status
+  document.querySelectorAll('#editStatusSeg .ef-seg-btn').forEach(btn => {
+    btn.classList.toggle('ef-seg-active', btn.dataset.seg === editStatus);
+  });
+  setUserRating(_userRating);
+  document.querySelectorAll('.ef-star-btn, .star-btn').forEach(btn => {
+    btn.onclick = () => setUserRating(+btn.dataset.star);
+  });
 function handleDetailOverlayClick(e) {
   if (e.target === document.getElementById('detailModal')) { closeModal('detailModal'); return; }
   const dropdown = document.getElementById('statusDropdown');
@@ -1064,14 +1075,11 @@ function selectBsResult(title, author, coverUrl) {
   document.getElementById('addTitle').value = title || '';
   document.getElementById('addAuthor').value = author || '';
   document.getElementById('addCoverUrlInput').value = coverUrl || '';
-  const uploadEl = document.getElementById('addCoverUpload');
   if (coverUrl) {
-    const img = document.createElement('img'); img.className = 'cover-preview'; img.src = coverUrl;
-    img.onerror = () => img.remove();
-    const label = document.createElement('span'); label.style.cssText = 'font-size:13px;color:var(--text-dim)'; label.textContent = 'Cover ready ✓';
-    const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/*';
-    fileInput.onchange = e => handleCoverUpload(e, 'add');
-    uploadEl.innerHTML = ''; uploadEl.append(img, label, fileInput);
+    const thumb = document.getElementById('addCoverThumb');
+    if (thumb) thumb.innerHTML = `<img src="${escapeAttr(coverUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.remove()"/>`;
+    const ready = document.getElementById('addCoverReadyMsg');
+    if (ready) ready.style.display = 'flex';
   }
   setTimeout(() => document.getElementById('addModal').classList.add('visible'), 80);
 }
@@ -1109,7 +1117,13 @@ function handleOverlayClick(e, id) {
 }
 function setPillStatus(ctx, status) {
   if (ctx === 'add') addStatus = status; else editStatus = status;
-  document.querySelectorAll(`#${ctx}Pills .pill`).forEach(p => p.classList.toggle('active', p.dataset.status === status));
+  // support both old pills and new segmented control
+  const containerId = ctx === 'add' ? 'addPills' : 'editStatusSeg';
+  document.querySelectorAll(`#${containerId} .pill, #${containerId} .ef-seg-btn`).forEach(p => {
+    const val = p.dataset.status || p.dataset.seg;
+    p.classList.toggle('active', val === status);
+    p.classList.toggle('ef-seg-active', val === status);
+  });
 }
 function handleCoverUpload(e, ctx) {
   const file = e.target.files[0]; if (!file) return;
@@ -1118,8 +1132,12 @@ function handleCoverUpload(e, ctx) {
   const reader = new FileReader();
   reader.onload = ev => {
     const src = ev.target.result;
-    document.getElementById(ctx === 'add' ? 'addCoverUpload' : 'editCoverUpload').innerHTML =
-      `<img class="cover-preview" src="${src}"/><span style="font-size:13px;color:var(--text-dim)">Cover ready ✓</span><input type="file" accept="image/*" onchange="handleCoverUpload(event,'${ctx}')"/>`;
+    const thumbId = ctx === 'add' ? 'addCoverThumb' : 'editCoverThumbWrap';
+    const readyId = ctx === 'add' ? 'addCoverReadyMsg' : 'editCoverReadyMsg';
+    const thumb = document.getElementById(thumbId);
+    if (thumb) thumb.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+    const ready = document.getElementById(readyId);
+    if (ready) ready.style.display = 'flex';
   };
   reader.readAsDataURL(file);
 }
@@ -1135,8 +1153,10 @@ function resetAddModal() {
   document.getElementById('addTitle').style.borderColor = '';
   addCoverFile = null; addCoverUrl = null;
   addStatus = 'unread'; setPillStatus('add', 'unread');
-  document.getElementById('addCoverUpload').innerHTML =
-    `<input type="file" accept="image/*" onchange="handleCoverUpload(event,'add')"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Upload cover image</span>`;
+  const addThumb = document.getElementById('addCoverThumb');
+  if (addThumb) addThumb.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
+  const addReady = document.getElementById('addCoverReadyMsg');
+  if (addReady) addReady.style.display = 'none';
   document.getElementById('addCoverUrlInput').value = '';
   document.getElementById('addBookBtn').disabled = false;
   document.getElementById('addBookBtn').textContent = 'Add to Shelf';
@@ -1147,8 +1167,12 @@ function handleCoverUrlPaste(e, ctx) {
   img.onload = () => {
     if (ctx === 'add') { addCoverFile = null; addCoverUrl = url; }
     else { editCoverFile = null; editCoverUrl = url; }
-    document.getElementById(ctx === 'add' ? 'addCoverUpload' : 'editCoverUpload').innerHTML =
-      `<img class="cover-preview" src="${escapeAttr(url)}"/><span style="font-size:13px;color:var(--text-dim)">URL cover ready ✓</span><input type="file" accept="image/*" onchange="handleCoverUpload(event,'${ctx}')"/>`;
+    const thumbId = ctx === 'add' ? 'addCoverThumb' : 'editCoverThumbWrap';
+    const readyId = ctx === 'add' ? 'addCoverReadyMsg' : 'editCoverReadyMsg';
+    const thumb = document.getElementById(thumbId);
+    if (thumb) thumb.innerHTML = `<img src="${escapeAttr(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+    const ready = document.getElementById(readyId);
+    if (ready) ready.style.display = 'flex';
   };
   img.src = url;
 }
