@@ -26,8 +26,24 @@ const DS = {
 };
 
 function dsGetHalfY() {
-  const sheetH = Math.min(window.innerHeight * 0.92, document.getElementById('detailSheet')?.offsetHeight || window.innerHeight * 0.92);
-  return sheetH * DS.HALF_RATIO;
+  // Half state: hide everything above CTA+summary. CTA stays visible at bottom.
+  const sheet = document.getElementById('detailSheet');
+  const cta = document.getElementById('dsCTAArea');
+  const summary = document.getElementById('dsSummarySection');
+  if (!sheet || !cta) {
+    const sheetH = Math.min(window.innerHeight * 0.92, sheet?.offsetHeight || window.innerHeight * 0.92);
+    return sheetH * DS.HALF_RATIO;
+  }
+  const ctaH = cta.offsetHeight || 120;
+  const summaryH = summary ? summary.offsetHeight : 48;
+  const handleH = 28; // pill + padding
+  const navH = 44;
+  const bookRowH = 168; // cover row height
+  const metaH = 56;
+  // Show: handle + nav + book row + meta grid + summary (collapsed) + CTA
+  const visibleH = handleH + navH + bookRowH + metaH + summaryH + ctaH + 10;
+  const sheetH = sheet.offsetHeight || window.innerHeight * 0.92;
+  return Math.max(0, sheetH - visibleH);
 }
 function dsGetFullY() {
   return 0;
@@ -81,10 +97,13 @@ function dsOpen() {
   sheet.style.transform = `translateY(${offscreen}px)`;
   DS.currentTranslate = offscreen;
   overlay.classList.add('visible');
+  // Wait for sheet to render so offsetHeight is accurate for dsGetHalfY
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      dsSnapTo(false, true); // Always open half
-      setTimeout(() => { DS.isOpen = true; }, 420);
+      setTimeout(() => {
+        dsSnapTo(false, true); // Always open half
+        setTimeout(() => { DS.isOpen = true; }, 420);
+      }, 32); // give layout time to settle
     });
   });
 }
