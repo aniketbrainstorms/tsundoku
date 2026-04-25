@@ -422,7 +422,9 @@ let _userRating = 0;
 
 function setUserRating(val) {
   _userRating = val;
-  document.querySelectorAll('.star-btn').forEach(btn => {
+  const ratingVal = document.getElementById('editRatingVal');
+  if (ratingVal) ratingVal.textContent = val > 0 ? `${val}.0 / 5` : '— / 5';
+  document.querySelectorAll('.ef-star-btn, .star-btn').forEach(btn => {
     btn.classList.toggle('active', +btn.dataset.star <= val);
   });
 }
@@ -445,14 +447,17 @@ function dsRenderRating(book) {
 
 function dsInitStarInput(book) {
   _userRating = book.rating || 0;
-  const label = document.getElementById('editRatingLabel');
+  const ratingSection = document.getElementById('editRatingSection');
   const input = document.getElementById('starRatingInput');
-  // Only show rating input when status is 'read'
   const show = editStatus === 'read';
-  if (label) label.style.display = show ? 'block' : 'none';
+  if (ratingSection) ratingSection.style.display = show ? 'block' : 'none';
   if (input) input.style.display = show ? 'flex' : 'none';
+  // Sync segmented control to current status
+  document.querySelectorAll('#editStatusSeg .ef-seg-btn').forEach(btn => {
+    btn.classList.toggle('ef-seg-active', btn.dataset.seg === editStatus);
+  });
   setUserRating(_userRating);
-  document.querySelectorAll('.star-btn').forEach(btn => {
+  document.querySelectorAll('.ef-star-btn, .star-btn').forEach(btn => {
     btn.onclick = () => setUserRating(+btn.dataset.star);
   });
 }
@@ -524,9 +529,14 @@ function openDetailModal(id) {
   // Edit form fields
   document.getElementById('editTitle').value = book.title;
   document.getElementById('editAuthor').value = book.author || '';
-  document.getElementById('editCoverUpload').innerHTML = book.cover_url
-    ? `<img class="cover-preview" src="${book.cover_url}"/><span style="font-size:13px;color:var(--text-dim)">Cover added ✓</span><input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')"/>`
-    : `<input type="file" accept="image/*" onchange="handleCoverUpload(event,'edit')"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Change cover</span>`;
+  const editThumb = document.getElementById('editCoverThumbWrap');
+  if (editThumb) {
+    editThumb.innerHTML = book.cover_url
+      ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`
+      : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
+  }
+  const editReady = document.getElementById('editCoverReadyMsg');
+  if (editReady) editReady.style.display = book.cover_url ? 'flex' : 'none';
   document.getElementById('editCoverUrlInput').value = book.cover_url || '';
   editCoverUrl = book.cover_url || null;
 
