@@ -755,20 +755,14 @@ function setEditStatusFromDropdown(status) {
   editStatus = status;
   updateDetailBadge(status);
   closeStatusDropdown();
-  // Sync segmented control
   document.querySelectorAll('#editStatusSeg .ef-seg-btn').forEach(btn => {
     btn.classList.toggle('ef-seg-active', btn.dataset.seg === status);
   });
-  // Show/hide rating section based on status
   const ratingSection = document.getElementById('editRatingSection');
   const input = document.getElementById('starRatingInput');
   const show = editStatus === 'read';
   if (ratingSection) ratingSection.style.display = show ? 'block' : 'none';
   if (input) input.style.display = show ? 'flex' : 'none';
-  // Sync segmented control to current status
-  document.querySelectorAll('#editStatusSeg .ef-seg-btn').forEach(btn => {
-    btn.classList.toggle('ef-seg-active', btn.dataset.seg === editStatus);
-  });
   setUserRating(_userRating);
   document.querySelectorAll('.ef-star-btn, .star-btn').forEach(btn => {
     btn.onclick = () => setUserRating(+btn.dataset.star);
