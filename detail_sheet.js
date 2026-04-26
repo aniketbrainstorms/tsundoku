@@ -178,7 +178,7 @@ function dsOnTouchEnd(e) {
     return;
   }
 
-  // Velocity snap
+// Velocity snap
   if (DS.velocity < -DS.SNAP_VELOCITY) {
     dsSnapTo(true);
   } else if (DS.velocity > DS.SNAP_VELOCITY) {
@@ -187,6 +187,7 @@ function dsOnTouchEnd(e) {
     // Position-based snap
     dsSnapTo(DS.currentTranslate < midpoint);
   }
+}
 
 // Mouse equivalents for desktop
 function dsOnMouseDown(e) {
@@ -339,10 +340,11 @@ function toggleDetailSummary() {
     section.classList.add('expanded');
     // Slide sheet UP to make room — book info scrolls off top
     dsSnapTo(true, true);
-    } else {
+  } else {
     section.classList.remove('expanded');
     // Stay fully expanded — do NOT snap to half
   }
+}
 
 // ── Edit sheet (standalone overlay) ──
 function openEditSheet() {
