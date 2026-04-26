@@ -85,7 +85,7 @@ function dsOpen() {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       setTimeout(() => {
-            dsSnapTo(true, true); // Always open fully expanded
+            dsSnapTo(false, true); // Always open at half state
         setTimeout(() => { DS.isOpen = true; }, 420);
       }, 32); // give layout time to settle
     });
@@ -115,6 +115,7 @@ function dsOnTouchStart(e) {
   if (!DS.isOpen && Date.now() - _dsOpenTime < 600) return;
   if (document.getElementById('progressModal').classList.contains('visible')) return;
   if (!e.target.closest('#detailSheet')) return;
+  // Block drag-up to full — only summary tap can expand
   // In FULL state, only allow drag from handle area
   if (DS.isExpanded) {
     const handle = document.getElementById('dsHandleWrap');
@@ -153,11 +154,14 @@ function dsOnTouchMove(e) {
     // Rubber band above full
     newTranslate = fullY - Math.pow(fullY - newTranslate, 0.6);
   }
+  // Resist dragging above half state — only summary controls full
+  if (newTranslate < halfY) {
+    newTranslate = halfY - Math.pow(halfY - newTranslate, 0.55);
+  }
   const maxY = halfY + 80;
   if (newTranslate > maxY) {
     newTranslate = maxY + (newTranslate - maxY) * 0.3;
   }
-
   dsSetTranslate(newTranslate, false);
   // Prevent page scroll only if no other modal is on top
   if (delta !== 0 && !document.getElementById('progressModal').classList.contains('visible')) e.preventDefault();
@@ -178,15 +182,8 @@ function dsOnTouchEnd(e) {
     return;
   }
 
-// Velocity snap
-  if (DS.velocity < -DS.SNAP_VELOCITY) {
-    dsSnapTo(true);
-  } else if (DS.velocity > DS.SNAP_VELOCITY) {
-    dsSnapTo(false);
-  } else {
-    // Position-based snap
-    dsSnapTo(DS.currentTranslate < midpoint);
-  }
+  // Dragging always snaps back to half (summary tap is only way to go full)
+  dsSnapTo(false);
 }
 
 // Mouse equivalents for desktop
@@ -229,11 +226,9 @@ function dsOnMouseDown(e) {
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
 
-    const halfY = dsGetHalfY(), fullY = dsGetFullY();
+    const halfY = dsGetHalfY();
     if (DS.currentTranslate > halfY + 60 || DS.velocity > 0.8) { dsClose(); return; }
-    if (DS.velocity < -DS.SNAP_VELOCITY) dsSnapTo(true);
-    else if (DS.velocity > DS.SNAP_VELOCITY) dsSnapTo(false);
-    else dsSnapTo(DS.currentTranslate < (halfY + fullY) / 2);
+    dsSnapTo(false);
   }
 
   window.addEventListener('mousemove', onMouseMove);
@@ -338,11 +333,10 @@ function toggleDetailSummary() {
     preview.textContent = DS.summaryFull || DS.summaryShort || 'No summary available.';
     preview.scrollTop = 0;
     section.classList.add('expanded');
-    // Slide sheet UP to make room — book info scrolls off top
     dsSnapTo(true, true);
   } else {
     section.classList.remove('expanded');
-    // Stay fully expanded — do NOT snap to half
+    dsSnapTo(false, true);
   }
 }
 
