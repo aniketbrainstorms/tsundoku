@@ -755,7 +755,7 @@ function setEditStatusFromDropdown(status) {
   editStatus = status;
   updateDetailBadge(status);
   closeStatusDropdown();
-  document.querySelectorAll('#editStatusSeg .ef-seg-btn').forEach(btn => {
+  document.querySelectorAll('#editStatusSeg .ef-seg-btn, #editStatusSeg .es-seg-btn').forEach(btn => {
     btn.classList.toggle('ef-seg-active', btn.dataset.seg === status);
   });
   const ratingSection = document.getElementById('editRatingSection');
