@@ -25,10 +25,9 @@ const DS = {
 };
 
 function dsGetHalfY() {
-  const sheet = document.getElementById('detailSheet');
-  if (!sheet) return window.innerHeight * 0.46;
-  const sheetH = sheet.offsetHeight;
-  // Show ~72% of sheet in half state so CTA + summary are always visible
+  // Use viewport height directly — sheet is 92vh tall
+  const sheetH = window.innerHeight * 0.92;
+  // Translate by 28% of sheet = show 72% = CTA + summary always visible
   return sheetH * 0.28;
 }
 function dsGetFullY() {
