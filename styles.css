@@ -1266,7 +1266,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* Gap between summary and CTA */
 .ds-summary-gap {
   flex-shrink: 0;
-  height: 10px;
+  height: 14px;
   background: var(--surface);
 }
 
