@@ -27,7 +27,7 @@ const DS = {
 function dsGetHalfY() {
   const sheetH = window.innerHeight * 0.92;
   // Show bottom 430px of sheet (book row + meta + summary + CTA)
-  return Math.max(0, sheetH - 430);
+  return Math.max(0, sheetH - 560);
 }
 function dsGetFullY() {
   return 0;
