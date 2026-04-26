@@ -85,7 +85,7 @@ function dsOpen() {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       setTimeout(() => {
-            dsSnapTo(false, true); // Open in half state
+            dsSnapTo(true, true); // Always open fully expanded
         setTimeout(() => { DS.isOpen = true; }, 420);
       }, 32); // give layout time to settle
     });
@@ -339,7 +339,7 @@ function toggleDetailSummary() {
     dsSnapTo(true, true);
     } else {
     section.classList.remove('expanded');
-    dsSnapTo(false, true); // Snap back to half when summary collapses
+    // Stay fully expanded — do NOT snap to half
   }
 
 // ── Edit sheet (standalone overlay) ──
