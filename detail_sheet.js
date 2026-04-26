@@ -387,6 +387,11 @@ function openEditSheet() {
   if (editReady) editReady.style.display = book.cover_url ? 'flex' : 'none';
   document.getElementById('saveEditBtn').disabled = false;
   document.getElementById('saveEditBtn').textContent = 'Save Changes';
+  // Sync status seg to current editStatus
+  document.querySelectorAll('#editStatusSeg .es-seg-btn, #editStatusSeg .ef-seg-btn').forEach(btn => {
+    btn.classList.toggle('es-seg-active', btn.dataset.seg === editStatus);
+    btn.classList.toggle('ef-seg-active', btn.dataset.seg === editStatus);
+  });
   document.getElementById('dsEditToggle').classList.add('active');
   document.getElementById('editSheetOverlay').classList.add('visible');
 }
