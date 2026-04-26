@@ -19,7 +19,6 @@ const DS = {
   currentTranslate: 0,
   animating: false,
   summaryExpanded: false,
-  editVisible: false,
   // Store summary text for toggle
   summaryFull: '',
   summaryShort: '',
@@ -120,8 +119,8 @@ function dsClose() {
     overlay.classList.remove('visible');
     DS.isOpen = false;
     DS.isExpanded = false;
-    DS.editVisible = false;
     DS.summaryExpanded = false;
+    closeEditSheet();
   }, 380);
 }
 
@@ -580,9 +579,7 @@ function openDetailModal(id) {
   document.getElementById('editCoverUrlInput').value = book.cover_url || '';
   editCoverUrl = book.cover_url || null;
 
-  // Hide edit form
-  document.getElementById('dsEditForm').style.display = 'none';
-  document.getElementById('dsEditDivider').style.display = 'none';
+// Reset edit toggle state
   document.getElementById('dsEditToggle').classList.remove('active');
 
   // Summary — set placeholder, fetch async
