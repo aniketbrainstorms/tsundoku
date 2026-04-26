@@ -363,24 +363,38 @@ function toggleDetailSummary() {
   }
 }
 
-// ── Edit toggle ──
-function toggleDetailEdit() {
-  DS.editVisible = !DS.editVisible;
-  const form = document.getElementById('dsEditForm');
-  const divider = document.getElementById('dsEditDivider');
-  const btn = document.getElementById('dsEditToggle');
-  form.style.display = DS.editVisible ? 'block' : 'none';
-  divider.style.display = DS.editVisible ? 'block' : 'none';
-  btn.classList.toggle('active', DS.editVisible);
-  if (DS.editVisible) {
-    const book = books.find(b => b.id === editingId);
-    dsInitStarInput(book || {});
-    const scroll = document.getElementById('dsScroll');
-    if (scroll) { scroll.classList.add('unlocked'); setTimeout(() => scroll.scrollTo({ top: 0, behavior: 'smooth' }), 50); }
-  } else {
-    const scroll = document.getElementById('dsScroll');
-    if (scroll) scroll.scrollTo({ top: 0, behavior: 'instant' });
+// ── Edit sheet (standalone overlay) ──
+function openEditSheet() {
+  const book = books.find(b => b.id === editingId);
+  if (!book) return;
+  dsInitStarInput(book);
+  // Populate fields
+  document.getElementById('editTitle').value = book.title;
+  document.getElementById('editAuthor').value = book.author || '';
+  document.getElementById('editYear').value = book.year || '';
+  document.getElementById('editPublisher').value = book.publisher || '';
+  document.getElementById('editGenre').value = book.genre || '';
+  document.getElementById('editPageCount').value = book.page_count || '';
+  document.getElementById('editCoverUrlInput').value = book.cover_url || '';
+  editCoverUrl = book.cover_url || null;
+  editCoverFile = null;
+  const editThumb = document.getElementById('editCoverThumbWrap');
+  if (editThumb) {
+    editThumb.innerHTML = book.cover_url
+      ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`
+      : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
   }
+  const editReady = document.getElementById('editCoverReadyMsg');
+  if (editReady) editReady.style.display = book.cover_url ? 'flex' : 'none';
+  document.getElementById('saveEditBtn').disabled = false;
+  document.getElementById('saveEditBtn').textContent = 'Save Changes';
+  document.getElementById('dsEditToggle').classList.add('active');
+  document.getElementById('editSheetOverlay').classList.add('visible');
+}
+
+function closeEditSheet() {
+  document.getElementById('editSheetOverlay').classList.remove('visible');
+  document.getElementById('dsEditToggle').classList.remove('active');
 }
 
 // ── Summary fetching via Google Books ──
