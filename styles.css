@@ -946,12 +946,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .sheet-content { padding-bottom: 16px; }
 
 /* Edit form inside scroll */
-.ds-edit-divider { height: 1px; background: var(--border); margin: 4px 0 20px; }
-.ds-edit-form { animation: dsFadeIn 0.22s ease both; }
-@keyframes dsFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+#editSheetOverlay { z-index: 120; }
+#editSheetOverlay .modal-sheet { padding-top: 0; }
 
 /* ── SUMMARY — sits above CTA, expands upward ── */
 .summary-section {
