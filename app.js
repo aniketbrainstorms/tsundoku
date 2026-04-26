@@ -757,6 +757,7 @@ function setEditStatusFromDropdown(status) {
   closeStatusDropdown();
   document.querySelectorAll('#editStatusSeg .ef-seg-btn, #editStatusSeg .es-seg-btn').forEach(btn => {
     btn.classList.toggle('ef-seg-active', btn.dataset.seg === status);
+    btn.classList.toggle('es-seg-active', btn.dataset.seg === status);
   });
   const ratingSection = document.getElementById('editRatingSection');
   const input = document.getElementById('starRatingInput');
