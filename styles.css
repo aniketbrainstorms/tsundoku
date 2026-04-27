@@ -792,6 +792,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   touch-action: none;
   overflow: hidden;
   position: relative;
+  justify-content: space-between;
 }
 
 /* Drag handle */
@@ -812,6 +813,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 .ds-top {
   flex-shrink: 0;
+  flex-grow: 0;
   padding: 0 20px 0;
   background: var(--surface);
   position: relative;
@@ -1180,9 +1182,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* ── SUMMARY — sits above CTA, expands upward ── */
 .ds-flex-spacer {
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
+  display: none;
 }
 .summary-section {
   flex-shrink: 0;
