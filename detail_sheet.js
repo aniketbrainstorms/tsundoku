@@ -467,7 +467,7 @@ function setUserRating(val) {
 function dsRenderRating(book) {
   const el = document.getElementById('detailRating');
   if (!el) return;
-  const rating = book.rating || 0;
+  const rating = (book.rating != null) ? book.rating : 0;
   const full = Math.floor(rating);
   let stars = '';
   for (let i = 1; i <= 5; i++) {
@@ -636,7 +636,7 @@ if (document.readyState !== 'loading') {
 
 // ── Public: refresh detail sheet from current editingId ──
 window.dsRefreshDetailSheet = function() {
-  const book = books.find(b => b.id === editingId);
+  const book = books.find(b => String(b.id) === String(editingId));
   if (!book) return;
 
   const titleEl = document.getElementById('detailTitleEl');
