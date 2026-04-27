@@ -813,10 +813,12 @@ async function confirmEdit() {
 
   // Update local book object
   const book = books.find(b => b.id === editingId);
-  if (book) Object.assign(book, updates);
-
-  // Close edit sheet first, then refresh detail sheet
-  if (typeof closeEditSheet === 'function') closeEditSheet();
+  if (book) {
+    Object.assign(book, updates);
+    // Ensure rating is explicitly synced — Object.assign won't set it if updates.rating is null
+    // and the key already exists, but we need it to overwrite regardless
+    book.rating = updates.rating;
+  }
 
   // Refresh detail sheet live
   if (typeof window.dsRefreshDetailSheet === 'function') window.dsRefreshDetailSheet();
