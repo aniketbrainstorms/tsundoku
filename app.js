@@ -1112,12 +1112,22 @@ function openManualAdd() {
   setTimeout(() => document.getElementById('addModal').classList.add('visible'), 80);
 }
 
-// ── ADD ──
 async function confirmAdd() {
   const title = document.getElementById('addTitle').value.trim();
   if (!title) { document.getElementById('addTitle').style.borderColor = 'var(--accent)'; return; }
   const btn = document.getElementById('addBookBtn'); btn.disabled = true; btn.textContent = 'Adding…';
-  const newBook = await dbAdd({ title, author: document.getElementById('addAuthor').value.trim() || '', status: addStatus, cover_url: null, pages_read: 0, total_pages: 0 });
+  const newBook = await dbAdd({
+    title,
+    author: document.getElementById('addAuthor').value.trim() || '',
+    status: addStatus,
+    cover_url: null,
+    pages_read: 0,
+    total_pages: 0,
+    year: document.getElementById('addYear')?.value.trim() || null,
+    publisher: document.getElementById('addPublisher')?.value.trim() || null,
+    genre: document.getElementById('addGenre')?.value.trim() || null,
+    page_count: parseInt(document.getElementById('addPageCount')?.value) || null,
+  });
   if (newBook) {
     let finalUrl = null;
     if (addCoverFile) finalUrl = await uploadCover(addCoverFile, newBook.id);
@@ -1125,18 +1135,70 @@ async function confirmAdd() {
     if (finalUrl) { await dbUpdate(newBook.id, { cover_url: finalUrl }); newBook.cover_url = finalUrl; }
     books.unshift(newBook);
     closeModal('addModal'); renderGrid(); showToast('Book added ✓');
-    // Backfill meta silently after add
-    fetchBookMeta(newBook.title, newBook.author).then(async meta => {
-      if (!meta) return;
-      const fill = {};
-      if (!newBook.genre && meta.genre)         { fill.genre = meta.genre; newBook.genre = meta.genre; }
-      if (!newBook.page_count && meta.pageCount){ fill.page_count = parseInt(meta.pageCount); newBook.page_count = parseInt(meta.pageCount); }
-      if (!newBook.year && meta.year)           { fill.year = meta.year; newBook.year = meta.year; }
-      if (!newBook.publisher && meta.publisher) { fill.publisher = meta.publisher; newBook.publisher = meta.publisher; }
-      if (Object.keys(fill).length) await dbUpdate(newBook.id, fill);
-    });
   }
   btn.disabled = false; btn.textContent = 'Add to Shelf';
+}
+
+async function fetchAddIsbn() {
+  const isbn = document.getElementById('addIsbn')?.value.trim();
+  if (!isbn) { showToast('Enter an ISBN first'); return; }
+  const btn = document.querySelector('#addIsbn + button') || document.querySelector('[onclick="fetchAddIsbn()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Fetching…'; }
+  try {
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=1`);
+    const data = await res.json();
+    const item = data.items?.[0];
+    if (!item) { showToast('No book found for that ISBN'); return; }
+    const v = item.volumeInfo || {};
+    if (v.title) document.getElementById('addTitle').value = v.title;
+    if (v.authors?.[0]) document.getElementById('addAuthor').value = v.authors[0];
+    if (v.publishedDate) document.getElementById('addYear').value = v.publishedDate.slice(0,4);
+    if (v.publisher) document.getElementById('addPublisher').value = v.publisher;
+    if (v.categories?.[0]) document.getElementById('addGenre').value = v.categories[0];
+    if (v.pageCount) document.getElementById('addPageCount').value = v.pageCount;
+    let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
+    if (cover) {
+      cover = cover.replace(/^http:/, 'https:').replace('zoom=1','zoom=2').replace('&edge=curl','');
+      addCoverUrl = cover;
+      const thumb = document.getElementById('addCoverThumb');
+      if (thumb) thumb.innerHTML = `<img src="${escapeAttr(cover)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.remove()"/>`;
+      const ready = document.getElementById('addCoverReadyMsg');
+      if (ready) ready.style.display = 'flex';
+    }
+    showToast('Book details filled ✓');
+  } catch { showToast('Fetch failed — check connection'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Fetch'; } }
+}
+
+async function fetchEditIsbn() {
+  const isbn = document.getElementById('editIsbn')?.value.trim();
+  if (!isbn) { showToast('Enter an ISBN first'); return; }
+  const btn = document.querySelector('[onclick="fetchEditIsbn()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Fetching…'; }
+  try {
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=1`);
+    const data = await res.json();
+    const item = data.items?.[0];
+    if (!item) { showToast('No book found for that ISBN'); return; }
+    const v = item.volumeInfo || {};
+    if (v.title) document.getElementById('editTitle').value = v.title;
+    if (v.authors?.[0]) document.getElementById('editAuthor').value = v.authors[0];
+    if (v.publishedDate) document.getElementById('editYear').value = v.publishedDate.slice(0,4);
+    if (v.publisher) document.getElementById('editPublisher').value = v.publisher;
+    if (v.categories?.[0]) document.getElementById('editGenre').value = v.categories[0];
+    if (v.pageCount) document.getElementById('editPageCount').value = v.pageCount;
+    let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
+    if (cover) {
+      cover = cover.replace(/^http:/, 'https:').replace('zoom=1','zoom=2').replace('&edge=curl','');
+      editCoverUrl = cover;
+      const thumb = document.getElementById('editCoverThumbWrap');
+      if (thumb) thumb.innerHTML = `<img src="${escapeAttr(cover)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+      const ready = document.getElementById('editCoverReadyMsg');
+      if (ready) ready.style.display = 'flex';
+    }
+    showToast('Book details filled ✓');
+  } catch { showToast('Fetch failed — check connection'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Fetch'; } }
 }
 
 // ── SHARED HELPERS ──
@@ -1184,6 +1246,11 @@ function resetAddModal() {
   document.getElementById('addTitle').value = '';
   document.getElementById('addAuthor').value = '';
   document.getElementById('addTitle').style.borderColor = '';
+  const addIsbn = document.getElementById('addIsbn'); if (addIsbn) addIsbn.value = '';
+  const addYear = document.getElementById('addYear'); if (addYear) addYear.value = '';
+  const addPublisher = document.getElementById('addPublisher'); if (addPublisher) addPublisher.value = '';
+  const addGenre = document.getElementById('addGenre'); if (addGenre) addGenre.value = '';
+  const addPageCount = document.getElementById('addPageCount'); if (addPageCount) addPageCount.value = '';
   addCoverFile = null; addCoverUrl = null;
   addStatus = 'unread'; setPillStatus('add', 'unread');
   const addThumb = document.getElementById('addCoverThumb');
