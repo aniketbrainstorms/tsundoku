@@ -820,6 +820,9 @@ async function confirmEdit() {
     book.rating = updates.rating;
   }
 
+  // Close edit sheet first so detail sheet is visible
+  if (typeof closeEditSheet === 'function') closeEditSheet();
+
   // Refresh detail sheet live
   if (typeof window.dsRefreshDetailSheet === 'function') window.dsRefreshDetailSheet();
 
