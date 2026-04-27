@@ -500,19 +500,19 @@ function dsInitStarInput(book) {
 
 function dsRenderMetaGrid(book) {
   const yearPub = document.getElementById('detailYearPub');
-  const genreEl = document.getElementById('detailGenre');
   const metaGrid = document.getElementById('detailMetaGrid');
   if (yearPub) {
     const parts = [book.year, book.publisher].filter(Boolean);
     yearPub.textContent = parts.join(' • ');
   }
-if (metaGrid) {
-    const pageCount = book.page_count || '';
-    const pages = pageCount ? `${pageCount} pages` : '—';
+  if (metaGrid) {
+    const pages = book.page_count ? `${book.page_count} pages` : '—';
     const genre = book.genre || '—';
     metaGrid.style.display = 'grid';
-    document.getElementById('detailMetaGenre').textContent = genre;
-    document.getElementById('detailMetaPages').textContent = pages;
+    const genreEl = document.getElementById('detailMetaGenre');
+    const pagesEl = document.getElementById('detailMetaPages');
+    if (genreEl) genreEl.textContent = genre;
+    if (pagesEl) pagesEl.textContent = pages;
   }
 }
 
