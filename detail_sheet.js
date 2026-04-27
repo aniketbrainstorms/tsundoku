@@ -586,10 +586,12 @@ function openDetailModal(id) {
 
   // Fetch meta in background
   // Fetch meta in background — only fill fields not already in DB
+  // Fetch summary only — meta fields are pre-filled at add-time
   fetchBookMeta(book.title, book.author).then(async meta => {
-    if (editingId !== id) return;
+    if (editingId !== id || !meta) return;
     dsBuildSummary(meta.description);
     dsRenderSummary();
+    // Only backfill fields genuinely missing (e.g. old books added before this fix)
     const apiUpdates = {};
     if (!book.year && meta.year)           { apiUpdates.year = meta.year; book.year = meta.year; }
     if (!book.publisher && meta.publisher) { apiUpdates.publisher = meta.publisher; book.publisher = meta.publisher; }
@@ -598,14 +600,7 @@ function openDetailModal(id) {
     if (Object.keys(apiUpdates).length) {
       dsRenderMetaGrid(book);
       const yearPub = document.getElementById('detailYearPub');
-      if (yearPub) {
-        const parts = [book.year, book.publisher].filter(Boolean);
-        yearPub.textContent = parts.join(' • ');
-      }
-      document.getElementById('editYear').value = book.year || '';
-      document.getElementById('editPublisher').value = book.publisher || '';
-      document.getElementById('editGenre').value = book.genre || '';
-      document.getElementById('editPageCount').value = book.page_count || '';
+      if (yearPub) yearPub.textContent = [book.year, book.publisher].filter(Boolean).join(' • ');
       await dbUpdate(id, apiUpdates);
     }
   });
