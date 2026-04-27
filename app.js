@@ -800,6 +800,9 @@ async function confirmEdit() {
     if (url) updates.cover_url = url;
   } else if (editCoverUrl) {
     updates.cover_url = editCoverUrl;
+  } else {
+    const existing = books.find(b => b.id === editingId);
+    if (existing?.cover_url) updates.cover_url = existing.cover_url;
   }
 
   const ok = await dbUpdate(editingId, updates);
@@ -812,11 +815,11 @@ async function confirmEdit() {
   const book = books.find(b => b.id === editingId);
   if (book) Object.assign(book, updates);
 
+  // Close edit sheet first, then refresh detail sheet
+  if (typeof closeEditSheet === 'function') closeEditSheet();
+
   // Refresh detail sheet live
   if (typeof window.dsRefreshDetailSheet === 'function') window.dsRefreshDetailSheet();
-
-  // Close edit sheet, leave detail sheet open
-  if (typeof closeEditSheet === 'function') closeEditSheet();
 
   // Refresh grid in background
   renderGrid();
