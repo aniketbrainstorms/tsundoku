@@ -343,10 +343,8 @@ function toggleDetailSummary() {
     preview.textContent = DS.summaryFull || DS.summaryShort || 'No summary available.';
     preview.scrollTop = 0;
     section.classList.add('expanded');
-    dsSnapTo(true, true);
   } else {
     section.classList.remove('expanded');
-    dsSnapTo(false, true);
   }
 }
 
