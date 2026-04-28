@@ -25,11 +25,12 @@ const DS = {
 };
 
 function dsGetHalfY() {
-  const sheetH = window.innerHeight * 0.92;
-  const vh = window.innerHeight;
-  const visible = Math.min(600, vh * 0.78);
-  return Math.max(0, sheetH - visible);
+  return 0; // Auto-sizing sheet sits perfectly at bottom
 }
+function dsGetFullY() {
+  return 0; // Summary toggle naturally expands sheet height
+}
+
 function dsGetFullY() {
   return 0;
 }
