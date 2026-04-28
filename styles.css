@@ -785,14 +785,15 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   box-shadow: 0 -12px 64px rgba(0,0,0,0.72), 0 -1px 0 rgba(201,113,74,0.08);
   display: flex;
   flex-direction: column;
-  height: 92dvh;
-  height: 92vh;
+  height: auto;
+  max-height: 92dvh;
+  max-height: 92vh;
   transform: translateY(100%);
   will-change: transform;
   touch-action: none;
   overflow: hidden;
   position: relative;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 /* Drag handle */
@@ -915,8 +916,16 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 .ds-rating-label { font-size: 11px; color: var(--text-muted); margin-right: 2px; }
 .ds-rating-score { font-size: 12px; color: var(--text-dim); font-weight: 600; margin-right: 4px; }
-.ds-star { font-size: 14px; line-height: 1; color: var(--accent); cursor: pointer; }
-.ds-star.empty { color: #3a3632; }
+.ds-star-svg {
+  width: 16px; height: 16px;
+  fill: #3a3632;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: fill 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ds-star-svg.on { fill: var(--accent); }
+.ds-star-svg:active { transform: scale(1.2); }
 
 /* Genre/pages meta grid */
 .ds-meta-grid {
@@ -1186,7 +1195,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  margin-top: auto;
+  margin-top: 4px;
 }
 
 .summary-section {
@@ -1234,14 +1243,13 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .summary-chevron {
   width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center;
-  color: var(--text-muted);
-  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1), color 0.18s;
+  color: var(--accent);
+  transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
   pointer-events: none;
   flex-shrink: 0;
 }
 .summary-section.expanded .summary-chevron {
   transform: rotate(180deg);
-  color: var(--accent);
 }
 
 /* Inner wrapper — collapses to 0 when grid row is 0fr */
