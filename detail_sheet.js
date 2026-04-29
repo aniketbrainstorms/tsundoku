@@ -388,44 +388,92 @@ async function fetchBookMeta(title, author) {
   const cacheKey = `${title}__${author || ''}`.toLowerCase();
   if (_metaCache[cacheKey] !== undefined) return Promise.resolve(_metaCache[cacheKey]);
   if (_metaInFlight[cacheKey]) return _metaInFlight[cacheKey];
-  try {
+
+  const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
+
+  // ── Google Books fetch ──
+  async function fetchGoogle() {
     const q = encodeURIComponent(`${title} ${author || ''}`.trim());
-    _metaInFlight[cacheKey] = fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=5&langRestrict=en`)
-      .then(async res => {
-        delete _metaInFlight[cacheKey];
-        const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null };
-        if (!res.ok) {
-          if (res.status === 429) {
-            // quota hit — do NOT cache, allow retry later
-            delete _metaInFlight[cacheKey];
-            return empty;
-          }
-          _metaCache[cacheKey] = empty; return empty;
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=5&langRestrict=en`);
+    if (!res.ok) return null; // null = failed (including 429), don't cache
+    const data = await res.json();
+    const items = data.items || [];
+    const meta = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
+    for (const item of items) {
+      const v = item.volumeInfo || {};
+      if (!meta.description && v.description && v.description.length >= 40) meta.description = v.description;
+      if (!meta.year        && v.publishedDate) meta.year      = v.publishedDate.slice(0, 4);
+      if (!meta.publisher   && v.publisher)     meta.publisher = v.publisher;
+      if (!meta.genre       && v.categories?.length) meta.genre = v.categories.join(', ');
+      if (!meta.pageCount   && v.pageCount)     meta.pageCount = String(v.pageCount);
+      if (meta.description && meta.year && meta.publisher && meta.genre && meta.pageCount) break;
+    }
+    return meta;
+  }
+
+  // ── Open Library fetch ──
+  async function fetchOpenLibrary() {
+    const parts = [title, author].filter(Boolean).map(s => encodeURIComponent(s)).join('+');
+    // Search endpoint for basic fields
+    const searchRes = await fetch(
+      `https://openlibrary.org/search.json?q=${parts}&limit=5&fields=title,author_name,first_publish_year,publisher,subject,number_of_pages_median,key`
+    );
+    if (!searchRes.ok) return null;
+    const searchData = await searchRes.json();
+    const docs = searchData.docs || [];
+    const meta = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
+
+    for (const doc of docs) {
+      if (!meta.year      && doc.first_publish_year) meta.year      = String(doc.first_publish_year);
+      if (!meta.publisher && doc.publisher?.length)  meta.publisher = doc.publisher[0];
+      if (!meta.genre     && doc.subject?.length)    meta.genre     = doc.subject.slice(0, 2).join(', ');
+      if (!meta.pageCount && doc.number_of_pages_median) meta.pageCount = String(doc.number_of_pages_median);
+      if (meta.year && meta.publisher && meta.genre && meta.pageCount) break;
+    }
+
+    // Fetch description from the Works API using the first result's key
+    if (!meta.description && docs[0]?.key) {
+      try {
+        const workRes = await fetch(`https://openlibrary.org${docs[0].key}.json`);
+        if (workRes.ok) {
+          const work = await workRes.json();
+          const desc = work.description;
+          const raw = typeof desc === 'string' ? desc : (desc?.value || '');
+          if (raw.length >= 40) meta.description = raw;
         }
-        const data = await res.json();
-        const items = data.items || [];
-        // Build best meta by merging across results — first item wins per field
-        const meta = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
-        for (const item of items) {
-          const v = item.volumeInfo || {};
-          if (!meta.description && v.description && v.description.length >= 40) meta.description = v.description;
-          if (!meta.year       && v.publishedDate) meta.year       = v.publishedDate.slice(0, 4);
-          if (!meta.publisher  && v.publisher)     meta.publisher  = v.publisher;
-          if (!meta.genre      && v.categories?.length) meta.genre = v.categories.join(', ');
-          if (!meta.pageCount  && v.pageCount)     meta.pageCount  = String(v.pageCount);
-          // Stop early if we have everything
-          if (meta.description && meta.year && meta.publisher && meta.genre && meta.pageCount) break;
-        }
-        _metaCache[cacheKey] = meta;
-        return meta;
-      })
-      .catch(() => {
-        const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null };
-        _metaCache[cacheKey] = empty;
-        return empty;
-      });
-    return _metaInFlight[cacheKey];
-  } catch { return Promise.resolve({ description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null }); }
+      } catch { /* description stays empty */ }
+    }
+
+    return meta;
+  }
+
+  // ── Merge: run both in parallel, Google wins per field, OL fills gaps ──
+  _metaInFlight[cacheKey] = (async () => {
+    try {
+      const [gResult, olResult] = await Promise.allSettled([fetchGoogle(), fetchOpenLibrary()]);
+      const g  = gResult.status  === 'fulfilled' && gResult.value  ? gResult.value  : {};
+      const ol = olResult.status === 'fulfilled' && olResult.value ? olResult.value : {};
+
+      const merged = {
+        description: g.description || ol.description || '',
+        year:        g.year        || ol.year        || '',
+        publisher:   g.publisher   || ol.publisher   || '',
+        genre:       g.genre       || ol.genre       || '',
+        pageCount:   g.pageCount   || ol.pageCount   || '',
+      };
+
+      // Only cache if we got something useful — allows retry if both failed
+      const hasData = Object.values(merged).some(v => v !== '');
+      if (hasData) _metaCache[cacheKey] = merged;
+      delete _metaInFlight[cacheKey];
+      return merged;
+    } catch {
+      delete _metaInFlight[cacheKey];
+      return empty;
+    }
+  })();
+
+  return _metaInFlight[cacheKey];
 }
 
 function dsBuildSummary(text) {
