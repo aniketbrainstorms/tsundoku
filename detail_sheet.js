@@ -390,27 +390,27 @@ async function fetchBookMeta(title, author) {
   if (_metaInFlight[cacheKey]) return _metaInFlight[cacheKey];
   try {
     const q = encodeURIComponent(`${title} ${author || ''}`.trim());
-    _metaInFlight[cacheKey] = fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=3&langRestrict=en`)
+    _metaInFlight[cacheKey] = fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=5&langRestrict=en`)
       .then(async res => {
         delete _metaInFlight[cacheKey];
         const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null };
         if (!res.ok) { _metaCache[cacheKey] = empty; return empty; }
         const data = await res.json();
-        for (const item of (data.items || [])) {
+        const items = data.items || [];
+        // Build best meta by merging across results — first item wins per field
+        const meta = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
+        for (const item of items) {
           const v = item.volumeInfo || {};
-          if (!v.description || v.description.length < 40) continue;
-          const meta = {
-            description: v.description || '',
-            year: v.publishedDate ? v.publishedDate.slice(0, 4) : '',
-            publisher: v.publisher || '',
-            genre: (v.categories || []).join(', '),
-            pageCount: v.pageCount ? String(v.pageCount) : '',
-          };
-          _metaCache[cacheKey] = meta;
-          return meta;
+          if (!meta.description && v.description && v.description.length >= 40) meta.description = v.description;
+          if (!meta.year       && v.publishedDate) meta.year       = v.publishedDate.slice(0, 4);
+          if (!meta.publisher  && v.publisher)     meta.publisher  = v.publisher;
+          if (!meta.genre      && v.categories?.length) meta.genre = v.categories.join(', ');
+          if (!meta.pageCount  && v.pageCount)     meta.pageCount  = String(v.pageCount);
+          // Stop early if we have everything
+          if (meta.description && meta.year && meta.publisher && meta.genre && meta.pageCount) break;
         }
-        const emptyFallback = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
-        _metaCache[cacheKey] = emptyFallback;
+        _metaCache[cacheKey] = meta;
+        return meta;
       });
     return _metaInFlight[cacheKey];
   } catch { return { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null }; }
