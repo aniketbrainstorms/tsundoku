@@ -529,28 +529,17 @@ function dsRenderRating(book) {
   const rating = (book.rating != null) ? book.rating : 0;
   _userRating = rating;
   const starPath = 'M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7z';
+  if (book.status !== 'read') { el.innerHTML = ''; return; }
   let stars = '';
   for (let i = 1; i <= 5; i++) {
-    stars += `<svg class="ds-star-svg${i <= rating ? ' on' : ''}" data-star="${i}" viewBox="0 0 16 16" onclick="dsRateFromDetail(${i})"><path d="${starPath}"/></svg>`;
+    stars += `<svg class="ds-star-svg${i <= rating ? ' on' : ''}" viewBox="0 0 16 16" style="cursor:default"><path d="${starPath}"/></svg>`;
   }
-  el.innerHTML = `<span class="ds-rating-label">Rate</span>${stars}`;
+  el.innerHTML = rating > 0
+    ? `<span class="ds-rating-label">Rating</span>${stars}`
+    : `<span class="ds-rating-label" style="font-size:11px;opacity:0.5">Not rated · edit to rate</span>`;
 }
 
-async function dsRateFromDetail(n) {
-  const newRating = (_userRating === n) ? 0 : n; // tap same star to clear
-  _userRating = newRating;
-
-  document.querySelectorAll('.ds-star-svg').forEach(svg => {
-    svg.classList.toggle('on', +svg.dataset.star <= newRating);
-  });
-  setUserRating(newRating); // sync to edit sheet
-
-  const book = books.find(b => b.id === editingId);
-  if (book) {
-    book.rating = newRating || null;
-    await dbUpdate(editingId, { rating: newRating || null });
-  }
-}
+// dsRateFromDetail removed — rating is now edit-sheet only
 
 function dsInitStarInput(book) {
   _userRating = book.rating || 0;
