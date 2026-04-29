@@ -573,17 +573,11 @@ function cleanGenre(raw) {
   if (!raw || raw === '—') return raw || '—';
   return raw
     .split(/[,\/]/)
-    function cleanGenre(raw) {
-  if (!raw || raw === '—') return raw || '—';
-  return raw
-    .split(/[,\/]/)
     .map(s => s.trim())
     .map(s => s.replace(/^[a-zA-Z]+\s*:\s*/, '').trim())
     .filter(Boolean)
     .slice(0, 2)
     .map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase())
-    .join(', ');
-}
     .join(', ');
 }
 function dsRenderMetaGrid(book) {
