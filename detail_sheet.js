@@ -386,7 +386,7 @@ const _metaInFlight = {};
 
 async function fetchBookMeta(title, author) {
   const cacheKey = `${title}__${author || ''}`.toLowerCase();
-  if (_metaCache[cacheKey] !== undefined) return _metaCache[cacheKey];
+  if (_metaCache[cacheKey] !== undefined) return Promise.resolve(_metaCache[cacheKey]);
   if (_metaInFlight[cacheKey]) return _metaInFlight[cacheKey];
   try {
     const q = encodeURIComponent(`${title} ${author || ''}`.trim());
@@ -411,9 +411,14 @@ async function fetchBookMeta(title, author) {
         }
         _metaCache[cacheKey] = meta;
         return meta;
+      })
+      .catch(() => {
+        const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null };
+        _metaCache[cacheKey] = empty;
+        return empty;
       });
     return _metaInFlight[cacheKey];
-  } catch { return { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null }; }
+  } catch { return Promise.resolve({ description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null }); }
 }
 
 function dsBuildSummary(text) {
@@ -591,7 +596,8 @@ function openDetailModal(id) {
   // Fetch meta in background — only fill fields not already in DB
   // Fetch summary only — meta fields are pre-filled at add-time
   fetchBookMeta(book.title, book.author).then(async meta => {
-    if (editingId !== id || !meta) return;
+    if (editingId !== id) return;
+    if (!meta) meta = {};
     dsBuildSummary(meta.description);
     dsRenderSummary();
     // Only backfill fields genuinely missing (e.g. old books added before this fix)
