@@ -394,7 +394,14 @@ async function fetchBookMeta(title, author) {
       .then(async res => {
         delete _metaInFlight[cacheKey];
         const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '', rating: null };
-        if (!res.ok) { _metaCache[cacheKey] = empty; return empty; }
+        if (!res.ok) {
+          if (res.status === 429) {
+            // quota hit — do NOT cache, allow retry later
+            delete _metaInFlight[cacheKey];
+            return empty;
+          }
+          _metaCache[cacheKey] = empty; return empty;
+        }
         const data = await res.json();
         const items = data.items || [];
         // Build best meta by merging across results — first item wins per field
