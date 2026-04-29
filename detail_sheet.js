@@ -596,16 +596,26 @@ function openDetailModal(id) {
     dsRenderSummary();
     // Only backfill fields genuinely missing (e.g. old books added before this fix)
     const apiUpdates = {};
-    if (!book.year && meta.year)           { apiUpdates.year = meta.year; book.year = meta.year; }
-    if (!book.publisher && meta.publisher) { apiUpdates.publisher = meta.publisher; book.publisher = meta.publisher; }
-    if (!book.genre && meta.genre)         { apiUpdates.genre = meta.genre; book.genre = meta.genre; }
-    if (!book.page_count && meta.pageCount){ apiUpdates.page_count = parseInt(meta.pageCount); book.page_count = parseInt(meta.pageCount); }
+    if (!book.year        || book.year === '')        { if (meta.year)       { apiUpdates.year       = meta.year;                    book.year       = meta.year; } }
+    if (!book.publisher   || book.publisher === '')   { if (meta.publisher)  { apiUpdates.publisher  = meta.publisher;               book.publisher  = meta.publisher; } }
+    if (!book.genre       || book.genre === '')       { if (meta.genre)      { apiUpdates.genre      = meta.genre;                   book.genre      = meta.genre; } }
+    if (!book.page_count  || book.page_count === 0)  { if (meta.pageCount)  { apiUpdates.page_count = parseInt(meta.pageCount) || 0; book.page_count = parseInt(meta.pageCount) || 0; } }
+    // Always re-render meta and summary regardless of whether DB needed updating
+    dsRenderMetaGrid(book);
+    const yearPub = document.getElementById('detailYearPub');
+    if (yearPub) yearPub.textContent = [book.year, book.publisher].filter(Boolean).join(' • ');
     if (Object.keys(apiUpdates).length) {
-      dsRenderMetaGrid(book);
-      const yearPub = document.getElementById('detailYearPub');
-      if (yearPub) yearPub.textContent = [book.year, book.publisher].filter(Boolean).join(' • ');
       await dbUpdate(id, apiUpdates);
     }
+  // Sync backfilled values into edit sheet fields if they're open
+    const editYear = document.getElementById('editYear');
+    const editPublisher = document.getElementById('editPublisher');
+    const editGenre = document.getElementById('editGenre');
+    const editPageCount = document.getElementById('editPageCount');
+    if (editYear && !editYear.value)           editYear.value       = book.year || '';
+    if (editPublisher && !editPublisher.value) editPublisher.value  = book.publisher || '';
+    if (editGenre && !editGenre.value)         editGenre.value      = book.genre || '';
+    if (editPageCount && !editPageCount.value) editPageCount.value  = book.page_count || '';
   });
   } catch(e) { console.error('openDetailModal error:', e); }
 }
