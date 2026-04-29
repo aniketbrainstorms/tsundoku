@@ -1318,7 +1318,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 32px max(calc(var(--safe-bottom) + 20px), 28px);
+  padding: 10px 20px max(calc(var(--safe-bottom) + 20px), 28px);
   background: linear-gradient(to bottom, transparent 0%, var(--surface) 18%);
   border-top: none;
   z-index: 3;
@@ -1373,10 +1373,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .ds-secondary-btn {
   width: 100%;
   padding: 13px 20px;
-  border: 1.5px solid rgba(201,113,74,0.22);
+  border: 1.5px solid var(--border);
   border-radius: 14px;
-  background: rgba(201,113,74,0.07);
-  color: var(--text);
+  background: transparent;
+  color: var(--text-dim);
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   font-weight: 500;
