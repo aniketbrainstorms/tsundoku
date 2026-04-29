@@ -1318,7 +1318,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px 16px max(calc(var(--safe-bottom) + 20px), 28px);
+  padding: 12px 20px max(calc(var(--safe-bottom) + 20px), 28px);
   background: linear-gradient(to bottom, transparent 0%, var(--surface) 18%);
   border-top: none;
   z-index: 3;
