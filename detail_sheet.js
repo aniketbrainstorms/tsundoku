@@ -655,37 +655,40 @@ function openDetailModal(id) {
   // Open sheet
   dsOpen();
 
-  // Fetch meta in background
-  // Fetch meta in background — only fill fields not already in DB
-  // Fetch summary only — meta fields are pre-filled at add-time
-  fetchBookMeta(book.title, book.author).then(async meta => {
-    if (editingId !== id) return;
-    if (!meta) meta = {};
-    dsBuildSummary(meta.description);
+  // Only hit the API if summary is missing OR any metadata field is absent
+  const hasAllMeta = book.year && book.publisher && book.genre && book.page_count;
+  const hasCachedSummary = _metaCache[`${book.title}__${book.author || ''}`.toLowerCase()];
+
+  if (hasAllMeta && hasCachedSummary) {
+    // Everything already known — render from cache immediately, no network call
+    const cached = hasCachedSummary;
+    dsBuildSummary(cached.description || '');
     dsRenderSummary();
-    // Only backfill fields genuinely missing (e.g. old books added before this fix)
-    const apiUpdates = {};
-    if (!book.year        || book.year === '')        { if (meta.year)       { apiUpdates.year       = meta.year;                    book.year       = meta.year; } }
-    if (!book.publisher   || book.publisher === '')   { if (meta.publisher)  { apiUpdates.publisher  = meta.publisher;               book.publisher  = meta.publisher; } }
-    if (!book.genre       || book.genre === '')       { if (meta.genre)      { apiUpdates.genre      = meta.genre;                   book.genre      = meta.genre; } }
-    if (!book.page_count  || book.page_count === 0)  { if (meta.pageCount)  { apiUpdates.page_count = parseInt(meta.pageCount) || 0; book.page_count = parseInt(meta.pageCount) || 0; } }
-    // Always re-render meta and summary regardless of whether DB needed updating
-    dsRenderMetaGrid(book);
-    const yearPub = document.getElementById('detailYearPub');
-    if (yearPub) yearPub.textContent = [book.year, book.publisher].filter(Boolean).join(' • ');
-    if (Object.keys(apiUpdates).length) {
-      await dbUpdate(id, apiUpdates);
-    }
-  // Sync backfilled values into edit sheet fields if they're open
-    const editYear = document.getElementById('editYear');
-    const editPublisher = document.getElementById('editPublisher');
-    const editGenre = document.getElementById('editGenre');
-    const editPageCount = document.getElementById('editPageCount');
-    if (editYear && !editYear.value)           editYear.value       = book.year || '';
-    if (editPublisher && !editPublisher.value) editPublisher.value  = book.publisher || '';
-    if (editGenre && !editGenre.value)         editGenre.value      = book.genre || '';
-    if (editPageCount && !editPageCount.value) editPageCount.value  = book.page_count || '';
-  });
+  } else {
+    fetchBookMeta(book.title, book.author).then(async meta => {
+      if (editingId !== id) return;
+      if (!meta) meta = {};
+      dsBuildSummary(meta.description);
+      dsRenderSummary();
+      const apiUpdates = {};
+      if (!book.year        || book.year === '')        { if (meta.year)      { apiUpdates.year       = meta.year;                    book.year       = meta.year; } }
+      if (!book.publisher   || book.publisher === '')   { if (meta.publisher) { apiUpdates.publisher  = meta.publisher;               book.publisher  = meta.publisher; } }
+      if (!book.genre       || book.genre === '')       { if (meta.genre)     { apiUpdates.genre      = meta.genre;                   book.genre      = meta.genre; } }
+      if (!book.page_count  || book.page_count === 0)  { if (meta.pageCount) { apiUpdates.page_count = parseInt(meta.pageCount) || 0; book.page_count = parseInt(meta.pageCount) || 0; } }
+      dsRenderMetaGrid(book);
+      const yearPub = document.getElementById('detailYearPub');
+      if (yearPub) yearPub.textContent = [book.year, book.publisher].filter(Boolean).join(' • ');
+      if (Object.keys(apiUpdates).length) await dbUpdate(id, apiUpdates);
+      const editYear = document.getElementById('editYear');
+      const editPublisher = document.getElementById('editPublisher');
+      const editGenre = document.getElementById('editGenre');
+      const editPageCount = document.getElementById('editPageCount');
+      if (editYear && !editYear.value)           editYear.value      = book.year || '';
+      if (editPublisher && !editPublisher.value) editPublisher.value = book.publisher || '';
+      if (editGenre && !editGenre.value)         editGenre.value     = book.genre || '';
+      if (editPageCount && !editPageCount.value) editPageCount.value = book.page_count || '';
+    });
+  }
   } catch(e) { console.error('openDetailModal error:', e); }
 }
 
