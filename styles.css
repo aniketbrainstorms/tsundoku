@@ -1319,8 +1319,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
-  padding: 12px 16px max(calc(var(--safe-bottom) + 24px), 32px);
-  background: linear-gradient(to bottom, transparent 0%, var(--surface) 22%);
+  margin: 0 16px;
+  padding: 12px 0 max(calc(var(--safe-bottom) + 24px), 32px);
+  background: transparent;
   border-top: none;
   z-index: 3;
   position: relative;
@@ -1334,7 +1335,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   pointer-events: none;
 }
 
-.sheet-footer { all: unset; display: contents; }
+.sheet-footer { display: block; }
 
 .ds-primary-btn {
   width: 100%;
