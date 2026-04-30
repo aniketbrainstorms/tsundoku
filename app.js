@@ -1039,6 +1039,7 @@ async function fetchBookSearch(query) {
         publisher: v.publisher || '',
         genre: (v.categories||[])[0] || '',
         pageCount: v.pageCount ? String(v.pageCount) : '',
+        _description: v.description || '',
       };
     });
   }
@@ -1105,6 +1106,7 @@ function renderBsResults(items) {
 }
 
 function selectBsResult(title, author, coverUrl, meta) {
+  window._pendingDescription = meta?._description || null;
   closeBookSearch();
   addCoverFile = null; addCoverUrl = coverUrl || null;
   document.getElementById('addTitle').value = title || '';
@@ -1148,6 +1150,7 @@ async function confirmAdd() {
     publisher: document.getElementById('addPublisher')?.value.trim() || null,
     genre: document.getElementById('addGenre')?.value.trim() || null,
     page_count: parseInt(document.getElementById('addPageCount')?.value) || null,
+    description: window._pendingDescription || null,
   });
   if (newBook) {
     let finalUrl = null;
@@ -1273,6 +1276,7 @@ function resetAddModal() {
   const addGenre = document.getElementById('addGenre'); if (addGenre) addGenre.value = '';
   const addPageCount = document.getElementById('addPageCount'); if (addPageCount) addPageCount.value = '';
   addCoverFile = null; addCoverUrl = null;
+  window._pendingDescription = null;
   addStatus = 'unread'; setPillStatus('add', 'unread');
   const addThumb = document.getElementById('addCoverThumb');
   if (addThumb) addThumb.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
