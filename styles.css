@@ -1644,7 +1644,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   padding: 24px 0 20px;
 }
 .author-photo-wrap {
-  width: 80px; height: 160px; border-radius: 14px;
+  width: 90px; height: 130px; border-radius: 12px;
   overflow: hidden; flex-shrink: 0;
   background: var(--surface2); border: 1px solid rgba(255,255,255,0.07);
   box-shadow: 0 8px 28px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.06) inset;
@@ -1706,23 +1706,29 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   overflow-x: auto; scrollbar-width: none;
 }
 .author-filter-row::-webkit-scrollbar { display: none; }  
-  .author-filter-chip {
-  padding: 6px 16px; border-radius: 100px;
-  border: 1.5px solid var(--border); background: transparent;
-  color: var(--text-muted); font-family: 'DM Sans', sans-serif;
-  font-size: 13px; font-weight: 500; cursor: pointer;
-  white-space: nowrap; flex-shrink: 0;
-  transition: all 0.2s cubic-bezier(0.32,0.72,0,1);
-}
-.author-filter-chip.active {
-  background: var(--accent); border-color: var(--accent); color: #fff;
-}
+  (remove entirely — these are unused; tab-btn handles it)
 
 /* State message */
 .author-state {
   font-size: 13px; color: var(--text-muted); text-align: center;
   padding: 24px 0; display: block;
 }
+
+/* Quote card */
+.author-quote-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px 18px; margin-bottom: 20px;
+}
+.author-quote-text {
+  font-size: 13px; color: var(--text-dim); line-height: 1.65;
+  font-style: italic; margin-bottom: 8px;
+}
+.author-quote-byline {
+  font-size: 11px; color: var(--text-muted); font-weight: 500;
+}
+
+/* Timeline container */
+.author-timeline { display: flex; flex-direction: column; }
 
 /* Book rows */
 .author-book-row {
