@@ -1639,38 +1639,47 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .author-scroll::-webkit-scrollbar { display: none; }
 
 /* Hero */
+/* Hero */
 .author-hero {
-  display: flex; gap: 18px; align-items: flex-start;
-  padding: 24px 0 20px;
+  display: grid;
+  grid-template-columns: 40% 60%;
+  border-radius: 14px;
+  overflow: hidden;
+  margin: 20px 0;
+  min-height: 280px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
 }
 .author-photo-wrap {
-  width: 90px; height: 130px; border-radius: 12px;
   overflow: hidden; flex-shrink: 0;
-  background: var(--surface2); border: 1px solid rgba(255,255,255,0.07);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.06) inset;
+  background: var(--surface2);
 }
 .author-photo-wrap img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
+  width: 100%; height: 100%; object-fit: cover;
+  object-position: center top; display: block;
 }
 .author-photo-fallback {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 700; color: var(--accent);
-  background: linear-gradient(160deg, var(--surface2) 0%, rgba(201,113,74,0.12) 100%);
+  font-size: 32px; font-weight: 700; color: var(--accent);
+  background: var(--surface2);
 }
-.author-hero-info { flex: 1; min-width: 0; }
+.author-hero-info {
+  padding: 20px;
+  display: flex; flex-direction: column;
+  justify-content: flex-start; gap: 8px;
+}
 .author-eyebrow {
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
-  color: var(--accent); font-weight: 700; margin-bottom: 4px; opacity: 0.8;
+  color: var(--accent); font-weight: 700; opacity: 0.8;
 }
 .author-name {
-  font-size: 26px; font-weight: 700; color: var(--text);
-  letter-spacing: -0.8px; line-height: 1.1; margin-bottom: 6px;
+  font-size: 22px; font-weight: 700; color: var(--text);
+  letter-spacing: -0.5px; line-height: 1.15;
 }
 .author-intro {
-  font-size: 13px; color: var(--text-muted); line-height: 1.65;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-  overflow: hidden; margin-bottom: 12px;
+  font-size: 12.5px; color: var(--text-muted); line-height: 1.7;
+  margin: 0;
 }
 .author-lib-pill {
   display: inline-flex; align-items: center; gap: 6px;
