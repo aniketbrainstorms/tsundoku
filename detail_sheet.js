@@ -396,7 +396,7 @@ async function fetchBookMeta(title, author) {
     const lastQuotaHit = window._gbQuotaHitAt || 0;
     if (Date.now() - lastQuotaHit < 120_000) return null;
     const q = encodeURIComponent(`${title} ${author || ''}`.trim());
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=5&langRestrict=en`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=8&langRestrict=en`);
     if (!res.ok) {
       if (res.status === 429) window._gbQuotaHitAt = Date.now();
       return null;
@@ -406,7 +406,8 @@ async function fetchBookMeta(title, author) {
     const meta = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
     for (const item of items) {
       const v = item.volumeInfo || {};
-      if (!meta.description && v.description && v.description.length >= 40) meta.description = v.description;
+      const lang = v.language || '';
+      if (!meta.description && v.description && v.description.length >= 40 && (lang === 'en' || lang === '')) meta.description = v.description;
       if (!meta.year        && v.publishedDate) meta.year      = v.publishedDate.slice(0, 4);
       if (!meta.publisher   && v.publisher)     meta.publisher = v.publisher;
       if (!meta.genre       && v.categories?.length) meta.genre = v.categories.join(', ');
@@ -421,7 +422,7 @@ async function fetchBookMeta(title, author) {
     const parts = [title, author].filter(Boolean).map(s => encodeURIComponent(s)).join('+');
     // Search endpoint for basic fields
     const searchRes = await fetch(
-      `https://openlibrary.org/search.json?q=${parts}&limit=5&fields=title,author_name,first_publish_year,publisher,subject,number_of_pages_median,key`
+      `https://openlibrary.org/search.json?q=${parts}&limit=5&language=eng&fields=title,author_name,first_publish_year,publisher,subject,number_of_pages_median,key,language`
     );
     if (!searchRes.ok) return null;
     const searchData = await searchRes.json();
@@ -448,7 +449,8 @@ async function fetchBookMeta(title, author) {
           const work = await workRes.json();
           const desc = work.description;
           const raw = typeof desc === 'string' ? desc : (desc?.value || '');
-          if (raw.length >= 40) meta.description = raw;
+          const isEnglish = /^[\x00-\x7F\u2000-\u206F\u2018-\u2019\u201C-\u201D\s]+$/.test(raw.slice(0, 80));
+          if (raw.length >= 40 && isEnglish) meta.description = raw;
         }
       } catch { /* description stays empty */ }
     }
@@ -464,7 +466,7 @@ async function fetchBookMeta(title, author) {
       const ol = olResult.status === 'fulfilled' && olResult.value ? olResult.value : {};
 
       const merged = {
-        description: g.description || ol.description || '',
+        description: (g.description && /^[\x00-\x7F\u2000-\u206F\u2018-\u2019\u201C-\u201D\s]+$/.test(g.description.slice(0, 80)) ? g.description : '') || ol.description || g.description || '',
         year:        g.year        || ol.year        || '',
         publisher:   g.publisher   || ol.publisher   || '',
         genre:       g.genre       || ol.genre       || '',
