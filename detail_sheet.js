@@ -397,7 +397,7 @@ async function fetchBookMeta(title, author) {
   if (_metaInFlight[cacheKey]) return _metaInFlight[cacheKey];
   // Skip network entirely if local books cache has full data
   const _bk = (typeof books !== 'undefined' ? books : []).find(b => `${b.title}__${b.author || ''}`.toLowerCase() === cacheKey);
-  if (_bk && _bk.year && _bk.publisher && _bk.genre && _bk.page_count && _bk.description && isEnglishText(_bk.description)) {
+  if (_bk && _bk.year && _bk.publisher && _bk.genre && _bk.page_count && _bk.description && isEnglishText(_bk.description || '')) {
     const hit = { description: _bk.description, year: _bk.year, publisher: _bk.publisher, genre: _bk.genre, pageCount: _bk.page_count ? String(_bk.page_count) : '' };
     _metaCache[cacheKey] = hit;
     return Promise.resolve(hit);
@@ -674,10 +674,9 @@ function openDetailModal(id) {
   // Only hit the API if summary is missing OR any metadata field is absent
   const cacheKey = `${book.title}__${book.author || ''}`.toLowerCase();
   const hasCachedSummary = _metaCache[cacheKey];
-  const storedDescriptionIsEnglish = book.description ? isEnglishText(book.description) : false;
+  const storedDescriptionIsEnglish = !!(book.description && isEnglishText(book.description));
   const hasAllMeta = book.year && book.publisher && book.genre && book.page_count;
 
-  // Render best available summary immediately (no flicker)
   if (storedDescriptionIsEnglish) {
     dsBuildSummary(book.description);
     dsRenderSummary();
@@ -693,8 +692,8 @@ function openDetailModal(id) {
     dsRenderSummary();
   }
 
-  // Skip network if everything is already known
-  const hasGoodDescription = storedDescriptionIsEnglish || hasCachedSummary?.description;
+  // Skip network if everything is already known AND description is good
+  const hasGoodDescription = storedDescriptionIsEnglish || !!(hasCachedSummary?.description);
   if (hasAllMeta && hasGoodDescription) {
     // Nothing to fetch
   } else {
