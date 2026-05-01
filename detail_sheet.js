@@ -388,6 +388,20 @@ function isEnglishText(str) {
   return matches >= 5;
 }
 
+async function translateToEnglish(text) {
+  if (!text) return '';
+  try {
+    const res = await fetch('https://libretranslate.com/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: text, source: 'auto', target: 'en', format: 'text' })
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    return data.translatedText || '';
+  } catch { return ''; }
+}
+
 const _metaCache = {};
 const _metaInFlight = {};
 
@@ -502,9 +516,9 @@ async function fetchBookMeta(title, author) {
 }
 
 function dsBuildSummary(text) {
-  if (!text) {
+  if (!text || !isEnglishText(text)) {
     DS.summaryFull = '';
-    DS.summaryShort = 'No summary available.';
+    DS.summaryShort = '';
     return;
   }
   const plain = text.replace(/<[^>]+>/g, '').trim();
@@ -708,7 +722,11 @@ function openDetailModal(id) {
       if (!book.genre       || book.genre === '')       { if (meta.genre)     { apiUpdates.genre      = meta.genre;                   book.genre      = meta.genre; } }
       if (!book.page_count  || book.page_count === 0)  { if (meta.pageCount) { apiUpdates.page_count = parseInt(meta.pageCount) || 0; book.page_count = parseInt(meta.pageCount) || 0; } }
       // Backfill description to DB so future opens are free
-      if (meta.description && (!book.description || !isEnglishText(book.description))) {
+      if (meta.description && !isEnglishText(meta.description)) {
+        const translated = await translateToEnglish(meta.description);
+        meta.description = isEnglishText(translated) ? translated : '';
+      }
+      if (meta.description && isEnglishText(meta.description) && (!book.description || !isEnglishText(book.description))) {
         apiUpdates.description = meta.description;
         book.description = meta.description;
       }
