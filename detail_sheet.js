@@ -27,9 +27,6 @@ const DS = {
 function dsGetHalfY() {
   return 0; // Auto-sizing sheet sits perfectly at bottom
 }
-function dsGetFullY() {
-  return 0; // Summary toggle naturally expands sheet height
-}
 
 function dsGetFullY() {
   return 0;
@@ -398,6 +395,13 @@ async function fetchBookMeta(title, author) {
   const cacheKey = `${title}__${author || ''}`.toLowerCase();
   if (_metaCache[cacheKey] !== undefined) return Promise.resolve(_metaCache[cacheKey]);
   if (_metaInFlight[cacheKey]) return _metaInFlight[cacheKey];
+  // Skip network entirely if local books cache has full data
+  const _bk = (typeof books !== 'undefined' ? books : []).find(b => `${b.title}__${b.author || ''}`.toLowerCase() === cacheKey);
+  if (_bk && _bk.year && _bk.publisher && _bk.genre && _bk.page_count && _bk.description && isEnglishText(_bk.description)) {
+    const hit = { description: _bk.description, year: _bk.year, publisher: _bk.publisher, genre: _bk.genre, pageCount: _bk.page_count ? String(_bk.page_count) : '' };
+    _metaCache[cacheKey] = hit;
+    return Promise.resolve(hit);
+  }
 
   const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
 
@@ -668,33 +672,31 @@ function openDetailModal(id) {
   dsOpen();
 
   // Only hit the API if summary is missing OR any metadata field is absent
-  const hasAllMeta = book.year && book.publisher && book.genre && book.page_count;
   const cacheKey = `${book.title}__${book.author || ''}`.toLowerCase();
   const hasCachedSummary = _metaCache[cacheKey];
+  const storedDescriptionIsEnglish = book.description ? isEnglishText(book.description) : false;
+  const hasAllMeta = book.year && book.publisher && book.genre && book.page_count;
 
-  // If the book already has a stored description, render it immediately
-  const storedDescriptionIsEnglish = book.description ? isEnglishText(book.description) : true;
-
-  if (book.description && storedDescriptionIsEnglish) {
+  // Render best available summary immediately (no flicker)
+  if (storedDescriptionIsEnglish) {
     dsBuildSummary(book.description);
     dsRenderSummary();
-    if (!hasCachedSummary) {
-      _metaCache[cacheKey] = {
-        description: book.description,
-        year: book.year || '',
-        publisher: book.publisher || '',
-        genre: book.genre || '',
-        pageCount: book.page_count ? String(book.page_count) : '',
-      };
-    }
+    _metaCache[cacheKey] = _metaCache[cacheKey] || {
+      description: book.description,
+      year: book.year || '',
+      publisher: book.publisher || '',
+      genre: book.genre || '',
+      pageCount: book.page_count ? String(book.page_count) : '',
+    };
+  } else if (hasCachedSummary?.description) {
+    dsBuildSummary(hasCachedSummary.description);
+    dsRenderSummary();
   }
 
-  if (hasAllMeta && (storedDescriptionIsEnglish && book.description || hasCachedSummary)) {
-    // Everything already known — render from stored data, no network call
-    if (!book.description && hasCachedSummary) {
-      dsBuildSummary(hasCachedSummary.description || '');
-      dsRenderSummary();
-    }
+  // Skip network if everything is already known
+  const hasGoodDescription = storedDescriptionIsEnglish || hasCachedSummary?.description;
+  if (hasAllMeta && hasGoodDescription) {
+    // Nothing to fetch
   } else {
     fetchBookMeta(book.title, book.author).then(async meta => {
       if (editingId !== id) return;
