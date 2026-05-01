@@ -106,7 +106,10 @@ async function fetchAuthorProfile(authorName) {
         if (authorRes.status === 'fulfilled' && authorRes.value.ok) {
           const authorData = await authorRes.value.json();
           const bio = typeof authorData.bio === 'string' ? authorData.bio : authorData.bio?.value;
-          if (bio && bio.length > 40) profile.intro = bio.replace(/\s+/g, ' ').trim();
+          if (bio && bio.length > 40) {
+            const cleaned = bio.replace(/\s+/g, ' ').trim();
+            profile.intro = cleaned.slice(0, 600).trim();
+          }
         }
       }
     }
