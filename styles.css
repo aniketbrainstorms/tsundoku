@@ -143,6 +143,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   -webkit-backdrop-filter: blur(32px) saturate(1.8);
   box-shadow: 0 2px 20px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
   cursor: text;
+  -webkit-overflow-scrolling: touch;
 }
 .floating-search-input {
   flex: 1;
@@ -154,6 +155,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   font-size: 14px;
   padding: 0;
   min-width: 0;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 .floating-search-input::placeholder { color: rgba(255,255,255,0.32); }
 .floating-search-clear {
