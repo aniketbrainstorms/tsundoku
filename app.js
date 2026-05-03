@@ -2629,78 +2629,29 @@ function closeListBookDetail() {
 (function () {
   const bar = document.getElementById('floatingBar');
   const input = document.getElementById('searchInput');
-  const appScreen = document.getElementById('appScreen');
-  if (!bar || !input || !appScreen) return;
+  if (!bar || !input) return;
 
-  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!window.visualViewport) return;
 
-  if (!isIOS) {
-    // Android / desktop: original visualViewport approach works fine
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', () => {
-        const vv = window.visualViewport;
-        const kb = window.innerHeight - (vv.offsetTop + vv.height);
-        const safeBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0;
-        bar.style.bottom = kb > 50 ? (kb + Math.max(safeBottom + 10, 16)) + 'px' : '';
-      });
-    }
-    return;
-  }
+  const vv = window.visualViewport;
 
-  // ── iOS-specific: use transform to shift the whole app up ──
-  let rafId = null;
-  let lastKb = 0;
+  function update() {
+    const kbHeight = window.innerHeight - vv.height - vv.offsetTop;
+    const safeBottom = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
+    ) || 0;
 
-  function applyKeyboardOffset() {
-    if (!window.visualViewport) return;
-    const vv = window.visualViewport;
-    // kb = how many px the keyboard is covering
-    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-    if (Math.abs(kb - lastKb) < 2) return; // debounce tiny fluctuations
-    lastKb = kb;
-
-    const safeBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0;
-
-    if (kb > 50) {
-      // Shift the entire app up by keyboard height so header stays visible
-      appScreen.style.transform = `translateY(-${kb}px)`;
-      // Move bar above keyboard
-      bar.style.bottom = (kb + Math.max(safeBottom + 10, 16)) + 'px';
+    if (kbHeight > 50) {
+      bar.style.bottom = (kbHeight + Math.max(safeBottom + 10, 16)) + 'px';
     } else {
-      appScreen.style.transform = '';
       bar.style.bottom = '';
     }
+
+    // Cancel iOS scroll — keep window pinned to top
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
   }
 
-  function onVVChange() {
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(applyKeyboardOffset);
-  }
-
-  window.visualViewport.addEventListener('resize', onVVChange);
-  window.visualViewport.addEventListener('scroll', onVVChange);
-
-  // Prevent iOS from auto-scrolling to the input on focus
-  input.addEventListener('touchstart', (e) => {
-    // Mark the scroll position before iOS touches it
-    input._scrollY = window.scrollY;
-  }, { passive: true });
-
-  input.addEventListener('focus', () => {
-    // Immediately cancel any scroll Safari enqueued
-    requestAnimationFrame(() => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    });
-  });
-
-  input.addEventListener('blur', () => {
-    setTimeout(() => {
-      appScreen.style.transform = '';
-      bar.style.bottom = '';
-      lastKb = 0;
-    }, 80);
-  });
+  vv.addEventListener('resize', update);
+  vv.addEventListener('scroll', update);
+  window.addEventListener('scroll', () => window.scrollTo(0, 0));
 })();
