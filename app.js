@@ -2663,7 +2663,7 @@ function closeListBookDetail() {
     if (isActive) reposition();
   }
 
-  function onFocus() {
+function onFocus() {
     isActive = true;
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', onVVResize);
@@ -2679,6 +2679,26 @@ function closeListBookDetail() {
       window.visualViewport.removeEventListener('scroll', onVVResize);
     }
     setTimeout(reset, 80);
+  }
+
+  // Keep the entire app screen anchored to the visual viewport on iOS
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      const appScreen = document.getElementById('appScreen');
+      if (!appScreen) return;
+      const vv = window.visualViewport;
+      const offsetTop = vv.offsetTop || 0;
+      if (vv.height < window.innerHeight * 0.75) {
+        // Keyboard is up — clamp app to visual viewport
+        appScreen.style.position = 'fixed';
+        appScreen.style.top = offsetTop + 'px';
+        appScreen.style.height = vv.height + 'px';
+      } else {
+        appScreen.style.position = '';
+        appScreen.style.top = '';
+        appScreen.style.height = '';
+      }
+    });
   }
 
   input.addEventListener('focus', onFocus);
