@@ -2628,38 +2628,31 @@ function closeListBookDetail() {
 // ── FLOATING BAR — keyboard lift ──────────────────────────────────────────
 (function () {
   const bar = document.getElementById('floatingBar');
-  if (!bar) return;
+  const input = document.getElementById('searchInput');
+  if (!bar || !input) return;
 
-  // On iOS, visualViewport shrinks when keyboard opens.
-  // We reposition the bar to sit just above the keyboard edge.
+  // Use transform only — never change position, which escapes #app's
+  // overflow:hidden and makes #authorOverlay's translateX(100%) pannable.
   function reposition() {
     if (!window.visualViewport) return;
     const vv = window.visualViewport;
-    // offsetTop = how far the viewport has scrolled under the keyboard
-    // height = visible height above keyboard
-    const keyboardTop = vv.offsetTop + vv.height;
-    const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0;
-    const gap = 12; // px gap above keyboard
-    bar.style.position = 'fixed';
-    bar.style.bottom = (window.innerHeight - keyboardTop + gap) + 'px';
-    bar.style.left = '16px';
-    bar.style.right = '16px';
+    // How much has the visual viewport shrunk from the bottom (= keyboard height)
+    const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+    if (keyboardHeight > 50) {
+      // Lift the bar up by keyboard height, staying in #app flow
+      bar.style.transform = `translateY(-${keyboardHeight}px)`;
+    } else {
+      bar.style.transform = '';
+    }
   }
 
   function reset() {
-    bar.style.position = '';
-    bar.style.bottom = '';
-    bar.style.left = '';
-    bar.style.right = '';
+    bar.style.transform = '';
   }
-
-  const input = document.getElementById('searchInput');
-  if (!input) return;
 
   input.addEventListener('focus', () => {
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', reposition);
-      window.visualViewport.addEventListener('scroll', reposition);
       reposition();
     }
   });
@@ -2667,8 +2660,8 @@ function closeListBookDetail() {
   input.addEventListener('blur', () => {
     if (window.visualViewport) {
       window.visualViewport.removeEventListener('resize', reposition);
-      window.visualViewport.removeEventListener('scroll', reposition);
     }
-    reset();
+    // Small delay so keyboard dismissal animation completes first
+    setTimeout(reset, 50);
   });
 })();
