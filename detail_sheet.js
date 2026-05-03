@@ -102,6 +102,7 @@ function dsClose() {
   const sheetEl = document.getElementById('detailSheet');
   const sheetH = sheetEl ? sheetEl.offsetHeight : window.innerHeight * 0.92;
   dsSetTranslate(sheetH, true);
+  DS.isOpen = false;
   const overlay = document.getElementById('detailModal');
   overlay.classList.remove('ds-expanded');
   overlay.style.pointerEvents = 'none';
@@ -119,8 +120,8 @@ function dsClose() {
 
 // ── Touch / drag handling ──
 function dsOnTouchStart(e) {
+  if (!DS.isOpen) return;
   if (DS.animating) return;
-  if (!DS.isOpen && Date.now() - _dsOpenTime < 600) return;
   if (document.getElementById('progressModal').classList.contains('visible')) return;
   if (!e.target.closest('#detailSheet')) return;
   if (e.target.closest('#dsSummarySection') && !e.target.closest('#dsSummaryHeader')) return;
