@@ -2631,38 +2631,56 @@ function closeListBookDetail() {
   const input = document.getElementById('searchInput');
   if (!bar || !input) return;
 
+  let isActive = false;
+
   function reposition() {
     if (!window.visualViewport) return;
     const vv = window.visualViewport;
-    // keyboard height = layout viewport bottom minus visual viewport bottom
     const keyboardHeight = window.innerHeight - (vv.offsetTop + vv.height);
-    const safeBottom = parseInt(
-      getComputedStyle(document.documentElement)
-        .getPropertyValue('--safe-bottom')
+    const safeBottom = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
     ) || 0;
-    const gap = Math.max(safeBottom + 18, 24);
+
     if (keyboardHeight > 50) {
+      // Pin the bar just above the keyboard, accounting for viewport scroll offset
+      const gap = Math.max(safeBottom + 10, 16);
+      bar.style.position = 'fixed';
       bar.style.bottom = (keyboardHeight + gap) + 'px';
+      // On iOS the visualViewport can shift vertically — compensate
+      bar.style.top = 'auto';
     } else {
-      bar.style.bottom = '';
+      reset();
     }
   }
 
   function reset() {
+    bar.style.position = '';
     bar.style.bottom = '';
+    bar.style.top = '';
   }
 
-  input.addEventListener('focus', () => {
+  function onVVResize() {
+    if (isActive) reposition();
+  }
+
+  function onFocus() {
+    isActive = true;
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', reposition);
+      window.visualViewport.addEventListener('resize', onVVResize);
+      window.visualViewport.addEventListener('scroll', onVVResize);
       reposition();
     }
-  });
+  }
 
-  input.addEventListener('blur', () => {
+  function onBlur() {
+    isActive = false;
     if (window.visualViewport) {
-      window.visualViewport.removeEventListener('resize', reposition);
+      window.visualViewport.removeEventListener('resize', onVVResize);
+      window.visualViewport.removeEventListener('scroll', onVVResize);
     }
-    setTimeout(reset, 100);
-  });
+    setTimeout(reset, 80);
+  }
+
+  input.addEventListener('focus', onFocus);
+  input.addEventListener('blur', onBlur);
 })();
