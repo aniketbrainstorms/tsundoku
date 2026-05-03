@@ -24,6 +24,7 @@
 html, body { 
   height: 100%; width: 100%; overflow: hidden; 
   -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  overscroll-behavior: none;
 }
 body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
 
@@ -129,6 +130,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   will-change: bottom;
+  transition: bottom 0.22s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .floating-search-field {
   flex: 1;
