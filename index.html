@@ -131,16 +131,7 @@
           <button class="profile-avatar" id="profileAvatarBtn" onclick="openProfileModal()">?</button>
         </div>
       </div>
-      <div class="search-row">
-        <div class="search-row-input-wrap">
-          <span class="search-row-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </span>
-          <input type="text" class="search-row-input" id="searchInput" placeholder="Search Library" oninput="onShelfSearch()" autocomplete="off" autocorrect="off" spellcheck="false" />
-          <button class="search-row-clear" id="searchClearBtn" onclick="clearSearch()">×</button>
-        </div>
-        <button class="add-btn-header" id="addBtn" onclick="openBookSearch()">+</button>
-      </div>
+      
       <div class="toolbar">
         <div class="filter-tabs">
           <button class="tab-btn active" data-filter="reading" onclick="setFilter('reading')">Reading <span class="tab-count" id="count-reading">0</span></button>
@@ -160,6 +151,18 @@
         <div class="alpha-track" id="mainAlphaTrack"></div>
       </div>
       <div class="alpha-bubble" id="mainAlphaBubble"></div>
+    </div>
+
+    <!-- FLOATING SEARCH + ADD BAR -->
+    <div class="floating-bar" id="floatingBar">
+      <div class="floating-search-field" onclick="openBookSearch()">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14" y2="14"/></svg>
+        <input type="text" class="floating-search-input" id="searchInput" placeholder="Search library…" oninput="onShelfSearch()" autocomplete="off" autocorrect="off" spellcheck="false" />
+        <button class="floating-search-clear" id="searchClearBtn" onclick="clearSearch()">×</button>
+      </div>
+      <button class="floating-add-btn" id="addBtn" onclick="openBookSearch()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+      </button>
     </div>
   </div>
 
