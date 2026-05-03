@@ -2629,28 +2629,32 @@ function closeListBookDetail() {
 (function () {
   const bar = document.getElementById('floatingBar');
   const input = document.getElementById('searchInput');
-  if (!bar || !input || !window.visualViewport) return;
+  const grid = document.getElementById('mainGridContainer');
+  if (!bar || !input || !grid || !window.visualViewport) return;
 
   const vv = window.visualViewport;
+  let kbOpen = false;
 
   function update() {
     const kbHeight = Math.max(0, window.innerHeight - vv.offsetTop - vv.height);
-    if (kbHeight > 50) {
-      bar.style.bottom = (kbHeight + 8) + 'px';
+    kbOpen = kbHeight > 80;
+    if (kbOpen) {
+      bar.style.bottom = (kbHeight + 10) + 'px';
+      bar.style.transform = '';
+      grid.style.paddingBottom = (kbHeight + 72) + 'px';
     } else {
       bar.style.bottom = '';
+      grid.style.paddingBottom = '';
     }
   }
 
   vv.addEventListener('resize', update);
   vv.addEventListener('scroll', update);
 
-  const grid = document.getElementById('mainGridContainer');
-  input.addEventListener('focus', () => {
-    if (grid) grid.style.overflowY = 'hidden';
-  });
   input.addEventListener('blur', () => {
-    if (grid) grid.style.overflowY = '';
-    bar.style.bottom = '';
+    setTimeout(() => {
+      bar.style.bottom = '';
+      grid.style.paddingBottom = '';
+    }, 80);
   });
 })();
