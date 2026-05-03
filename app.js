@@ -2624,3 +2624,51 @@ function closeListBookDetail() {
 })();
 // ── END MY LISTS ────────────────────────────────────────────────────────────
   // ── END A–Z SCROLLBAR ─────────────────────────────────────────────────────
+
+// ── FLOATING BAR — keyboard lift ──────────────────────────────────────────
+(function () {
+  const bar = document.getElementById('floatingBar');
+  if (!bar) return;
+
+  // On iOS, visualViewport shrinks when keyboard opens.
+  // We reposition the bar to sit just above the keyboard edge.
+  function reposition() {
+    if (!window.visualViewport) return;
+    const vv = window.visualViewport;
+    // offsetTop = how far the viewport has scrolled under the keyboard
+    // height = visible height above keyboard
+    const keyboardTop = vv.offsetTop + vv.height;
+    const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0;
+    const gap = 12; // px gap above keyboard
+    bar.style.position = 'fixed';
+    bar.style.bottom = (window.innerHeight - keyboardTop + gap) + 'px';
+    bar.style.left = '16px';
+    bar.style.right = '16px';
+  }
+
+  function reset() {
+    bar.style.position = '';
+    bar.style.bottom = '';
+    bar.style.left = '';
+    bar.style.right = '';
+  }
+
+  const input = document.getElementById('searchInput');
+  if (!input) return;
+
+  input.addEventListener('focus', () => {
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', reposition);
+      window.visualViewport.addEventListener('scroll', reposition);
+      reposition();
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', reposition);
+      window.visualViewport.removeEventListener('scroll', reposition);
+    }
+    reset();
+  });
+})();
