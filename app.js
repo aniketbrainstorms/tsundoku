@@ -2646,10 +2646,15 @@ function closeListBookDetail() {
     }
   }
 
-  vv.addEventListener('resize', update);
+vv.addEventListener('resize', update);
 
   // Prevent iOS from scrolling the page on input focus — cancel immediately
   window.addEventListener('scroll', () => {
-    if (keyboardUp) window.scrollTo(0, 0);
+    window.scrollTo(0, 0);
   }, { passive: true });
+
+  input.addEventListener('focus', () => {
+    window.scrollTo(0, 0);
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+  });
 })();
