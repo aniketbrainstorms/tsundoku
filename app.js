@@ -2631,16 +2631,17 @@ function closeListBookDetail() {
   const input = document.getElementById('searchInput');
   if (!bar || !input) return;
 
-  // Use transform only — never change position, which escapes #app's
-  // overflow:hidden and makes #authorOverlay's translateX(100%) pannable.
+  const grid = document.getElementById('mainGridContainer');
+  let lockedScrollTop = 0;
+
   function reposition() {
     if (!window.visualViewport) return;
     const vv = window.visualViewport;
-    // How much has the visual viewport shrunk from the bottom (= keyboard height)
     const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
     if (keyboardHeight > 50) {
-      // Lift the bar up by keyboard height, staying in #app flow
       bar.style.transform = `translateY(-${keyboardHeight}px)`;
+      // Keep grid frozen at its pre-focus scroll position
+      if (grid) grid.scrollTop = lockedScrollTop;
     } else {
       bar.style.transform = '';
     }
@@ -2651,6 +2652,11 @@ function closeListBookDetail() {
   }
 
   input.addEventListener('focus', () => {
+    // Snapshot scroll position before keyboard animation begins
+    if (grid) lockedScrollTop = grid.scrollTop;
+    // Prevent body/app scroll on iOS
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', reposition);
       reposition();
@@ -2658,10 +2664,11 @@ function closeListBookDetail() {
   });
 
   input.addEventListener('blur', () => {
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
     if (window.visualViewport) {
       window.visualViewport.removeEventListener('resize', reposition);
     }
-    // Small delay so keyboard dismissal animation completes first
     setTimeout(reset, 50);
   });
 })();
