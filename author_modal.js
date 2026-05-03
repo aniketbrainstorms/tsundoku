@@ -200,7 +200,9 @@ function hydrateAuthorHeader(profile, rows) {
 }
 
 async function openAuthorPage(authorName) {
-  if (!authorName) return;
+  if (!authorName || !authorName.trim()) return;
+  const rows = buildAuthorRows(authorName);
+  if (!rows.length) return;
   _activeAuthorName = authorName;
   const overlay = document.getElementById('authorOverlay');
   const scroll = document.getElementById('authorScroll');
