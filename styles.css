@@ -126,6 +126,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   gap: 10px;
   z-index: 8;
   pointer-events: auto;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: bottom;
 }
 .floating-search-field {
   flex: 1;
