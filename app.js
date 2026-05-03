@@ -2629,7 +2629,11 @@ function closeListBookDetail() {
 (function () {
   const bar = document.getElementById('floatingBar');
   const input = document.getElementById('searchInput');
+  const appScreen = document.getElementById('appScreen');
   if (!bar || !input) return;
+
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   function reposition() {
     if (!window.visualViewport) return;
@@ -2638,23 +2642,53 @@ function closeListBookDetail() {
     const safeBottom = parseFloat(
       getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
     ) || 0;
-    const gap = Math.max(safeBottom + 10, 16);
-    bar.style.bottom = keyboardHeight > 50 ? (keyboardHeight + gap) + 'px' : '';
+
+    if (keyboardHeight > 50) {
+      const gap = Math.max(safeBottom + 10, 16);
+      bar.style.bottom = (keyboardHeight + gap) + 'px';
+
+      if (isIOS && appScreen) {
+        // Lock app to visual viewport top so header doesn't scroll away
+        appScreen.style.top = vv.offsetTop + 'px';
+        appScreen.style.height = vv.height + 'px';
+      }
+    } else {
+      bar.style.bottom = '';
+      if (appScreen) {
+        appScreen.style.top = '';
+        appScreen.style.height = '';
+      }
+    }
   }
 
-  function reset() { bar.style.bottom = ''; }
+  function reset() {
+    bar.style.bottom = '';
+    if (appScreen) {
+      appScreen.style.top = '';
+      appScreen.style.height = '';
+    }
+  }
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', reposition);
     window.visualViewport.addEventListener('scroll', reposition);
   }
 
-  // Prevent iOS from scrolling the page when the keyboard opens
-  input.addEventListener('focus', () => {
-    // Blur then re-focus after a tick so iOS doesn't auto-scroll to the input
-    const scrollY = window.scrollY;
-    setTimeout(() => { window.scrollTo(0, scrollY); }, 0);
-  });
+  if (isIOS) {
+    // On iOS, touching the input causes Safari to scroll the page up to it.
+    // Fix: intercept touchend, blur any active input, scroll back to 0,
+    // then focus — by the time focus fires the page is already locked.
+    input.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      input.focus();
+      // Cancel any scroll Safari enqueued
+      requestAnimationFrame(() => {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        if (appScreen) appScreen.scrollTop = 0;
+      });
+    });
+  }
 
   input.addEventListener('blur', () => setTimeout(reset, 80));
 })();
