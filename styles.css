@@ -1881,7 +1881,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .app-screen.search-active .floating-bar {
   position: fixed;
   bottom: auto;
-  top: max(var(--safe-top), 12px);
+  top: max(var(--safe-top), 8px);
   left: 16px;
   right: 16px;
   z-index: 10;
@@ -1893,9 +1893,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   box-shadow: 0 2px 24px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(201,113,74,0.12);
 }
 .app-screen.search-active .grid-container {
-  padding-top: max(calc(var(--safe-top) + 120px), 128px);
+  padding-top: 72px;
 }
-
 /* Search empty / prompt state */
 .search-library-state {
   grid-column: 1 / -1;
