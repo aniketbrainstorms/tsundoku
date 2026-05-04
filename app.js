@@ -2630,18 +2630,19 @@ function closeListBookDetail() {
   const bar = document.getElementById('floatingBar');
   const input = document.getElementById('searchInput');
   const grid = document.getElementById('mainGridContainer');
-  const appScreen = document.getElementById('appScreen');
-  if (!bar || !input || !grid || !window.visualViewport) return;
+  if (!bar || !input || !grid) return;
 
+  // On focus: bar stays fixed, keyboard slides under it.
+  // interactive-widget=resizes-content in viewport meta handles the rest.
+  // We only need to ensure the bar bottom tracks the reduced viewport height.
+  if (!window.visualViewport) return;
   const vv = window.visualViewport;
 
   function update() {
-    const kbHeight = Math.max(0, window.innerHeight - vv.offsetTop - vv.height);
+    const kbHeight = Math.max(0, window.innerHeight - vv.height);
     if (kbHeight > 80) {
       bar.style.bottom = (kbHeight + 10) + 'px';
       grid.style.paddingBottom = (kbHeight + 72) + 'px';
-      // Counter iOS's auto-scroll by snapping viewport back to top
-      if (vv.offsetTop > 0) window.scrollTo(0, 0);
     } else {
       bar.style.bottom = '';
       grid.style.paddingBottom = '';
@@ -2649,30 +2650,8 @@ function closeListBookDetail() {
   }
 
   vv.addEventListener('resize', update);
-  vv.addEventListener('scroll', update);
-
-  input.addEventListener('focus', () => {
-    // Prevent iOS scroll-to-focused-element behavior
-    input.style.transform = 'translateZ(0)';
-    // Immediately after focus, kill any scroll iOS tries to apply
-    requestAnimationFrame(() => {
-      window.scrollTo(0, 0);
-      if (appScreen) appScreen.scrollTop = 0;
-    });
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        window.scrollTo(0, 0);
-        if (appScreen) appScreen.scrollTop = 0;
-      });
-    });
-  });
 
   input.addEventListener('blur', () => {
-    input.style.transform = '';
-    setTimeout(() => {
-      bar.style.bottom = '';
-      grid.style.paddingBottom = '';
-      window.scrollTo(0, 0);
-    }, 80);
+    setTimeout(update, 100);
   });
 })();
