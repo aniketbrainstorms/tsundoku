@@ -1892,7 +1892,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* Pad header so toolbar sits below the floating search bar */
 .app-screen.search-active .header {
-  padding-top: max(var(--safe-top), 16px);
   transition: padding-top 0.28s cubic-bezier(0.32,0.72,0,1);
 }
 .app-screen.search-active .hint-bar {
@@ -1902,6 +1901,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* Floating bar moves to top, + button hidden */
 .app-screen.search-active .floating-bar {
   z-index: 10;
+  bottom: max(calc(var(--safe-bottom) + 18px), 24px);
 }
 .app-screen.search-active .floating-add-btn {
   width: 0;
@@ -1921,6 +1921,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 .app-screen.search-active .grid-container {
   padding-top: 16px;
+  padding-bottom: max(calc(var(--safe-bottom) + 88px), 96px);
 }
 
 /* ── SEARCH EMPTY / PROMPT STATE ── */
