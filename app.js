@@ -2697,31 +2697,18 @@ function closeListBookDetail() {
 // ── FLOATING BAR — keyboard lift ──────────────────────────────────────────
 (function () {
   const bar = document.getElementById('floatingBar');
-  const input = document.getElementById('searchInput');
-  const grid = document.getElementById('mainGridContainer');
-  if (!bar || !input || !grid) return;
-
-  // On focus: bar stays fixed, keyboard slides under it.
-  // interactive-widget=resizes-content in viewport meta handles the rest.
-  // We only need to ensure the bar bottom tracks the reduced viewport height.
+  if (!bar) return;
   if (!window.visualViewport) return;
   const vv = window.visualViewport;
 
-function update() {
-    const kbHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  function update() {
+    const kbHeight = Math.max(0, window.innerHeight - vv.height);
     if (kbHeight > 80) {
-      const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0;
-      bar.style.bottom = (kbHeight - safeBottom + 8) + 'px';
-      grid.style.paddingBottom = (kbHeight + 64) + 'px';
+      bar.style.bottom = (kbHeight + 10) + 'px';
     } else {
       bar.style.bottom = '';
-      grid.style.paddingBottom = '';
     }
   }
 
   vv.addEventListener('resize', update);
-
-  input.addEventListener('blur', () => {
-    setTimeout(update, 100);
-  });
 })();
