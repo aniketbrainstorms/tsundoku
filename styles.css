@@ -172,8 +172,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   box-shadow: 0 6px 20px rgba(201,113,74,0.45), 0 2px 6px rgba(0,0,0,0.25);
-  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  transition: width 0.25s ease, opacity 0.2s ease, margin 0.22s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
   padding: 0;
+  opacity: 1;
+  overflow: hidden;
 }
 .floating-add-btn.open { transform: rotate(45deg); }
 
@@ -1867,17 +1869,37 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .ds-author-tap:active { opacity: 0.7; }
 
 /* ── SEARCH ACTIVE MODE ── */
-.app-screen.search-active .header {
-  position: relative;
-  z-index: 9;
-}
 .app-screen .toolbar {
   transition: opacity 0.22s ease, max-height 0.28s cubic-bezier(0.32,0.72,0,1), margin 0.22s ease;
   max-height: 60px;
 }
+
+/* Hide logo/avatar row, keep toolbar visible */
+.app-screen.search-active .header-top {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-bottom: 0;
+  pointer-events: none;
+  transition: max-height 0.26s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease, margin 0.22s ease;
+}
+.app-screen .header-top {
+  max-height: 60px;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.26s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease, margin 0.22s ease;
+}
+
+/* Pad header so toolbar sits below the floating search bar */
+.app-screen.search-active .header {
+  padding-top: calc(max(var(--safe-top), 8px) + 54px + 10px);
+  transition: padding-top 0.28s cubic-bezier(0.32,0.72,0,1);
+}
 .app-screen.search-active .hint-bar {
   display: none;
 }
+
+/* Floating bar moves to top, + button hidden */
 .app-screen.search-active .floating-bar {
   position: fixed;
   bottom: auto;
@@ -1887,48 +1909,58 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   z-index: 10;
   transition: top 0.28s cubic-bezier(0.32,0.72,0,1), bottom 0.28s cubic-bezier(0.32,0.72,0,1);
 }
+.app-screen.search-active .floating-add-btn {
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  transition: width 0.22s ease, opacity 0.18s ease, margin 0.22s ease;
+}
+
 .app-screen.search-active .floating-search-field {
   background: rgba(255,255,255,0.09);
   border-color: rgba(201,113,74,0.35);
   box-shadow: 0 2px 24px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(201,113,74,0.12);
 }
 .app-screen.search-active .grid-container {
-  padding-top: 72px;
+  padding-top: 16px;
 }
-/* Search empty / prompt state */
+
+/* ── SEARCH EMPTY / PROMPT STATE ── */
 .search-library-state {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 32px 32px;
+  padding: 40px 32px 32px;
   text-align: center;
-  gap: 12px;
-  animation: searchStateIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  gap: 14px;
+  animation: searchStateIn 0.32s cubic-bezier(0.34,1.56,0.64,1) both;
 }
 @keyframes searchStateIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  from { opacity: 0; transform: translateY(14px) scale(0.95); }
   to   { opacity: 1; transform: none; }
 }
 .search-library-icon {
-  width: 80px; height: 80px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 24px;
+  width: 96px; height: 96px;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 4px;
+  opacity: 0.9;
 }
 .search-library-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
   line-height: 1.25;
 }
 .search-library-sub {
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.65;
-  max-width: 260px;
+  max-width: 250px;
 }
