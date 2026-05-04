@@ -86,7 +86,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .auth-resend-btn { background: none; border: none; color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; padding: 0; }
 
 /* ── APP SCREEN ── */
-.app-screen { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.app-screen { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 .header {
   padding-top: max(var(--safe-top), 16px);
   padding-left: max(var(--safe-left), 20px);
@@ -1892,7 +1892,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* Pad header so toolbar sits below the floating search bar */
 .app-screen.search-active .header {
-  padding-top: calc(max(var(--safe-top), 8px) + 54px + 10px);
+  padding-top: calc(max(var(--safe-top), 8px) + 46px + 12px);
   transition: padding-top 0.28s cubic-bezier(0.32,0.72,0,1);
 }
 .app-screen.search-active .hint-bar {
@@ -1901,7 +1901,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* Floating bar moves to top, + button hidden */
 .app-screen.search-active .floating-bar {
-  position: fixed;
+  position: absolute;
   bottom: auto;
   top: max(var(--safe-top), 8px);
   left: 16px;
