@@ -528,11 +528,23 @@ function showSearchEmptyState() {
   grid.classList.remove('reading-mode');
   grid.innerHTML = `<div class="search-library-state">
     <div class="search-library-icon">
-      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.45">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-        <circle cx="16.5" cy="8" r="3" stroke="var(--accent)" stroke-width="1.4" opacity="0.7"/>
-        <line x1="19" y1="10.5" x2="21" y2="12.5" stroke="var(--accent)" stroke-width="1.6" opacity="0.7"/>
+      <svg width="72" height="72" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Book pages -->
+        <rect x="14" y="18" width="38" height="50" rx="4" fill="#2c2823" stroke="#3a3530" stroke-width="1.5"/>
+        <rect x="18" y="14" width="38" height="50" rx="4" fill="#332e28" stroke="#3a3530" stroke-width="1.5"/>
+        <rect x="22" y="10" width="38" height="50" rx="4" fill="#3a3530" stroke="#4a4540" stroke-width="1.5"/>
+        <!-- Page lines -->
+        <line x1="30" y1="24" x2="52" y2="24" stroke="#5a5248" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="30" y1="30" x2="52" y2="30" stroke="#5a5248" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="30" y1="36" x2="44" y2="36" stroke="#5a5248" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- Magnifier -->
+        <circle cx="52" cy="50" r="12" fill="#1a1814" stroke="var(--accent)" stroke-width="2.2"/>
+        <circle cx="52" cy="50" r="7" fill="rgba(201,113,74,0.1)" stroke="var(--accent)" stroke-width="1.8"/>
+        <line x1="61" y1="59" x2="68" y2="66" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Sparkles -->
+        <circle cx="26" cy="56" r="2" fill="var(--accent)" opacity="0.35"/>
+        <circle cx="20" cy="46" r="1.5" fill="var(--accent)" opacity="0.2"/>
+        <circle cx="66" cy="34" r="1.5" fill="var(--accent)" opacity="0.25"/>
       </svg>
     </div>
     <p class="search-library-title">Search books in your library</p>
