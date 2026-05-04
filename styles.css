@@ -1871,14 +1871,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   position: relative;
   z-index: 9;
 }
-.app-screen.search-active .toolbar {
-  opacity: 0;
-  pointer-events: none;
-  max-height: 0;
-  margin: 0;
-  overflow: hidden;
-  transition: opacity 0.22s ease, max-height 0.28s cubic-bezier(0.32,0.72,0,1), margin 0.22s ease;
-}
 .app-screen .toolbar {
   transition: opacity 0.22s ease, max-height 0.28s cubic-bezier(0.32,0.72,0,1), margin 0.22s ease;
   max-height: 60px;
@@ -1901,7 +1893,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   box-shadow: 0 2px 24px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(201,113,74,0.12);
 }
 .app-screen.search-active .grid-container {
-  padding-top: max(calc(var(--safe-top) + 72px), 80px);
+  padding-top: max(calc(var(--safe-top) + 120px), 128px);
 }
 
 /* Search empty / prompt state */
