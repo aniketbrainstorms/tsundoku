@@ -2704,11 +2704,12 @@ function closeListBookDetail() {
   if (!window.visualViewport) return;
   const vv = window.visualViewport;
 
-  function update() {
-    const kbHeight = Math.max(0, window.innerHeight - vv.height);
+function update() {
+    const kbHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     if (kbHeight > 80) {
-      bar.style.bottom = (kbHeight + 10) + 'px';
-      grid.style.paddingBottom = (kbHeight + 72) + 'px';
+      const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0;
+      bar.style.bottom = (kbHeight - safeBottom + 8) + 'px';
+      grid.style.paddingBottom = (kbHeight + 64) + 'px';
     } else {
       bar.style.bottom = '';
       grid.style.paddingBottom = '';
