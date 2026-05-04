@@ -528,23 +528,28 @@ function showSearchEmptyState() {
   grid.classList.remove('reading-mode');
   grid.innerHTML = `<div class="search-library-state">
     <div class="search-library-icon">
-      <svg width="72" height="72" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Book pages -->
-        <rect x="14" y="18" width="38" height="50" rx="4" fill="#2c2823" stroke="#3a3530" stroke-width="1.5"/>
-        <rect x="18" y="14" width="38" height="50" rx="4" fill="#332e28" stroke="#3a3530" stroke-width="1.5"/>
-        <rect x="22" y="10" width="38" height="50" rx="4" fill="#3a3530" stroke="#4a4540" stroke-width="1.5"/>
-        <!-- Page lines -->
-        <line x1="30" y1="24" x2="52" y2="24" stroke="#5a5248" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="30" y1="30" x2="52" y2="30" stroke="#5a5248" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="30" y1="36" x2="44" y2="36" stroke="#5a5248" stroke-width="1.5" stroke-linecap="round"/>
-        <!-- Magnifier -->
-        <circle cx="52" cy="50" r="12" fill="#1a1814" stroke="var(--accent)" stroke-width="2.2"/>
-        <circle cx="52" cy="50" r="7" fill="rgba(201,113,74,0.1)" stroke="var(--accent)" stroke-width="1.8"/>
-        <line x1="61" y1="59" x2="68" y2="66" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Sparkles -->
-        <circle cx="26" cy="56" r="2" fill="var(--accent)" opacity="0.35"/>
-        <circle cx="20" cy="46" r="1.5" fill="var(--accent)" opacity="0.2"/>
-        <circle cx="66" cy="34" r="1.5" fill="var(--accent)" opacity="0.25"/>
+      <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Open book left page -->
+        <path d="M48 72 C48 72 24 64 16 56 L16 28 C24 36 48 44 48 44 L48 72Z" fill="#2c2823" stroke="#4a4540" stroke-width="1.5" stroke-linejoin="round"/>
+        <!-- Open book right page -->
+        <path d="M48 72 C48 72 72 64 80 56 L80 28 C72 36 48 44 48 44 L48 72Z" fill="#332e28" stroke="#4a4540" stroke-width="1.5" stroke-linejoin="round"/>
+        <!-- Book spine -->
+        <line x1="48" y1="44" x2="48" y2="72" stroke="#5a5248" stroke-width="1.5"/>
+        <!-- Left page lines -->
+        <line x1="24" y1="42" x2="44" y2="47" stroke="#5a5248" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="24" y1="48" x2="44" y2="52" stroke="#5a5248" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="24" y1="54" x2="40" y2="57" stroke="#5a5248" stroke-width="1.2" stroke-linecap="round"/>
+        <!-- Magnifier glass circle -->
+        <circle cx="66" cy="38" r="14" fill="#1a1814" stroke="var(--accent)" stroke-width="2.5"/>
+        <circle cx="66" cy="38" r="8" fill="rgba(201,113,74,0.08)" stroke="rgba(201,113,74,0.5)" stroke-width="1.5"/>
+        <!-- Magnifier handle -->
+        <line x1="76.8" y1="48.8" x2="85" y2="57" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+        <!-- Sparkle + top right -->
+        <line x1="86" y1="20" x2="86" y2="28" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
+        <line x1="82" y1="24" x2="90" y2="24" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
+        <!-- Small sparkle dots -->
+        <circle cx="18" cy="66" r="2.5" fill="var(--accent)" opacity="0.3"/>
+        <circle cx="12" cy="50" r="1.8" fill="var(--accent)" opacity="0.18"/>
       </svg>
     </div>
     <p class="search-library-title">Search books in your library</p>
@@ -559,7 +564,12 @@ function clearSearch() {
 }
 function enterSearchMode() {
   document.getElementById('appScreen').classList.add('search-active');
-  showSearchEmptyState();
+  const val = (document.getElementById('searchInput')?.value || '').trim();
+  if (val) {
+    renderGrid();
+  } else {
+    showSearchEmptyState();
+  }
 }
 function exitSearchMode() {
   document.getElementById('appScreen').classList.remove('search-active');
