@@ -92,6 +92,8 @@ function dsOpen() {
         setTimeout(() => {
           DS.isOpen = true;
           overlay.style.pointerEvents = '';
+          const sheetEl2 = document.getElementById('detailSheet');
+          if (sheetEl2) sheetEl2.style.pointerEvents = 'auto';
         }, 420);
       }, 32);
     });
@@ -106,7 +108,6 @@ function dsClose() {
   if (sheetEl) sheetEl.style.pointerEvents = 'none';
   const overlay = document.getElementById('detailModal');
   overlay.classList.remove('ds-expanded');
-  overlay.style.pointerEvents = 'none';
   const section = document.getElementById('dsSummarySection');
   if (section) section.classList.remove('expanded');
   setTimeout(() => {
@@ -807,6 +808,9 @@ document.addEventListener('DOMContentLoaded', () => {
   overlay.addEventListener('click', e => {
     if (e.target === overlay && DS.isOpen && (Date.now() - _dsOpenTime > 600)) closeModal('detailModal');
   });
+  // Prevent sheet clicks from bubbling to overlay
+  const sheet = document.getElementById('detailSheet');
+  if (sheet) sheet.addEventListener('click', e => e.stopPropagation());
 });
 
 // ── Init on DOM ready ──
