@@ -118,6 +118,7 @@ function dsClose() {
     editingId = null;
     closeEditSheet();
   }, 380);
+}
 
 // ── Touch / drag handling ──
 function dsOnTouchStart(e) {
