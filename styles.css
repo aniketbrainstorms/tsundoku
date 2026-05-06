@@ -347,7 +347,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .modal-overlay { position: fixed; inset: 0; background: rgba(14,12,10,0.8); backdrop-filter: blur(8px); display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 10; }
 .modal-overlay.visible { opacity: 1; pointer-events: all; }
 #detailModal { pointer-events: none; }
-#detailModal.visible { pointer-events: none; }
+#detailModal.visible { pointer-events: all; }
 #detailModal .detail-sheet { pointer-events: none; }
 .modal-overlay.visible .detail-sheet { pointer-events: auto; }
 #progressModal { z-index: 110; }
