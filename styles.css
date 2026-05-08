@@ -306,12 +306,14 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   border-top: 1px solid rgba(201,113,74,0.18);
   box-shadow: 0 -12px 48px rgba(0,0,0,0.6);
   display: flex; flex-direction: column;
-  max-height: 82dvh;
+  height: 82dvh;
   transform: translateY(100%);
   transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
   pointer-events: none;
   will-change: transform;
   touch-action: none;
+  /* Prevent iOS keyboard from reflowing the sheet */
+  bottom: env(safe-area-inset-bottom, 0px);
 }
 .sbs-sheet.open {
   transform: translateY(0);
