@@ -528,6 +528,7 @@ function openShelfSearch() {
   const backdrop = document.getElementById('shelfSearchBackdrop');
   sheet.classList.add('open');
   backdrop.classList.add('open');
+  document.body.classList.add('sbs-open');
   _sbsFilter = 'all';
   document.querySelectorAll('#sbsFilterRow .tab-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.sbsFilter === 'all'));
@@ -560,6 +561,7 @@ function closeShelfSearch() {
     sheet.style.transform = 'translateY(100%)';
     sheet.classList.remove('open');
     document.getElementById('shelfSearchBackdrop').classList.remove('open');
+    document.body.classList.remove('sbs-open');
     if (input) input.value = '';
     const clearBtn = document.getElementById('shelfSearchClearBtn');
     if (clearBtn) { clearBtn.style.opacity = '0'; clearBtn.style.pointerEvents = 'none'; }
