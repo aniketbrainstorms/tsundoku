@@ -599,7 +599,66 @@ function onShelfOverlaySearch() {
     clearBtn.style.opacity = val.length > 0 ? '1' : '0';
     clearBtn.style.pointerEvents = val.length > 0 ? 'auto' : 'none';
   }
-  renderShelfSearchResults(val.trim());
+  _renderSbsResults(val.trim());
+}
+
+function _renderSbsResults(q) {
+  const el = document.getElementById('shelfSearchResults');
+  if (!el) return;
+
+  if (!q) {
+    el.innerHTML = `<div class="search-library-state">
+      <div class="search-library-icon">
+        <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M48 72 C48 72 24 64 16 56 L16 28 C24 36 48 44 48 44 L48 72Z" fill="#2c2823" stroke="#4a4540" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M48 72 C48 72 72 64 80 56 L80 28 C72 36 48 44 48 44 L48 72Z" fill="#332e28" stroke="#4a4540" stroke-width="1.5" stroke-linejoin="round"/>
+          <line x1="48" y1="44" x2="48" y2="72" stroke="#5a5248" stroke-width="1.5"/>
+          <circle cx="66" cy="38" r="14" fill="#1a1814" stroke="var(--accent)" stroke-width="2.5"/>
+          <circle cx="66" cy="38" r="8" fill="rgba(201,113,74,0.08)" stroke="rgba(201,113,74,0.5)" stroke-width="1.5"/>
+          <line x1="76.8" y1="48.8" x2="85" y2="57" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="search-library-title">Search your library</p>
+      <p class="search-library-sub">Find titles or authors from your shelf</p>
+    </div>`;
+    return;
+  }
+
+  const filter = _sbsFilter;
+  let results = books.filter(b => !isHiddenFromShelf(b));
+
+  if (filter === 'title') {
+    results = results.filter(b => (b.title||'').toLowerCase().includes(q.toLowerCase()));
+  } else if (filter === 'author') {
+    results = results.filter(b => (b.author||'').toLowerCase().includes(q.toLowerCase()));
+  } else {
+    results = results.filter(b =>
+      (b.title||'').toLowerCase().includes(q.toLowerCase()) ||
+      (b.author||'').toLowerCase().includes(q.toLowerCase())
+    );
+  }
+
+  if (!results.length) {
+    el.innerHTML = `<div style="padding:40px 0;text-align:center"><p style="color:var(--text-muted);font-size:14px">No results for "${escapeHtml(q)}"</p></div>`;
+    return;
+  }
+
+  el.innerHTML = results.map((b, i) => `
+    <div class="sbs-result-row" data-id="${b.id}" style="animation-delay:${Math.min(i,10)*0.03}s">
+      <div class="sbs-result-cover">${coverHtml(b, 10)}</div>
+      <div class="sbs-result-info">
+        <div class="sbs-result-title">${escapeHtml(b.title||'')}</div>
+        <div class="sbs-result-author">${escapeHtml(b.author||'')}</div>
+      </div>
+      <div class="sbs-result-dot ${b.status}"></div>
+    </div>`).join('');
+
+  el.querySelectorAll('.sbs-result-row').forEach(row => {
+    row.addEventListener('click', () => {
+      closeShelfSearch();
+      setTimeout(() => openDetailModal(row.dataset.id), 120);
+    });
+  });
 }
 
 // ── POSITION: sheet bottom sits flush above input bar ──
