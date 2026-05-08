@@ -312,8 +312,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   pointer-events: none;
   will-change: transform;
   touch-action: none;
-  /* Prevent iOS keyboard from reflowing the sheet */
-  bottom: env(safe-area-inset-bottom, 0px);
 }
 .sbs-sheet.open {
   transform: translateY(0);
@@ -367,6 +365,8 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   -webkit-overflow-scrolling: touch;
 }
 .sbs-results::-webkit-scrollbar { display: none; }
+/* Prevent body scroll when sheet keyboard is open */
+body.sbs-open { overflow: hidden; position: fixed; width: 100%; }
 /* Recent searches */
 .sbs-recents-header {
   display: flex; align-items: center; justify-content: space-between;
