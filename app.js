@@ -534,10 +534,20 @@ function openShelfSearch() {
   renderShelfSearchResults('');
   _sbsInitDrag();
   _sbsInitViewport();
-  // Focus after sheet finishes opening so keyboard doesn't interrupt the slide-in
+  // Focus after animation completes — keyboard opens after sheet is in place
   setTimeout(() => {
     const input = document.getElementById('shelfSearchInput');
-    if (input) input.focus();
+    if (!input) return;
+    // Prevent iOS from scrolling the page to bring input into view
+    input.style.opacity = '0';
+    input.focus();
+    input.style.opacity = '';
+    // Immediately scroll back to top to counteract any iOS-induced scroll
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
   }, 420);
 }
 function closeShelfSearch() {
@@ -547,7 +557,7 @@ function closeShelfSearch() {
   if (input) input.blur();
   requestAnimationFrame(() => {
     sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-    sheet.style.transform = '';
+    sheet.style.transform = 'translateY(100%)';
     sheet.classList.remove('open');
     document.getElementById('shelfSearchBackdrop').classList.remove('open');
     if (input) input.value = '';
@@ -683,15 +693,19 @@ function _sbsInitViewport() {
     if (_rafId) cancelAnimationFrame(_rafId);
     _rafId = requestAnimationFrame(() => {
       if (!sheet.classList.contains('open')) return;
-      // When keyboard is up, vv.offsetTop > 0 on some devices.
-      // Pin the sheet to the visual viewport bottom instead of layout bottom.
-      const offsetFromLayoutBottom = window.innerHeight - vv.height - vv.offsetTop;
-      // Only apply when keyboard is actually up (> 80px change)
-      if (offsetFromLayoutBottom > 80) {
-        sheet.style.bottom = offsetFromLayoutBottom + 'px';
-        sheet.style.transition = 'bottom 0ms';
+      // Counteract any layout viewport scroll iOS applies when keyboard opens
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
+      // Additionally shift the sheet up by the keyboard height so it stays in place
+      const kbHeight = Math.max(0, window.innerHeight - vv.height);
+      if (kbHeight > 80) {
+        sheet.style.transform = `translateY(-${kbHeight}px)`;
+        sheet.style.transition = 'transform 0ms';
       } else {
-        sheet.style.bottom = '';
+        // Restore open state transform (translateY(0))
+        sheet.style.transform = 'translateY(0)';
         sheet.style.transition = '';
       }
     });
@@ -700,11 +714,12 @@ function _sbsInitViewport() {
   vv.addEventListener('resize', pin);
   vv.addEventListener('scroll', pin);
 
-  // Detach listeners when sheet closes
   const observer = new MutationObserver(() => {
     if (!sheet.classList.contains('open')) {
       vv.removeEventListener('resize', pin);
       vv.removeEventListener('scroll', pin);
+      sheet.style.transform = '';
+      sheet.style.transition = '';
       observer.disconnect();
     }
   });
