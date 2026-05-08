@@ -524,29 +524,39 @@ function setSbsFilter(f) {
   if (q) renderShelfSearchResults(q);
 }
 function openShelfSearch() {
-  document.getElementById('shelfSearchOverlay').classList.add('open');
-  document.getElementById('shelfSearchBackdrop').classList.add('open');
+  const sheet = document.getElementById('shelfSearchOverlay');
+  const backdrop = document.getElementById('shelfSearchBackdrop');
+  sheet.classList.add('open');
+  backdrop.classList.add('open');
   _sbsFilter = 'all';
   document.querySelectorAll('#sbsFilterRow .tab-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.sbsFilter === 'all'));
+  renderShelfSearchResults('');
+  _sbsInitDrag();
+  _sbsInitViewport();
+  // Focus after sheet finishes opening so keyboard doesn't interrupt the slide-in
   setTimeout(() => {
     const input = document.getElementById('shelfSearchInput');
     if (input) input.focus();
-  }, 380);
-  renderShelfSearchResults('');
-  _sbsInitDrag();
+  }, 420);
 }
 function closeShelfSearch() {
   const sheet = document.getElementById('shelfSearchOverlay');
-  sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-  sheet.style.transform = '';
-  sheet.classList.remove('open');
-  document.getElementById('shelfSearchBackdrop').classList.remove('open');
   const input = document.getElementById('shelfSearchInput');
-  if (input) { input.value = ''; input.blur(); }
-  const clearBtn = document.getElementById('shelfSearchClearBtn');
-  if (clearBtn) { clearBtn.style.opacity = '0'; clearBtn.style.pointerEvents = 'none'; }
-  renderShelfSearchResults('');
+  // Blur first — keyboard dismisses before sheet animates out, no jump
+  if (input) input.blur();
+  requestAnimationFrame(() => {
+    sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+    sheet.style.transform = '';
+    sheet.classList.remove('open');
+    document.getElementById('shelfSearchBackdrop').classList.remove('open');
+    if (input) input.value = '';
+    const clearBtn = document.getElementById('shelfSearchClearBtn');
+    if (clearBtn) { clearBtn.style.opacity = '0'; clearBtn.style.pointerEvents = 'none'; }
+    renderShelfSearchResults('');
+    // Reset viewport pin
+    sheet.style.bottom = '';
+  });
 }
 function clearShelfSearch() {
   const input = document.getElementById('shelfSearchInput');
@@ -660,6 +670,45 @@ function renderShelfSearchResults(q) {
       setTimeout(() => openDetailModal(card.dataset.id), 80);
     });
   });
+}
+
+// ── SHELF SEARCH VIEWPORT PIN (prevents iOS keyboard lift) ──
+function _sbsInitViewport() {
+  const sheet = document.getElementById('shelfSearchOverlay');
+  if (!sheet || !window.visualViewport) return;
+  const vv = window.visualViewport;
+  let _rafId = null;
+
+  function pin() {
+    if (_rafId) cancelAnimationFrame(_rafId);
+    _rafId = requestAnimationFrame(() => {
+      if (!sheet.classList.contains('open')) return;
+      // When keyboard is up, vv.offsetTop > 0 on some devices.
+      // Pin the sheet to the visual viewport bottom instead of layout bottom.
+      const offsetFromLayoutBottom = window.innerHeight - vv.height - vv.offsetTop;
+      // Only apply when keyboard is actually up (> 80px change)
+      if (offsetFromLayoutBottom > 80) {
+        sheet.style.bottom = offsetFromLayoutBottom + 'px';
+        sheet.style.transition = 'bottom 0ms';
+      } else {
+        sheet.style.bottom = '';
+        sheet.style.transition = '';
+      }
+    });
+  }
+
+  vv.addEventListener('resize', pin);
+  vv.addEventListener('scroll', pin);
+
+  // Detach listeners when sheet closes
+  const observer = new MutationObserver(() => {
+    if (!sheet.classList.contains('open')) {
+      vv.removeEventListener('resize', pin);
+      vv.removeEventListener('scroll', pin);
+      observer.disconnect();
+    }
+  });
+  observer.observe(sheet, { attributes: true, attributeFilter: ['class'] });
 }
 
 // ── SHELF SEARCH DRAG TO DISMISS ──
