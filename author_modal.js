@@ -220,9 +220,9 @@ async function openAuthorPage(authorName) {
 
   const profile = await fetchAuthorProfile(authorName);
   if (normalizeAuthorText(_activeAuthorName) !== normalizeAuthorText(authorName)) return;
-  const rows = buildAuthorRows(authorName);
-  _authorRows = rows;
-  hydrateAuthorHeader(profile, rows);
+  const freshRows = buildAuthorRows(authorName);
+  _authorRows = freshRows;
+  hydrateAuthorHeader(profile, freshRows);
   renderAuthorRows(getVisibleAuthorRows());
 }
 
