@@ -695,14 +695,13 @@ function _sbsInitViewport() {
       // This equals keyboard height on iOS Safari
       const fromBottom = window.innerHeight - (vv.offsetTop + vv.height);
 
-      // Pin input bar above keyboard
-      bar.style.bottom       = Math.max(0, fromBottom) + 'px';
-      bar.style.transition   = 'bottom 0ms'; // instant — no lag chasing keyboard
+      // Pin input bar above keyboard only
+      bar.style.bottom     = Math.max(0, fromBottom) + 'px';
+      bar.style.transition = 'bottom 0ms';
 
-      // Shrink sheet top stays fixed, bottom tracks bar
-      const barH = bar.offsetHeight || 72;
-      sheet.style.bottom     = Math.max(0, fromBottom) + barH + 'px';
-      sheet.style.transition = 'bottom 0ms';
+      // Sheet stays at fixed height — do NOT move it with keyboard
+      sheet.style.bottom     = '';
+      sheet.style.transition = '';
     });
   }
 
