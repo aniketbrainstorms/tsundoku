@@ -344,12 +344,6 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 .sbs-drag-handle-wrap:hover .sbs-drag-handle { background: var(--text-muted); width: 44px; }
 
-/* Filter chips */
-.sbs-filter-row {
-  display: flex; gap: 6px; padding: 0 16px 10px;
-  overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
-}
-.sbs-filter-row::-webkit-scrollbar { display: none; }
 
 /* Results scroll area */
 .sbs-results {
@@ -2080,3 +2074,11 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .sbs-result-dot.reading { background: var(--accent); }
 .sbs-result-dot.read    { background: var(--green); }
 .sbs-result-dot.unread  { background: var(--text-muted); }
+
+.sbs-highlight {
+  color: var(--accent);
+  font-weight: 600;
+  background: rgba(201,113,74,0.12);
+  border-radius: 3px;
+  padding: 0 1px;
+}
