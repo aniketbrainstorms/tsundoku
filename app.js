@@ -84,7 +84,11 @@ function getShelfParam() {
     return;
   }
 
-  sb.auth.onAuthStateChange((event, session) => {
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'TOKEN_REFRESHED' && !session) {
+      await sb.auth.signOut();
+      return;
+    }
     setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 300);
     if (session) {
       currentUser = session.user;
