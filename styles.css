@@ -290,32 +290,39 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   position: fixed; inset: 0; z-index: 29;
   background: rgba(14,12,10,0);
   pointer-events: none;
-  transition: background 0.32s ease;
+  transition: background 0.38s ease;
+  /* Covers full screen so tap above the sheet also dismisses */
 }
 .sbs-backdrop.open {
-  background: rgba(14,12,10,0.72);
+  background: rgba(14,12,10,0.65);
   pointer-events: all;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 /* Results sheet — no input inside, bottom edge kissed by input bar */
 .sbs-sheet {
-  position: fixed; left: 0; right: 0; bottom: 0;
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  /* Top edge = just below the header (~72px accounts for safe-top + header) */
+  top: calc(max(var(--safe-top), 0px) + 72px);
   z-index: 30;
   background: var(--surface);
   border-radius: 22px 22px 0 0;
   border-top: 1px solid rgba(201,113,74,0.18);
   box-shadow: 0 -12px 48px rgba(0,0,0,0.6);
   display: flex; flex-direction: column;
-  height: 78dvh;
-  max-height: 78dvh;
-  transform: translateY(100%);
+  /* No height/max-height — let top+bottom=fixed define the size */
+  transform: translateY(110%);
   transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
   pointer-events: none;
   will-change: transform;
   touch-action: none;
   overflow: hidden;
+}
+.sbs-sheet.open {
+  transform: translateY(0);
+  pointer-events: all;
 }
 .sbs-sheet.open {
   transform: translateY(0);
@@ -346,9 +353,15 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* Results scroll area */
 .sbs-results {
-  flex: 1; overflow-y: auto; padding: 0 16px;
-  scrollbar-width: none; overscroll-behavior: contain;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px;
+  /* Leave room for keyboard without reflowing the app */
+  padding-bottom: max(var(--safe-bottom), 16px);
+  scrollbar-width: none;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  min-height: 0;
 }
 .sbs-results::-webkit-scrollbar { display: none; }
 
