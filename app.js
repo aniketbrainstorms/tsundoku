@@ -525,63 +525,41 @@ function setSbsFilter(f) {
 }
 
 function openShelfSearch() {
-  const sheet = document.getElementById('shelfSearchOverlay');
-  const bar   = document.getElementById('sbsInputBar');
+  const sheet    = document.getElementById('shelfSearchOverlay');
   const backdrop = document.getElementById('shelfSearchBackdrop');
 
   _sbsFilter = 'all';
   document.querySelectorAll('#sbsFilterRow .tab-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.sbsFilter === 'all'));
 
-  // Position sheet bottom flush above input bar height before opening
-  _sbsPositionSheet();
-
   sheet.classList.add('open');
-  bar.classList.add('open');
   backdrop.classList.add('open');
 
-  renderShelfSearchResults('');
+  _renderSbsResults('');
   _sbsInitDrag();
-  _sbsInitViewport();
 
-  // Focus after slide-in completes
   setTimeout(() => {
     const input = document.getElementById('shelfSearchInput');
     if (input) input.focus();
-  }, 400);
+  }, 380);
 }
 
 function closeShelfSearch() {
   const sheet    = document.getElementById('shelfSearchOverlay');
-  const bar      = document.getElementById('sbsInputBar');
   const backdrop = document.getElementById('shelfSearchBackdrop');
   const input    = document.getElementById('shelfSearchInput');
 
-  // Blur first — keyboard drops, then sheet animates out. No jump.
   if (input) input.blur();
 
-  requestAnimationFrame(() => {
-    sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-    bar.style.transition   = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-    sheet.style.transform  = 'translateY(100%)';
-    bar.style.transform    = 'translateY(100%)';
-    sheet.classList.remove('open');
-    bar.classList.remove('open');
-    backdrop.classList.remove('open');
+  sheet.classList.remove('open');
+  backdrop.classList.remove('open');
+
+  setTimeout(() => {
     if (input) input.value = '';
     const clearBtn = document.getElementById('shelfSearchClearBtn');
     if (clearBtn) { clearBtn.style.opacity = '0'; clearBtn.style.pointerEvents = 'none'; }
-    renderShelfSearchResults('');
-    // Reset inline styles after transition
-    setTimeout(() => {
-      sheet.style.transition = '';
-      bar.style.transition   = '';
-      sheet.style.transform  = '';
-      bar.style.transform    = '';
-      bar.style.bottom       = '';
-      sheet.style.bottom     = '';
-    }, 340);
-  });
+    _renderSbsResults('');
+  }, 340);
 }
 
 function clearShelfSearch() {
@@ -589,7 +567,7 @@ function clearShelfSearch() {
   if (input) { input.value = ''; input.focus(); }
   const clearBtn = document.getElementById('shelfSearchClearBtn');
   if (clearBtn) { clearBtn.style.opacity = '0'; clearBtn.style.pointerEvents = 'none'; }
-  renderShelfSearchResults('');
+  _renderSbsResults('');
 }
 
 function onShelfOverlaySearch() {
@@ -661,63 +639,69 @@ function _renderSbsResults(q) {
   });
 }
 
-// ── POSITION: sheet bottom sits flush above input bar ──
-function _sbsPositionSheet() {
-  const bar   = document.getElementById('sbsInputBar');
-  const sheet = document.getElementById('shelfSearchOverlay');
-  if (!bar || !sheet) return;
-  // Input bar height when open: input (46px) + padding top (10px) + safe bottom (min 16px) ≈ 72px+
-  // Read it from the element once it's rendered
-  const barH = bar.offsetHeight || 72;
-  sheet.style.bottom = barH + 'px';
-}
+function _renderSbsResults(q) {
+  const el = document.getElementById('shelfSearchResults');
+  if (!el) return;
 
-// ── VISUAL VIEWPORT TRACKING — input bar rides up with keyboard ──
-function _sbsInitViewport() {
-  const bar   = document.getElementById('sbsInputBar');
-  const sheet = document.getElementById('shelfSearchOverlay');
-  if (!bar) return;
-
-  if (!window.visualViewport) {
-    // Fallback for browsers without visualViewport — nothing to track
+  if (!q) {
+    el.innerHTML = `<div class="search-library-state">
+      <div class="search-library-icon">
+        <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M48 72 C48 72 24 64 16 56 L16 28 C24 36 48 44 48 44 L48 72Z" fill="#2c2823" stroke="#4a4540" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M48 72 C48 72 72 64 80 56 L80 28 C72 36 48 44 48 44 L48 72Z" fill="#332e28" stroke="#4a4540" stroke-width="1.5" stroke-linejoin="round"/>
+          <line x1="48" y1="44" x2="48" y2="72" stroke="#5a5248" stroke-width="1.5"/>
+          <line x1="24" y1="42" x2="44" y2="47" stroke="#5a5248" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="24" y1="48" x2="44" y2="52" stroke="#5a5248" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="24" y1="54" x2="40" y2="57" stroke="#5a5248" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="66" cy="38" r="14" fill="#1a1814" stroke="var(--accent)" stroke-width="2.5"/>
+          <circle cx="66" cy="38" r="8" fill="rgba(201,113,74,0.08)" stroke="rgba(201,113,74,0.5)" stroke-width="1.5"/>
+          <line x1="76.8" y1="48.8" x2="85" y2="57" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="18" cy="66" r="2.5" fill="var(--accent)" opacity="0.3"/>
+          <circle cx="12" cy="50" r="1.8" fill="var(--accent)" opacity="0.18"/>
+        </svg>
+      </div>
+      <p class="search-library-title">Search books in your library</p>
+      <p class="search-library-sub">Find titles, authors, or keywords from your reading, read, and unread lists</p>
+    </div>`;
     return;
   }
 
-  const vv = window.visualViewport;
-  let _rafId = null;
-
-  function update() {
-    if (_rafId) cancelAnimationFrame(_rafId);
-    _rafId = requestAnimationFrame(() => {
-      if (!bar.classList.contains('open')) return;
-
-      // Distance from visual viewport bottom to layout viewport bottom
-      // This equals keyboard height on iOS Safari
-      const fromBottom = window.innerHeight - (vv.offsetTop + vv.height);
-
-      // Pin input bar above keyboard only
-      bar.style.bottom     = Math.max(0, fromBottom) + 'px';
-      bar.style.transition = 'bottom 0ms';
-
-      // Sheet stays at fixed height — do NOT move it with keyboard
-      sheet.style.bottom     = '';
-      sheet.style.transition = '';
-    });
+  let results = books.filter(b => !isHiddenFromShelf(b));
+  const ql = q.toLowerCase();
+  if (_sbsFilter === 'title') {
+    results = results.filter(b => (b.title||'').toLowerCase().includes(ql));
+  } else if (_sbsFilter === 'author') {
+    results = results.filter(b => (b.author||'').toLowerCase().includes(ql));
+  } else {
+    results = results.filter(b =>
+      (b.title||'').toLowerCase().includes(ql) ||
+      (b.author||'').toLowerCase().includes(ql)
+    );
   }
 
-  vv.addEventListener('resize', update);
-  vv.addEventListener('scroll', update);
+  if (!results.length) {
+    el.innerHTML = `<div style="padding:48px 0;text-align:center">
+      <p style="color:var(--text-muted);font-size:14px;line-height:1.6">No results for "<strong style="color:var(--text-dim)">${escapeHtml(q)}</strong>"</p>
+    </div>`;
+    return;
+  }
 
-  // Clean up when sheet closes
-  const cleanup = () => {
-    if (!bar.classList.contains('open')) {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-      observer.disconnect();
-    }
-  };
-  const observer = new MutationObserver(cleanup);
-  observer.observe(bar, { attributes: true, attributeFilter: ['class'] });
+  el.innerHTML = results.map((b, i) => `
+    <div class="sbs-result-row" data-id="${b.id}" style="animation-delay:${Math.min(i,10)*0.028}s">
+      <div class="sbs-result-cover">${coverHtml(b, 10)}</div>
+      <div class="sbs-result-info">
+        <div class="sbs-result-title">${escapeHtml(b.title||'')}</div>
+        <div class="sbs-result-author">${escapeHtml(b.author||'')}</div>
+      </div>
+      <div class="sbs-result-dot ${b.status}"></div>
+    </div>`).join('');
+
+  el.querySelectorAll('.sbs-result-row').forEach(row => {
+    row.addEventListener('click', () => {
+      closeShelfSearch();
+      setTimeout(() => openDetailModal(row.dataset.id), 140);
+    });
+  });
 }
 
 // ── DRAG TO DISMISS ──
