@@ -478,9 +478,13 @@ function attachReadingCardEvents(card) {
   card.addEventListener('touchend', e => { if (e.target.closest('.rc-edit-btn')) return; endPress(e, id, card); });
   card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
   card.addEventListener('click', e => {
-    if (isTouch() || e.target.closest('.rc-edit-btn')) return;
-    if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
-    else openQuickMenu(id, card);
+    if (e.target.closest('.rc-edit-btn')) return;
+    if (isTouch()) {
+      openDetailModal(id);
+    } else {
+      if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
+      else openQuickMenu(id, card);
+    }
   });
 }
 function renderGrid() {
@@ -508,8 +512,11 @@ function renderGrid() {
       card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
       card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
       card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
-      card.addEventListener('click', () => {
-        if (isTouch()) return;
+      card.addEventListener('click', e => {
+        if (isTouch()) {
+          openDetailModal(id);
+          return;
+        }
         if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
         else openQuickMenu(id, card);
       });
@@ -715,12 +722,14 @@ function endPress(e, id, card) {
     const touch = e.changedTouches ? e.changedTouches[0] : null;
     const dx = touch ? Math.abs(touch.clientX - _pressStartX) : 0;
     const dy = touch ? Math.abs(touch.clientY - _pressStartY) : 0;
-    if (dx > 6 || dy > 6) { didLongPress = false; return; }
+    // Threshold for sloppy taps on mobile — but let 'click' handle the actual opening
+    if (dx > 12 || dy > 12) { didLongPress = false; return; }
+  } else {
+    // If it was a long press, prevent the subsequent 'click' event
     if (e && e.cancelable) e.preventDefault();
-    if (card.classList.contains('reading-card')) openDetailModal(id);
-    else openDetailModal(id);
   }
-  didLongPress = false;
+  // Detail modal is now handled in 'click' for better reliability
+  setTimeout(() => { didLongPress = false; }, 10);
 }
 function cancelPress(card) {
   if (didLongPress) return;
@@ -1171,8 +1180,11 @@ function renderShelfGrid() {
     card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
     card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
     card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
-    card.addEventListener('click', () => {
-      if (isTouch()) return;
+    card.addEventListener('click', e => {
+      if (isTouch()) {
+        openDetailModal(id);
+        return;
+      }
       if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
       else openQuickMenu(id, card);
     });
