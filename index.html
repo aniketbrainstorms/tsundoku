@@ -397,18 +397,14 @@
           <input type="text" class="ef-input" id="addYear" placeholder="e.g. 2020" />
         </div>
         <div class="ef-field-half">
-          <span class="ef-field-label">Publisher</span>
-          <input type="text" class="ef-input" id="addPublisher" placeholder="e.g. Penguin" />
+          <span class="ef-field-label">Pages</span>
+          <input type="number" class="ef-input" id="addPageCount" placeholder="e.g. 304" />
         </div>
       </div>
       <div class="ef-field-row">
-        <div class="ef-field-half">
+        <div class="ef-field-full">
           <span class="ef-field-label">Genre</span>
           <input type="text" class="ef-input" id="addGenre" placeholder="e.g. Fiction" />
-        </div>
-        <div class="ef-field-half">
-          <span class="ef-field-label">Pages</span>
-          <input type="number" class="ef-input" id="addPageCount" placeholder="e.g. 304" />
         </div>
       </div>
 
@@ -474,29 +470,35 @@
           </div>
         </div>
       </div>
-
+      
       <!-- ── SCROLLABLE BODY ── -->
       <div class="ds-scroll sheet-content" id="dsScroll">
         <div style="height:8px"></div>
       </div>
       <div class="ds-bottom-cluster">
-      <div class="summary-section" id="dsSummarySection">
-        <button class="summary-header" id="dsSummaryHeader" type="button" onclick="toggleDetailSummary()">
-          <span class="summary-label">Summary</span>
-          <span class="summary-chevron" id="dsSummaryExpandBtn">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5l5 5 5-5"/></svg>
-          </span>
-        </button>
-        <div class="summary-content">
-          <div class="summary-scroll" id="dsSummaryPreview"></div>
+        <div class="summary-section" id="dsSummarySection">
+          <button class="summary-header" id="dsSummaryHeader" type="button" onclick="toggleDetailSummary()">
+            <span class="summary-label">SUMMARY</span>
+            <span class="summary-chevron" id="dsSummaryExpandBtn">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5l5 5 5-5"/></svg>
+            </span>
+          </button>
+          <div class="summary-content">
+            <div class="summary-scroll" id="dsAiLibrarian">
+              <p id="dsAiSummary" style="margin-bottom:12px;"></p>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);flex-shrink:0">mood</span>
+                <span id="dsAiMood" style="font-size:12px;font-weight:600;color:var(--text-dim);font-style:italic;flex-shrink:0;"></span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- ── FIXED CTA — always at bottom ── -->
-      <div class="ds-cta-area sheet-footer" id="dsCTAArea">
-        <button class="ds-primary-btn btn-accent" id="dsPrimaryBtn" onclick="doPrimaryAction()"></button>
-        <button class="ds-secondary-btn" id="dsSecondaryBtn" onclick="doSecondaryAction()"></button>
-      </div><!-- end ds-cta-area -->
+        <!-- ── FIXED CTA — always at bottom ── -->
+        <div class="ds-cta-area sheet-footer" id="dsCTAArea">
+          <button class="ds-primary-btn btn-accent" id="dsPrimaryBtn" onclick="doPrimaryAction()"></button>
+          <button class="ds-secondary-btn" id="dsSecondaryBtn" onclick="doSecondaryAction()"></button>
+        </div><!-- end ds-cta-area -->
       </div><!-- end ds-bottom-cluster -->
 
     </div>
@@ -574,18 +576,14 @@
             <input type="text" class="es-input" id="editYear" placeholder="e.g. 2002" />
           </div>
           <div class="es-field-half">
-            <span class="es-field-label">Publisher</span>
-            <input type="text" class="es-input" id="editPublisher" placeholder="e.g. Vintage Books" />
+            <span class="es-field-label">Pages</span>
+            <input type="number" class="es-input" id="editPageCount" placeholder="e.g. 505" />
           </div>
         </div>
         <div class="es-field-row">
-          <div class="es-field-half">
+          <div class="es-field-full">
             <span class="es-field-label">Genre</span>
             <input type="text" class="es-input" id="editGenre" placeholder="e.g. Magical Realism" />
-          </div>
-          <div class="es-field-half">
-            <span class="es-field-label">Pages</span>
-            <input type="number" class="es-input" id="editPageCount" placeholder="e.g. 505" />
           </div>
         </div>
 
@@ -997,7 +995,9 @@
   </div>
 </div>
 
+<script src="config.js"></script>
 <script src="app.js"></script>
+
 <script src="detail_sheet.js"></script>
 <script src="author_modal.js"></script>
 </body>
