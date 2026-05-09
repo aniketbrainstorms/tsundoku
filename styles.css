@@ -1530,6 +1530,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   font-size: 13.5px;
   line-height: 1.75;
   color: var(--text-dim);
+  text-align: justify;
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 0.26s ease 0.16s, transform 0.32s cubic-bezier(0.34,1.56,0.64,1) 0.1s;
