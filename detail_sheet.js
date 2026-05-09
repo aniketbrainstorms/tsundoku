@@ -86,7 +86,7 @@ function dsOpen() {
       setTimeout(() => {
         try {
           dsSnapTo(false, true);
-        } catch(e) {
+        } catch (e) {
           console.error('dsSnapTo error:', e);
         }
         setTimeout(() => {
@@ -278,7 +278,7 @@ function dsRenderCTA(status) {
     primary.className = 'ds-primary-btn btn-accent';
     primary.innerHTML = `${icons.check} Mark as Read`;
     secondary.innerHTML = `${icons.undo} Move to Unread`;
-} else if (status === 'read') {
+  } else if (status === 'read') {
     primary.className = 'ds-primary-btn btn-green';
     primary.innerHTML = `${icons.history} Move to Reading`;
     secondary.innerHTML = `${icons.archive} Mark as Unread`;
@@ -328,12 +328,9 @@ async function doSecondaryAction() {
 function toggleDetailSummary() {
   DS.summaryExpanded = !DS.summaryExpanded;
   const section = document.getElementById('dsSummarySection');
-  const preview = document.getElementById('dsSummaryPreview');
-  if (!section || !preview) return;
+  if (!section) return;
 
   if (DS.summaryExpanded) {
-    preview.textContent = DS.summaryFull || DS.summaryShort || 'No summary available.';
-    preview.scrollTop = 0;
     section.classList.add('expanded');
   } else {
     section.classList.remove('expanded');
@@ -350,7 +347,6 @@ function openEditSheet() {
   document.getElementById('editTitle').value = book.title;
   document.getElementById('editAuthor').value = book.author || '';
   document.getElementById('editYear').value = book.year || '';
-  document.getElementById('editPublisher').value = book.publisher || '';
   document.getElementById('editGenre').value = book.genre || '';
   document.getElementById('editPageCount').value = book.page_count || '';
   document.getElementById('editCoverUrlInput').value = book.cover_url || '';
@@ -414,13 +410,13 @@ async function fetchBookMeta(title, author) {
   if (_metaInFlight[cacheKey]) return _metaInFlight[cacheKey];
   // Skip network entirely if local books cache has full data
   const _bk = (typeof books !== 'undefined' ? books : []).find(b => `${b.title}__${b.author || ''}`.toLowerCase() === cacheKey);
-  if (_bk && _bk.year && _bk.publisher && _bk.genre && _bk.page_count && _bk.description && isEnglishText(_bk.description || '')) {
-    const hit = { description: _bk.description, year: _bk.year, publisher: _bk.publisher, genre: _bk.genre, pageCount: _bk.page_count ? String(_bk.page_count) : '' };
+  if (_bk && _bk.year && _bk.genre && _bk.page_count && _bk.description && isEnglishText(_bk.description || '')) {
+    const hit = { description: _bk.description, year: _bk.year, genre: _bk.genre, pageCount: _bk.page_count ? String(_bk.page_count) : '' };
     _metaCache[cacheKey] = hit;
     return Promise.resolve(hit);
   }
 
-  const empty = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
+  const empty = { description: '', year: '', genre: '', pageCount: '' };
 
   // ── Google Books fetch ──
   async function fetchGoogle() {
@@ -434,17 +430,16 @@ async function fetchBookMeta(title, author) {
     }
     const data = await res.json();
     const items = data.items || [];
-    const meta = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
+    const meta = { description: '', year: '', genre: '', pageCount: '' };
     for (const item of items) {
       const v = item.volumeInfo || {};
       const lang = v.language || '';
       const isEnglishDesc = (lang === 'en') || (lang === '' && isEnglishText(v.description || ''));
       if (!meta.description && v.description && v.description.length >= 40 && isEnglishDesc) meta.description = v.description;
-      if (!meta.year        && v.publishedDate) meta.year      = v.publishedDate.slice(0, 4);
-      if (!meta.publisher   && v.publisher)     meta.publisher = v.publisher;
-      if (!meta.genre       && v.categories?.length) meta.genre = v.categories.join(', ');
-      if (!meta.pageCount   && v.pageCount)     meta.pageCount = String(v.pageCount);
-      if (meta.description && meta.year && meta.publisher && meta.genre && meta.pageCount) break;
+      if (!meta.year && v.publishedDate) meta.year = v.publishedDate.slice(0, 4);
+      if (!meta.genre && v.categories?.length) meta.genre = v.categories.join(', ');
+      if (!meta.pageCount && v.pageCount) meta.pageCount = String(v.pageCount);
+      if (meta.description && meta.year && meta.genre && meta.pageCount) break;
     }
     return meta;
   }
@@ -454,23 +449,22 @@ async function fetchBookMeta(title, author) {
     const parts = [title, author].filter(Boolean).map(s => encodeURIComponent(s)).join('+');
     // Search endpoint for basic fields
     const searchRes = await fetch(
-      `https://openlibrary.org/search.json?q=${parts}&limit=5&language=eng&fields=title,author_name,first_publish_year,publisher,subject,number_of_pages_median,key,language`
+      `https://openlibrary.org/search.json?q=${parts}&limit=5&language=eng&fields=title,author_name,first_publish_year,subject,number_of_pages_median,key,language`
     );
     if (!searchRes.ok) return null;
     const searchData = await searchRes.json();
     const docs = searchData.docs || [];
-    const meta = { description: '', year: '', publisher: '', genre: '', pageCount: '' };
+    const meta = { description: '', year: '', genre: '', pageCount: '' };
 
     for (const doc of docs) {
-      if (!meta.year      && doc.first_publish_year) meta.year      = String(doc.first_publish_year);
-      if (!meta.publisher && doc.publisher?.length)  meta.publisher = doc.publisher[0];
-      if (!meta.genre     && doc.subject?.length) {
+      if (!meta.year && doc.first_publish_year) meta.year = String(doc.first_publish_year);
+      if (!meta.genre && doc.subject?.length) {
         const clean = doc.subject.filter(s => !s.includes(':'));
         const source = clean.length ? clean : doc.subject;
         meta.genre = source.slice(0, 2).join(', ');
       }
       if (!meta.pageCount && doc.number_of_pages_median) meta.pageCount = String(doc.number_of_pages_median);
-      if (meta.year && meta.publisher && meta.genre && meta.pageCount) break;
+      if (meta.year && meta.genre && meta.pageCount) break;
     }
 
     // Fetch description from the Works API using the first result's key
@@ -493,15 +487,14 @@ async function fetchBookMeta(title, author) {
   _metaInFlight[cacheKey] = (async () => {
     try {
       const [gResult, olResult] = await Promise.allSettled([fetchGoogle(), fetchOpenLibrary()]);
-      const g  = gResult.status  === 'fulfilled' && gResult.value  ? gResult.value  : {};
+      const g = gResult.status === 'fulfilled' && gResult.value ? gResult.value : {};
       const ol = olResult.status === 'fulfilled' && olResult.value ? olResult.value : {};
 
       const merged = {
         description: (g.description && isEnglishText(g.description) ? g.description : '') || (ol.description && isEnglishText(ol.description) ? ol.description : '') || '',
-        year:        g.year        || ol.year        || '',
-        publisher:   g.publisher   || ol.publisher   || '',
-        genre:       g.genre       || ol.genre       || '',
-        pageCount:   g.pageCount   || ol.pageCount   || '',
+        year: g.year || ol.year || '',
+        genre: g.genre || ol.genre || '',
+        pageCount: g.pageCount || ol.pageCount || '',
       };
 
       // Only cache if we got something useful — allows retry if both failed
@@ -638,6 +631,8 @@ function dsInitStarInput(book) {
 }
 function cleanGenre(raw) {
   if (!raw || raw === '—') return raw || '—';
+  if (Array.isArray(raw)) raw = raw.join(', ');
+  if (typeof raw !== 'string') raw = String(raw);
   return raw
     .split(/[,\/]/)
     .map(s => s.trim())
@@ -651,8 +646,7 @@ function dsRenderMetaGrid(book) {
   const yearPub = document.getElementById('detailYearPub');
   const metaGrid = document.getElementById('detailMetaGrid');
   if (yearPub) {
-    const parts = [book.year, book.publisher].filter(Boolean);
-    yearPub.textContent = parts.join(' • ');
+    yearPub.textContent = book.year || '';
   }
   if (metaGrid) {
     const pages = book.page_count ? `${book.page_count} pages` : '—';
@@ -671,125 +665,127 @@ function dsRenderTagline(status) {
 
 // ── OVERRIDE openDetailModal ── 
 // (replaces the original function defined earlier in app.js)
-function openDetailModal(id) {
+async function openDetailModal(id) {
   try {
-  const book = books.find(b => String(b.id) === String(id));
-  if (!book) return;
-  editingId = book.id;
-  editCoverFile = null;
-  editStatus = book.status;
+    const book = books.find(b => String(b.id) === String(id));
+    if (!book) return;
+    editingId = book.id;
+    editCoverFile = null;
+    editStatus = book.status;
 
-  // Reset state
-  DS.summaryExpanded = false;
-  DS.editVisible = false;
+    // Reset state
+    DS.summaryExpanded = false;
+    DS.editVisible = false;
+    const sec = document.getElementById('dsSummarySection');
+    if (sec) sec.classList.remove('expanded');
 
-  // Populate top section
-  document.getElementById('detailTitleEl').textContent = book.title;
-  document.getElementById('detailAuthorEl').textContent = book.author || '';
-  document.getElementById('detailCoverEl').innerHTML = coverHtml(book, 14);
+    // Populate top section
+    document.getElementById('detailTitleEl').textContent = book.title;
+    document.getElementById('detailAuthorEl').textContent = book.author || '';
+    document.getElementById('detailCoverEl').innerHTML = coverHtml(book, 14);
 
-  // Render from DB values immediately
-  dsRenderMetaGrid(book);
-  dsRenderTagline(book.status);
-  const yearPub = document.getElementById('detailYearPub');
-  if (yearPub) {
-    const parts = [book.year, book.publisher].filter(Boolean);
-    yearPub.textContent = parts.join(' • ');
-  }
-  dsRenderRating(book);
-
-  // Edit form new fields
-  document.getElementById('editYear').value = book.year || '';
-  document.getElementById('editPublisher').value = book.publisher || '';
-  document.getElementById('editGenre').value = book.genre || '';
-  document.getElementById('editPageCount').value = book.page_count || '';
-  updateDetailBadge(book.status);
-  dsRenderCTA(book.status);
-
-  // Edit form fields
-  document.getElementById('editTitle').value = book.title;
-  document.getElementById('editAuthor').value = book.author || '';
-  const editThumb = document.getElementById('editCoverThumbWrap');
-  if (editThumb) {
-    editThumb.innerHTML = book.cover_url
-      ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`
-      : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
-  }
-  const editReady = document.getElementById('editCoverReadyMsg');
-  if (editReady) editReady.style.display = book.cover_url ? 'flex' : 'none';
-  document.getElementById('editCoverUrlInput').value = book.cover_url || '';
-  editCoverUrl = book.cover_url || null;
-
-// Reset edit toggle state
-  document.getElementById('dsEditToggle').classList.remove('active');
-
-  // Render meta immediately from DB values (no flash)
-  dsRenderMetaGrid(book);
-  // Summary — set placeholder, fetch async
-  // Summary — set placeholder, fetch async
-  dsBuildSummary('');
-  DS.summaryShort = '';
-  dsRenderSummary();
-
-  // Open sheet
-  dsOpen();
-
-  const cacheKey = `${book.title}__${book.author || ''}`.toLowerCase();
-
-  // Render description immediately if already available
-  const storedDescriptionIsEnglish = !!(book.description && isEnglishText(book.description));
-  if (storedDescriptionIsEnglish) {
-    dsBuildSummary(book.description);
-    dsRenderSummary();
-  } else if (_metaCache[cacheKey]?.description) {
-    dsBuildSummary(_metaCache[cacheKey].description);
-    dsRenderSummary();
-  }
-
-  // Resolve description via dedicated pipeline (handles fetch, translate, persist)
-  resolveEnglishDescription(book).then(desc => {
-    if (editingId !== id) return;
-    if (desc && desc !== (DS.summaryFull || '')) {
-      dsBuildSummary(desc);
-      dsRenderSummary();
+    // Render from DB values immediately
+    dsRenderMetaGrid(book);
+    dsRenderTagline(book.status);
+    const yearPub = document.getElementById('detailYearPub');
+    if (yearPub) {
+      yearPub.textContent = book.year || '';
     }
-  });
+    dsRenderRating(book);
 
-  // Fetch missing meta fields (year/publisher/genre/pages) — independent of description
-  const hasAllMeta = book.year && book.publisher && book.genre && book.page_count;
-  if (!hasAllMeta) {
-    fetchBookMeta(book.title, book.author).then(async meta => {
-      if (editingId !== id) return;
-      if (!meta) meta = {};
-      const apiUpdates = {};
-      if (!book.year       || book.year === '')       { if (meta.year)      { apiUpdates.year       = meta.year;                    book.year       = meta.year; } }
-      if (!book.publisher  || book.publisher === '')  { if (meta.publisher) { apiUpdates.publisher  = meta.publisher;               book.publisher  = meta.publisher; } }
-      if (!book.genre      || book.genre === '')      { if (meta.genre)     { apiUpdates.genre      = meta.genre;                   book.genre      = meta.genre; } }
-      if (!book.page_count || book.page_count === 0) { if (meta.pageCount) { apiUpdates.page_count = parseInt(meta.pageCount) || 0; book.page_count = parseInt(meta.pageCount) || 0; } }
-      // Update cache with meta fields only — description is owned by resolveEnglishDescription
-      if (_metaCache[cacheKey]) {
-        Object.assign(_metaCache[cacheKey], {
-          year: book.year || '',
-          publisher: book.publisher || '',
-          genre: book.genre || '',
-          pageCount: book.page_count ? String(book.page_count) : '',
-        });
-      }
-      dsRenderMetaGrid(book);
-      const yearPub = document.getElementById('detailYearPub');
-      if (yearPub) yearPub.textContent = [book.year, book.publisher].filter(Boolean).join(' • ');
-      if (Object.keys(apiUpdates).length) await dbUpdate(id, apiUpdates);
-      const editYear = document.getElementById('editYear');
-      const editPublisher = document.getElementById('editPublisher');
-      const editGenre = document.getElementById('editGenre');
-      const editPageCount = document.getElementById('editPageCount');
-      if (editYear && !editYear.value)           editYear.value      = book.year || '';
-      if (editPublisher && !editPublisher.value) editPublisher.value = book.publisher || '';
-      if (editGenre && !editGenre.value)         editGenre.value     = book.genre || '';
-      if (editPageCount && !editPageCount.value) editPageCount.value = book.page_count || '';
-    });
-  }
-  } catch(e) { console.error('openDetailModal error:', e); }
+    // Edit form new fields
+    document.getElementById('editYear').value = book.year || '';
+    document.getElementById('editGenre').value = book.genre || '';
+    document.getElementById('editPageCount').value = book.page_count || '';
+    updateDetailBadge(book.status);
+    dsRenderCTA(book.status);
+
+    // Edit form fields
+    document.getElementById('editTitle').value = book.title;
+    document.getElementById('editAuthor').value = book.author || '';
+    const editThumb = document.getElementById('editCoverThumbWrap');
+    if (editThumb) {
+      editThumb.innerHTML = book.cover_url
+        ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`
+        : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
+    }
+    const editReady = document.getElementById('editCoverReadyMsg');
+    if (editReady) editReady.style.display = book.cover_url ? 'flex' : 'none';
+    document.getElementById('editCoverUrlInput').value = book.cover_url || '';
+    editCoverUrl = book.cover_url || null;
+
+    // Reset edit toggle state
+    document.getElementById('dsEditToggle').classList.remove('active');
+
+    // Render meta immediately from DB values (no flash)
+    dsRenderMetaGrid(book);
+
+    // Open sheet
+    dsOpen();
+
+    // ── AI Librarian — render cached or fetch ──
+    const summarySection = document.getElementById('dsSummarySection');
+    const summaryEl = document.getElementById('dsAiSummary');
+    const moodEl = document.getElementById('dsAiMood');
+    const summaryLabel = summarySection?.querySelector('.summary-label');
+
+    // Render immediately if already in memory
+    if (book.ai_summary) {
+      if (summaryEl) summaryEl.textContent = book.ai_summary;
+      if (moodEl) moodEl.textContent = book.ai_mood || '';
+      if (summarySection) summarySection.style.display = 'flex';
+    } else {
+      // Show loading state
+      if (summarySection) summarySection.style.display = 'flex';
+      if (summaryEl) summaryEl.textContent = '';
+      if (moodEl) moodEl.textContent = '';
+      if (summaryLabel) summaryLabel.textContent = 'SUMMARY · LOADING…';
+
+      fetchAiLibrarian(book.title, book.author || '', book.description || '').then(async ai => {
+        if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
+        if (!ai || editingId !== id) {
+          if (summaryEl) summaryEl.textContent = 'Summary unavailable.';
+          return;
+        }
+
+        const apiUpdates = {};
+
+        // genre — AI wins unless user has already set a specific one
+        const isGenericGenre = !book.genre || book.genre === '—' || book.genre === ''
+          || /\b(novel|fiction|book|literature)\b/i.test(book.genre);
+        if (ai.genre && isGenericGenre) {
+          book.genre = ai.genre;
+          apiUpdates.genre = ai.genre;
+        }
+
+        // page_count — AI fills if missing
+        if (ai.page_count && (!book.page_count || book.page_count === 0)) {
+          book.page_count = parseInt(ai.page_count) || 0;
+          apiUpdates.page_count = book.page_count;
+        }
+
+        // ai_summary + mood — always write
+        book.ai_summary = ai.ai_summary || '';
+        book.ai_mood = ai.mood || '';
+        apiUpdates.ai_summary = book.ai_summary;
+        apiUpdates.ai_mood = book.ai_mood;
+
+        await dbUpdate(id, apiUpdates);
+        dsRenderMetaGrid(book);
+
+        const editGenre = document.getElementById('editGenre');
+        const editPageCount = document.getElementById('editPageCount');
+        if (editGenre && !editGenre.value) editGenre.value = book.genre || '';
+        if (editPageCount && !editPageCount.value) editPageCount.value = book.page_count || '';
+
+        // Populate and auto-expand
+        if (summaryEl) summaryEl.textContent = book.ai_summary;
+        if (moodEl) moodEl.textContent = book.ai_mood;
+        DS.summaryExpanded = false;
+        toggleDetailSummary();
+      });
+    }
+  } catch (e) { console.error('openDetailModal error:', e); }
 }
 
 // ── OVERRIDE closeModal for detailModal ──
@@ -823,19 +819,19 @@ if (document.readyState !== 'loading') {
 }
 
 // ── Public: refresh detail sheet from current editingId ──
-window.dsRefreshDetailSheet = function() {
+window.dsRefreshDetailSheet = function () {
   const book = books.find(b => String(b.id) === String(editingId));
   if (!book) return;
 
   const titleEl = document.getElementById('detailTitleEl');
   const authorEl = document.getElementById('detailAuthorEl');
-  const coverEl  = document.getElementById('detailCoverEl');
+  const coverEl = document.getElementById('detailCoverEl');
   const yearPubEl = document.getElementById('detailYearPub');
 
-  if (titleEl)  titleEl.textContent  = book.title;
+  if (titleEl) titleEl.textContent = book.title;
   if (authorEl) authorEl.textContent = book.author || '';
-  if (coverEl)  coverEl.innerHTML    = coverHtml(book, 14);
-  if (yearPubEl) yearPubEl.textContent = [book.year, book.publisher].filter(Boolean).join(' • ');
+  if (coverEl) coverEl.innerHTML = coverHtml(book, 14);
+  if (yearPubEl) yearPubEl.textContent = book.year || '';
 
   dsRenderMetaGrid(book);
   dsRenderRating(book);
