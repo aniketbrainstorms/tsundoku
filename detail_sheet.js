@@ -423,7 +423,7 @@ async function fetchBookMeta(title, author) {
     const lastQuotaHit = window._gbQuotaHitAt || 0;
     if (Date.now() - lastQuotaHit < 120_000) return null;
     const q = encodeURIComponent(`${title} ${author || ''}`.trim());
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=8&langRestrict=en`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=8&langRestrict=en&key=${window.BOOKS_API_KEY}`);
     if (!res.ok) {
       if (res.status === 429) window._gbQuotaHitAt = Date.now();
       return null;
