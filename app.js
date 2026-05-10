@@ -1555,7 +1555,11 @@ Description: ${description || 'No description available.'}`;
       }
     );
     if (!res.ok) {
-      if (res.status === 429) console.warn('Gemini rate limit hit.');
+      if (res.status === 429) {
+        const retry = parseInt(res.headers.get('Retry-After') || '0') * 1000 || 15000;
+        await new Promise(r => setTimeout(r, retry));
+        return fetchAiLibrarian(title, author, storedDescription);
+      }
       return null;
     }
     const data = await res.json();
