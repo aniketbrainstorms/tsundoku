@@ -723,20 +723,26 @@ async function openDetailModal(id) {
     // Open sheet
     dsOpen();
 
-    // ── AI Librarian — render cached or fetch ──
+    // ── AI Librarian — render from cache or fetch once ──
     const summarySection = document.getElementById('dsSummarySection');
     const summaryEl = document.getElementById('dsAiSummary');
     const moodEl = document.getElementById('dsAiMood');
     const summaryLabel = summarySection?.querySelector('.summary-label');
 
-    // Render immediately if already in memory
-    if (book.ai_summary) {
+    if (summarySection) summarySection.style.display = 'flex';
+
+    // All fields already saved → zero network calls
+    const hasAllData = book.ai_summary && book.ai_mood && book.genre && book.page_count && book.year;
+
+    if (hasAllData) {
+      // Render instantly from local books[] (already in memory from loadBooks)
       if (summaryEl) summaryEl.textContent = book.ai_summary;
       if (moodEl) moodEl.textContent = book.ai_mood || '';
-      if (summarySection) summarySection.style.display = 'flex';
+      if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
+      DS.summaryExpanded = false;
+      toggleDetailSummary();
     } else {
-      // Show loading state
-      if (summarySection) summarySection.style.display = 'flex';
+      // One or more fields missing — fetch and permanently fill gaps
       if (summaryEl) summaryEl.textContent = '';
       if (moodEl) moodEl.textContent = '';
       if (summaryLabel) summaryLabel.textContent = 'SUMMARY · LOADING…';
@@ -750,7 +756,7 @@ async function openDetailModal(id) {
 
         const apiUpdates = {};
 
-        // genre — AI wins unless user has already set a specific one
+        // genre — AI fills if missing or generic
         const isGenericGenre = !book.genre || book.genre === '—' || book.genre === ''
           || /\b(novel|fiction|book|literature)\b/i.test(book.genre);
         if (ai.genre && isGenericGenre) {
@@ -764,21 +770,46 @@ async function openDetailModal(id) {
           apiUpdates.page_count = book.page_count;
         }
 
+        // year — fetch from Google Books if still missing
+        if (!book.year) {
+          try {
+            const q = encodeURIComponent(`${book.title} ${book.author || ''}`.trim());
+            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=5&langRestrict=en`);
+            if (res.ok) {
+              const data = await res.json();
+              for (const item of (data.items || [])) {
+                const yr = item.volumeInfo?.publishedDate?.slice(0, 4);
+                if (yr) { book.year = yr; apiUpdates.year = yr; break; }
+              }
+            }
+          } catch { /* year stays empty */ }
+        }
+
         // ai_summary + mood — always write
         book.ai_summary = ai.ai_summary || '';
         book.ai_mood = ai.mood || '';
         apiUpdates.ai_summary = book.ai_summary;
         apiUpdates.ai_mood = book.ai_mood;
 
-        await dbUpdate(id, apiUpdates);
-        dsRenderMetaGrid(book);
+        // Persist everything in one DB write
+        if (Object.keys(apiUpdates).length) {
+          await dbUpdate(id, apiUpdates);
+        }
 
+        // Sync edit form fields
         const editGenre = document.getElementById('editGenre');
         const editPageCount = document.getElementById('editPageCount');
+        const editYear = document.getElementById('editYear');
         if (editGenre && !editGenre.value) editGenre.value = book.genre || '';
         if (editPageCount && !editPageCount.value) editPageCount.value = book.page_count || '';
+        if (editYear && !editYear.value) editYear.value = book.year || '';
 
-        // Populate and auto-expand
+        // Re-render meta grid with fresh data
+        dsRenderMetaGrid(book);
+        const yearPubEl = document.getElementById('detailYearPub');
+        if (yearPubEl) yearPubEl.textContent = book.year || '';
+
+        // Render summary and auto-expand
         if (summaryEl) summaryEl.textContent = book.ai_summary;
         if (moodEl) moodEl.textContent = book.ai_mood;
         DS.summaryExpanded = false;
