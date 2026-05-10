@@ -740,7 +740,6 @@ window.openDetailModal = async function openDetailModal(id) {
       if (moodEl) moodEl.textContent = book.ai_mood || '';
       if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
       DS.summaryExpanded = false;
-      toggleDetailSummary();
     } else {
       // One or more fields missing — fetch and permanently fill gaps
       if (summaryEl) summaryEl.textContent = '';
