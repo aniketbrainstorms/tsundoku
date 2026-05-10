@@ -1230,7 +1230,7 @@ async function fetchBookSearch(query) {
     if (cat === 'intitle') qParam = `intitle:${qParam}`;
     else if (cat === 'inauthor') qParam = `inauthor:${qParam}`;
     else if (isIsbn) qParam = `isbn:${qParam}`;
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=40&langRestrict=en`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=40&langRestrict=en&key=${window.BOOKS_API_KEY}`);
     if (!res.ok) return [];
     const data = await res.json();
     return (data.items || []).map(item => {
