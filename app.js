@@ -33,9 +33,9 @@ function updateHintBar() {
 
 // ── PALETTES ──
 const palettes = [
-  ['#4a3728','#c9714a'],['#1e2d3d','#5a8fa8'],['#2d3a2e','#6a9a72'],
-  ['#3a2040','#9a6ac0'],['#3d2a1e','#c0814a'],['#1e1e2d','#6a72c0'],
-  ['#2d1e1e','#c06a6a'],['#1e2d2a','#6ac0b8'],['#3a3020','#b0963c'],['#2a1e2d','#a06ab8']
+  ['#4a3728', '#c9714a'], ['#1e2d3d', '#5a8fa8'], ['#2d3a2e', '#6a9a72'],
+  ['#3a2040', '#9a6ac0'], ['#3d2a1e', '#c0814a'], ['#1e1e2d', '#6a72c0'],
+  ['#2d1e1e', '#c06a6a'], ['#1e2d2a', '#6ac0b8'], ['#3a3020', '#b0963c'], ['#2a1e2d', '#a06ab8']
 ];
 function palSeed(str) {
   let h = 0;
@@ -61,13 +61,13 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 function escapeAttr(str) {
-  return (str || '').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+  return (str || '').replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
 }
 function getUserInitials(email) {
   if (!email) return '?';
   const local = email.split('@')[0];
   const parts = local.split(/[._\-+]/);
-  return parts.slice(0,2).map(p => (p[0] || '').toUpperCase()).filter(Boolean).join('') || email[0].toUpperCase();
+  return parts.slice(0, 2).map(p => (p[0] || '').toUpperCase()).filter(Boolean).join('') || email[0].toUpperCase();
 }
 
 // ── PUBLIC SHELF URL CHECK ──
@@ -185,7 +185,7 @@ async function handleAuth() {
 }
 async function signOut() {
   closeModal('profileModal');
-  try { await sb.auth.signOut(); } catch (e) {}
+  try { await sb.auth.signOut(); } catch (e) { }
 }
 
 // ── DB ──
@@ -194,8 +194,16 @@ async function loadBooks() {
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
-      books = JSON.parse(cached);
-      renderGrid();
+      const parsed = JSON.parse(cached);
+      // Bust cache if ai_summary columns aren't present yet
+      const hasMeta = parsed.length === 0 || ('ai_summary' in parsed[0]);
+      if (hasMeta) {
+        books = parsed;
+        renderGrid();
+      } else {
+        localStorage.removeItem(cacheKey);
+        renderSkeleton();
+      }
     } else {
       renderSkeleton();
     }
@@ -203,7 +211,7 @@ async function loadBooks() {
   const { data, error } = await sb.from('books').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
   if (error) { showToast('Failed to load books'); return; }
   books = data || [];
-  try { localStorage.setItem(cacheKey, JSON.stringify(books)); } catch {}
+  try { localStorage.setItem(cacheKey, JSON.stringify(books)); } catch { }
   renderGrid();
 }
 async function dbAdd(book) {
@@ -214,8 +222,21 @@ async function dbAdd(book) {
 }
 async function dbUpdate(id, updates) {
   const { error } = await sb.from('books').update(updates).eq('id', id);
-  if (error) { console.error('dbUpdate err:', error); showToast(error.message || 'Could not update book'); }
-  return !error;
+  if (error) { console.error('dbUpdate err:', error); showToast(error.message || 'Could not update book'); return false; }
+  // Keep localStorage cache in sync so ai_summary persists across reloads
+  try {
+    const cacheKey = 'tsundoku_books_' + currentUser.id;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      const idx = parsed.findIndex(b => String(b.id) === String(id));
+      if (idx !== -1) {
+        Object.assign(parsed[idx], updates);
+        localStorage.setItem(cacheKey, JSON.stringify(parsed));
+      }
+    }
+  } catch { }
+  return true;
 }
 async function dbDelete(id) {
   const { error } = await sb.from('books').delete().eq('id', id);
@@ -337,14 +358,14 @@ async function loadPublicShelf(slug) {
 function renderPublicShelf() {
   const q = (document.getElementById('publicSearchInput')?.value || '').toLowerCase().trim();
   let list = [...publicBooks];
-  if (q) list = list.filter(b => (b.title||'').toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
+  if (q) list = list.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
 
-list.sort((a, b) => {
+  list.sort((a, b) => {
     if (publicSort === 'author') {
-      const cmp = (a.author||'').localeCompare(b.author||'');
-      return cmp !== 0 ? cmp : (a.title||'').localeCompare(b.title||'');
+      const cmp = (a.author || '').localeCompare(b.author || '');
+      return cmp !== 0 ? cmp : (a.title || '').localeCompare(b.title || '');
     }
-    return (a.title||'').localeCompare(b.title||'');
+    return (a.title || '').localeCompare(b.title || '');
   });
 
   const grid = document.getElementById('publicBookGrid');
@@ -356,7 +377,7 @@ list.sort((a, b) => {
   }
   grid.classList.remove('reading-mode');
   grid.innerHTML = list.map((b, i) => `
-    <div class="pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title||'')}" data-author="${escapeAttr(b.author||'')}" style="animation-delay:${Math.min(i,12)*0.035}s">
+    <div class="pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${Math.min(i, 12) * 0.035}s">
       ${coverHtml(b)}
       <div class="status-dot ${b.status}"></div>
     </div>`).join('');
@@ -398,11 +419,11 @@ function getSortedFiltered() {
   let list = books.filter(b => b.status === currentFilter);
   list = list.filter(b => !isHiddenFromShelf(b));
   list.sort((a, b) => {
-    if (currentSort === 'title') return (a.title||'').localeCompare(b.title||'');
+    if (currentSort === 'title') return (a.title || '').localeCompare(b.title || '');
     if (currentSort === 'author') {
-      const authorCmp = (a.author||'').trim().toLowerCase().localeCompare((b.author||'').trim().toLowerCase());
+      const authorCmp = (a.author || '').trim().toLowerCase().localeCompare((b.author || '').trim().toLowerCase());
       if (authorCmp !== 0) return authorCmp;
-      return (a.title||'').localeCompare(b.title||'');
+      return (a.title || '').localeCompare(b.title || '');
     }
     return new Date(b.created_at) - new Date(a.created_at);
   });
@@ -436,7 +457,7 @@ function readingCardHtml(book, i) {
         <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:${pct}%"></div></div>
       </div>`
     : `<p class="rc-no-progress">tap ✏️ to track progress</p>`;
-  return `<div class="reading-card" data-id="${book.id}" style="animation-delay:${Math.min(i,12)*0.035}s">
+  return `<div class="reading-card" data-id="${book.id}" style="animation-delay:${Math.min(i, 12) * 0.035}s">
     <div class="rc-cover">${coverContent}</div>
     <div class="rc-info">
       <div class="rc-title">${escapeHtml(book.title)}</div>
@@ -457,9 +478,13 @@ function attachReadingCardEvents(card) {
   card.addEventListener('touchend', e => { if (e.target.closest('.rc-edit-btn')) return; endPress(e, id, card); });
   card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
   card.addEventListener('click', e => {
-    if (isTouch() || e.target.closest('.rc-edit-btn')) return;
-    if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
-    else openQuickMenu(id, card);
+    if (e.target.closest('.rc-edit-btn')) return;
+    if (isTouch()) {
+      openDetailModal(id);
+    } else {
+      if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
+      else openQuickMenu(id, card);
+    }
   });
 }
 function renderGrid() {
@@ -479,7 +504,7 @@ function renderGrid() {
   } else {
     grid.classList.remove('reading-mode');
     grid.innerHTML = filtered.map((b, i) => `
-      <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title||'')}" data-author="${escapeAttr(b.author||'')}" style="animation-delay:${Math.min(i,12)*0.035}s">
+      <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${Math.min(i, 12) * 0.035}s">
         ${coverHtml(b)}<div class="status-dot ${b.status}"></div>
       </div>`).join('');
     grid.querySelectorAll('.book-card').forEach(card => {
@@ -487,8 +512,11 @@ function renderGrid() {
       card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
       card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
       card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
-      card.addEventListener('click', () => {
-        if (isTouch()) return;
+      card.addEventListener('click', e => {
+        if (isTouch()) {
+          openDetailModal(id);
+          return;
+        }
         if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
         else openQuickMenu(id, card);
       });
@@ -509,15 +537,15 @@ function sbsAddRecent(q) {
   let recents = sbsGetRecents().filter(r => r.toLowerCase() !== q.toLowerCase());
   recents.unshift(q);
   recents = recents.slice(0, 8);
-  try { localStorage.setItem(SBS_RECENTS_KEY, JSON.stringify(recents)); } catch {}
+  try { localStorage.setItem(SBS_RECENTS_KEY, JSON.stringify(recents)); } catch { }
 }
 function sbsClearRecents() {
-  try { localStorage.removeItem(SBS_RECENTS_KEY); } catch {}
+  try { localStorage.removeItem(SBS_RECENTS_KEY); } catch { }
   renderShelfSearchResults('');
 }
 
 function openShelfSearch() {
-  const sheet    = document.getElementById('shelfSearchOverlay');
+  const sheet = document.getElementById('shelfSearchOverlay');
   const backdrop = document.getElementById('shelfSearchBackdrop');
 
   sheet.classList.add('open');
@@ -533,9 +561,9 @@ function openShelfSearch() {
 }
 
 function closeShelfSearch() {
-  const sheet    = document.getElementById('shelfSearchOverlay');
+  const sheet = document.getElementById('shelfSearchOverlay');
   const backdrop = document.getElementById('shelfSearchBackdrop');
-  const input    = document.getElementById('shelfSearchInput');
+  const input = document.getElementById('shelfSearchInput');
 
   if (input) input.blur();
 
@@ -620,7 +648,7 @@ function _renderSbsResults(q) {
   }
 
   el.innerHTML = results.map((b, i) => `
-    <div class="sbs-result-row" data-id="${b.id}" style="animation-delay:${Math.min(i,10)*0.028}s">
+    <div class="sbs-result-row" data-id="${b.id}" style="animation-delay:${Math.min(i, 10) * 0.028}s">
       <div class="sbs-result-cover">${coverHtml(b, 10)}</div>
       <div class="sbs-result-info">
         <div class="sbs-result-title">${highlight(b.title || '', q)}</div>
@@ -671,8 +699,8 @@ function _sbsInitDrag() {
   const newHandle = handle.cloneNode(true);
   handle.parentNode.replaceChild(newHandle, handle);
   newHandle.addEventListener('touchstart', onTouchStart, { passive: true });
-  newHandle.addEventListener('touchmove',  onTouchMove,  { passive: true });
-  newHandle.addEventListener('touchend',   onTouchEnd,   { passive: true });
+  newHandle.addEventListener('touchmove', onTouchMove, { passive: true });
+  newHandle.addEventListener('touchend', onTouchEnd, { passive: true });
 }
 
 // ── PRESS ──
@@ -694,12 +722,14 @@ function endPress(e, id, card) {
     const touch = e.changedTouches ? e.changedTouches[0] : null;
     const dx = touch ? Math.abs(touch.clientX - _pressStartX) : 0;
     const dy = touch ? Math.abs(touch.clientY - _pressStartY) : 0;
-    if (dx > 6 || dy > 6) { didLongPress = false; return; }
+    // Threshold for sloppy taps on mobile — but let 'click' handle the actual opening
+    if (dx > 12 || dy > 12) { didLongPress = false; return; }
+  } else {
+    // If it was a long press, prevent the subsequent 'click' event
     if (e && e.cancelable) e.preventDefault();
-    if (card.classList.contains('reading-card')) openDetailModal(id);
-    else openDetailModal(id);
   }
-  didLongPress = false;
+  // Detail modal is now handled in 'click' for better reliability
+  setTimeout(() => { didLongPress = false; }, 10);
 }
 function cancelPress(card) {
   if (didLongPress) return;
@@ -726,7 +756,7 @@ function closeQuickMenu() {
   document.getElementById('quickMenu').classList.remove('visible');
   qmBookId = null;
   if (!document.getElementById('sortMenu').classList.contains('visible') &&
-      !document.getElementById('publicSortMenu').classList.contains('visible')) {
+    !document.getElementById('publicSortMenu').classList.contains('visible')) {
     document.getElementById('qmDismiss').classList.remove('active');
   }
 }
@@ -745,7 +775,7 @@ function openSortMenu(btn) {
 function closeSortMenu() {
   if (document.getElementById('sortMenu')) document.getElementById('sortMenu').classList.remove('visible');
   if (!document.getElementById('quickMenu').classList.contains('visible') &&
-      !document.getElementById('publicSortMenu').classList.contains('visible')) {
+    !document.getElementById('publicSortMenu').classList.contains('visible')) {
     document.getElementById('qmDismiss').classList.remove('active');
   }
 }
@@ -762,7 +792,7 @@ async function openScannerModal() {
   document.getElementById('scannerModal').classList.add('visible');
   const video = document.getElementById('scannerVideo');
   try {
-  scannerStream = await navigator.mediaDevices.getUserMedia({
+    scannerStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: 'environment' },
         width: { ideal: 1920 },
@@ -784,7 +814,7 @@ async function openScannerModal() {
             document.getElementById('bsInput').value = isbn;
             onBsInput();
           }
-        } catch (e) {}
+        } catch (e) { }
       }, 500);
     } else {
       // Fallback — canvas polling for Safari (no BarcodeDetector, no ESM imports)
@@ -851,7 +881,7 @@ async function openScannerModal() {
 function closeScannerModal() {
   document.getElementById('scannerModal').classList.remove('visible');
   const video = document.getElementById('scannerVideo');
-  if (video._zxingReader) { try { video._zxingReader.reset(); } catch(e) {} video._zxingReader = null; }
+  if (video._zxingReader) { try { video._zxingReader.reset(); } catch (e) { } video._zxingReader = null; }
   clearInterval(scannerInterval); scannerInterval = null;
   if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
   video.srcObject = null;
@@ -890,7 +920,7 @@ function addToListFromMenu() {
         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
         <span style="font-size:20px;flex-shrink:0">${escapeHtml(list.emoji || '📚')}</span>
         <span style="flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escapeHtml(list.name)}</span>
-        <span style="font-size:11px;color:var(--text-muted);flex-shrink:0">${(list._books||[]).length} books</span>
+        <span style="font-size:11px;color:var(--text-muted);flex-shrink:0">${(list._books || []).length} books</span>
       </button>`).join('');
   }
 
@@ -913,8 +943,8 @@ async function confirmAddToList(listId, bookId) {
   }
   showToast('Added to list ✓');
 }
-  
-  
+
+
 // ── DETAIL MODAL ──
 const STATUS_LABELS = { reading: 'Reading', read: 'Read', unread: 'Unread' };
 function updateDetailBadge(status) {
@@ -964,7 +994,6 @@ async function confirmEdit() {
     author: document.getElementById('editAuthor').value.trim() || '',
     status: editStatus,
     year: document.getElementById('editYear').value.trim() || null,
-    publisher: document.getElementById('editPublisher').value.trim() || null,
     genre: document.getElementById('editGenre').value.trim() || null,
     page_count: parseInt(document.getElementById('editPageCount').value) || null,
     rating: editStatus === 'read' ? (_userRating || null) : null,
@@ -1012,7 +1041,7 @@ async function removeOrHideBook(id) {
     for (const l of lists) {
       if (window._ldIsOwned && window._ldIsOwned(l.id, id)) {
         await sb.from('list_books').update({ owned: false }).eq('list_id', l.id).eq('book_id', id);
-        try { _ownedCache[l.id].delete(String(id)); } catch(e){}
+        try { _ownedCache[l.id].delete(String(id)); } catch (e) { }
       }
     }
     await sb.from('books').update({ total_pages: -1 }).eq('id', id);
@@ -1081,7 +1110,7 @@ function openProfileModal() {
 let shelfSort = 'recent';
 function updateShelfStats() {
   const visible = books.filter(b => !isHiddenFromShelf(b));
-  ['reading','read','unread'].forEach(s => {
+  ['reading', 'read', 'unread'].forEach(s => {
     const el = document.getElementById('shelfStatNum-' + s);
     if (el) el.textContent = visible.filter(b => b.status === s).length;
   });
@@ -1126,13 +1155,13 @@ function renderShelfGrid() {
   const countEl = document.getElementById('shelfOverlayCount');
   const q = (document.getElementById('shelfSearchInput')?.value || '').toLowerCase().trim();
   let all = books.filter(b => !isHiddenFromShelf(b));
-  if (q) all = all.filter(b => (b.title||'').toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
+  if (q) all = all.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
   document.getElementById('shelfSearchClear')?.classList.toggle('visible', q.length > 0);
   all.sort((a, b) => {
-    if (shelfSort === 'title') return (a.title||'').localeCompare(b.title||'');
+    if (shelfSort === 'title') return (a.title || '').localeCompare(b.title || '');
     if (shelfSort === 'author') {
-      const cmp = (a.author||'').localeCompare(b.author||'');
-      return cmp !== 0 ? cmp : (a.title||'').localeCompare(b.title||'');
+      const cmp = (a.author || '').localeCompare(b.author || '');
+      return cmp !== 0 ? cmp : (a.title || '').localeCompare(b.title || '');
     }
     return new Date(b.created_at) - new Date(a.created_at);
   });
@@ -1143,7 +1172,7 @@ function renderShelfGrid() {
   }
   grid.classList.remove('reading-mode');
   grid.innerHTML = all.map((b, i) => `
-    <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title||'')}" data-author="${escapeAttr(b.author||'')}" style="animation-delay:${Math.min(i,12)*0.035}s">
+    <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${Math.min(i, 12) * 0.035}s">
       ${coverHtml(b)}<div class="status-dot ${b.status}"></div>
     </div>`).join('');
   grid.querySelectorAll('.book-card').forEach(card => {
@@ -1151,8 +1180,11 @@ function renderShelfGrid() {
     card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
     card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
     card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
-    card.addEventListener('click', () => {
-      if (isTouch()) return;
+    card.addEventListener('click', e => {
+      if (isTouch()) {
+        openDetailModal(id);
+        return;
+      }
       if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
       else openQuickMenu(id, card);
     });
@@ -1191,7 +1223,7 @@ function onBsInput() {
 
 async function fetchBookSearch(query) {
   const resultsEl = document.getElementById('bsResults');
-  const isIsbn = /^[\d\-]{9,17}$/.test(query.replace(/\s/g,''));
+  const isIsbn = /^[\d\-]{9,17}$/.test(query.replace(/\s/g, ''));
 
   async function searchGoogle(q, cat) {
     let qParam = encodeURIComponent(q);
@@ -1204,15 +1236,15 @@ async function fetchBookSearch(query) {
     return (data.items || []).map(item => {
       const v = item.volumeInfo || {};
       let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
-      if (cover) cover = cover.replace(/^http:/, 'https:').replace('zoom=1','zoom=2').replace('&edge=curl','');
+      if (cover) cover = cover.replace(/^http:/, 'https:').replace('zoom=1', 'zoom=2').replace('&edge=curl', '');
       return {
         title: v.title || '',
-        author: (v.authors||[])[0] || '',
+        author: (v.authors || [])[0] || '',
         cover,
         source: 'google',
         year: v.publishedDate ? v.publishedDate.slice(0, 4) : '',
         publisher: v.publisher || '',
-        genre: (v.categories||[])[0] || '',
+        genre: (v.categories || [])[0] || '',
         pageCount: v.pageCount ? String(v.pageCount) : '',
         _description: v.description || '',
       };
@@ -1229,7 +1261,7 @@ async function fetchBookSearch(query) {
     const data = await res.json();
     return (data.docs || []).filter(d => d.title).map(d => ({
       title: d.title || '',
-      author: (d.author_name||[])[0] || '',
+      author: (d.author_name || [])[0] || '',
       cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '',
       source: 'ol'
     }));
@@ -1242,14 +1274,14 @@ async function fetchBookSearch(query) {
     ]);
     const g = gResult.status === 'fulfilled' ? gResult.value : [];
     const ol = olResult.status === 'fulfilled' ? olResult.value : [];
-    const seen = new Set(g.map(b => (b.title+b.author).toLowerCase().replace(/\s/g,'')));
+    const seen = new Set(g.map(b => (b.title + b.author).toLowerCase().replace(/\s/g, '')));
     const merged = [...g, ...ol.filter(b => {
-      const key = (b.title+b.author).toLowerCase().replace(/\s/g,'');
+      const key = (b.title + b.author).toLowerCase().replace(/\s/g, '');
       if (seen.has(key)) return false;
       seen.add(key); return true;
     })];
     renderBsResults(merged);
-  } catch(e) {
+  } catch (e) {
     resultsEl.innerHTML = '<div class="bs-state"><p>Search failed.<br>Check your connection or add manually.</p></div>';
   }
 }
@@ -1287,13 +1319,10 @@ function selectBsResult(title, author, coverUrl, meta) {
   document.getElementById('addTitle').value = title || '';
   document.getElementById('addAuthor').value = author || '';
   document.getElementById('addCoverUrlInput').value = coverUrl || '';
-  // Pre-fill metadata fields from search result
   const addYear = document.getElementById('addYear');
-  const addPublisher = document.getElementById('addPublisher');
   const addGenre = document.getElementById('addGenre');
   const addPageCount = document.getElementById('addPageCount');
   if (addYear && meta?.year) addYear.value = meta.year;
-  if (addPublisher && meta?.publisher) addPublisher.value = meta.publisher;
   if (addGenre && meta?.genre) addGenre.value = meta.genre;
   if (addPageCount && meta?.pageCount) addPageCount.value = meta.pageCount;
   if (coverUrl) {
@@ -1322,7 +1351,6 @@ async function confirmAdd() {
     pages_read: 0,
     total_pages: 0,
     year: document.getElementById('addYear')?.value.trim() || null,
-    publisher: document.getElementById('addPublisher')?.value.trim() || null,
     genre: document.getElementById('addGenre')?.value.trim() || null,
     page_count: parseInt(document.getElementById('addPageCount')?.value) || null,
     description: window._pendingDescription || null,
@@ -1351,13 +1379,12 @@ async function fetchAddIsbn() {
     const v = item.volumeInfo || {};
     if (v.title) document.getElementById('addTitle').value = v.title;
     if (v.authors?.[0]) document.getElementById('addAuthor').value = v.authors[0];
-    if (v.publishedDate) document.getElementById('addYear').value = v.publishedDate.slice(0,4);
-    if (v.publisher) document.getElementById('addPublisher').value = v.publisher;
+    if (v.publishedDate) document.getElementById('addYear').value = v.publishedDate.slice(0, 4);
     if (v.categories?.[0]) document.getElementById('addGenre').value = v.categories[0];
     if (v.pageCount) document.getElementById('addPageCount').value = v.pageCount;
     let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
     if (cover) {
-      cover = cover.replace(/^http:/, 'https:').replace('zoom=1','zoom=2').replace('&edge=curl','');
+      cover = cover.replace(/^http:/, 'https:').replace('zoom=1', 'zoom=2').replace('&edge=curl', '');
       addCoverUrl = cover;
       const thumb = document.getElementById('addCoverThumb');
       if (thumb) thumb.innerHTML = `<img src="${escapeAttr(cover)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.remove()"/>`;
@@ -1382,13 +1409,12 @@ async function fetchEditIsbn() {
     const v = item.volumeInfo || {};
     if (v.title) document.getElementById('editTitle').value = v.title;
     if (v.authors?.[0]) document.getElementById('editAuthor').value = v.authors[0];
-    if (v.publishedDate) document.getElementById('editYear').value = v.publishedDate.slice(0,4);
-    if (v.publisher) document.getElementById('editPublisher').value = v.publisher;
+    if (v.publishedDate) document.getElementById('editYear').value = v.publishedDate.slice(0, 4);
     if (v.categories?.[0]) document.getElementById('editGenre').value = v.categories[0];
     if (v.pageCount) document.getElementById('editPageCount').value = v.pageCount;
     let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
     if (cover) {
-      cover = cover.replace(/^http:/, 'https:').replace('zoom=1','zoom=2').replace('&edge=curl','');
+      cover = cover.replace(/^http:/, 'https:').replace('zoom=1', 'zoom=2').replace('&edge=curl', '');
       editCoverUrl = cover;
       const thumb = document.getElementById('editCoverThumbWrap');
       if (thumb) thumb.innerHTML = `<img src="${escapeAttr(cover)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
@@ -1447,7 +1473,6 @@ function resetAddModal() {
   document.getElementById('addTitle').style.borderColor = '';
   const addIsbn = document.getElementById('addIsbn'); if (addIsbn) addIsbn.value = '';
   const addYear = document.getElementById('addYear'); if (addYear) addYear.value = '';
-  const addPublisher = document.getElementById('addPublisher'); if (addPublisher) addPublisher.value = '';
   const addGenre = document.getElementById('addGenre'); if (addGenre) addGenre.value = '';
   const addPageCount = document.getElementById('addPageCount'); if (addPageCount) addPageCount.value = '';
   addCoverFile = null; addCoverUrl = null;
@@ -1482,6 +1507,66 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+// ── AI LIBRARIAN ──
+const aiCache = new Map();
+
+async function fetchAiLibrarian(title, author, storedDescription) {
+  if (!window.GEMINI_API_KEY || !title) return null;
+  const cacheKey = `${title}-${author || ''}`;
+  if (aiCache.has(cacheKey)) return aiCache.get(cacheKey);
+
+  // Step 1: get description from Google Books if not already stored
+  let description = storedDescription || '';
+  if (!description) {
+    try {
+      const q = encodeURIComponent(`${title} ${author || ''}`.trim());
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=8&langRestrict=en`);
+      if (res.ok) {
+        const data = await res.json();
+        for (const item of (data.items || [])) {
+          const v = item.volumeInfo || {};
+          const lang = v.language || '';
+          const desc = v.description || '';
+          const isEn = lang === 'en' || (lang === '' && isEnglishText(desc));
+          if (desc.length >= 40 && isEn) { description = desc; break; }
+        }
+      }
+    } catch { }
+  }
+
+  // Step 2: call Gemini with title + author + description
+  const prompt = `You are an AI librarian. Given this book's information, respond ONLY with a valid JSON object (no markdown, no backticks) with exactly these keys:
+- "ai_summary": a full, engaging 2-3 sentence summary of the book that makes someone want to read it
+- "genre": the primary specific sub-genre or two (e.g. "Magical Realism", "Cyberpunk", "Historical Thriller"). NEVER use the words "Fiction" or "Novel" alone.
+- "page_count": an estimated or known integer for the number of pages
+- "mood": a single evocative word for the vibe (e.g. "melancholic", "electric", "propulsive")
+
+Title: ${title}
+Author: ${author || 'Unknown'}
+Description: ${description || 'No description available.'}`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${window.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      }
+    );
+    if (!res.ok) {
+      if (res.status === 429) console.warn('Gemini rate limit hit.');
+      return null;
+    }
+    const data = await res.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    aiCache.set(cacheKey, parsed);
+    return parsed;
+  } catch { return null; }
+}
+
+
 // ── A–Z ALPHABET SCROLLBAR ─────────────────────────────────────────────────
 // position:fixed on main shelf (scrolls independently of content)
 // position:absolute on shelf overlay (overlay is already full-screen fixed)
@@ -1495,38 +1580,38 @@ function showToast(msg) {
   }
 
   function haptic() {
-    try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { }
   }
 
   const CONTEXTS = {
     main: {
-      barId:       'mainAlphaBar',
-      trackId:     'mainAlphaTrack',
-      bubbleId:    'mainAlphaBubble',
-      gridId:      'bookGrid',
+      barId: 'mainAlphaBar',
+      trackId: 'mainAlphaTrack',
+      bubbleId: 'mainAlphaBubble',
+      gridId: 'bookGrid',
       containerId: 'mainGridContainer',
-      getSort:     () => currentSort,
+      getSort: () => currentSort,
     },
     shelf: {
-      barId:       'shelfAlphaBar',
-      trackId:     'shelfAlphaTrack',
-      bubbleId:    'shelfAlphaBubble',
-      gridId:      'shelfGrid',
+      barId: 'shelfAlphaBar',
+      trackId: 'shelfAlphaTrack',
+      bubbleId: 'shelfAlphaBubble',
+      gridId: 'shelfGrid',
       containerId: 'shelfGridContainer',
-      getSort:     () => shelfSort,
+      getSort: () => shelfSort,
     },
     public: {
-      barId:       'publicAlphaBar',
-      trackId:     'publicAlphaTrack',
-      bubbleId:    'publicAlphaBubble',
-      gridId:      'publicBookGrid',
+      barId: 'publicAlphaBar',
+      trackId: 'publicAlphaTrack',
+      bubbleId: 'publicAlphaBubble',
+      gridId: 'publicBookGrid',
       containerId: 'publicShelfContent',
-      getSort:     () => publicSort,
+      getSort: () => publicSort,
     },
   };
 
-  const lastLetter  = { main: null, shelf: null, public: null };
-  const mouseState  = { main: false, shelf: false, public: false };
+  const lastLetter = { main: null, shelf: null, public: null };
+  const mouseState = { main: false, shelf: false, public: false };
 
   // ── Position the bar so it sits exactly over the grid area ──
   function positionBar(ctx) {
@@ -1535,7 +1620,7 @@ function showToast(msg) {
     const container = document.getElementById(cfg.containerId);
     if (!bar || !container) return;
     const rect = container.getBoundingClientRect();
-    bar.style.top    = rect.top + 'px';
+    bar.style.top = rect.top + 'px';
     bar.style.bottom = (window.innerHeight - rect.bottom) + 'px';
   }
 
@@ -1545,17 +1630,17 @@ function showToast(msg) {
   }
 
   function getActiveLetters(ctx) {
-    const sort  = CONTEXTS[ctx].getSort();
+    const sort = CONTEXTS[ctx].getSort();
     const field = sort === 'author' ? 'data-author' : 'data-title';
-    const seen  = new Set();
+    const seen = new Set();
     getCards(ctx).forEach(card => seen.add(firstLetter(card.getAttribute(field) || '')));
     return seen;
   }
 
   function buildBar(ctx) {
-    const cfg    = CONTEXTS[ctx];
-    const bar    = document.getElementById(cfg.barId);
-    const track  = document.getElementById(cfg.trackId);
+    const cfg = CONTEXTS[ctx];
+    const bar = document.getElementById(cfg.barId);
+    const track = document.getElementById(cfg.trackId);
     const bubble = document.getElementById(cfg.bubbleId);
     if (!bar || !track || !bubble) return;
 
@@ -1580,7 +1665,7 @@ function showToast(msg) {
     track.innerHTML = '';
     ALL_LETTERS.forEach(letter => {
       const el = document.createElement('div');
-      el.className  = 'alpha-letter' + (activeLetters.has(letter) ? '' : ' dim');
+      el.className = 'alpha-letter' + (activeLetters.has(letter) ? '' : ' dim');
       el.textContent = letter;
       el.dataset.letter = letter;
       track.appendChild(el);
@@ -1590,18 +1675,18 @@ function showToast(msg) {
   }
 
   function hideBubble(ctx) {
-    const cfg    = CONTEXTS[ctx];
+    const cfg = CONTEXTS[ctx];
     const bubble = document.getElementById(cfg.bubbleId);
-    const track  = document.getElementById(cfg.trackId);
+    const track = document.getElementById(cfg.trackId);
     if (bubble) bubble.classList.remove('show');
-    if (track)  track.querySelectorAll('.alpha-letter').forEach(el => el.classList.remove('active'));
+    if (track) track.querySelectorAll('.alpha-letter').forEach(el => el.classList.remove('active'));
     lastLetter[ctx] = null;
   }
 
   function activateLetter(ctx, letter, clientY) {
     if (!letter) return;
-    const cfg    = CONTEXTS[ctx];
-    const track  = document.getElementById(cfg.trackId);
+    const cfg = CONTEXTS[ctx];
+    const track = document.getElementById(cfg.trackId);
     const bubble = document.getElementById(cfg.bubbleId);
     if (!track || !bubble) return;
 
@@ -1610,7 +1695,7 @@ function showToast(msg) {
       el.classList.toggle('active', el.dataset.letter === letter));
 
     // Position bubble — always uses viewport clientY since bubble is position:fixed
-    const bubbleH  = 52;
+    const bubbleH = 52;
     const topBound = 60;
     const botBound = window.innerHeight - bubbleH - 16;
     const clampedY = Math.max(topBound, Math.min(botBound, clientY - bubbleH / 2));
@@ -1626,8 +1711,8 @@ function showToast(msg) {
   }
 
   function scrollToLetter(ctx, letter) {
-    const cfg   = CONTEXTS[ctx];
-    const sort  = cfg.getSort();
+    const cfg = CONTEXTS[ctx];
+    const sort = cfg.getSort();
     const field = sort === 'author' ? 'data-author' : 'data-title';
     const container = document.getElementById(cfg.containerId);
     if (!container) return;
@@ -1641,7 +1726,7 @@ function showToast(msg) {
         // which may be negative (card above viewport) or positive (below).
         // Adding container.scrollTop converts that to an absolute scroll position.
         // This is scroll-position-independent and works correctly at any scroll depth.
-        const cTop   = container.getBoundingClientRect().top;
+        const cTop = container.getBoundingClientRect().top;
         const cardTop = card.getBoundingClientRect().top;
         const target = container.scrollTop + (cardTop - cTop) - 8;
         container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
@@ -1662,7 +1747,7 @@ function showToast(msg) {
     const all = track.querySelectorAll('.alpha-letter');
     if (!all.length) return null;
     const firstRect = all[0].getBoundingClientRect();
-    const lastRect  = all[all.length - 1].getBoundingClientRect();
+    const lastRect = all[all.length - 1].getBoundingClientRect();
     if (clientY < firstRect.top) {
       return active.length ? active[0].dataset.letter : null;
     }
@@ -1729,9 +1814,9 @@ function showToast(msg) {
 
   window.alphaBarRefresh = function (ctx) {
     setTimeout(() => {
-      if (ctx === 'main'  || !ctx) buildBar('main');
+      if (ctx === 'main' || !ctx) buildBar('main');
       if (ctx === 'shelf' || !ctx) buildBar('shelf');
-      if (ctx === 'public'|| !ctx) buildBar('public');
+      if (ctx === 'public' || !ctx) buildBar('public');
     }, 80);
   };
 
@@ -1742,7 +1827,7 @@ function showToast(msg) {
     setupMouseEvents('shelf');
     setupTouchEvents('public');
     setupMouseEvents('public');
-    
+
     // Reposition resiliently across iOS screen rotation animation delays
     const handleLayoutShift = () => {
       alphaBarRefresh(); // Fires buildBar logic at 80ms
@@ -1753,12 +1838,12 @@ function showToast(msg) {
   });
 })();
 // ── MY LISTS ──────────────────────────────────────────────────────────────
-;(function () {
-  const LO_EMOJIS = ['📚','🔖','⭐','🌙','🔥','💭','🌿','🗺️','🧠','🎭','🌊','🏔️','🎯','✨','🕯️'];
+; (function () {
+  const LO_EMOJIS = ['📚', '🔖', '⭐', '🌙', '🔥', '💭', '🌿', '🗺️', '🧠', '🎭', '🌊', '🏔️', '🎯', '✨', '🕯️'];
   const LO_PALETTES = [
-    ['#4a3728','#c9714a'],['#1e2d3d','#5a8fa8'],['#2d3a2e','#6a9a72'],
-    ['#3a2040','#9a6ac0'],['#3d2a1e','#c0814a'],['#1e1e2d','#6a72c0'],
-    ['#2d1e1e','#c06a6a'],['#1e2d2a','#6ac0b8'],['#3a3020','#b0963c'],['#2a1e2d','#a06ab8']
+    ['#4a3728', '#c9714a'], ['#1e2d3d', '#5a8fa8'], ['#2d3a2e', '#6a9a72'],
+    ['#3a2040', '#9a6ac0'], ['#3d2a1e', '#c0814a'], ['#1e1e2d', '#6a72c0'],
+    ['#2d1e1e', '#c06a6a'], ['#1e2d2a', '#6ac0b8'], ['#3a3020', '#b0963c'], ['#2a1e2d', '#a06ab8']
   ];
   let loLists = [];
   window._getLoLists = () => loLists;
@@ -1793,7 +1878,7 @@ function showToast(msg) {
   }
 
   function ldCoverHtml(book) {
-    const palIdx = (function(str){ let s=String(str||''); let h=0; for(let c of s) h=(h*31+c.charCodeAt(0))>>>0; return h%10; })(book.id);
+    const palIdx = (function (str) { let s = String(str || ''); let h = 0; for (let c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 10; })(book.id);
     const p = loPal(palIdx);
     if (book.cover_url) return `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;pointer-events:none" draggable="false" />`;
     return `<div class="ld-cover-inner" style="background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%)">
@@ -1808,10 +1893,10 @@ function showToast(msg) {
     const base = (list._books || []).slice(0, 3);
     while (base.length < 3) base.push(null);
     const listIdNum = typeof list.id === 'string'
-      ? list.id.split('').reduce((h,c) => (h*31+c.charCodeAt(0))>>>0, 0)
+      ? list.id.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0)
       : (list.id || 0);
     return base.map((b, idx) => {
-      const palIdx = b ? (function(s){let st=String(s||'');let h=0;for(let c of st)h=(h*31+c.charCodeAt(0))>>>0;return h%10;})(b.id) : (listIdNum+idx)%10;
+      const palIdx = b ? (function (s) { let st = String(s || ''); let h = 0; for (let c of st) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 10; })(b.id) : (listIdNum + idx) % 10;
       const p = loPal(palIdx || 0);
       const inner = b && b.cover_url
         ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover" />`
@@ -1829,11 +1914,11 @@ function showToast(msg) {
     const base = (list._books || []).slice(0, 3);
     while (base.length < 3) base.push(null);
     const listIdNum = typeof list.id === 'string'
-      ? list.id.split('').reduce((h,c) => (h*31+c.charCodeAt(0))>>>0, 0)
+      ? list.id.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 0)
       : (list.id || 0);
     return base.map((b, idx) => {
       const palIdx = b
-        ? (function(s){let st=String(s||'');let h=0;for(let c of st)h=(h*31+c.charCodeAt(0))>>>0;return h%10;})(b.id)
+        ? (function (s) { let st = String(s || ''); let h = 0; for (let c of st) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 10; })(b.id)
         : (listIdNum + idx) % 10;
       if (b && b.cover_url) return `<div class="lo-thumb"><img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover"/></div>`;
       return loThumbHtml(palIdx);
@@ -1843,14 +1928,14 @@ function showToast(msg) {
   function timeSince(dateStr) {
     if (!dateStr) return '';
     const diff = Date.now() - new Date(dateStr);
-    const mins = Math.floor(diff/60000);
+    const mins = Math.floor(diff / 60000);
     if (mins < 1) return 'just now';
     if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins/60);
+    const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs/24);
+    const days = Math.floor(hrs / 24);
     if (days < 7) return `${days}d ago`;
-    return `${Math.floor(days/7)}w ago`;
+    return `${Math.floor(days / 7)}w ago`;
   }
 
   window.updateListsCount = function () {
@@ -1909,7 +1994,7 @@ function showToast(msg) {
       _ownedCache[listId] = new Set(data.map(r => String(r.book_id)));
     } else {
       // fallback: localStorage
-      try { _ownedCache[listId] = new Set(JSON.parse(localStorage.getItem('tsundoku_owned_'+listId) || '[]')); } catch { _ownedCache[listId] = new Set(); }
+      try { _ownedCache[listId] = new Set(JSON.parse(localStorage.getItem('tsundoku_owned_' + listId) || '[]')); } catch { _ownedCache[listId] = new Set(); }
     }
   }
   function ldGetOwned(listId) {
@@ -1919,7 +2004,7 @@ function showToast(msg) {
   function ldSetOwned(listId, arr) {
     _ownedCache[listId] = new Set(arr.map(String));
     // persist to localStorage as fallback
-    try { localStorage.setItem('tsundoku_owned_'+listId, JSON.stringify(arr)); } catch {}
+    try { localStorage.setItem('tsundoku_owned_' + listId, JSON.stringify(arr)); } catch { }
   }
   window._ldSetOwned = ldSetOwned;
   function ldIsOwned(listId, bookId) {
@@ -1944,11 +2029,11 @@ function showToast(msg) {
       book.total_pages = -1;
       await sb.from('books').update({ total_pages: -1 }).eq('id', id);
     }
-    
+
     // Auto-refresh background grids to reflect owned status shift
     if (typeof renderGrid === 'function') renderGrid();
     if (typeof renderShelfGrid === 'function') renderShelfGrid();
-    
+
     // try to persist to DB
     await sb.from('list_books').update({ owned: nowOwned }).eq('list_id', listId).eq('book_id', bookId);
     return nowOwned;
@@ -1981,13 +2066,13 @@ function showToast(msg) {
     }
 
     scroll.innerHTML = filtered.map((list, i) => `
-      <div class="lo-card" data-id="${list.id}" style="animation:loFadeIn 0.28s ease ${Math.min(i,8)*0.04}s both">
+      <div class="lo-card" data-id="${list.id}" style="animation:loFadeIn 0.28s ease ${Math.min(i, 8) * 0.04}s both">
         <div class="lo-card-inner">
           <div class="lo-cover-stack">${loThumbStackFor(list)}</div>
           <div class="lo-card-info">
             <div class="lo-card-name">${escapeHtml(list.emoji || '')} ${escapeHtml(list.name)}</div>
             <div class="lo-card-meta">
-              <span>${(list._books||[]).length} ${(list._books||[]).length === 1 ? 'book' : 'books'}</span>
+              <span>${(list._books || []).length} ${(list._books || []).length === 1 ? 'book' : 'books'}</span>
               <span class="lo-card-dot"></span>
               <span>${timeSince(list.updated_at || list.created_at)}</span>
             </div>
@@ -2010,7 +2095,7 @@ function showToast(msg) {
         loLongTimer = setTimeout(() => {
           didLong = true;
           if (navigator.vibrate) navigator.vibrate([10, 40, 10]);
-          try { const hap = new (window.AudioContext || window.webkitAudioContext)(); const o = hap.createOscillator(); const g = hap.createGain(); o.connect(g); g.connect(hap.destination); o.frequency.value = 1200; g.gain.setValueAtTime(0.12, hap.currentTime); g.gain.exponentialRampToValueAtTime(0.001, hap.currentTime + 0.08); o.start(); o.stop(hap.currentTime + 0.08); } catch(e) {}
+          try { const hap = new (window.AudioContext || window.webkitAudioContext)(); const o = hap.createOscillator(); const g = hap.createGain(); o.connect(g); g.connect(hap.destination); o.frequency.value = 1200; g.gain.setValueAtTime(0.12, hap.currentTime); g.gain.exponentialRampToValueAtTime(0.001, hap.currentTime + 0.08); o.start(); o.stop(hap.currentTime + 0.08); } catch (e) { }
           card.style.transform = 'scale(1.0)';
           loOpenQM(id, card);
         }, 480);
@@ -2144,9 +2229,9 @@ function showToast(msg) {
     // 1. Instant Cache Render
     ldBooks = list._books || [];
     document.getElementById('ldHeaderTitle').textContent = list.name;
-    document.getElementById('ldHeroEmoji').textContent   = list.emoji || '📚';
-    document.getElementById('ldHeroName').textContent    = list.name;
-    document.getElementById('ldHeroCount').textContent   = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
+    document.getElementById('ldHeroEmoji').textContent = list.emoji || '📚';
+    document.getElementById('ldHeroName').textContent = list.name;
+    document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
     document.getElementById('ldHeroUpdated').textContent = `updated ${timeSince(list.updated_at || list.created_at)}`;
     document.getElementById('ldFanStack').innerHTML = fanCoversFor(list);
 
@@ -2231,7 +2316,7 @@ function showToast(msg) {
     }
     if (view !== 'list') document.getElementById('ldAlphaBar').classList.remove('visible');
   }
-  document.getElementById('ldViewToggleBtn').addEventListener('click', function(e) {
+  document.getElementById('ldViewToggleBtn').addEventListener('click', function (e) {
     e.stopPropagation();
     const menu = document.getElementById('ldViewMenu');
     const overlay = document.getElementById('listDetailOverlay');
@@ -2286,10 +2371,10 @@ function showToast(msg) {
     if (ldCurrentFilter === 'owned') list = list.filter(b => ownedIds.includes(String(b.id)));
     else if (ldCurrentFilter === 'not-owned') list = list.filter(b => !ownedIds.includes(String(b.id)));
     list.sort((a, b) => {
-      if (ldCurrentSort === 'title') return (a.title||'').localeCompare(b.title||'');
+      if (ldCurrentSort === 'title') return (a.title || '').localeCompare(b.title || '');
       if (ldCurrentSort === 'author') {
-        const cmp = (a.author||'').localeCompare(b.author||'');
-        return cmp !== 0 ? cmp : (a.title||'').localeCompare(b.title||'');
+        const cmp = (a.author || '').localeCompare(b.author || '');
+        return cmp !== 0 ? cmp : (a.title || '').localeCompare(b.title || '');
       }
       return 0; // recent = insertion order (already ordered from DB)
     });
@@ -2314,21 +2399,21 @@ function showToast(msg) {
       const cols = ldCurrentView === 'grid4' ? 4 : 3;
       scroll.innerHTML = `<div class="ld-book-grid" style="grid-template-columns:repeat(${cols},1fr)">${filtered.map((b, i) => {
         const owned = ownedIds.includes(String(b.id));
-        const palIdx = (function(str){let s=String(str||'');let h=0;for(let c of s)h=(h*31+c.charCodeAt(0))>>>0;return h%10;})(b.id);
+        const palIdx = (function (str) { let s = String(str || ''); let h = 0; for (let c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 10; })(b.id);
         const p = loPal(palIdx);
         const coverInner = b.cover_url
           ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover;pointer-events:none" draggable="false"/>`
           : `<div style="width:100%;height:100%;background:linear-gradient(160deg,${p[0]} 0%,${p[1]}55 100%);display:flex;align-items:center;justify-content:center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="${p[1]}" opacity="0.5" stroke="${p[1]}" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" fill="none"/></svg>
             </div>`;
-        return `<div class="ld-book-grid-card" data-id="${b.id}" data-title="${escapeAttr(b.title||'')}" data-author="${escapeAttr(b.author||'')}" style="animation:bookIn 0.3s ease ${Math.min(i,12)*0.035}s both">
+        return `<div class="ld-book-grid-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation:bookIn 0.3s ease ${Math.min(i, 12) * 0.035}s both">
           <div class="ld-book-grid-cover">
             ${coverInner}
             <div class="ld-grid-dot" style="background:${owned ? 'var(--green)' : 'var(--text-muted)'}"></div>
           </div>
           <div class="ld-book-grid-info">
             <div class="ld-book-grid-title">${escapeHtml(b.title)}</div>
-            <div class="ld-book-grid-author">${escapeHtml(b.author||'')}</div>
+            <div class="ld-book-grid-author">${escapeHtml(b.author || '')}</div>
           </div>
         </div>`;
       }).join('')}</div>`;
@@ -2353,7 +2438,7 @@ function showToast(msg) {
       const ownedBadge = `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:500;background:${owned ? 'rgba(90,138,106,0.14)' : 'rgba(122,112,104,0.1)'};color:${owned ? 'var(--green)' : 'var(--text-muted)'}">
         <span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block"></span>${owned ? 'Owned' : 'Not owned'}
       </span>`;
-      return `<div class="ld-book-row" data-id="${b.id}" data-title="${escapeAttr(b.title||'')}" data-author="${escapeAttr(b.author||'')}" style="animation-delay:${Math.min(i,10)*0.042}s">
+      return `<div class="ld-book-row" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${Math.min(i, 10) * 0.042}s">
         <div class="ld-drag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="19" r="1" fill="currentColor"/><circle cx="15" cy="5" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="19" r="1" fill="currentColor"/></svg></div>
         <div class="ld-cover">${ldCoverHtml(b)}</div>
         <div class="ld-book-info">
@@ -2481,11 +2566,11 @@ function showToast(msg) {
     if (left < 8) left = 8;
     qm.style.top = top + 'px'; qm.style.left = left + 'px'; qm.style.right = 'auto';
     // Update toggle-owned label based on current state
-  const isOwned = ldIsOwned(ldCurrentListId, id);
-  const toggleBtn = qm.querySelector('[onclick*="toggle-owned"]');
-  if (toggleBtn) toggleBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>${isOwned ? 'Mark as not owned' : 'Mark as owned'}`;
-  qm.classList.add('visible');
-  document.getElementById('ldDim').classList.add('on');
+    const isOwned = ldIsOwned(ldCurrentListId, id);
+    const toggleBtn = qm.querySelector('[onclick*="toggle-owned"]');
+    if (toggleBtn) toggleBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>${isOwned ? 'Mark as not owned' : 'Mark as owned'}`;
+    qm.classList.add('visible');
+    document.getElementById('ldDim').classList.add('on');
   }
   window.ldCloseQM = function () {
     document.getElementById('ldQM').classList.remove('visible');
@@ -2496,49 +2581,49 @@ function showToast(msg) {
   };
 
   // ── LIST BOOK DETAIL (read-only, no status change) ──
-let lbdBookId = null;
-function openListBookDetail(id) {
-  const book = ldBooks.find(b => String(b.id) === String(id));
-  if (!book) return;
-  lbdBookId = id;
-  
-  // Cover
-  const coverEl = document.getElementById('lbdCoverEl');
-  coverEl.innerHTML = book.cover_url
-    ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:contain;background:var(--surface2)">`
-    : makePlaceholder(book, 14);
-  
-  document.getElementById('lbdTitleEl').textContent = book.title;
-  document.getElementById('lbdAuthorEl').textContent = book.author || '';
-  
-  lbdRefreshOwnedState();
-  document.getElementById('listBookDetailModal').classList.add('visible');
-}
+  let lbdBookId = null;
+  function openListBookDetail(id) {
+    const book = ldBooks.find(b => String(b.id) === String(id));
+    if (!book) return;
+    lbdBookId = id;
 
-function lbdRefreshOwnedState() {
-  const owned = ldIsOwned(ldCurrentListId, lbdBookId);
-  const badge = document.getElementById('lbdOwnedBadge');
-  badge.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:500;background:${owned ? 'rgba(90,138,106,0.15)' : 'rgba(122,112,104,0.1)'};color:${owned ? 'var(--green)' : 'var(--text-muted)'}">
+    // Cover
+    const coverEl = document.getElementById('lbdCoverEl');
+    coverEl.innerHTML = book.cover_url
+      ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:contain;background:var(--surface2)">`
+      : makePlaceholder(book, 14);
+
+    document.getElementById('lbdTitleEl').textContent = book.title;
+    document.getElementById('lbdAuthorEl').textContent = book.author || '';
+
+    lbdRefreshOwnedState();
+    document.getElementById('listBookDetailModal').classList.add('visible');
+  }
+
+  function lbdRefreshOwnedState() {
+    const owned = ldIsOwned(ldCurrentListId, lbdBookId);
+    const badge = document.getElementById('lbdOwnedBadge');
+    badge.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:500;background:${owned ? 'rgba(90,138,106,0.15)' : 'rgba(122,112,104,0.1)'};color:${owned ? 'var(--green)' : 'var(--text-muted)'}">
     <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
     ${owned ? 'Owned' : 'Not owned'}
   </span>`;
-  const btn = document.getElementById('lbdToggleOwnedBtn');
-  btn.textContent = owned ? 'Mark as not owned' : 'Mark as owned';
-}
+    const btn = document.getElementById('lbdToggleOwnedBtn');
+    btn.textContent = owned ? 'Mark as not owned' : 'Mark as owned';
+  }
 
-async function lbdToggleOwned() {
-  const nowOwned = await ldToggleOwned(ldCurrentListId, lbdBookId);
-  lbdRefreshOwnedState();
-  ldUpdateProgress();
-  ldRenderList();
-  showToast(nowOwned ? 'Marked as owned ✓' : 'Marked as not owned');
-}
+  async function lbdToggleOwned() {
+    const nowOwned = await ldToggleOwned(ldCurrentListId, lbdBookId);
+    lbdRefreshOwnedState();
+    ldUpdateProgress();
+    ldRenderList();
+    showToast(nowOwned ? 'Marked as owned ✓' : 'Marked as not owned');
+  }
 
-function closeListBookDetail() {
-  document.getElementById('listBookDetailModal').classList.remove('visible');
-  lbdBookId = null;
-}
-  
+  function closeListBookDetail() {
+    document.getElementById('listBookDetailModal').classList.remove('visible');
+    lbdBookId = null;
+  }
+
   window.ldQMAction = async function (action) {
     if (action === 'view') { ldCloseQM(); openListBookDetail(ldQMTargetId); return; }
     if (action === 'toggle-owned') {
@@ -2641,18 +2726,18 @@ function closeListBookDetail() {
       ]);
       const gBooks = gRes.status === 'fulfilled'
         ? (gRes.value.items || []).map(item => {
-            const v = item.volumeInfo || {};
-            let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
-            if (cover) cover = cover.replace(/^http:/, 'https:').replace('zoom=1','zoom=2').replace('&edge=curl','');
-            return { title: v.title || '', author: (v.authors||[])[0] || '', cover, fromShelf: false };
-          }) : [];
-      const seen = new Set(gBooks.map(b => (b.title+b.author).toLowerCase().replace(/\s/g,'')));
+          const v = item.volumeInfo || {};
+          let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
+          if (cover) cover = cover.replace(/^http:/, 'https:').replace('zoom=1', 'zoom=2').replace('&edge=curl', '');
+          return { title: v.title || '', author: (v.authors || [])[0] || '', cover, fromShelf: false };
+        }) : [];
+      const seen = new Set(gBooks.map(b => (b.title + b.author).toLowerCase().replace(/\s/g, '')));
       const olBooks = olRes.status === 'fulfilled'
         ? (olRes.value.docs || []).filter(d => d.title).map(d => ({
-            title: d.title, author: (d.author_name||[])[0] || '',
-            cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '',
-            fromShelf: false
-          })).filter(b => { const k = (b.title+b.author).toLowerCase().replace(/\s/g,''); if (seen.has(k)) return false; seen.add(k); return true; })
+          title: d.title, author: (d.author_name || [])[0] || '',
+          cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '',
+          fromShelf: false
+        })).filter(b => { const k = (b.title + b.author).toLowerCase().replace(/\s/g, ''); if (seen.has(k)) return false; seen.add(k); return true; })
         : [];
       ldasRenderSearchResults([...gBooks, ...olBooks]);
     } catch {
@@ -2711,7 +2796,7 @@ function closeListBookDetail() {
     const el = document.getElementById('ldasResults');
     let filtered = [...books];
     const existingInList = new Set(ldBooks.map(b => String(b.id)));
-    if (q) filtered = filtered.filter(b => (b.title||'').toLowerCase().includes(q.toLowerCase()) || (b.author||'').toLowerCase().includes(q.toLowerCase()));
+    if (q) filtered = filtered.filter(b => (b.title || '').toLowerCase().includes(q.toLowerCase()) || (b.author || '').toLowerCase().includes(q.toLowerCase()));
     if (!filtered.length) {
       el.innerHTML = '<div class="bs-state"><p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px 0">Nothing found on your shelf.</p></div>';
       return;
@@ -2722,8 +2807,8 @@ function closeListBookDetail() {
         <div class="ldas-result-cover">${b.cover_url ? `<img src="${escapeAttr(b.cover_url)}">` : ''}</div>
         <div class="ldas-result-info">
           <div class="ldas-result-title">${escapeHtml(b.title)}</div>
-          <div class="ldas-result-author">${escapeHtml(b.author||'')}</div>
-          <div class="ldas-result-meta" style="color:${b.status==='reading'?'var(--accent)':b.status==='read'?'var(--green)':'var(--text-muted)'}">${b.status}</div>
+          <div class="ldas-result-author">${escapeHtml(b.author || '')}</div>
+          <div class="ldas-result-meta" style="color:${b.status === 'reading' ? 'var(--accent)' : b.status === 'read' ? 'var(--green)' : 'var(--text-muted)'}">${b.status}</div>
         </div>
         <button class="ldas-result-add${inList ? ' added' : ''}" data-ldas-shelf-add="${b.id}" ${inList ? 'disabled' : ''}>${inList ? '✓' : '+'}</button>
       </div>`;
@@ -2788,7 +2873,7 @@ function closeListBookDetail() {
 
 })();
 // ── END MY LISTS ────────────────────────────────────────────────────────────
-  // ── END A–Z SCROLLBAR ─────────────────────────────────────────────────────
+// ── END A–Z SCROLLBAR ─────────────────────────────────────────────────────
 
 // ── FLOATING BAR — keyboard lift ──────────────────────────────────────────
 (function () {
