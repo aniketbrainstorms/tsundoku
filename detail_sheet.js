@@ -665,7 +665,7 @@ function dsRenderTagline(status) {
 
 // ── OVERRIDE openDetailModal ── 
 // (replaces the original function defined earlier in app.js)
-async function openDetailModal(id) {
+window.openDetailModal = async function openDetailModal(id) {
   try {
     const book = books.find(b => String(b.id) === String(id));
     if (!book) return;
