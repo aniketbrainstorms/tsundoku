@@ -749,7 +749,7 @@ async function openDetailModal(id) {
 
       fetchAiLibrarian(book.title, book.author || '', book.description || '').then(async ai => {
         if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
-        if (!ai || editingId !== id) {
+        if (!ai  {
           if (summaryEl) summaryEl.textContent = 'Summary unavailable.';
           return;
         }
