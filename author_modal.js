@@ -77,10 +77,22 @@ function authorFallback(authorName) {
   };
 }
 
+// NEW
 async function fetchAuthorProfile(authorName) {
   const cacheKey = normalizeAuthorText(authorName);
   if (_authorCache[cacheKey]) return _authorCache[cacheKey];
 
+  // 1. Try Supabase first
+  try {
+    const { data } = await sb.from('authors').select('*').eq('name_key', cacheKey).maybeSingle();
+    if (data) {
+      const profile = { name: data.name, image: data.image || '', intro: '', quote: '', works: [] };
+      _authorCache[cacheKey] = profile;
+      return profile;
+    }
+  } catch {}
+
+  // 2. Fetch from Open Library
   const fallback = authorFallback(authorName);
   const profile = {
     name: fallback.name || authorName,
@@ -101,6 +113,16 @@ async function fetchAuthorProfile(authorName) {
       }
     }
   } catch {}
+
+  // 3. Save to Supabase (fire and forget)
+  if (currentUser) {
+    sb.from('authors').upsert({
+      name_key: cacheKey,
+      name: profile.name,
+      image: profile.image,
+      user_id: currentUser.id
+    }, { onConflict: 'name_key' }).then(() => {});
+  }
 
   _authorCache[cacheKey] = profile;
   return profile;
