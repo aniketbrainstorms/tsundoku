@@ -16,6 +16,16 @@
 <link rel="icon" type="image/png" href="fav_icon_640.png">
 <link rel="apple-touch-icon" href="fav_icon_640.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'Bristol';
+    src: url('Bristol.woff') format('woff'),
+         url('Bristol.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+</style>
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -47,9 +57,181 @@
 </div>
 
   <!-- LOADING -->
+  <!-- LOADING -->
   <div class="loading-screen" id="loadingScreen">
-    <img src="https://raw.githubusercontent.com/aniketbrainstorms/bookshelf/main/tsundoku.png" alt="Tsundoku" style="width:180px;margin-bottom:28px" onerror="this.style.display='none'">
-    <div class="loading-spinner"></div>
+    <div class="ls-corner ls-corner--tl"></div>
+    <div class="ls-corner ls-corner--tr"></div>
+    <div class="ls-corner ls-corner--bl"></div>
+    <div class="ls-corner ls-corner--br"></div>
+
+    <p class="ls-wordmark">tsundoku</p>
+
+    <div class="ls-scene">
+      <div class="ls-book ls-book-1"><div class="ls-stripe"></div></div>
+      <div class="ls-book ls-book-2"><div class="ls-stripe"></div></div>
+      <div class="ls-book ls-book-3"><div class="ls-stripe"></div></div>
+      <div class="ls-floor"></div>
+      <div class="ls-floor-glow"></div>
+    </div>
+
+    <div class="ls-loading-text">
+      loading your shelf
+      <div class="ls-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <style>
+      .ls-wordmark {
+        font-family: 'Bristol', 'DM Sans', sans-serif;
+        font-size: 15px;
+        font-weight: 400;
+        letter-spacing: 0.22em;
+        text-transform: lowercase;
+        color: var(--text-muted);
+        margin-bottom: 52px;
+        opacity: 0;
+        animation: lsFadeIn 0.6s 0.2s ease forwards;
+      }
+      .ls-scene {
+        position: relative;
+        width: 200px;
+        height: 260px;
+      }
+      .ls-floor {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 160px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(201,113,74,0.12) 30%, rgba(201,113,74,0.12) 70%, transparent);
+      }
+      .ls-floor-glow {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 10px;
+        background: radial-gradient(ellipse, rgba(201,113,74,0.18) 0%, transparent 70%);
+        animation: lsGlowPulse 2.4s ease-in-out infinite;
+      }
+      .ls-book {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%) translateY(-260px);
+        border-radius: 3px 5px 5px 3px;
+        will-change: transform, opacity;
+      }
+      .ls-book::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 10px;
+        border-radius: 3px 0 0 3px;
+        background: rgba(0,0,0,0.25);
+      }
+      .ls-book::after {
+        content: '';
+        position: absolute;
+        right: 0; top: 2px; bottom: 2px;
+        width: 5px;
+        border-radius: 0 3px 3px 0;
+        background: rgba(232,221,208,0.12);
+      }
+      .ls-stripe {
+        position: absolute;
+        left: 14px; top: 50%; transform: translateY(-50%);
+        right: 10px; height: 2px;
+        border-radius: 1px;
+        background: rgba(255,255,255,0.15);
+      }
+      .ls-book-1 {
+        width: 148px; height: 38px;
+        background: #c9714a;
+        box-shadow: 0 2px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+        animation: lsDrop1 2.8s cubic-bezier(0.22,1,0.36,1) infinite;
+      }
+      .ls-book-2 {
+        width: 136px; height: 38px;
+        background: #3d5a47;
+        box-shadow: 0 2px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+        animation: lsDrop2 2.8s cubic-bezier(0.22,1,0.36,1) infinite;
+      }
+      .ls-book-3 {
+        width: 156px; height: 38px;
+        background: #4a6080;
+        box-shadow: 0 2px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+        animation: lsDrop3 2.8s cubic-bezier(0.22,1,0.36,1) infinite;
+      }
+      @keyframes lsDrop1 {
+        0%   { transform: translateX(-50%) translateY(-260px) rotate(-4deg); opacity: 0; }
+        8%   { opacity: 1; }
+        30%  { transform: translateX(-50%) translateY(202px) rotate(0deg); opacity: 1; }
+        33%  { transform: translateX(-50%) translateY(196px) rotate(0deg); }
+        36%  { transform: translateX(-50%) translateY(198px) rotate(0deg); }
+        100% { transform: translateX(-50%) translateY(198px) rotate(0deg); opacity: 1; }
+      }
+      @keyframes lsDrop2 {
+        0%,  28% { transform: translateX(-50%) translateY(-260px) rotate(5deg); opacity: 0; }
+        36%  { opacity: 1; }
+        58%  { transform: translateX(-50%) translateY(164px) rotate(0deg); opacity: 1; }
+        61%  { transform: translateX(-50%) translateY(158px) rotate(0deg); }
+        64%  { transform: translateX(-50%) translateY(160px) rotate(0deg); }
+        100% { transform: translateX(-50%) translateY(160px) rotate(0deg); opacity: 1; }
+      }
+      @keyframes lsDrop3 {
+        0%,  58% { transform: translateX(-50%) translateY(-260px) rotate(-3deg); opacity: 0; }
+        66%  { opacity: 1; }
+        86%  { transform: translateX(-50%) translateY(126px) rotate(0deg); opacity: 1; }
+        89%  { transform: translateX(-50%) translateY(120px) rotate(0deg); }
+        92%  { transform: translateX(-50%) translateY(122px) rotate(0deg); }
+        100% { transform: translateX(-50%) translateY(122px) rotate(0deg); opacity: 1; }
+      }
+      @keyframes lsGlowPulse {
+        0%, 100% { opacity: 0.4; transform: translateX(-50%) scaleX(0.8); }
+        50%       { opacity: 1;   transform: translateX(-50%) scaleX(1.1); }
+      }
+      .ls-loading-text {
+        margin-top: 44px;
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 0.18em;
+        text-transform: lowercase;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        opacity: 0;
+        animation: lsFadeIn 0.6s 0.5s ease forwards;
+      }
+      .ls-dots { display: flex; gap: 4px; }
+      .ls-dots span {
+        width: 3px; height: 3px; border-radius: 50%;
+        background: var(--accent); opacity: 0.3;
+        animation: lsDotPop 1.4s ease-in-out infinite;
+      }
+      .ls-dots span:nth-child(2) { animation-delay: 0.2s; }
+      .ls-dots span:nth-child(3) { animation-delay: 0.4s; }
+      @keyframes lsDotPop {
+        0%, 80%, 100% { opacity: 0.25; transform: scale(1); }
+        40%            { opacity: 1;    transform: scale(1.4); }
+      }
+      @keyframes lsFadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .ls-corner {
+        position: absolute;
+        width: 20px; height: 20px;
+        opacity: 0.12;
+      }
+      .ls-corner--tl { top: 24px; left: 24px; border-top: 1px solid var(--accent); border-left: 1px solid var(--accent); }
+      .ls-corner--tr { top: 24px; right: 24px; border-top: 1px solid var(--accent); border-right: 1px solid var(--accent); }
+      .ls-corner--bl { bottom: 24px; left: 24px; border-bottom: 1px solid var(--accent); border-left: 1px solid var(--accent); }
+      .ls-corner--br { bottom: 24px; right: 24px; border-bottom: 1px solid var(--accent); border-right: 1px solid var(--accent); }
+    </style>
   </div>
 
   <!-- AUTH SCREEN -->
