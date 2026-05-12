@@ -2234,7 +2234,7 @@ Description: ${description || 'No description available.'}`;
     ldBooks = list._books || [];
     document.getElementById('ldHeaderTitle').textContent = list.name;
     document.getElementById('ldHeroEmoji').textContent = list.emoji || '📚';
-    document.getElementById('ldHeroName').textContent = list.name;
+    const ldHeroName = document.getElementById('ldHeroName'); if (ldHeroName) ldHeroName.textContent = list.name;
     document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
     document.getElementById('ldHeroUpdated').textContent = `updated ${timeSince(list.updated_at || list.created_at)}`;
     document.getElementById('ldFanStack').innerHTML = fanCoversFor(list);
