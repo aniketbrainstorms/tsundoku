@@ -130,17 +130,20 @@ async function fetchAuthorProfile(authorName) {
 
 function buildAuthorRows(authorName) {
   const local = getLocalAuthorBooks(authorName);
-  return local.map(book => ({
-    title: book.title || 'Untitled',
-    year: book.year || '',
-    cover: book.cover_url || '',
-    description: book.description || '',
-    genre: cleanGenre(book.genre || 'Novel'),
-    owned: !isHiddenFromShelf(book),
-    status: book.status || 'unread',
-    bookId: book.id,
-    source: 'local'
-  }));
+  return local.map(book => {
+    const hidden = isHiddenFromShelf(book);
+    return {
+      title: book.title || 'Untitled',
+      year: book.year || '',
+      cover: book.cover_url || '',
+      description: book.description || '',
+      genre: cleanGenre(book.genre || 'Novel'),
+      owned: !hidden,
+      status: hidden ? 'not-owned' : (book.status || 'unread'),
+      bookId: book.id,
+      source: 'local'
+    };
+  });
 }
 
 function getVisibleAuthorRows() {
@@ -175,7 +178,7 @@ function renderAuthorRows(rows) {
   state.textContent = '';
   timeline.innerHTML = rows.map((row, i) => {
     const statusClass = row.status || 'unread';
-    const statusText = STATUS_LABELS[row.status] || 'Unread';
+    const statusText = row.status === 'not-owned' ? 'Not Owned' : (STATUS_LABELS[row.status] || 'Unread');
     const cover = row.cover
       ? `<img src="${escapeAttr(row.cover)}" alt="" onerror="this.parentElement.innerHTML=''">`
       : makePlaceholder({ id: row.title }, 16);
@@ -188,7 +191,7 @@ function renderAuthorRows(rows) {
           <span class="author-book-dot"></span>
           <span>${escapeHtml(row.genre || 'Novel')}</span>
         </div>
-        <p class="author-book-desc">${escapeHtml(row.description || 'Saved in your library.')}</p>
+        <p class="author-book-desc">${escapeHtml(row.description || 'In your lists.')}</p>
       </div>
       <span class="author-status-pill ${statusClass}">${statusText}</span>
     </div>`;
