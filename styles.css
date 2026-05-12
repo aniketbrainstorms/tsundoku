@@ -820,18 +820,14 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   padding: 8px max(var(--safe-right),16px) max(calc(var(--safe-bottom)+24px),24px) max(var(--safe-left),16px);
 }
 .lo-scroll::-webkit-scrollbar { display: none; }
-.lo-card {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 12px; margin-bottom: 8px; overflow: hidden;
-  cursor: pointer; transition: border-color 0.18s;
-}
+.lo-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.18s; }
 .lo-card.pressing { opacity: 0.72; transform: scale(0.98); transition: transform 0.1s, opacity 0.1s; }
-.lo-card-inner { display: flex; align-items: center; gap: 12px; padding: 0 14px 0 0; }
-.lo-cover-stack { display: flex; position: relative; width: 80px; height: 80px; flex-shrink: 0; }
-.lo-thumb { width: 40px; height: 80px; border-radius: 5px; overflow: hidden; position: absolute; border: 1.5px solid var(--bg); }
+.lo-card-inner { display: flex; align-items: center; gap: 14px; padding: 12px 14px; }
+.lo-cover-stack { display: flex; position: relative; width: 72px; height: 56px; flex-shrink: 0; }
+.lo-thumb { width: 38px; height: 56px; border-radius: 6px; overflow: hidden; position: absolute; border: 1.5px solid var(--bg); }
 .lo-thumb:nth-child(1) { left: 0; z-index: 3; }
-.lo-thumb:nth-child(2) { left: 18px; z-index: 2; }
-.lo-thumb:nth-child(3) { left: 36px; z-index: 1; }
+.lo-thumb:nth-child(2) { left: 17px; z-index: 2; }
+.lo-thumb:nth-child(3) { left: 34px; z-index: 1; }
 .lo-thumb-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 .lo-card-info { flex: 1; min-width: 0; }
 .lo-card-name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
