@@ -817,12 +817,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 .lo-scroll {
   flex: 1; overflow-y: auto; scrollbar-width: none;
-  padding: 12px max(var(--safe-right),16px) max(calc(var(--safe-bottom)+24px),24px) max(var(--safe-left),16px);
+  padding: 8px max(var(--safe-right),16px) max(calc(var(--safe-bottom)+24px),24px) max(var(--safe-left),16px);
 }
 .lo-scroll::-webkit-scrollbar { display: none; }
 .lo-card {
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 14px; margin-bottom: 8px; overflow: hidden;
+  border-radius: 12px; margin-bottom: 8px; overflow: hidden;
   cursor: pointer; transition: border-color 0.18s;
 }
 .lo-card.pressing { opacity: 0.72; transform: scale(0.98); transition: transform 0.1s, opacity 0.1s; }
