@@ -2232,7 +2232,6 @@ Description: ${description || 'No description available.'}`;
 
     // 1. Instant Cache Render
     ldBooks = list._books || [];
-    document.getElementById('ldHeaderTitle').textContent = list.name;
     document.getElementById('ldHeroEmoji').textContent = list.emoji || '📚';
     const ldHeroName = document.getElementById('ldHeroName'); if (ldHeroName) ldHeroName.textContent = list.name;
     document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
