@@ -826,9 +826,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   cursor: pointer; transition: border-color 0.18s;
 }
 .lo-card.pressing { opacity: 0.72; transform: scale(0.98); transition: transform 0.1s, opacity 0.1s; }
-.lo-card-inner { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
-.lo-cover-stack { display: flex; position: relative; width: 72px; height: 52px; flex-shrink: 0; }
-.lo-thumb { width: 36px; height: 52px; border-radius: 5px; overflow: hidden; position: absolute; border: 1.5px solid var(--bg); }
+.lo-card-inner { display: flex; align-items: center; gap: 12px; padding: 0 14px 0 0; }
+.lo-cover-stack { display: flex; position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+.lo-thumb { width: 40px; height: 80px; border-radius: 5px; overflow: hidden; position: absolute; border: 1.5px solid var(--bg); }
 .lo-thumb:nth-child(1) { left: 0; z-index: 3; }
 .lo-thumb:nth-child(2) { left: 18px; z-index: 2; }
 .lo-thumb:nth-child(3) { left: 36px; z-index: 1; }
