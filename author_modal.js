@@ -131,15 +131,15 @@ async function fetchAuthorProfile(authorName) {
 function buildAuthorRows(authorName) {
   const local = getLocalAuthorBooks(authorName);
   return local.map(book => {
-    const hidden = isHiddenFromShelf(book);
+    const notOwned = isHiddenFromShelf(book);
     return {
       title: book.title || 'Untitled',
       year: book.year || '',
       cover: book.cover_url || '',
       description: book.description || '',
       genre: cleanGenre(book.genre || 'Novel'),
-      owned: !hidden,
-      status: hidden ? 'not-owned' : (book.status || 'unread'),
+      owned: !notOwned,
+      status: notOwned ? 'not-owned' : (book.status || 'unread'),
       bookId: book.id,
       source: 'local'
     };
@@ -148,7 +148,11 @@ function buildAuthorRows(authorName) {
 
 function getVisibleAuthorRows() {
   let rows = [..._authorRows];
-  if (_authorFilter !== 'all') rows = rows.filter(row => row.status === _authorFilter);
+  if (_authorFilter === 'wishlist') {
+    rows = rows.filter(row => row.status === 'not-owned');
+  } else if (_authorFilter !== 'all') {
+    rows = rows.filter(row => row.status === _authorFilter);
+  }
   rows.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   return rows;
 }
@@ -177,7 +181,7 @@ function renderAuthorRows(rows) {
 
   state.textContent = '';
   timeline.innerHTML = rows.map((row, i) => {
-    const statusClass = row.status || 'unread';
+    const statusClass = row.status === 'not-owned' ? 'not-owned' : (row.status || 'unread');
     const statusText = row.status === 'not-owned' ? 'Not Owned' : (STATUS_LABELS[row.status] || 'Unread');
     const cover = row.cover
       ? `<img src="${escapeAttr(row.cover)}" alt="" onerror="this.parentElement.innerHTML=''">`
@@ -191,7 +195,7 @@ function renderAuthorRows(rows) {
           <span class="author-book-dot"></span>
           <span>${escapeHtml(row.genre || 'Novel')}</span>
         </div>
-        <p class="author-book-desc">${escapeHtml(row.description || 'In your lists.')}</p>
+        <p class="author-book-desc">${escapeHtml(row.description || (row.status === 'not-owned' ? 'On your wishlist.' : 'Saved in your library.'))}</p>
       </div>
       <span class="author-status-pill ${statusClass}">${statusText}</span>
     </div>`;
