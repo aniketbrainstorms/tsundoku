@@ -2028,6 +2028,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   font-size: 11px; font-weight: 500; margin-right: 16px;
   letter-spacing: 0.01em;
 }
+.author-status-pill.not-owned {
+  background: rgba(122,112,104,0.12);
+  color: var(--text-muted);
+}
 .author-status-pill.reading { background: rgba(201,113,74,0.15); color: var(--accent); }
 .author-status-pill.read    { background: rgba(90,138,106,0.15);  color: var(--green); }
 .author-status-pill.unread  { background: rgba(122,112,104,0.1);  color: var(--text-muted); }
