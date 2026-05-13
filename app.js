@@ -2276,6 +2276,8 @@ Description: ${description || 'No description available.'}`;
     const list = loLists.find(l => String(l.id) === String(listId)); if (!list) return;
     ldCurrentListId = listId;
     ldCurrentFilter = 'all';
+    const floatingBar = document.getElementById('floatingBar');
+    if (floatingBar) floatingBar.style.display = 'none';
     ldCurrentSort = 'recent';
     ldasAddedIds = new Set();
 
@@ -2329,6 +2331,8 @@ Description: ${description || 'No description available.'}`;
     const ld = document.getElementById('listDetailOverlay');
     ld.classList.remove('open');
     ldCloseAddSheet();
+    const floatingBar = document.getElementById('floatingBar');
+    if (floatingBar) floatingBar.style.display = '';
     setTimeout(() => { document.getElementById('ldProgressFill').style.width = '0%'; }, 350);
     loRenderLists();
   };
