@@ -2156,3 +2156,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   border-radius: 3px;
   padding: 0 1px;
 }
+
+/* Hide floating bar when add-book screens are active */
+.book-search-overlay.open ~ .floating-bar,
+.modal-overlay.visible ~ .floating-bar {
+  opacity: 0;
+  pointer-events: none;
+}
