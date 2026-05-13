@@ -946,6 +946,7 @@ function addToListFromMenu_forBook(bookId) {
   }
   document.getElementById('addToListModal').classList.add('visible');
 }
+async function confirmAddToList(listId, bookId) {
   closeModal('addToListModal');
   // Avoid duplicates
   const { data: existing } = await sb.from('list_books').select('id').eq('list_id', listId).eq('book_id', bookId).maybeSingle();
