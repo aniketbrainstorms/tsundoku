@@ -181,6 +181,74 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 .floating-add-btn.open { transform: rotate(45deg); }
 
+/* ── ADD POPUP ── */
+.add-popup {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  width: 240px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 6px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.3);
+  opacity: 0;
+  transform: scale(0.88) translateY(8px);
+  transform-origin: bottom right;
+  pointer-events: none;
+  transition: opacity 0.22s cubic-bezier(0.34,1.56,0.64,1), transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 9;
+}
+.add-popup.open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: all;
+}
+.add-popup-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  background: none;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.add-popup-item:active { background: var(--surface2); }
+.add-popup-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.add-popup-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.add-popup-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+.add-popup-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+}
+.add-popup-chevron { color: var(--text-muted); flex-shrink: 0; }
+.add-popup-sep { height: 1px; background: var(--border); margin: 2px 6px; }
+
 /* keep search-row-* classes for shelf overlay reuse */
 .search-row-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
 .search-row-input {
