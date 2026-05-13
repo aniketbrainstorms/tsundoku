@@ -183,10 +183,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* ── ADD POPUP ── */
 .add-popup {
-  position: absolute;
-  bottom: calc(100% + 10px);
+  position: fixed;
+  bottom: calc(max(var(--safe-bottom) + 18px, 24px) + 46px + 12px);
+  right: 16px;
+  width: 220px;
   right: 0;
-  width: 240px;
+  left: auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 18px;
