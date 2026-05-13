@@ -926,7 +926,26 @@ function addToListFromMenu() {
 
   document.getElementById('addToListModal').classList.add('visible');
 }
-async function confirmAddToList(listId, bookId) {
+function addToListFromMenu_forBook(bookId) {
+  const book = books.find(b => b.id === bookId);
+  if (!book) return;
+  const loLists = window._getLoLists ? window._getLoLists() : [];
+  const content = document.getElementById('addToListContent');
+  document.getElementById('addToListBookTitle').textContent = book.title;
+  if (!loLists.length) {
+    content.innerHTML = `<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:16px 0">No lists yet.<br>Create one from Profile → My Lists.</p>`;
+  } else {
+    content.innerHTML = loLists.map(list => `
+      <button onclick="confirmAddToList('${list.id}','${bookId}')"
+        style="display:flex;align-items:center;gap:12px;width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:13px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;text-align:left;transition:border-color 0.2s"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:20px;flex-shrink:0">${escapeHtml(list.emoji || '📚')}</span>
+        <span style="flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escapeHtml(list.name)}</span>
+        <span style="font-size:11px;color:var(--text-muted);flex-shrink:0">${(list._books || []).length} books</span>
+      </button>`).join('');
+  }
+  document.getElementById('addToListModal').classList.add('visible');
+}
   closeModal('addToListModal');
   // Avoid duplicates
   const { data: existing } = await sb.from('list_books').select('id').eq('list_id', listId).eq('book_id', bookId).maybeSingle();
@@ -1037,11 +1056,17 @@ async function removeOrHideBook(id) {
   }
   if (inList) {
     const book = books.find(b => String(b.id) === String(id));
-    if (book) book.total_pages = -1;
+    if (book) { book.total_pages = -1; }
+    // Revert owned=false for ALL lists this book belongs to (spec: remove from shelf → revert to not-owned)
     for (const l of lists) {
-      if (window._ldIsOwned && window._ldIsOwned(l.id, id)) {
+      if ((l._books || []).some(b => String(b.id) === String(id))) {
         await sb.from('list_books').update({ owned: false }).eq('list_id', l.id).eq('book_id', id);
-        try { _ownedCache[l.id].delete(String(id)); } catch (e) { }
+        try { if (_ownedCache[l.id]) _ownedCache[l.id].delete(String(id)); } catch (e) { }
+        try {
+          const stored = JSON.parse(localStorage.getItem('tsundoku_owned_' + l.id) || '[]');
+          const updated = stored.filter(bid => String(bid) !== String(id));
+          localStorage.setItem('tsundoku_owned_' + l.id, JSON.stringify(updated));
+        } catch (e) { }
       }
     }
     await sb.from('books').update({ total_pages: -1 }).eq('id', id);
@@ -1049,10 +1074,12 @@ async function removeOrHideBook(id) {
     if (typeof renderShelfGrid === 'function') renderShelfGrid();
     showToast('Book removed from shelf');
   } else {
+    // Not in any list — hard delete, book stays gone everywhere
     books = books.filter(b => String(b.id) !== String(id));
     renderGrid();
     if (typeof renderShelfGrid === 'function') renderShelfGrid();
-    await dbDelete(id); showToast('Book removed');
+    await dbDelete(id);
+    showToast('Book removed');
   }
 }
 async function deleteBook() {
@@ -2288,10 +2315,26 @@ Description: ${description || 'No description available.'}`;
     const ownedIds = ldGetOwned(ldCurrentListId);
     const total = ldBooks.length;
     const ownedCount = ldBooks.filter(b => ownedIds.includes(String(b.id))).length;
-    const pct = total ? Math.round(ownedCount / total * 100) : 0;
-    document.getElementById('ldProgressLabel').textContent = `${ownedCount} of ${total} owned`;
-    document.getElementById('ldProgressPct').textContent = `${pct}%`;
-    setTimeout(() => { document.getElementById('ldProgressFill').style.width = pct + '%'; }, 120);
+    const readCount = ldBooks.filter(b => {
+      const shelfBook = books.find(sb => String(sb.id) === String(b.id));
+      return shelfBook && shelfBook.status === 'read';
+    }).length;
+    const ownedPct = total ? Math.round(ownedCount / total * 100) : 0;
+    const readPct  = total ? Math.round(readCount  / total * 100) : 0;
+    const ownedLabel = document.getElementById('ldProgressLabel');
+    const readLabel  = document.getElementById('ldProgressReadLabel');
+    const pctLabel   = document.getElementById('ldProgressPct');
+    const readPctLabel = document.getElementById('ldProgressReadPct');
+    if (ownedLabel) ownedLabel.textContent = `${ownedCount} of ${total} owned`;
+    if (readLabel)  readLabel.textContent  = `${readCount} of ${total} read`;
+    if (pctLabel)   pctLabel.textContent   = `${ownedPct}%`;
+    if (readPctLabel) readPctLabel.textContent = `${readPct}%`;
+    setTimeout(() => {
+      const ownedFill = document.getElementById('ldProgressFill');
+      const readFill  = document.getElementById('ldProgressReadFill');
+      if (ownedFill) ownedFill.style.width = ownedPct + '%';
+      if (readFill)  readFill.style.width  = readPct + '%';
+    }, 120);
   }
 
   // Filter chips
@@ -2562,16 +2605,52 @@ Description: ${description || 'No description available.'}`;
     const overlay = document.getElementById('listDetailOverlay');
     const or = overlay.getBoundingClientRect();
     const rr = row.getBoundingClientRect();
+
+    const isOwned = ldIsOwned(ldCurrentListId, id);
+    const shelfBook = books.find(b => String(b.id) === String(id) && b.total_pages !== -1);
+
+    // Build menu HTML dynamically based on ownership state
+    const svgCheck = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const svgEye   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const svgTrash = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
+    const svgEdit  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const svgList  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
+    const svgDot   = c => `<span class="qm-dot" style="background:${c}"></span>`;
+
+    let items = '';
+
+    if (!isOwned) {
+      // Not owned state
+      items = `
+        <span class="qm-label">Not owned</span>
+        <button class="qm-item" onclick="ldQMAction('mark-owned')">${svgCheck}Mark as owned</button>
+        <div class="qm-sep"></div>
+        <button class="qm-item delete-item" onclick="ldQMAction('remove')">${svgTrash}Remove from list</button>`;
+    } else {
+      // Owned / on shelf state
+      items = `
+        <span class="qm-label">Move to</span>
+        <button class="qm-item${shelfBook?.status === 'reading' ? ' current-status' : ''}" onclick="ldQMAction('reading')">${svgDot('var(--accent)')}Reading</button>
+        <button class="qm-item${shelfBook?.status === 'read' ? ' current-status' : ''}" onclick="ldQMAction('read')">${svgDot('var(--green)')}Read</button>
+        <button class="qm-item${shelfBook?.status === 'unread' ? ' current-status' : ''}" onclick="ldQMAction('unread')">${svgDot('var(--text-muted)')}Unread</button>
+        <div class="qm-sep"></div>
+        <button class="qm-item" onclick="ldQMAction('edit')">${svgEdit}Edit details</button>
+        <button class="qm-item" onclick="ldQMAction('add-to-list')">${svgList}Add to list</button>
+        <div class="qm-sep"></div>
+        <button class="qm-item delete-item" onclick="ldQMAction('remove')">${svgTrash}Remove from list</button>
+        <button class="qm-item delete-item" onclick="ldQMAction('remove-from-shelf')">${svgTrash}Remove from shelf</button>`;
+    }
+
+    qm.innerHTML = items;
+
+    // Position
+    const menuEstHeight = isOwned ? 290 : 120;
     let top = rr.bottom - or.top + 2;
-    if (top + 130 > or.height - 16) top = (rr.top - or.top) - 136;
+    if (top + menuEstHeight > or.height - 16) top = (rr.top - or.top) - menuEstHeight - 8;
     let left = rr.left - or.left;
     if (left + 160 > or.width - 8) left = or.width - 168;
     if (left < 8) left = 8;
     qm.style.top = top + 'px'; qm.style.left = left + 'px'; qm.style.right = 'auto';
-    // Update toggle-owned label based on current state
-    const isOwned = ldIsOwned(ldCurrentListId, id);
-    const toggleBtn = qm.querySelector('[onclick*="toggle-owned"]');
-    if (toggleBtn) toggleBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>${isOwned ? 'Mark as not owned' : 'Mark as owned'}`;
     qm.classList.add('visible');
     document.getElementById('ldDim').classList.add('on');
   }
@@ -2629,6 +2708,49 @@ Description: ${description || 'No description available.'}`;
 
   window.ldQMAction = async function (action) {
     if (action === 'view') { ldCloseQM(); openListBookDetail(ldQMTargetId); return; }
+
+    // Status moves (only for owned/shelf books)
+    if (['reading','read','unread'].includes(action)) {
+      const id = ldQMTargetId; ldCloseQM();
+      const book = books.find(b => String(b.id) === String(id));
+      if (!book) return;
+      book.status = action;
+      renderGrid();
+      ldUpdateProgress();
+      ldRenderList();
+      await dbUpdate(id, { status: action });
+      showToast(`Moved to ${action} ✓`);
+      return;
+    }
+
+    if (action === 'mark-owned') {
+      const id = ldQMTargetId; ldCloseQM();
+      // Check if book already exists on shelf (total_pages === -1 means hidden)
+      let book = books.find(b => String(b.id) === String(id));
+      if (book && book.total_pages === -1) {
+        // Re-surface it
+        book.total_pages = 0;
+        book.status = 'unread';
+        await dbUpdate(id, { total_pages: 0, status: 'unread' });
+      } else if (!book) {
+        // Shouldn't happen (list books are always DB records), but guard
+        showToast('Book not found on shelf');
+        return;
+      }
+      // Mark owned in list
+      const ownedArr = ldGetOwned(ldCurrentListId);
+      if (!ownedArr.includes(String(id))) {
+        ownedArr.push(String(id));
+        ldSetOwned(ldCurrentListId, ownedArr);
+        await sb.from('list_books').update({ owned: true }).eq('list_id', ldCurrentListId).eq('book_id', id);
+      }
+      renderGrid();
+      ldUpdateProgress();
+      ldRenderList();
+      showToast('Marked as owned — added to shelf ✓');
+      return;
+    }
+
     if (action === 'toggle-owned') {
       const id = ldQMTargetId; ldCloseQM();
       const now = await ldToggleOwned(ldCurrentListId, id);
@@ -2637,6 +2759,7 @@ Description: ${description || 'No description available.'}`;
       showToast(now ? 'Marked as owned ✓' : 'Marked as not owned');
       return;
     }
+
     if (action === 'remove') {
       const id = ldQMTargetId; ldCloseQM();
       if (await ldRemoveBook(ldCurrentListId, id)) {
@@ -2647,6 +2770,33 @@ Description: ${description || 'No description available.'}`;
         document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
         showToast('Removed from list');
       }
+      return;
+    }
+
+    if (action === 'remove-from-shelf') {
+      const id = ldQMTargetId; ldCloseQM();
+      await removeOrHideBook(id);
+      // Revert owned state in this list
+      const set = _ownedCache[ldCurrentListId] || new Set();
+      set.delete(String(id));
+      _ownedCache[ldCurrentListId] = set;
+      ldSetOwned(ldCurrentListId, Array.from(set));
+      await sb.from('list_books').update({ owned: false }).eq('list_id', ldCurrentListId).eq('book_id', id);
+      ldUpdateProgress();
+      ldRenderList();
+      return;
+    }
+
+    if (action === 'edit') {
+      const id = ldQMTargetId; ldCloseQM();
+      openDetailModal(id);
+      return;
+    }
+
+    if (action === 'add-to-list') {
+      const id = ldQMTargetId; ldCloseQM();
+      addToListFromMenu_forBook(id);
+      return;
     }
   };
 
