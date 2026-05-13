@@ -1244,10 +1244,12 @@ function closeAddPopup() {
 }
 function openBookSearch() {
   document.getElementById('bookSearchOverlay').classList.add('open');
+  document.getElementById('floatingBar').style.display = 'none';
   setTimeout(() => document.getElementById('bsInput').focus(), 380);
 }
 function closeBookSearch() {
   document.getElementById('bookSearchOverlay').classList.remove('open');
+  document.getElementById('floatingBar').style.display = '';
   document.getElementById('bsInput').value = '';
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>';
   clearTimeout(bookSearchTimer);
@@ -1382,6 +1384,7 @@ function selectBsResult(title, author, coverUrl, meta) {
 
 function openManualAdd() {
   closeBookSearch();
+  document.getElementById('floatingBar').style.display = 'none';
   setTimeout(() => document.getElementById('addModal').classList.add('visible'), 80);
 }
 
@@ -1475,7 +1478,7 @@ async function fetchEditIsbn() {
 // ── SHARED HELPERS ──
 function closeModal(id) {
   document.getElementById(id).classList.remove('visible');
-  if (id === 'addModal') resetAddModal();
+  if (id === 'addModal') { resetAddModal(); document.getElementById('floatingBar').style.display = ''; }
   if (id === 'detailModal') closeStatusDropdown();
 }
 function handleOverlayClick(e, id) {
