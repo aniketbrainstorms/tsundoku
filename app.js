@@ -1222,13 +1222,31 @@ function renderShelfGrid() {
 }
 
 // ── BOOK SEARCH ──
+function toggleAddPopup() {
+  const popup = document.getElementById('addPopup');
+  const btn = document.getElementById('addBtn');
+  const isOpen = popup.classList.contains('open');
+  if (isOpen) {
+    closeAddPopup();
+  } else {
+    popup.classList.add('open');
+    btn.classList.add('open');
+    document.getElementById('qmDismiss').classList.add('active');
+  }
+}
+function closeAddPopup() {
+  document.getElementById('addPopup').classList.remove('open');
+  document.getElementById('addBtn').classList.remove('open');
+  if (!document.getElementById('quickMenu').classList.contains('visible') &&
+      !document.getElementById('sortMenu').classList.contains('visible')) {
+    document.getElementById('qmDismiss').classList.remove('active');
+  }
+}
 function openBookSearch() {
-  document.getElementById('addBtn').classList.add('open');
   document.getElementById('bookSearchOverlay').classList.add('open');
   setTimeout(() => document.getElementById('bsInput').focus(), 380);
 }
 function closeBookSearch() {
-  document.getElementById('addBtn').classList.remove('open');
   document.getElementById('bookSearchOverlay').classList.remove('open');
   document.getElementById('bsInput').value = '';
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>';
