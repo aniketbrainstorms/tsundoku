@@ -124,7 +124,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   display: flex;
   align-items: center;
   gap: 10px;
-  z-index: 8;
+  z-index: 21;
   pointer-events: auto;
   transition: bottom 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: bottom;
