@@ -1040,8 +1040,16 @@
         </div>
       </div>
       <div class="ld-progress">
-        <div class="ld-progress-bg"><div class="ld-progress-fill" id="ldProgressFill" style="width:0%"></div></div>
-        <div class="ld-progress-label"><span id="ldProgressLabel">0 of 0 read</span><span id="ldProgressPct">0%</span></div>
+        <div class="ld-progress-row">
+          <div class="ld-progress-col">
+            <div class="ld-progress-bg"><div class="ld-progress-fill" id="ldProgressFill" style="width:0%"></div></div>
+            <div class="ld-progress-label"><span id="ldProgressLabel">0 of 0 owned</span><span id="ldProgressPct">0%</span></div>
+          </div>
+          <div class="ld-progress-col">
+            <div class="ld-progress-bg"><div class="ld-progress-fill ld-progress-fill--read" id="ldProgressReadFill" style="width:0%"></div></div>
+            <div class="ld-progress-label"><span id="ldProgressReadLabel">0 of 0 read</span><span id="ldProgressReadPct" style="color:var(--green)">0%</span></div>
+          </div>
+        </div>
       </div>
       <div class="divider"></div>
       <div class="ld-toolbar">
@@ -1078,21 +1086,7 @@
       </div>
       <div class="alpha-bubble" id="ldAlphaBubble"></div>
       <div id="ldDim" onclick="ldCloseQM()"></div>
-      <div class="quick-menu" id="ldQM">
-        <span class="qm-label">Book options</span>
-        <button class="qm-item" onclick="ldQMAction('view')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          View details
-        </button>
-        <button class="qm-item" onclick="ldQMAction('toggle-owned')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          Toggle owned
-        </button>
-        <button class="qm-item" onclick="ldQMAction('remove')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          Remove from list
-        </button>
-      </div>
+      <div class="quick-menu" id="ldQM"></div>
       <div id="ldAddSheetDim" onclick="ldCloseAddSheet()"></div>
       <div id="ldAddSheet">
         <div class="ldas-handle"></div>
