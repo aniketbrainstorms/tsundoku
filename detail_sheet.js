@@ -781,14 +781,13 @@ window.openDetailModal = async function openDetailModal(id) {
 }
 
 // ── OVERRIDE closeModal for detailModal ──
-const _origCloseModal = closeModal;
-window.closeModal = function closeModal(id) {
-  if (id === 'detailModal') {
-    dsClose();
-    return;
-  }
-  _origCloseModal(id);
-};
+window.closeModal = (function() {
+  const _orig = typeof closeModal === 'function' ? closeModal : function(){};
+  return function closeModal(id) {
+    if (id === 'detailModal') { dsClose(); return; }
+    _orig(id);
+  };
+})();
 
 // ── Overlay click handler override — dropdown removed, handler cleared ──
 document.addEventListener('DOMContentLoaded', () => {
