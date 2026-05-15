@@ -33,7 +33,7 @@
 <div id="app">
 
 <!-- LIST BOOK DETAIL MODAL -->
-<div class="modal-overlay" id="listBookDetailModal" onclick="if(event.target===this)closeListBookDetail()">
+<div class="modal-overlay" id="listBookDetailModal" style="z-index:135" onclick="if(event.target===this)closeListBookDetail()">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="detail-back-row">
@@ -51,7 +51,7 @@
       </div>
     </div>
     <div class="divider" style="margin:16px 0 20px;"></div>
-    <button class="modal-btn" id="lbdToggleOwnedBtn" onclick="lbdToggleOwned()">Mark as owned</button>
+     <div id="lbdCTAArea"></div>
     <button class="modal-btn ghost" onclick="closeListBookDetail()">Close</button>
   </div>
 </div>
