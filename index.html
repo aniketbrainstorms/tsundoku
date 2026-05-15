@@ -42,17 +42,20 @@
         Back
       </button>
     </div>
-    <div class="detail-cover-row">
-      <div class="detail-cover" id="lbdCoverEl"></div>
-      <div class="detail-info">
-        <div class="detail-title" id="lbdTitleEl"></div>
-        <div class="detail-author" id="lbdAuthorEl"></div>
-        <div style="margin-top:10px" id="lbdOwnedBadge"></div>
+    <!-- Cover + info -->
+    <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:20px">
+      <div id="lbdCoverEl" style="width:88px;height:130px;border-radius:14px;overflow:hidden;flex-shrink:0;background:var(--surface2);box-shadow:0 8px 24px rgba(0,0,0,0.55),0 1px 0 rgba(255,255,255,0.06) inset;border:1px solid rgba(255,255,255,0.08)"></div>
+      <div style="flex:1;min-width:0;padding-top:4px">
+        <div id="lbdTitleEl" style="font-size:18px;font-weight:700;color:var(--text);line-height:1.25;letter-spacing:-0.02em;margin-bottom:5px"></div>
+        <div id="lbdAuthorEl" style="font-size:13px;color:var(--text-muted);margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"></div>
+        <div id="lbdYearPub" style="font-size:12px;color:#6b6762;margin-bottom:10px"></div>
+        <div id="lbdOwnedBadge"></div>
       </div>
     </div>
-    <div class="divider" style="margin:16px 0 20px;"></div>
-     <div id="lbdCTAArea"></div>
-    <button class="modal-btn ghost" onclick="closeListBookDetail()">Close</button>
+    <div class="divider" style="margin:0 0 20px"></div>
+    <!-- Dynamic CTAs -->
+    <div id="lbdCTAArea"></div>
+    <button class="modal-btn ghost" onclick="closeListBookDetail()">Cancel</button>
   </div>
 </div>
 
