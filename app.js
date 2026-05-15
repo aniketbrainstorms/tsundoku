@@ -2708,15 +2708,21 @@ Description: ${description || 'No description available.'}`;
     document.getElementById('listBookDetailModal').classList.add('visible');
   }
 
-  function lbdRefreshOwnedState() {
+   function lbdRefreshOwnedState() {
     const owned = ldIsOwned(ldCurrentListId, lbdBookId);
     const badge = document.getElementById('lbdOwnedBadge');
     badge.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:500;background:${owned ? 'rgba(90,138,106,0.15)' : 'rgba(122,112,104,0.1)'};color:${owned ? 'var(--green)' : 'var(--text-muted)'}">
     <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
     ${owned ? 'Owned' : 'Not owned'}
   </span>`;
-    const btn = document.getElementById('lbdToggleOwnedBtn');
-    btn.textContent = owned ? 'Mark as not owned' : 'Mark as owned';
+    const cta = document.getElementById('lbdCTAArea');
+    if (owned) {
+      cta.innerHTML = `<button class="modal-btn" onclick="lbdToggleOwned()">Mark as not owned</button>`;
+    } else {
+      cta.innerHTML = `
+        <button class="modal-btn" onclick="lbdToggleOwned()">Mark as owned</button>
+        <button class="modal-btn" style="background:transparent;border:1.5px solid rgba(192,96,96,0.4);color:#c06060;margin-bottom:0" onclick="lbdDeleteFromList()">Remove from list</button>`;
+    }
   }
 
   async function lbdToggleOwned() {
@@ -2725,6 +2731,19 @@ Description: ${description || 'No description available.'}`;
     ldUpdateProgress();
     ldRenderList();
     showToast(nowOwned ? 'Marked as owned ✓' : 'Marked as not owned');
+  }
+
+  async function lbdDeleteFromList() {
+    const id = lbdBookId;
+    closeListBookDetail();
+    if (await ldRemoveBook(ldCurrentListId, id)) {
+      ldBooks = ldBooks.filter(b => String(b.id) !== String(id));
+      ldUpdateProgress();
+      ldRenderList();
+      ldBuildAlphaBar();
+      document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
+      showToast('Removed from list');
+    }
   }
 
   function closeListBookDetail() {
