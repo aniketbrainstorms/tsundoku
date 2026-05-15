@@ -2737,7 +2737,7 @@ Description: ${description || 'No description available.'}`;
     }
   }
 
-  async function lbdToggleOwned() {
+  window.lbdToggleOwned = async function lbdToggleOwned() {
     const nowOwned = await ldToggleOwned(ldCurrentListId, lbdBookId);
     lbdRefreshOwnedState();
     ldUpdateProgress();
@@ -2745,7 +2745,7 @@ Description: ${description || 'No description available.'}`;
     showToast(nowOwned ? 'Marked as owned ✓' : 'Marked as not owned');
   }
 
-  async function lbdDeleteFromList() {
+  window.lbdDeleteFromList = async function lbdDeleteFromList() {
     const id = lbdBookId;
     closeListBookDetail();
     if (await ldRemoveBook(ldCurrentListId, id)) {
@@ -2758,10 +2758,10 @@ Description: ${description || 'No description available.'}`;
     }
   }
 
-  function closeListBookDetail() {
+   window.closeListBookDetail = function closeListBookDetail() {
     document.getElementById('listBookDetailModal').classList.remove('visible');
     lbdBookId = null;
-  }
+  };
 
   window.ldQMAction = async function (action) {
     if (action === 'view') { ldCloseQM(); openListBookDetail(ldQMTargetId); return; }
