@@ -2695,14 +2695,16 @@ Description: ${description || 'No description available.'}`;
     if (!book) return;
     lbdBookId = id;
 
-    // Cover
     const coverEl = document.getElementById('lbdCoverEl');
     coverEl.innerHTML = book.cover_url
-      ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:contain;background:var(--surface2)">`
-      : makePlaceholder(book, 14);
+      ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`
+      : makePlaceholder(book, 22);
 
     document.getElementById('lbdTitleEl').textContent = book.title;
     document.getElementById('lbdAuthorEl').textContent = book.author || '';
+
+    const yearPub = document.getElementById('lbdYearPub');
+    if (yearPub) yearPub.textContent = book.year || '';
 
     lbdRefreshOwnedState();
     document.getElementById('listBookDetailModal').classList.add('visible');
