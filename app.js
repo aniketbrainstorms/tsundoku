@@ -2499,7 +2499,12 @@ Description: ${description || 'No description available.'}`;
         }, { passive: true });
         card.addEventListener('touchend', () => { clearTimeout(ldLongTimer); });
         card.addEventListener('touchcancel', () => { clearTimeout(ldLongTimer); });
-        card.addEventListener('click', () => { if (!didLong) openDetailModal(id); });
+        card.addEventListener('click', () => {
+          if (!didLong) {
+            if (ldIsOwned(ldCurrentListId, id)) openDetailModal(id);
+            else openListBookDetail(id);
+          }
+        });
       });
       return;
     }
@@ -2534,7 +2539,12 @@ Description: ${description || 'No description available.'}`;
       row.addEventListener('mousedown', () => { didLong = false; ldLongTimer = setTimeout(() => { didLong = true; ldOpenQM(id, row); }, 500); });
       row.addEventListener('mouseup', () => clearTimeout(ldLongTimer));
       row.addEventListener('mouseleave', () => clearTimeout(ldLongTimer));
-      row.addEventListener('click', () => { if (!didLong) openDetailModal(id); });
+       row.addEventListener('click', () => {
+        if (!didLong) {
+          if (ldIsOwned(ldCurrentListId, id)) openDetailModal(id);
+          else openListBookDetail(id);
+        }
+      });
     });
 
     if (typeof alphaBarRefresh === 'function') setTimeout(() => ldBuildAlphaBar(), 80);
