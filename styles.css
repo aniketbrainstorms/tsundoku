@@ -184,24 +184,38 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* ── ADD POPUP ── */
 .add-popup {
   position: fixed;
-  bottom: calc(max(var(--safe-bottom) + 18px, 24px) + 46px + 12px);
+  bottom: calc(max(var(--safe-bottom) + 18px, 24px) + 46px + 18px);
   right: 16px;
-  width: 220px;
-  right: 0;
+  width: 264px;
   left: auto;
-  background: rgba(255, 255, 255, 0.06);
-  border: 0.5px solid rgba(255, 255, 255, 0.14);
-  border-radius: 18px;
-  padding: 6px;
-  backdrop-filter: blur(32px) saturate(1.8);
-  -webkit-backdrop-filter: blur(32px) saturate(1.8);
-  box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
+  background: rgba(30, 26, 22, 0.72);
+  border: 0.5px solid rgba(255, 255, 255, 0.13);
+  border-radius: 22px;
+  padding: 10px;
+  backdrop-filter: blur(40px) saturate(2);
+  -webkit-backdrop-filter: blur(40px) saturate(2);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07);
   opacity: 0;
   transform: scale(0.88) translateY(8px);
   transform-origin: bottom right;
   pointer-events: none;
   transition: opacity 0.22s cubic-bezier(0.34,1.56,0.64,1), transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
   z-index: 21;
+}
+/* Speech bubble tail */
+.add-popup::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  right: 18px;
+  width: 18px;
+  height: 10px;
+  background: rgba(30, 26, 22, 0.72);
+  clip-path: polygon(0 0, 100% 0, 55% 100%);
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+}
+.add-popup.open::after {
+  display: block;
 }
 .add-popup.open {
   opacity: 1;
@@ -211,26 +225,26 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .add-popup-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  padding: 11px 12px;
+  padding: 13px 12px;
   background: none;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer;
   text-align: left;
   transition: background 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
-.add-popup-item:active { background: rgba(255, 255, 255, 0.08); }
+.add-popup-item:active { background: rgba(255, 255, 255, 0.07); }
 .add-popup-icon {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  color: var(--accent);
+  color: rgba(255, 255, 255, 0.85);
 }
 .add-popup-text {
   flex: 1;
@@ -240,18 +254,19 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   min-width: 0;
 }
 .add-popup-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--text);
+  color: rgba(255, 255, 255, 0.95);
   font-family: 'DM Sans', sans-serif;
+  letter-spacing: -0.15px;
 }
 .add-popup-sub {
-  font-size: 11px;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
   font-family: 'DM Sans', sans-serif;
 }
-.add-popup-chevron { color: var(--text-muted); flex-shrink: 0; }
-.add-popup-sep { height: 1px; background: rgba(255,255,255,0.08); margin: 2px 6px; }
+.add-popup-chevron { color: rgba(255, 255, 255, 0.3); flex-shrink: 0; }
+.add-popup-sep { height: 1px; background: rgba(255,255,255,0.06); margin: 0 12px; }
 
 /* keep search-row-* classes for shelf overlay reuse */
 .search-row-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
