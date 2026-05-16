@@ -833,7 +833,6 @@ window.dsRefreshDetailSheet = function () {
   document.getElementById('editTitle').value = book.title;
   document.getElementById('editAuthor').value = book.author || '';
   document.getElementById('editYear').value = book.year || '';
-  document.getElementById('editPublisher').value = book.publisher || '';
   document.getElementById('editGenre').value = book.genre || '';
   document.getElementById('editPageCount').value = book.page_count || '';
 };
