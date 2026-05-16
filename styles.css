@@ -186,7 +186,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   position: fixed;
   bottom: calc(max(var(--safe-bottom) + 18px, 24px) + 46px + 14px);
   right: 16px;
-  width: min(278px, calc(100vw - 32px));
+  width: min(300px, calc(100vw - 32px));
   left: auto;
   background: rgba(30, 24, 18, 0.72);
   border: 0.5px solid rgba(255, 255, 255, 0.13);
@@ -266,6 +266,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   color: rgba(255, 255, 255, 0.38);
   font-family: 'DM Sans', sans-serif;
   line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .add-popup-chevron { color: rgba(255, 255, 255, 0.22); flex-shrink: 0; }
 .add-popup-sep { height: 0.5px; background: rgba(255,255,255,0.18); margin: 2px 0; }
