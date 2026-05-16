@@ -1071,6 +1071,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   background: rgba(14,12,10,0.72);
   backdrop-filter: blur(6px);
   transition: opacity 0.3s ease, backdrop-filter 0.4s ease;
+  z-index: 90;
 }
 #detailModal.ds-expanded {
   background: rgba(14,12,10,0.9);
