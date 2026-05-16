@@ -184,14 +184,14 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* ── ADD POPUP ── */
 .add-popup {
   position: fixed;
-  bottom: calc(max(var(--safe-bottom) + 18px, 24px) + 46px + 18px);
+  bottom: calc(max(var(--safe-bottom) + 18px, 24px) + 46px + 14px);
   right: 16px;
-  width: min(264px, calc(100vw - 32px));
+  width: min(270px, calc(100vw - 32px));
   left: auto;
   background: rgba(28, 24, 20, 0.82);
   border: 0.5px solid rgba(255, 255, 255, 0.13);
-  border-radius: 22px;
-  padding: 10px;
+  border-radius: 22px 22px 22px 22px;
+  padding: 8px;
   backdrop-filter: blur(40px) saturate(2);
   -webkit-backdrop-filter: blur(40px) saturate(2);
   box-shadow: 0 16px 48px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07);
@@ -203,17 +203,18 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   transition: opacity 0.22s cubic-bezier(0.34,1.56,0.64,1), transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
   z-index: 21;
 }
-/* Speech bubble tail */
+/* Speech bubble tail — bottom-right corner pointing to + button */
 .add-popup::after {
   content: '';
   position: absolute;
-  bottom: -10px;
-  right: 19px;
-  width: 22px;
-  height: 12px;
+  bottom: -14px;
+  right: 0px;
+  width: 24px;
+  height: 16px;
   background: rgba(28, 24, 20, 0.92);
-  clip-path: polygon(10% 0%, 90% 0%, 50% 100%);
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
   pointer-events: none;
+  border-radius: 0 0 4px 0;
 }
 .add-popup.open {
   opacity: 1;
@@ -223,9 +224,9 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .add-popup-item {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   width: 100%;
-  padding: 13px 12px;
+  padding: 16px 14px;
   background: none;
   border: none;
   border-radius: 14px;
@@ -236,13 +237,13 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 .add-popup-item:active { background: rgba(255, 255, 255, 0.07); }
 .add-popup-icon {
-  width: 44px; height: 44px;
+  width: 48px; height: 48px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.12);
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9);
 }
 .add-popup-text {
   flex: 1;
@@ -264,7 +265,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   font-family: 'DM Sans', sans-serif;
 }
 .add-popup-chevron { color: rgba(255, 255, 255, 0.3); flex-shrink: 0; }
-.add-popup-sep { height: 1px; background: rgba(255,255,255,0.06); margin: 0 12px; }
+.add-popup-sep { height: 0.5px; background: rgba(255,255,255,0.12); margin: 0 14px; }
 
 /* keep search-row-* classes for shelf overlay reuse */
 .search-row-input-wrap { flex: 1; position: relative; display: flex; align-items: center; }
