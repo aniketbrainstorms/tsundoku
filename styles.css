@@ -188,7 +188,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   right: 16px;
   width: 264px;
   left: auto;
-  background: rgba(30, 26, 22, 0.72);
+  background: rgba(28, 24, 20, 0.82);
   border: 0.5px solid rgba(255, 255, 255, 0.13);
   border-radius: 22px;
   padding: 10px;
@@ -206,16 +206,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .add-popup::after {
   content: '';
   position: absolute;
-  bottom: -9px;
-  right: 18px;
-  width: 18px;
-  height: 10px;
-  background: rgba(30, 26, 22, 0.72);
-  clip-path: polygon(0 0, 100% 0, 55% 100%);
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
-}
-.add-popup.open::after {
-  display: block;
+  bottom: -10px;
+  right: 14px;
+  width: 20px;
+  height: 11px;
+  background: rgba(30, 26, 22, 0.82);
+  clip-path: polygon(10% 0%, 90% 0%, 50% 100%);
 }
 .add-popup.open {
   opacity: 1;
