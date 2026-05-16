@@ -186,7 +186,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   position: fixed;
   bottom: calc(max(var(--safe-bottom) + 18px, 24px) + 46px + 18px);
   right: 16px;
-  width: 264px;
+  width: min(264px, calc(100vw - 32px));
   left: auto;
   background: rgba(28, 24, 20, 0.82);
   border: 0.5px solid rgba(255, 255, 255, 0.13);
@@ -195,6 +195,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   backdrop-filter: blur(40px) saturate(2);
   -webkit-backdrop-filter: blur(40px) saturate(2);
   box-shadow: 0 16px 48px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07);
+  overflow: visible;
   opacity: 0;
   transform: scale(0.88) translateY(8px);
   transform-origin: bottom right;
@@ -207,11 +208,12 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   content: '';
   position: absolute;
   bottom: -10px;
-  right: 14px;
-  width: 20px;
-  height: 11px;
-  background: rgba(30, 26, 22, 0.82);
+  right: 19px;
+  width: 22px;
+  height: 12px;
+  background: rgba(28, 24, 20, 0.92);
   clip-path: polygon(10% 0%, 90% 0%, 50% 100%);
+  pointer-events: none;
 }
 .add-popup.open {
   opacity: 1;
