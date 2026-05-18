@@ -2188,3 +2188,38 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   opacity: 0;
   pointer-events: none;
 }
+
+/* ── LIST DETAIL ADD POPUP ── */
+.ld-add-popup {
+  position: absolute;
+  /* anchor below the Add book button — hero area is ~18px from left edge */
+  left: max(var(--safe-left), 18px);
+  top: calc(100% + 10px);
+  width: min(290px, calc(100vw - 36px));
+  background: rgba(30, 24, 18, 0.72);
+  border: 0.5px solid rgba(255, 255, 255, 0.13);
+  border-radius: 20px;
+  padding: 6px;
+  backdrop-filter: blur(36px) saturate(1.9) brightness(1.12);
+  -webkit-backdrop-filter: blur(36px) saturate(1.9) brightness(1.12);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.07);
+  opacity: 0;
+  transform: scale(0.86) translateY(-6px);
+  transform-origin: top left;
+  pointer-events: none;
+  transition: opacity 0.22s cubic-bezier(0.34,1.56,0.64,1), transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 18;
+}
+.ld-add-popup.open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: all;
+}
+/* dim backdrop to close popup */
+#ldAddPopupDim {
+  position: absolute;
+  inset: 0;
+  z-index: 17;
+  display: none;
+}
+#ldAddPopupDim.on { display: block; }
