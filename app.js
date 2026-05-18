@@ -3080,11 +3080,9 @@ Description: ${description || 'No description available.'}`;
 // ── ADD BOOK POPUP ──
   function ldOpenAddPopup() {
     document.getElementById('ldAddPopup').classList.add('open');
-    document.getElementById('ldAddSheetDim').classList.add('on');
   }
   function ldCloseAddPopup() {
     document.getElementById('ldAddPopup').classList.remove('open');
-    document.getElementById('ldAddSheetDim').classList.remove('on');
   }
   window.ldAddPopupSelect = function(tab) {
     ldCloseAddPopup();
@@ -3111,14 +3109,16 @@ Description: ${description || 'No description available.'}`;
     }
   });
 
-  // Close popup when dim (ldAddSheetDim) tapped and sheet isn't open
-  document.getElementById('ldAddSheetDim').addEventListener('click', function() {
-    if (!document.getElementById('ldAddSheet').classList.contains('open')) {
-      ldCloseAddPopup();
-    } else {
-      ldCloseAddSheet();
+  // Close popup on outside tap
+  document.getElementById('listDetailOverlay').addEventListener('click', function(e) {
+    if (document.getElementById('ldAddPopup').classList.contains('open')) {
+      if (!e.target.closest('#ldAddPopup') && !e.target.closest('#ldAddBtn')) {
+        ldCloseAddPopup();
+      }
     }
   });
+
+  document.getElementById('ldAddSheetDim').addEventListener('click', ldCloseAddSheet);
 
 })();
 // ── END MY LISTS ────────────────────────────────────────────────────────────
