@@ -3076,10 +3076,49 @@ Description: ${description || 'No description available.'}`;
   }
 
   document.getElementById('ldasManualBtn').addEventListener('click', () => ldSwitchAddTab('manual'));
-  document.getElementById('ldAddSheetDim').addEventListener('click', ldCloseAddSheet);
+
+// ── ADD BOOK POPUP ──
+  function ldOpenAddPopup() {
+    document.getElementById('ldAddPopup').classList.add('open');
+    document.getElementById('ldAddSheetDim').classList.add('on');
+  }
+  function ldCloseAddPopup() {
+    document.getElementById('ldAddPopup').classList.remove('open');
+    document.getElementById('ldAddSheetDim').classList.remove('on');
+  }
+  window.ldAddPopupSelect = function(tab) {
+    ldCloseAddPopup();
+    // reset & open the sheet on the chosen tab
+    ldasAddedIds = new Set();
+    document.getElementById('ldasSearchInput').value = '';
+    document.getElementById('ldasResults').innerHTML = '<div class="bs-state"><p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px 0">Type to search books</p></div>';
+    ldSwitchAddTab(tab);
+    document.getElementById('ldAddSheet').classList.add('open');
+    document.getElementById('ldAddSheetDim').classList.add('on');
+    if (tab === 'search' || tab === 'shelf') {
+      setTimeout(() => document.getElementById('ldasSearchInput').focus(), 340);
+    }
+  };
 
   // ── ADD BOOK BUTTON ──
-  document.getElementById('ldAddBtn').addEventListener('click', ldOpenAddSheet);
+  document.getElementById('ldAddBtn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    const popup = document.getElementById('ldAddPopup');
+    if (popup.classList.contains('open')) {
+      ldCloseAddPopup();
+    } else {
+      ldOpenAddPopup();
+    }
+  });
+
+  // Close popup when dim (ldAddSheetDim) tapped and sheet isn't open
+  document.getElementById('ldAddSheetDim').addEventListener('click', function() {
+    if (!document.getElementById('ldAddSheet').classList.contains('open')) {
+      ldCloseAddPopup();
+    } else {
+      ldCloseAddSheet();
+    }
+  });
 
 })();
 // ── END MY LISTS ────────────────────────────────────────────────────────────
