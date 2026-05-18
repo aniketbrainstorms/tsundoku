@@ -15,6 +15,7 @@ let currentUser = null;
 let bookSearchTimer = null;
 let progressBookId = null;
 let bsSearchCategory = 'all';
+let addContext = 'shelf';
 let currentSort = 'recent';
 let scannerStream = null, scannerInterval = null;
 
@@ -1242,14 +1243,28 @@ function closeAddPopup() {
     document.getElementById('qmDismiss').classList.remove('active');
   }
 }
-function openBookSearch() {
+function setAddContext(context) {
+  addContext = context === 'list' ? 'list' : 'shelf';
+  const app = document.getElementById('app');
+  if (app) app.classList.toggle('list-add-context', addContext === 'list');
+  const modal = document.getElementById('addModal');
+  if (!modal) return;
+  modal.classList.toggle('list-add-mode', addContext === 'list');
+  const title = modal.querySelector('.edit-sheet-title');
+  if (title) title.textContent = 'Add a book';
+  const btn = document.getElementById('addBookBtn');
+  if (btn) btn.textContent = addContext === 'list' ? 'Add to List' : 'Add to Shelf';
+}
+function openBookSearch(context = 'shelf') {
+  setAddContext(context);
   document.getElementById('bookSearchOverlay').classList.add('open');
-  document.getElementById('floatingBar').style.display = 'none';
+  const bar = document.getElementById('floatingBar');
+  if (bar) bar.style.display = 'none';
   setTimeout(() => document.getElementById('bsInput').focus(), 380);
 }
 function closeBookSearch() {
   document.getElementById('bookSearchOverlay').classList.remove('open');
-  document.getElementById('floatingBar').style.display = '';
+  if (addContext !== 'list') document.getElementById('floatingBar').style.display = '';
   document.getElementById('bsInput').value = '';
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>';
   clearTimeout(bookSearchTimer);
@@ -1382,9 +1397,11 @@ function selectBsResult(title, author, coverUrl, meta) {
   setTimeout(() => document.getElementById('addModal').classList.add('visible'), 80);
 }
 
-function openManualAdd() {
+function openManualAdd(context = 'shelf') {
+  setAddContext(context);
   closeBookSearch();
-  document.getElementById('floatingBar').style.display = 'none';
+  const bar = document.getElementById('floatingBar');
+  if (bar) bar.style.display = 'none';
   setTimeout(() => document.getElementById('addModal').classList.add('visible'), 80);
 }
 
@@ -1392,13 +1409,14 @@ async function confirmAdd() {
   const title = document.getElementById('addTitle').value.trim();
   if (!title) { document.getElementById('addTitle').style.borderColor = 'var(--accent)'; return; }
   const btn = document.getElementById('addBookBtn'); btn.disabled = true; btn.textContent = 'Adding…';
+  const isListAdd = addContext === 'list';
   const newBook = await dbAdd({
     title,
     author: document.getElementById('addAuthor').value.trim() || '',
-    status: addStatus,
+    status: isListAdd ? 'unread' : addStatus,
     cover_url: null,
     pages_read: 0,
-    total_pages: 0,
+    total_pages: isListAdd ? -1 : 0,
     year: document.getElementById('addYear')?.value.trim() || null,
     genre: document.getElementById('addGenre')?.value.trim() || null,
     page_count: parseInt(document.getElementById('addPageCount')?.value) || null,
@@ -1410,9 +1428,16 @@ async function confirmAdd() {
     else if (addCoverUrl) finalUrl = addCoverUrl;
     if (finalUrl) { await dbUpdate(newBook.id, { cover_url: finalUrl }); newBook.cover_url = finalUrl; }
     books.unshift(newBook);
+    if (isListAdd && window.ldAddBookToCurrentList) {
+      const ok = await window.ldAddBookToCurrentList(newBook, false);
+      if (!ok) {
+        btn.disabled = false; btn.textContent = 'Add to List';
+        return;
+      }
+    }
     closeModal('addModal'); renderGrid(); showToast('Book added ✓');
   }
-  btn.disabled = false; btn.textContent = 'Add to Shelf';
+  btn.disabled = false; btn.textContent = addContext === 'list' ? 'Add to List' : 'Add to Shelf';
 }
 
 async function fetchAddIsbn() {
@@ -1478,7 +1503,12 @@ async function fetchEditIsbn() {
 // ── SHARED HELPERS ──
 function closeModal(id) {
   document.getElementById(id).classList.remove('visible');
-  if (id === 'addModal') { resetAddModal(); document.getElementById('floatingBar').style.display = ''; }
+  if (id === 'addModal') {
+    const wasListAdd = addContext === 'list';
+    resetAddModal();
+    setAddContext('shelf');
+    if (!wasListAdd) document.getElementById('floatingBar').style.display = '';
+  }
   if (id === 'detailModal') closeStatusDropdown();
 }
 function handleOverlayClick(e, id) {
@@ -2337,6 +2367,41 @@ Description: ${description || 'No description available.'}`;
     loRenderLists();
   };
 
+  window.ldAddBookToCurrentList = async function (book, owned = false) {
+    if (!ldCurrentListId || !book?.id) return false;
+    const { error } = await sb.from('list_books').insert({
+      list_id: ldCurrentListId,
+      book_id: book.id,
+      owned
+    });
+    if (error) {
+      showToast('Could not add to list');
+      return false;
+    }
+
+    if (!ldBooks.some(b => String(b.id) === String(book.id))) {
+      ldBooks.unshift(book);
+    }
+    const list = loLists.find(l => String(l.id) === String(ldCurrentListId));
+    if (list) {
+      list._books = ldBooks;
+      list.updated_at = new Date().toISOString();
+      document.getElementById('ldFanStack').innerHTML = fanCoversFor(list);
+    }
+    if (owned) {
+      const ownedArr = ldGetOwned(ldCurrentListId);
+      if (!ownedArr.includes(String(book.id))) {
+        ownedArr.push(String(book.id));
+        ldSetOwned(ldCurrentListId, ownedArr);
+      }
+    }
+    document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
+    ldUpdateProgress();
+    ldRenderList();
+    ldBuildAlphaBar();
+    return true;
+  };
+
   function ldUpdateProgress() {
     const ownedIds = ldGetOwned(ldCurrentListId);
     const total = ldBooks.length;
@@ -2997,6 +3062,8 @@ Description: ${description || 'No description available.'}`;
         ldUpdateProgress();
         document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
         renderGrid();
+        ldRenderList();
+        ldBuildAlphaBar();
         showToast('Added ✓');
       });
     });
@@ -3004,7 +3071,7 @@ Description: ${description || 'No description available.'}`;
 
   function ldasRenderShelf(q) {
     const el = document.getElementById('ldasResults');
-    let filtered = [...books];
+    let filtered = books.filter(b => b.total_pages !== -1);
     const existingInList = new Set(ldBooks.map(b => String(b.id)));
     if (q) filtered = filtered.filter(b => (b.title || '').toLowerCase().includes(q.toLowerCase()) || (b.author || '').toLowerCase().includes(q.toLowerCase()));
     if (!filtered.length) {
@@ -3040,6 +3107,8 @@ Description: ${description || 'No description available.'}`;
         btn.classList.add('added'); btn.textContent = '✓';
         ldUpdateProgress();
         document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
+        ldRenderList();
+        ldBuildAlphaBar();
         showToast('Added ✓');
       });
     });
@@ -3086,6 +3155,14 @@ Description: ${description || 'No description available.'}`;
   }
   window.ldAddPopupSelect = function(tab) {
     ldCloseAddPopup();
+    if (tab === 'search') {
+      openBookSearch('list');
+      return;
+    }
+    if (tab === 'manual') {
+      openManualAdd('list');
+      return;
+    }
     // reset & open the sheet on the chosen tab
     ldasAddedIds = new Set();
     document.getElementById('ldasSearchInput').value = '';
