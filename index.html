@@ -1060,6 +1060,41 @@
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add book
           </button>
+          <!-- ADD BOOK POPUP (mirrors home screen) -->
+          <div class="ld-add-popup" id="ldAddPopup">
+            <button class="add-popup-item" onclick="ldAddPopupSelect('search')">
+              <div class="add-popup-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+              <div class="add-popup-text">
+                <span class="add-popup-title">Search Google</span>
+                <span class="add-popup-sub">Find from millions of books</span>
+              </div>
+              <svg class="add-popup-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <div class="add-popup-sep"></div>
+            <button class="add-popup-item" onclick="ldAddPopupSelect('shelf')">
+              <div class="add-popup-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              </div>
+              <div class="add-popup-text">
+                <span class="add-popup-title">Add from shelf</span>
+                <span class="add-popup-sub">Pick from books you own</span>
+              </div>
+              <svg class="add-popup-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <div class="add-popup-sep"></div>
+            <button class="add-popup-item" onclick="ldAddPopupSelect('manual')">
+              <div class="add-popup-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </div>
+              <div class="add-popup-text">
+                <span class="add-popup-title">Add manually</span>
+                <span class="add-popup-sub">Enter book details yourself</span>
+              </div>
+              <svg class="add-popup-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
       </div>
       <div class="ld-progress">
