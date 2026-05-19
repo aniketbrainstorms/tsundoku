@@ -2742,6 +2742,7 @@ Description: ${description || 'No description available.'}`;
       items = `
         <span class="qm-label">Not owned</span>
         <button class="qm-item" onclick="ldQMAction('mark-owned')">${svgCheck}Mark as owned</button>
+        <button class="qm-item" onclick="ldQMAction('edit-list-book')">${svgEdit}Edit book</button>
         <div class="qm-sep"></div>
         <button class="qm-item delete-item" onclick="ldQMAction('remove')">${svgTrash}Remove from list</button>`;
     } else {
@@ -2811,10 +2812,13 @@ Description: ${description || 'No description available.'}`;
   </span>`;
     const cta = document.getElementById('lbdCTAArea');
     if (owned) {
-      cta.innerHTML = `<button class="modal-btn" onclick="lbdToggleOwned()">Mark as not owned</button>`;
+      cta.innerHTML = `
+        <button class="modal-btn" onclick="lbdToggleOwned()">Mark as not owned</button>
+        <button class="modal-btn" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-dim);margin-bottom:0" onclick="lbdEditBook()">Edit book</button>`;
     } else {
       cta.innerHTML = `
         <button class="modal-btn" onclick="lbdToggleOwned()">Mark as owned</button>
+        <button class="modal-btn" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-dim);margin-bottom:0" onclick="lbdEditBook()">Edit book</button>
         <button class="modal-btn" style="background:transparent;border:1.5px solid rgba(192,96,96,0.4);color:#c06060;margin-bottom:0" onclick="lbdDeleteFromList()">Remove from list</button>`;
     }
   }
@@ -2843,6 +2847,12 @@ Description: ${description || 'No description available.'}`;
    window.closeListBookDetail = function closeListBookDetail() {
     document.getElementById('listBookDetailModal').classList.remove('visible');
     lbdBookId = null;
+  };
+
+  window.lbdEditBook = function lbdEditBook() {
+    const id = lbdBookId;
+    closeListBookDetail();
+    setTimeout(() => openDetailModal(id), 80);
   };
 
   window.ldQMAction = async function (action) {
@@ -2935,6 +2945,12 @@ Description: ${description || 'No description available.'}`;
     if (action === 'add-to-list') {
       const id = ldQMTargetId; ldCloseQM();
       addToListFromMenu_forBook(id);
+      return;
+    }
+
+    if (action === 'edit-list-book') {
+      const id = ldQMTargetId; ldCloseQM();
+      setTimeout(() => openDetailModal(id), 80);
       return;
     }
   };
