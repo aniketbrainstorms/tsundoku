@@ -3223,12 +3223,20 @@ Description: ${description || 'No description available.'}`;
 (function () {
   const bar = document.getElementById('floatingBar');
   if (!bar) return;
+  const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  document.documentElement.classList.toggle('standalone-webapp', standalone);
   if (!window.visualViewport) return;
   const vv = window.visualViewport;
 
   function update() {
+    const active = document.activeElement;
+    const keyboardTarget = active && (
+      active.tagName === 'TEXTAREA' ||
+      active.isContentEditable ||
+      (active.tagName === 'INPUT' && !active.readOnly)
+    );
     const kbHeight = Math.max(0, window.innerHeight - vv.height);
-    if (kbHeight > 80) {
+    if (keyboardTarget && kbHeight > 80) {
       bar.style.bottom = (kbHeight + 10) + 'px';
     } else {
       bar.style.bottom = '';
@@ -3236,4 +3244,7 @@ Description: ${description || 'No description available.'}`;
   }
 
   vv.addEventListener('resize', update);
+  window.addEventListener('focusin', update);
+  window.addEventListener('focusout', () => setTimeout(update, 60));
+  update();
 })();
