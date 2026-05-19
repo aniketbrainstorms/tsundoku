@@ -952,17 +952,18 @@ async function confirmAddToList(listId, bookId) {
   // Avoid duplicates
   const { data: existing } = await sb.from('list_books').select('id').eq('list_id', listId).eq('book_id', bookId).maybeSingle();
   if (existing) { showToast('Already in that list'); return; }
-  const { error } = await sb.from('list_books').insert({ list_id: listId, book_id: bookId });
+  // Books added from shelf are always owned
+  const book = books.find(b => String(b.id) === String(bookId));
+  const isOnShelf = book && book.total_pages !== -1;
+  const { error } = await sb.from('list_books').insert({ list_id: listId, book_id: bookId, owned: isOnShelf });
   if (error) { showToast('Could not add to list'); return; }
   // Update local _books cache so cover stacks refresh
   const list = (window._getLoLists ? window._getLoLists() : []).find(l => String(l.id) === String(listId));
-  const book = books.find(b => b.id === bookId);
   if (list && book) list._books = [...(list._books || []), book];
-  if (window._ldGetOwned && window._ldSetOwned) {
+  if (isOnShelf && window._ldGetOwned && window._ldSetOwned) {
     const ownedArr = window._ldGetOwned(listId);
     if (!ownedArr.includes(String(bookId))) { ownedArr.push(String(bookId)); window._ldSetOwned(listId, ownedArr); }
   }
-  await sb.from('list_books').update({ owned: true }).eq('list_id', listId).eq('book_id', bookId);
   showToast('Added to list ✓');
 }
 
