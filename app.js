@@ -3104,6 +3104,7 @@ Description: ${description || 'No description available.'}`;
         // mark as owned automatically when adding from shelf
         const ownedArr = ldGetOwned(ldCurrentListId);
         if (!ownedArr.includes(String(bookId))) { ownedArr.push(String(bookId)); ldSetOwned(ldCurrentListId, ownedArr); }
+        await sb.from('list_books').update({ owned: true }).eq('list_id', ldCurrentListId).eq('book_id', bookId);
         btn.classList.add('added'); btn.textContent = '✓';
         ldUpdateProgress();
         document.getElementById('ldHeroCount').textContent = `${ldBooks.length} ${ldBooks.length === 1 ? 'book' : 'books'}`;
