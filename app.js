@@ -962,6 +962,7 @@ async function confirmAddToList(listId, bookId) {
     const ownedArr = window._ldGetOwned(listId);
     if (!ownedArr.includes(String(bookId))) { ownedArr.push(String(bookId)); window._ldSetOwned(listId, ownedArr); }
   }
+  await sb.from('list_books').update({ owned: true }).eq('list_id', listId).eq('book_id', bookId);
   showToast('Added to list ✓');
 }
 
