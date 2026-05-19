@@ -2893,12 +2893,7 @@ Description: ${description || 'No description available.'}`;
 
     // Hide status segment — not-owned books have no shelf status to change
     const statusSeg = document.getElementById('editStatusSeg');
-    if (statusSeg) {
-      statusSeg.style.display = 'none';
-      statusSeg.previousElementSibling && statusSeg.previousElementSibling.classList.contains('es-section-label')
-        ? statusSeg.previousElementSibling.style.display = 'none'
-        : null;
-    }
+    if (statusSeg) statusSeg.style.display = 'none';
     // Hide the Status section label too
     document.querySelectorAll('.es-section-label').forEach(el => {
       if (el.textContent.trim() === 'Status') el.style.display = 'none';
@@ -3300,7 +3295,8 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
   }
 });
 
-// ── FLOATING BAR — keyboard lift ──────────────────────────────────────────(function () {
+// ── FLOATING BAR — keyboard lift ──────────────────────────────────────────
+  (function () {
   const bar = document.getElementById('floatingBar');
   if (!bar) return;
   const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
