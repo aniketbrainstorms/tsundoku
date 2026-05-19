@@ -1060,6 +1060,14 @@ async function confirmEdit() {
   }
 
   // Close edit sheet, then refresh detail sheet
+  if (window._editingListBookMode) {
+    const statusSeg = document.getElementById('editStatusSeg');
+    if (statusSeg) statusSeg.style.display = '';
+    document.querySelectorAll('.es-section-label').forEach(el => {
+      if (el.textContent.trim() === 'Status') el.style.display = '';
+    });
+    window._editingListBookMode = false;
+  }
   if (typeof closeEditSheet === 'function') closeEditSheet();
   if (typeof window.dsRefreshDetailSheet === 'function') window.dsRefreshDetailSheet();
 
@@ -2852,7 +2860,52 @@ Description: ${description || 'No description available.'}`;
   window.lbdEditBook = function lbdEditBook() {
     const id = lbdBookId;
     closeListBookDetail();
-    setTimeout(() => openDetailModal(id), 80);
+    setTimeout(() => openEditSheetForListBook(id), 80);
+  };
+
+  window.openEditSheetForListBook = function openEditSheetForListBook(id) {
+    const book = ldBooks.find(b => String(b.id) === String(id)) || books.find(b => String(b.id) === String(id));
+    if (!book) return;
+    editingId = id;
+    editStatus = book.status || 'unread';
+    editCoverFile = null;
+    editCoverUrl = null;
+
+    const thumb = document.getElementById('editCoverThumbWrap');
+    if (thumb) thumb.innerHTML = book.cover_url
+      ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`
+      : makePlaceholder(book, 18);
+
+    const ready = document.getElementById('editCoverReadyMsg');
+    if (ready) ready.style.display = 'none';
+
+    document.getElementById('editTitle').value = book.title || '';
+    document.getElementById('editAuthor').value = book.author || '';
+    const yr = document.getElementById('editYear'); if (yr) yr.value = book.year || '';
+    const pc = document.getElementById('editPageCount'); if (pc) pc.value = book.page_count || '';
+    const gn = document.getElementById('editGenre'); if (gn) gn.value = book.genre || '';
+    const isn = document.getElementById('editIsbn'); if (isn) isn.value = '';
+
+    const ratingSection = document.getElementById('editRatingSection');
+    if (ratingSection) ratingSection.style.display = 'none';
+    const starInput = document.getElementById('starRatingInput');
+    if (starInput) starInput.style.display = 'none';
+
+    // Hide status segment — not-owned books have no shelf status to change
+    const statusSeg = document.getElementById('editStatusSeg');
+    if (statusSeg) {
+      statusSeg.style.display = 'none';
+      statusSeg.previousElementSibling && statusSeg.previousElementSibling.classList.contains('es-section-label')
+        ? statusSeg.previousElementSibling.style.display = 'none'
+        : null;
+    }
+    // Hide the Status section label too
+    document.querySelectorAll('.es-section-label').forEach(el => {
+      if (el.textContent.trim() === 'Status') el.style.display = 'none';
+    });
+
+    document.getElementById('editSheetOverlay').classList.add('visible');
+    window._editingListBookMode = true;
   };
 
   window.ldQMAction = async function (action) {
@@ -2950,7 +3003,7 @@ Description: ${description || 'No description available.'}`;
 
     if (action === 'edit-list-book') {
       const id = ldQMTargetId; ldCloseQM();
-      setTimeout(() => openDetailModal(id), 80);
+      setTimeout(() => openEditSheetForListBook(id), 80);
       return;
     }
   };
@@ -3235,8 +3288,19 @@ Description: ${description || 'No description available.'}`;
 // ── END MY LISTS ────────────────────────────────────────────────────────────
 // ── END A–Z SCROLLBAR ─────────────────────────────────────────────────────
 
-// ── FLOATING BAR — keyboard lift ──────────────────────────────────────────
-(function () {
+// ── RESTORE EDIT SHEET STATE on close ─────────────────────────────────────
+document.getElementById('editSheetOverlay').addEventListener('transitionend', function() {
+  if (!this.classList.contains('visible') && window._editingListBookMode) {
+    const statusSeg = document.getElementById('editStatusSeg');
+    if (statusSeg) statusSeg.style.display = '';
+    document.querySelectorAll('.es-section-label').forEach(el => {
+      if (el.textContent.trim() === 'Status') el.style.display = '';
+    });
+    window._editingListBookMode = false;
+  }
+});
+
+// ── FLOATING BAR — keyboard lift ──────────────────────────────────────────(function () {
   const bar = document.getElementById('floatingBar');
   if (!bar) return;
   const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
