@@ -214,6 +214,21 @@ async function loadBooks() {
   books = data || [];
   try { localStorage.setItem(cacheKey, JSON.stringify(books)); } catch { }
   renderGrid();
+  backfillOwnedForShelfBooks();
+}
+
+async function backfillOwnedForShelfBooks() {
+  const migKey = 'tsundoku_owned_backfill_v1_' + currentUser.id;
+  if (localStorage.getItem(migKey)) return; // already ran
+  try {
+    const shelfIds = books.filter(b => b.total_pages !== -1).map(b => b.id);
+    if (!shelfIds.length) { localStorage.setItem(migKey, '1'); return; }
+    await sb.from('list_books')
+      .update({ owned: true })
+      .in('book_id', shelfIds)
+      .eq('owned', false);
+    localStorage.setItem(migKey, '1');
+  } catch (e) { /* silent — will retry next load */ }
 }
 async function dbAdd(book) {
   const { data: { user } } = await sb.auth.getUser();
