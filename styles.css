@@ -183,6 +183,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 }
 .floating-add-btn.open { transform: rotate(45deg); }
 
+html.standalone-webapp .floating-bar {
+  bottom: max(calc(var(--safe-bottom) + 8px), 12px);
+}
+
 /* ── ADD POPUP ── */
 .add-popup {
   position: fixed;
@@ -205,6 +209,11 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   transition: opacity 0.24s cubic-bezier(0.34,1.56,0.64,1), transform 0.24s cubic-bezier(0.34,1.56,0.64,1);
   z-index: 21;
 }
+
+html.standalone-webapp .add-popup {
+  bottom: calc(max(var(--safe-bottom) + 8px, 12px) + 46px + 14px);
+}
+
 /* Speech bubble tail — bottom-right corner pointing to + button */
 .add-popup::after {
   content: '';
