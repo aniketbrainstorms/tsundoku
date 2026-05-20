@@ -131,7 +131,7 @@ async function fetchAuthorProfile(authorName) {
 function buildAuthorRows(authorName) {
   const local = getLocalAuthorBooks(authorName);
   return local.map(book => {
-    const notOwned = isHiddenFromShelf(book);
+    const notOwned = book.status === 'not-owned';
     return {
       title: book.title || 'Untitled',
       year: book.year || '',
@@ -206,11 +206,20 @@ function renderAuthorRows(rows) {
       const id = row.dataset.authorBook;
       if (!id) return;
       const book = books.find(b => String(b.id) === String(id));
-      const isNotOwned = book && isHiddenFromShelf(book);
+      const isNotOwned = book && book.status === 'not-owned';
       closeAuthorPage();
       setTimeout(() => {
-        if (isNotOwned && typeof openListBookDetail === 'function') openListBookDetail(id);
-        else openDetailModal(id);
+        if (isNotOwned && typeof openListBookDetail === 'function') {
+          // Find which list owns this book and set context
+          const allLists = window._getLoLists ? window._getLoLists() : [];
+          const owningList = allLists.find(l => (l._books || []).some(b => String(b.id) === String(id)));
+          if (owningList && window._ldSetOwned) {
+            window._ldCurrentListId = owningList.id;
+          }
+          openListBookDetail(id);
+        } else {
+          openDetailModal(id);
+        }
       }, 220);
     });
   });
