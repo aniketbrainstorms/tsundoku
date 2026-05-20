@@ -447,7 +447,7 @@ function setPublicSort(s) {
 
 // ── RENDER ──
 function isHiddenFromShelf(b) {
-  return b.total_pages === -1;
+  return b.status === 'not-owned';
 }
 function getSortedFiltered() {
   let list = books.filter(b => b.status === currentFilter);
@@ -2752,7 +2752,7 @@ Description: ${description || 'No description available.'}`;
     const rr = row.getBoundingClientRect();
 
     const isOwned = ldIsOwned(ldCurrentListId, id);
-    const shelfBook = books.find(b => String(b.id) === String(id) && b.total_pages !== -1);
+    const shelfBook = books.find(b => String(b.id) === String(id) && b.status !== 'not-owned');
 
     // Build menu HTML dynamically based on ownership state
     const svgCheck = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -3237,7 +3237,7 @@ Description: ${description || 'No description available.'}`;
       const author = (document.getElementById('ldasManAuthor').value || '').trim();
       const btn = document.getElementById('ldasManSave');
       btn.disabled = true; btn.textContent = 'Adding…';
-      const newBook = await dbAdd({ title, author, status: 'unread', cover_url: null, pages_read: 0, total_pages: -1 });
+      const newBook = await dbAdd({ title, author, status: 'not-owned', cover_url: null, pages_read: 0, total_pages: null });
       if (!newBook) { btn.disabled = false; btn.textContent = 'Add to list'; return; }
       books.unshift(newBook);
       const { error } = await sb.from('list_books').insert({ list_id: ldCurrentListId, book_id: newBook.id });
