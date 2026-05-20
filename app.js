@@ -2792,8 +2792,16 @@ Description: ${description || 'No description available.'}`;
   // ── LIST BOOK DETAIL (read-only, no status change) ──
   let lbdBookId = null;
   function openListBookDetail(id) {
-    const book = ldBooks.find(b => String(b.id) === String(id));
-    if (!book) return;
+    let book = ldBooks.find(b => String(b.id) === String(id));
+    if (!book) {
+      // Called from outside list context (e.g. author page)
+      book = books.find(b => String(b.id) === String(id));
+      if (!book) return;
+      // Find which list this book belongs to and set context
+      const allLists = window._getLoLists ? window._getLoLists() : [];
+      const owningList = allLists.find(l => (l._books || []).some(b => String(b.id) === String(id)));
+      if (owningList) ldCurrentListId = owningList.id;
+    }
     lbdBookId = id;
 
     const coverEl = document.getElementById('lbdCoverEl');
