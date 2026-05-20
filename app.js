@@ -1314,6 +1314,9 @@ function closeBookSearch() {
   clearTimeout(bookSearchTimer);
   setBsCategory('all');
 }
+function openAuthorPageFromSearch(authorName) {
+  if (typeof openAuthorPage === 'function') openAuthorPage(authorName);
+}
 function setBsCategory(cat) {
   bsSearchCategory = cat;
   document.getElementById('bsCategories').querySelectorAll('.tab-btn').forEach(btn =>
@@ -1387,19 +1390,63 @@ async function fetchBookSearch(query) {
       if (seen.has(key)) return false;
       seen.add(key); return true;
     })];
-    renderBsResults(merged);
+    // Extract author hit: use the most common author among top results
+    let authorHit = null;
+    if (bsSearchCategory !== 'intitle' && merged.length) {
+      const freq = {};
+      merged.slice(0, 15).forEach(b => { if (b.author) freq[b.author] = (freq[b.author] || 0) + 1; });
+      const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+      const q = document.getElementById('bsInput').value.trim().toLowerCase();
+      if (top && top[1] >= 2 && top[0].toLowerCase().includes(q)) {
+        authorHit = { name: top[0], photo: null };
+        // Try to fetch author photo from Open Library
+        (async () => {
+          try {
+            const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(top[0])}&limit=1`);
+            const d = await r.json();
+            const key = d.docs?.[0]?.key;
+            if (key) {
+              const olid = key.replace('/authors/', '');
+              const photoUrl = `https://covers.openlibrary.org/a/olid/${olid}-M.jpg`;
+              authorHit.photo = photoUrl;
+              authorHit.olid = olid;
+              // Re-render with photo once loaded
+              const img = new Image();
+              img.onload = () => {
+                const photoEl = document.querySelector('.bs-author-photo');
+                if (photoEl) photoEl.innerHTML = `<img src="${photoUrl}" />`;
+              };
+              img.src = photoUrl;
+            }
+          } catch { }
+        })();
+      }
+    }
+    renderBsResults(merged, authorHit);
   } catch (e) {
     resultsEl.innerHTML = '<div class="bs-state"><p>Search failed.<br>Check your connection or add manually.</p></div>';
   }
 }
 
-function renderBsResults(items) {
+function renderBsResults(items, authorHit) {
   const el = document.getElementById('bsResults');
-  if (!items.length) {
+  if (!items.length && !authorHit) {
     el.innerHTML = '<div class="bs-state"><p>No results found.<br>Try a different keyword or add manually.</p></div>';
     return;
   }
-  el.innerHTML = items.map((book, i) => {
+
+  const authorRow = authorHit ? `
+    <div class="bs-author-row" id="bsAuthorRow" data-author="${escapeAttr(authorHit.name)}">
+      <div class="bs-author-photo">${authorHit.photo ? `<img src="${escapeAttr(authorHit.photo)}" onerror="this.parentElement.innerHTML='<span class=bs-author-initials>${escapeAttr(authorHit.name[0]||'?')}</span>'" />` : `<span class="bs-author-initials">${escapeAttr(authorHit.name[0]||'?')}</span>`}</div>
+      <div class="bs-author-info">
+        <div class="bs-author-name">${escapeHtml(authorHit.name)}</div>
+        <div class="bs-author-label">Author</div>
+      </div>
+      <svg class="bs-author-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="bs-author-sep"></div>` : '';
+
+  el.innerHTML = authorRow + items.map((book, i) => {
     const coverContent = book.cover ? `<img src="${escapeAttr(book.cover)}" alt="" onerror="this.parentElement.innerHTML=''">` : '';
     return `<div class="bs-result" data-bs-index="${i}">
       <div class="bs-result-cover">${coverContent}</div>
@@ -1417,6 +1464,13 @@ function renderBsResults(items) {
       if (book) selectBsResult(book.title, book.author, book.cover, book);
     });
   });
+  const authorRowEl = document.getElementById('bsAuthorRow');
+  if (authorRowEl) {
+    authorRowEl.addEventListener('click', () => {
+      closeBookSearch();
+      setTimeout(() => openAuthorPageFromSearch(authorRowEl.dataset.author), 80);
+    });
+  }
 }
 
 function selectBsResult(title, author, coverUrl, meta) {
