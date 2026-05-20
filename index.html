@@ -42,9 +42,13 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
         Back
       </button>
+      <button class="ds-edit-toggle" onclick="lbdEditBook()" style="font-size:13px;display:flex;align-items:center;gap:5px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2.5l2.5 2.5-8 8L3 13l.5-2.5 8-8z"/><path d="M9.5 4l2.5 2.5"/></svg>
+        Edit
+      </button>
     </div>
     <!-- Cover + info -->
-    <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:20px">
+    <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px">
       <div id="lbdCoverEl" style="width:88px;height:130px;border-radius:14px;overflow:hidden;flex-shrink:0;background:var(--surface2);box-shadow:0 8px 24px rgba(0,0,0,0.55),0 1px 0 rgba(255,255,255,0.06) inset;border:1px solid rgba(255,255,255,0.08)"></div>
       <div style="flex:1;min-width:0;padding-top:4px">
         <div id="lbdTitleEl" style="font-size:18px;font-weight:700;color:var(--text);line-height:1.25;letter-spacing:-0.02em;margin-bottom:5px"></div>
@@ -53,10 +57,33 @@
         <div id="lbdOwnedBadge"></div>
       </div>
     </div>
-    <div class="divider" style="margin:0 0 20px"></div>
+    <!-- Meta grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:16px">
+      <div>
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:3px">Genre</div>
+        <div id="lbdGenreEl" style="font-size:14px;font-weight:600;color:var(--text)">—</div>
+      </div>
+      <div>
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:3px">Pages</div>
+        <div id="lbdPagesEl" style="font-size:14px;font-weight:600;color:var(--text)">—</div>
+      </div>
+    </div>
+    <!-- Summary -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden">
+      <button onclick="this.parentElement.classList.toggle('lbd-sum-open')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif">
+        <span style="font-size:10px;font-weight:600;letter-spacing:0.1em;color:var(--text-muted);text-transform:uppercase">Summary</span>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round"><path d="M2 5l5 5 5-5"/></svg>
+      </button>
+      <div style="display:none;padding:0 14px 14px" id="lbdSummaryContent">
+        <p id="lbdSummaryEl" style="font-size:13px;color:var(--text-dim);line-height:1.6;margin:0"></p>
+      </div>
+    </div>
+    <style>
+      .lbd-sum-open > div { display: block !important; }
+      .lbd-sum-open > button svg { transform: rotate(180deg); }
+    </style>
     <!-- Dynamic CTAs -->
     <div id="lbdCTAArea"></div>
-    <button class="modal-btn ghost" onclick="closeListBookDetail()">Cancel</button>
   </div>
 </div>
 
