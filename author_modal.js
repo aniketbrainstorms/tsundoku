@@ -205,8 +205,13 @@ function renderAuthorRows(rows) {
     row.addEventListener('click', () => {
       const id = row.dataset.authorBook;
       if (!id) return;
+      const book = books.find(b => String(b.id) === String(id));
+      const isNotOwned = book && isHiddenFromShelf(book);
       closeAuthorPage();
-      setTimeout(() => openDetailModal(id), 220);
+      setTimeout(() => {
+        if (isNotOwned && typeof openListBookDetail === 'function') openListBookDetail(id);
+        else openDetailModal(id);
+      }, 220);
     });
   });
 }
