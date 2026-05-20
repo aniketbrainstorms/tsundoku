@@ -261,10 +261,49 @@ function dsInitDragEvents() {
 }
 
 // ── CTA rendering ──
-function dsRenderCTA(status) {
+function dsRenderCTA(status, notOwned) {
   const primary = document.getElementById('dsPrimaryBtn');
   const secondary = document.getElementById('dsSecondaryBtn');
   if (!primary || !secondary) return;
+
+  if (notOwned) {
+    primary.className = 'ds-primary-btn btn-green';
+    primary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mark as Owned`;
+    primary.onclick = async () => {
+      const book = books.find(b => b.id === editingId);
+      if (!book) return;
+      book.status = 'unread';
+      await dbUpdate(editingId, { status: 'unread' });
+      // Mark owned in whichever list owns this book
+      const allLists = window._getLoLists ? window._getLoLists() : [];
+      for (const l of allLists) {
+        if ((l._books || []).some(b => String(b.id) === String(editingId))) {
+          await sb.from('list_books').update({ owned: true }).eq('list_id', l.id).eq('book_id', editingId);
+          if (window._ldSetOwned && window._ldGetOwned) {
+            const arr = window._ldGetOwned(l.id);
+            if (!arr.includes(String(editingId))) { arr.push(String(editingId)); window._ldSetOwned(l.id, arr); }
+          }
+          break;
+        }
+      }
+      renderGrid();
+      dsClose();
+      showToast('Marked as owned — added to shelf ✓');
+    };
+    secondary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Remove from List`;
+    secondary.onclick = async () => {
+      const book = books.find(b => b.id === editingId);
+      if (!book) return;
+      dsClose();
+      await removeOrHideBook(editingId);
+      showToast('Removed from list');
+    };
+    return;
+  }
+
+  // Reset onclick to defaults for owned books
+  primary.onclick = doPrimaryAction;
+  secondary.onclick = doSecondaryAction;
 
   const icons = {
     book: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
@@ -670,11 +709,8 @@ window.openDetailModal = async function openDetailModal(id) {
     const book = books.find(b => String(b.id) === String(id));
     if (!book) return;
 
-    // Not-owned books route to the list book detail modal instead
-    if (book.status === 'not-owned' && typeof openListBookDetail === 'function') {
-      openListBookDetail(id);
-      return;
-    }
+    // Not-owned books get a special sheet view
+    const isNotOwned = book.status === 'not-owned';
 
     editingId = book.id;
     editCoverFile = null;
@@ -704,8 +740,14 @@ window.openDetailModal = async function openDetailModal(id) {
     document.getElementById('editYear').value = book.year || '';
     document.getElementById('editGenre').value = book.genre || '';
     document.getElementById('editPageCount').value = book.page_count || '';
-    updateDetailBadge(book.status);
-    dsRenderCTA(book.status);
+    if (isNotOwned) {
+      const badge = document.getElementById('detailBadge');
+      badge.className = 'status-badge not-owned';
+      badge.innerHTML = `<span class="status-badge-dot"></span>Not Owned`;
+    } else {
+      updateDetailBadge(book.status);
+    }
+    dsRenderCTA(book.status, isNotOwned);
 
     // Edit form fields
     document.getElementById('editTitle').value = book.title;
@@ -834,7 +876,7 @@ window.dsRefreshDetailSheet = function () {
   dsRenderMetaGrid(book);
   dsRenderRating(book);
   updateDetailBadge(book.status);
-  dsRenderCTA(book.status);
+  dsRenderCTA(book.status, book.status === 'not-owned');
   editStatus = book.status;
   // Sync edit form fields to reflect saved values
   document.getElementById('editTitle').value = book.title;
