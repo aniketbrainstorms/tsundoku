@@ -669,6 +669,13 @@ window.openDetailModal = async function openDetailModal(id) {
   try {
     const book = books.find(b => String(b.id) === String(id));
     if (!book) return;
+
+    // Not-owned books route to the list book detail modal instead
+    if (book.status === 'not-owned' && typeof openListBookDetail === 'function') {
+      openListBookDetail(id);
+      return;
+    }
+
     editingId = book.id;
     editCoverFile = null;
     editStatus = book.status;
