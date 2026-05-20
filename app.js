@@ -2834,6 +2834,17 @@ Description: ${description || 'No description available.'}`;
     const yearPub = document.getElementById('lbdYearPub');
     if (yearPub) yearPub.textContent = book.year || '';
 
+    // Meta grid
+    const genreEl = document.getElementById('lbdGenreEl');
+    const pagesEl = document.getElementById('lbdPagesEl');
+    const summaryEl = document.getElementById('lbdSummaryEl');
+    if (genreEl) genreEl.textContent = book.genre || '—';
+    if (pagesEl) pagesEl.textContent = book.page_count ? `${book.page_count} pages` : '—';
+    if (summaryEl) summaryEl.textContent = book.description || '';
+    // Hide summary section if no content
+    const sumSection = document.getElementById('lbdSummaryContent')?.parentElement;
+    if (sumSection) sumSection.style.display = (book.description || book.genre) ? '' : 'none';
+
     lbdRefreshOwnedState();
     document.getElementById('listBookDetailModal').classList.add('visible');
   }
@@ -2846,15 +2857,15 @@ Description: ${description || 'No description available.'}`;
     ${owned ? 'Owned' : 'Not owned'}
   </span>`;
     const cta = document.getElementById('lbdCTAArea');
+    const svgCheck = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const svgTrash = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
     if (owned) {
       cta.innerHTML = `
-        <button class="modal-btn" onclick="lbdToggleOwned()">Mark as not owned</button>
-        <button class="modal-btn" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-dim);margin-bottom:0" onclick="lbdEditBook()">Edit book</button>`;
+        <button class="modal-btn" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-dim);margin-bottom:0" onclick="lbdToggleOwned()">Mark as not owned</button>`;
     } else {
       cta.innerHTML = `
-        <button class="modal-btn" onclick="lbdToggleOwned()">Mark as owned</button>
-        <button class="modal-btn" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-dim);margin-bottom:0" onclick="lbdEditBook()">Edit book</button>
-        <button class="modal-btn" style="background:transparent;border:1.5px solid rgba(192,96,96,0.4);color:#c06060;margin-bottom:0" onclick="lbdDeleteFromList()">Remove from list</button>`;
+        <button class="modal-btn" style="background:#3d6b4a;border:none;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600" onclick="lbdToggleOwned()">${svgCheck} Mark as Owned</button>
+        <button class="modal-btn" style="background:transparent;border:1.5px solid var(--border);color:var(--text-muted);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:0" onclick="lbdDeleteFromList()">${svgTrash} Remove from List</button>`;
     }
   }
 
