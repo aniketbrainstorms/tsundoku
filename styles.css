@@ -645,6 +645,7 @@ html.standalone-webapp .add-popup {
 .status-badge.reading { background: rgba(201,113,74,0.15); color: var(--accent); }
 .status-badge.read { background: rgba(90,138,106,0.15); color: var(--green); }
 .status-badge.unread { background: rgba(122,112,104,0.12); color: var(--text-muted); }
+.status-badge.not-owned { background: rgba(122,112,104,0.1); color: var(--text-muted); }
 .status-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .detail-status-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; position: relative; }
 .status-chevron-btn { width: 26px; height: 26px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.2s, color 0.2s; padding: 0; flex-shrink: 0; }
