@@ -197,7 +197,7 @@ async function loadBooks() {
     if (cached) {
       const parsed = JSON.parse(cached);
       // Bust cache if ai_summary columns aren't present yet
-      const hasMeta = parsed.length === 0 || ('ai_summary' in parsed[0]);
+      const hasMeta = parsed.length === 0 || ('ai_summary' in parsed[0] && parsed.every(b => b.total_pages !== -1 || b.status === 'not-owned'));
       if (hasMeta) {
         books = parsed;
         renderGrid();
@@ -219,16 +219,34 @@ async function loadBooks() {
 
 async function backfillOwnedForShelfBooks() {
   const migKey = 'tsundoku_owned_backfill_v1_' + currentUser.id;
-  if (localStorage.getItem(migKey)) return; // already ran
-  try {
-    const shelfIds = books.filter(b => b.total_pages !== -1).map(b => b.id);
-    if (!shelfIds.length) { localStorage.setItem(migKey, '1'); return; }
-    await sb.from('list_books')
-      .update({ owned: true })
-      .in('book_id', shelfIds)
-      .eq('owned', false);
-    localStorage.setItem(migKey, '1');
-  } catch (e) { /* silent — will retry next load */ }
+  if (!localStorage.getItem(migKey)) {
+    try {
+      const shelfIds = books.filter(b => b.status !== 'not-owned').map(b => b.id);
+      if (shelfIds.length) {
+        await sb.from('list_books')
+          .update({ owned: true })
+          .in('book_id', shelfIds)
+          .eq('owned', false);
+      }
+      localStorage.setItem(migKey, '1');
+    } catch (e) { /* silent */ }
+  }
+
+  // v2: migrate total_pages = -1 books to status = 'not-owned' in local books array
+  const migKeyV2 = 'tsundoku_status_migration_v2_' + currentUser.id;
+  if (!localStorage.getItem(migKeyV2)) {
+    try {
+      const toMigrate = books.filter(b => b.total_pages === -1 && b.status !== 'not-owned');
+      if (toMigrate.length) {
+        // DB was already updated by SQL migration; update local state
+        toMigrate.forEach(b => { b.status = 'not-owned'; });
+        // Bust cache so next load reads fresh
+        try { localStorage.removeItem('tsundoku_books_' + currentUser.id); } catch {}
+      }
+      localStorage.setItem(migKeyV2, '1');
+      renderGrid();
+    } catch (e) { /* silent */ }
+  }
 }
 async function dbAdd(book) {
   const { data: { user } } = await sb.auth.getUser();
@@ -373,7 +391,7 @@ async function loadPublicShelf(slug) {
 
 function renderPublicShelf() {
   const q = (document.getElementById('publicSearchInput')?.value || '').toLowerCase().trim();
-  let list = [...publicBooks];
+  let list = publicBooks.filter(b => b.status !== 'not-owned');
   if (q) list = list.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
 
   list.sort((a, b) => {
@@ -969,7 +987,7 @@ async function confirmAddToList(listId, bookId) {
   if (existing) { showToast('Already in that list'); return; }
   // Books added from shelf are always owned
   const book = books.find(b => String(b.id) === String(bookId));
-  const isOnShelf = book && book.total_pages !== -1;
+  const isOnShelf = book && book.status !== 'not-owned';
   const { error } = await sb.from('list_books').insert({ list_id: listId, book_id: bookId, owned: isOnShelf });
   if (error) { showToast('Could not add to list'); return; }
   // Update local _books cache so cover stacks refresh
@@ -1083,7 +1101,7 @@ async function removeOrHideBook(id) {
   }
   if (inList) {
     const book = books.find(b => String(b.id) === String(id));
-    if (book) { book.total_pages = -1; }
+    if (book) { book.status = 'not-owned'; }
     // Revert owned=false for ALL lists this book belongs to (spec: remove from shelf → revert to not-owned)
     for (const l of lists) {
       if ((l._books || []).some(b => String(b.id) === String(id))) {
@@ -1096,7 +1114,7 @@ async function removeOrHideBook(id) {
         } catch (e) { }
       }
     }
-    await sb.from('books').update({ total_pages: -1 }).eq('id', id);
+    await sb.from('books').update({ status: 'not-owned' }).eq('id', id);
     renderGrid();
     if (typeof renderShelfGrid === 'function') renderShelfGrid();
     showToast('Book removed from shelf');
@@ -1154,7 +1172,8 @@ function openProfileModal() {
   document.getElementById('profileAvatarLarge').textContent = initials;
   document.getElementById('profileEmailDisplay').textContent = email;
   const countEl = document.getElementById('shelfTotalCount');
-  if (countEl) countEl.textContent = books.length === 1 ? '1 book' : `${books.length} books`;
+  const shelfBooks = books.filter(b => b.status !== 'not-owned');
+  if (countEl) countEl.textContent = shelfBooks.length === 1 ? '1 book' : `${shelfBooks.length} books`;
   updateShareUI();
   if (typeof updateListsCount === 'function') updateListsCount();
   document.getElementById('profileModal').classList.add('visible');
@@ -1438,10 +1457,10 @@ async function confirmAdd() {
   const newBook = await dbAdd({
     title,
     author: document.getElementById('addAuthor').value.trim() || '',
-    status: isListAdd ? 'unread' : addStatus,
+    status: isListAdd ? 'not-owned' : addStatus,
     cover_url: null,
     pages_read: 0,
-    total_pages: isListAdd ? -1 : 0,
+    total_pages: isListAdd ? null : 0,
     year: document.getElementById('addYear')?.value.trim() || null,
     genre: document.getElementById('addGenre')?.value.trim() || null,
     page_count: parseInt(document.getElementById('addPageCount')?.value) || null,
@@ -2130,12 +2149,12 @@ Description: ${description || 'No description available.'}`;
 
     // PERMANENT PROMOTION/DEMOTION TO SHELF
     const book = books.find(b => String(b.id) === id);
-    if (nowOwned && book && book.total_pages === -1) {
-      book.total_pages = 0;
-      await sb.from('books').update({ total_pages: 0 }).eq('id', id);
-    } else if (!nowOwned && book && book.total_pages === 0 && book.pages_read === 0) {
-      book.total_pages = -1;
-      await sb.from('books').update({ total_pages: -1 }).eq('id', id);
+    if (nowOwned && book && book.status === 'not-owned') {
+      book.status = 'unread';
+      await sb.from('books').update({ status: 'unread' }).eq('id', id);
+    } else if (!nowOwned && book && book.status !== 'not-owned' && book.pages_read === 0) {
+      book.status = 'not-owned';
+      await sb.from('books').update({ status: 'not-owned' }).eq('id', id);
     }
 
     // Auto-refresh background grids to reflect owned status shift
@@ -2932,11 +2951,10 @@ Description: ${description || 'No description available.'}`;
       const id = ldQMTargetId; ldCloseQM();
       // Check if book already exists on shelf (total_pages === -1 means hidden)
       let book = books.find(b => String(b.id) === String(id));
-      if (book && book.total_pages === -1) {
+      if (book && book.status === 'not-owned') {
         // Re-surface it
-        book.total_pages = 0;
         book.status = 'unread';
-        await dbUpdate(id, { total_pages: 0, status: 'unread' });
+        await dbUpdate(id, { status: 'unread' });
       } else if (!book) {
         // Shouldn't happen (list books are always DB records), but guard
         showToast('Book not found on shelf');
@@ -3138,7 +3156,7 @@ Description: ${description || 'No description available.'}`;
         if (!item) return;
         btn.disabled = true; btn.textContent = '…';
         // Add book to main books list via dbAdd
-        const newBook = await dbAdd({ title: item.title, author: item.author, status: 'unread', cover_url: item.cover || null, pages_read: 0, total_pages: -1 });
+        const newBook = await dbAdd({ title, author, status: 'not-owned', cover_url: null, pages_read: 0, total_pages: null });
         if (!newBook) { btn.disabled = false; btn.textContent = '+'; return; }
         books.unshift(newBook);
         // Link to list
@@ -3160,7 +3178,7 @@ Description: ${description || 'No description available.'}`;
 
   function ldasRenderShelf(q) {
     const el = document.getElementById('ldasResults');
-    let filtered = books.filter(b => b.total_pages !== -1);
+    let filtered = books.filter(b => b.status !== 'not-owned');
     const existingInList = new Set(ldBooks.map(b => String(b.id)));
     if (q) filtered = filtered.filter(b => (b.title || '').toLowerCase().includes(q.toLowerCase()) || (b.author || '').toLowerCase().includes(q.toLowerCase()));
     if (!filtered.length) {
