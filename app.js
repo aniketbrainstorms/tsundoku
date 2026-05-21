@@ -667,6 +667,17 @@ function _renderSbsResults(q) {
   }
 
   const ql = q.toLowerCase();
+
+  // Author hit: find a unique author whose name matches the query
+  const authorMatches = [...new Map(
+    books
+      .filter(b => !isHiddenFromShelf(b) && (b.author || '').toLowerCase().includes(ql))
+      .map(b => [b.author.toLowerCase(), b.author])
+  ).values()];
+  const authorHit = authorMatches.length === 1 || (authorMatches.length > 1 && authorMatches.some(a => a.toLowerCase() === ql))
+    ? (authorMatches.find(a => a.toLowerCase() === ql) || authorMatches[0])
+    : null;
+
   let results = books
     .filter(b => !isHiddenFromShelf(b))
     .filter(b =>
@@ -674,14 +685,25 @@ function _renderSbsResults(q) {
       (b.author || '').toLowerCase().includes(ql)
     );
 
-  if (!results.length) {
+  if (!results.length && !authorHit) {
     el.innerHTML = `<div style="padding:48px 0;text-align:center">
       <p style="color:var(--text-muted);font-size:14px;line-height:1.6">No results for "<strong style="color:var(--text-dim)">${escapeHtml(q)}</strong>"</p>
     </div>`;
     return;
   }
 
-  el.innerHTML = results.map((b, i) => `
+  const authorRowHtml = authorHit ? `
+    <div class="bs-author-row" id="sbsAuthorRow" data-author="${escapeAttr(authorHit)}">
+      <div class="bs-author-photo"><span class="bs-author-initials">${escapeAttr(authorHit[0] || '?')}</span></div>
+      <div class="bs-author-info">
+        <div class="bs-author-name">${escapeHtml(authorHit)}</div>
+        <div class="bs-author-label">Author</div>
+      </div>
+      <svg class="bs-author-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="bs-author-sep"></div>` : '';
+
+  el.innerHTML = authorRowHtml + results.map((b, i) => `
     <div class="sbs-result-row" data-id="${b.id}" style="animation-delay:${Math.min(i, 10) * 0.028}s">
       <div class="sbs-result-cover">${coverHtml(b, 10)}</div>
       <div class="sbs-result-info">
@@ -690,6 +712,14 @@ function _renderSbsResults(q) {
       </div>
       <div class="sbs-result-dot ${b.status}"></div>
     </div>`).join('');
+
+  const sbsAuthorRowEl = document.getElementById('sbsAuthorRow');
+  if (sbsAuthorRowEl) {
+    sbsAuthorRowEl.addEventListener('click', () => {
+      closeShelfSearch();
+      setTimeout(() => openAuthorPageFromSearch(sbsAuthorRowEl.dataset.author), 80);
+    });
+  }
 
   el.querySelectorAll('.sbs-result-row').forEach(row => {
     row.addEventListener('click', () => {
