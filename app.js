@@ -674,7 +674,7 @@ function _renderSbsResults(q) {
       .filter(b => !isHiddenFromShelf(b) && (b.author || '').toLowerCase().includes(ql))
       .map(b => [b.author.toLowerCase(), b.author])
   ).values()];
-  const authorHit = authorMatches.length === 1 || (authorMatches.length > 1 && authorMatches.some(a => a.toLowerCase() === ql))
+  const authorHit = authorMatches.length >= 1
     ? (authorMatches.find(a => a.toLowerCase() === ql) || authorMatches[0])
     : null;
 
@@ -696,7 +696,7 @@ function _renderSbsResults(q) {
     <div class="bs-author-row" id="sbsAuthorRow" data-author="${escapeAttr(authorHit)}">
       <div class="bs-author-photo"><span class="bs-author-initials">${escapeAttr(authorHit[0] || '?')}</span></div>
       <div class="bs-author-info">
-        <div class="bs-author-name">${escapeHtml(authorHit)}</div>
+        <div class="bs-author-name">${highlight(authorHit, q)}</div>
         <div class="bs-author-label">Author</div>
       </div>
       <svg class="bs-author-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
