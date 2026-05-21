@@ -228,7 +228,8 @@ function renderAuthorRows(rows) {
 function hydrateAuthorHeader(profile, rows) {
   document.getElementById('authorName').textContent = profile.name;
   document.getElementById('authorBooksTitle').textContent = `In Your Library`;
-  const countText = rows.length === 1 ? `1 book in your library` : `${rows.length} books in your library`;
+  const ownedRows = rows.filter(r => r.status !== 'not-owned');
+  const countText = ownedRows.length === 1 ? `1 book in your library` : `${ownedRows.length} books in your library`;
   document.getElementById('authorLibraryCount').textContent = countText;
   const quoteCard = document.getElementById('authorQuoteCard');
   const quoteText = document.getElementById('authorQuoteText');
