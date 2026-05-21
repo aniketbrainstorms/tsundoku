@@ -209,17 +209,7 @@ function renderAuthorRows(rows) {
       const isNotOwned = book && book.status === 'not-owned';
       closeAuthorPage();
       setTimeout(() => {
-        if (isNotOwned && typeof openListBookDetail === 'function') {
-          // Find which list owns this book and set context
-          const allLists = window._getLoLists ? window._getLoLists() : [];
-          const owningList = allLists.find(l => (l._books || []).some(b => String(b.id) === String(id)));
-          if (owningList && window._ldSetOwned) {
-            window._ldCurrentListId = owningList.id;
-          }
-          openListBookDetail(id);
-        } else {
-          openDetailModal(id);
-        }
+        openDetailModal(id);
       }, 220);
     });
   });
