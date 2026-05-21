@@ -1718,6 +1718,9 @@ function resetAddModal() {
 }
 function handleCoverUrlPaste(e, ctx) {
   const url = e.target.value.trim(); if (!url) return;
+  // Capture URL immediately — don't gate on img.onload (CORS/redirects can block it)
+  if (ctx === 'add') { addCoverFile = null; addCoverUrl = url; }
+  else { editCoverFile = null; editCoverUrl = url; }
   const img = new Image();
   img.onload = () => {
     if (ctx === 'add') { addCoverFile = null; addCoverUrl = url; }
