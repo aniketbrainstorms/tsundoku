@@ -1397,7 +1397,10 @@ async function fetchBookSearch(query) {
       merged.slice(0, 15).forEach(b => { if (b.author) freq[b.author] = (freq[b.author] || 0) + 1; });
       const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
       const q = document.getElementById('bsInput').value.trim().toLowerCase();
-      if (top && top[1] >= 2 && top[0].toLowerCase().includes(q)) {
+      const authorWords = top ? top[0].toLowerCase().split(/\s+/) : [];
+      const queryWords = q.split(/\s+/);
+      const queryMatchesAuthor = top && queryWords.every(qw => authorWords.some(aw => aw.startsWith(qw)));
+      if (top && top[1] >= 2 && queryMatchesAuthor) {
         authorHit = { name: top[0], photo: null };
         // Try to fetch author photo from Open Library
         (async () => {
