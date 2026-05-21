@@ -1399,8 +1399,8 @@ async function fetchBookSearch(query) {
       const q = document.getElementById('bsInput').value.trim().toLowerCase();
       const authorWords = top ? top[0].toLowerCase().split(/\s+/) : [];
       const queryWords = q.split(/\s+/);
-      const queryMatchesAuthor = top && queryWords.every(qw => authorWords.some(aw => aw.startsWith(qw)));
-      if (top && top[1] >= 2 && queryMatchesAuthor) {
+      const queryMatchesAuthor = top && queryWords.every(qw => authorWords.some(aw => aw.startsWith(qw) || aw.includes(qw)));
+      if (top && top[1] >= 1 && queryMatchesAuthor) {
         authorHit = { name: top[0], photo: null };
         // Try to fetch author photo from Open Library
         (async () => {
