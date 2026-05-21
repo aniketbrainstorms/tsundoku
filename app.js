@@ -692,9 +692,14 @@ function _renderSbsResults(q) {
     return;
   }
 
+  const _sbsAuthorKey = authorHit ? (authorHit || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() : null;
+  const _sbsCachedAuthor = _sbsAuthorKey && typeof _authorCache !== 'undefined' ? _authorCache[_sbsAuthorKey] : null;
+  const _sbsAuthorImg = _sbsCachedAuthor?.image || null;
+  const _sbsAuthorInitials = authorHit ? authorHit.split(/\s+/).filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('') || '?' : '?';
+
   const authorRowHtml = authorHit ? `
     <div class="bs-author-row" id="sbsAuthorRow" data-author="${escapeAttr(authorHit)}">
-      <div class="bs-author-photo"><span class="bs-author-initials">${escapeAttr(authorHit[0] || '?')}</span></div>
+      <div class="bs-author-photo" id="sbsAuthorPhoto">${_sbsAuthorImg ? `<img src="${escapeAttr(_sbsAuthorImg)}" onerror="this.parentElement.innerHTML='<span class=bs-author-initials>${escapeAttr(_sbsAuthorInitials)}</span>'" />` : `<span class="bs-author-initials">${escapeAttr(_sbsAuthorInitials)}</span>`}</div>
       <div class="bs-author-info">
         <div class="bs-author-name">${highlight(authorHit, q)}</div>
         <div class="bs-author-label">Author</div>
@@ -719,6 +724,21 @@ function _renderSbsResults(q) {
       closeShelfSearch();
       setTimeout(() => openAuthorPageFromSearch(sbsAuthorRowEl.dataset.author), 80);
     });
+    // Hydrate photo from DB if not already cached
+    if (!_sbsAuthorImg && authorHit && currentUser) {
+      const _sbsKey = (authorHit || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      sb.from('authors').select('image').eq('name_key', _sbsKey).maybeSingle().then(({ data }) => {
+        if (data?.image) {
+          const photoEl = document.getElementById('sbsAuthorPhoto');
+          if (photoEl) {
+            const initials = authorHit.split(/\s+/).filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('') || '?';
+            photoEl.innerHTML = `<img src="${escapeAttr(data.image)}" onerror="this.parentElement.innerHTML='<span class=bs-author-initials>${escapeAttr(initials)}</span>'" />`;
+          }
+          // Warm the in-memory cache so next render is instant
+          if (typeof _authorCache !== 'undefined') _authorCache[_sbsKey] = { image: data.image, name: authorHit };
+        }
+      }).catch(() => {});
+    }
   }
 
   el.querySelectorAll('.sbs-result-row').forEach(row => {
