@@ -2720,8 +2720,7 @@ Description: ${description || 'No description available.'}`;
         card.addEventListener('touchcancel', () => { clearTimeout(ldLongTimer); });
         card.addEventListener('click', () => {
           if (!didLong) {
-            if (ldIsOwned(ldCurrentListId, id)) openDetailModal(id);
-            else openListBookDetail(id);
+            openDetailModal(id);
           }
         });
       });
@@ -2760,8 +2759,7 @@ Description: ${description || 'No description available.'}`;
       row.addEventListener('mouseleave', () => clearTimeout(ldLongTimer));
        row.addEventListener('click', () => {
         if (!didLong) {
-          if (ldIsOwned(ldCurrentListId, id)) openDetailModal(id);
-          else openListBookDetail(id);
+          openDetailModal(id);
         }
       });
     });
