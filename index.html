@@ -103,18 +103,18 @@
     .hero {
       width: 100%;
       position: relative;
+      aspect-ratio: 3 / 2;
+      overflow: hidden;
       opacity: 0;
       animation: fadeIn 0.9s ease 0.28s forwards;
       background: #f0ebe3;
     }
 
     .hero img {
-      width: 100%;
-      display: block;
-      /* contain so the full landscape photo shows edge-to-edge
-         without cropping the books at bottom or cat at top */
+       width: 100%;
+      height: 100%;
       object-fit: cover;
-      object-position: center 35%;
+      object-position: center 40%;
       filter: saturate(0.88) brightness(1.02) sepia(0.04);
     }
 
