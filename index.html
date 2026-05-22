@@ -15,7 +15,17 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=Noto+Serif+JP:wght@400;500&display=swap" rel="stylesheet">
 
   <style>
+    @font-face {
+      font-family: 'Bristol';
+      src: url('Bristol.woff') format('woff'),
+           url('Bristol.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
     /* ── Tokens ──────────────────────────────────────── */
+    :root {
     :root {
       --bg:           #f2ede6;
       --text:         #1e1b18;
@@ -26,6 +36,7 @@
       --cta-text:     #f2ede6;
       --font-jp:      'Noto Serif JP', 'YuMincho', 'Hiragino Mincho ProN', serif;
       --font-sans:    'DM Sans', -apple-system, sans-serif;
+      --font-bristol: 'Bristol', cursive;
       --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -80,12 +91,12 @@
     }
 
     .romaji {
-      font-family: var(--font-sans);
-      font-size: clamp(13px, 3.2vw, 16px);
-      font-weight: 300;
+      font-family: var(--font-bristol);
+      font-size: clamp(16px, 4vw, 20px);
+      font-weight: 400;
       color: var(--text);
-      letter-spacing: 0.36em;
-      text-indent: 0.36em;
+      letter-spacing: 0.05em;
+      text-indent: 0;
       display: block;
     }
 
@@ -93,10 +104,8 @@
     .hero {
       width: 100%;
       position: relative;
-      max-height: 42vh;
+      max-height: 52vh;
       overflow: hidden;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
       opacity: 0;
       animation: fadeIn 0.9s ease 0.28s forwards;
       background: #f0ebe3;
@@ -108,7 +117,7 @@
       /* contain so the full landscape photo shows edge-to-edge
          without cropping the books at bottom or cat at top */
       object-fit: cover;
-      object-position: center bottom;
+      object-position: center center;
       height: 100%;
       filter: saturate(0.88) brightness(1.02) sepia(0.04);
     }
@@ -221,6 +230,7 @@
     .cta-wrap {
       width: 100%;
       max-width: 380px;
+      padding: 0 4px;
       margin-bottom: clamp(16px, 3.5vw, 24px);
     }
 
