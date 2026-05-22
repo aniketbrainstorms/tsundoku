@@ -495,11 +495,12 @@
   <div class="hero">
     <img
       id="heroImg"
-      src="hero_books.png"
+      src=""
       alt="Stacks of old books with a cat sleeping on top, warm afternoon light"
       width="960"
       height="640"
       decoding="async"
+      style="opacity:0"
     >
   </div>
 
@@ -619,21 +620,86 @@
   const root    = document.documentElement;
   const heroImg = document.getElementById('heroImg');
   const stored  = localStorage.getItem('tsundoku-theme');
+  let   rippling = false;
 
-  function applyTheme(dark, animate) {
+  /* Preload both images so the swap is instant */
+  const imgLight = new Image(); imgLight.src = 'hero_books.png';
+  const imgDark  = new Image(); imgDark.src  = 'heroimagedark.png';
+
+  function applyTheme(dark) {
     root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    heroImg.src = dark ? 'heroimagedark.png' : 'hero_books.png';
     localStorage.setItem('tsundoku-theme', dark ? 'dark' : 'light');
-    const nextSrc = dark ? 'heroimagedark.png' : 'hero_books.png';
-    if (!animate || heroImg.src.endsWith(nextSrc)) return;
-    heroImg.style.opacity = '0';
-    const tmp = new Image();
-    tmp.onload = () => {
-      heroImg.src = nextSrc;
-      heroImg.style.opacity = '1';
-    };
-    tmp.src = nextSrc;
+}
+
+/* On load: set theme before first paint, then fade image in */
+const prefersDark = stored
+    ? stored === 'dark'
+    : window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+applyTheme(prefersDark);
+
+heroImg.onload = () => {
+    heroImg.style.transition = 'opacity 0.4s ease';
+    heroImg.style.opacity = '1';
+};
+if (heroImg.complete && heroImg.naturalWidth) {
+    heroImg.style.opacity = '1';
+}
+
+  function rippleToggle(dark) {
+    if (rippling) return;
+    rippling = true;
+
+    const btn    = document.getElementById('themeToggle');
+    const rect   = btn.getBoundingClientRect();
+    const cx     = rect.left + rect.width  / 2;
+    const cy     = rect.top  + rect.height / 2;
+
+    /* Farthest corner from the button — determines final circle radius */
+    const dx = Math.max(cx, window.innerWidth  - cx);
+    const dy = Math.max(cy, window.innerHeight - cy);
+    const maxR = Math.ceil(Math.sqrt(dx * dx + dy * dy)) + 8;
+
+    /* The overlay is the *destination* theme's background color */
+    const overlayColor = dark ? '#0f0d0b' : '#f2ede6';
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: ${overlayColor};
+      clip-path: circle(0px at ${cx}px ${cy}px);
+      z-index: 9999;
+      pointer-events: none;
+      will-change: clip-path;
+    `;
+    document.body.appendChild(overlay);
+
+    /* Force reflow so the initial clip-path registers */
+    overlay.getBoundingClientRect();
+
+    /* Expand the circle */
+    overlay.style.transition = `clip-path 0.58s cubic-bezier(0.16, 1, 0.3, 1)`;
+    overlay.style.clipPath   = `circle(${maxR}px at ${cx}px ${cy}px)`;
+
+    /* At 70% of the animation, flip the real theme + swap the hero image */
+    setTimeout(() => {
+      applyTheme(dark, false);
+    }, 380);
+
+    /* After the circle fully covers, fade it out and remove */
+    setTimeout(() => {
+      overlay.style.transition = `opacity 0.22s ease`;
+      overlay.style.opacity    = '0';
+      setTimeout(() => {
+        overlay.remove();
+        rippling = false;
+      }, 240);
+    }, 560);
   }
-  /* Respect saved preference, then system preference */
+
+  /* Silent apply on load — no ripple, no flash */
   if (stored) {
     applyTheme(stored === 'dark', false);
   } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -641,7 +707,8 @@
   }
 
   document.getElementById('themeToggle').addEventListener('click', () => {
-    applyTheme(root.getAttribute('data-theme') !== 'dark', true);
+    const goingDark = root.getAttribute('data-theme') !== 'dark';
+    rippleToggle(goingDark);
   });
 </script>
 
