@@ -61,7 +61,7 @@
 
     /* ── Title block ─────────────────────────────────── */
     .title-block {
-      padding: clamp(52px, 10vw, 72px) 24px clamp(20px, 4vw, 32px);
+      padding: clamp(28px, 6vw, 44px) 24px clamp(12px, 2vw, 18px);
       text-align: center;
       opacity: 0;
       transform: translateY(-14px);
@@ -93,11 +93,11 @@
     .hero {
       width: 100%;
       position: relative;
-      /* No max-height — let the image dictate its natural height
-         so books + cat are never cropped */
+      max-height: 36vh;
+      overflow: hidden;
       opacity: 0;
       animation: fadeIn 0.9s ease 0.28s forwards;
-      background: #f0ebe3; /* matches photo's white wall tone */
+      background: #f0ebe3;
     }
 
     .hero img {
@@ -105,7 +105,9 @@
       display: block;
       /* contain so the full landscape photo shows edge-to-edge
          without cropping the books at bottom or cat at top */
-      object-fit: contain;
+      object-fit: cover;
+      object-position: center bottom;
+      height: 100%;
       filter: saturate(0.88) brightness(1.02) sepia(0.04);
     }
 
@@ -135,7 +137,7 @@
     /* ── Definition ──────────────────────────────────── */
     .definition {
       text-align: center;
-      padding: clamp(22px, 5vw, 36px) 0 clamp(20px, 4vw, 28px);
+      padding: clamp(12px, 3vw, 20px) 0 clamp(10px, 2vw, 16px);
     }
 
     .definition p {
@@ -157,7 +159,7 @@
       width: 44px;
       height: 1px;
       background: var(--border);
-      margin: 0 auto clamp(20px, 4vw, 32px);
+      margin: 0 auto clamp(12px, 2.5vw, 18px);
       flex-shrink: 0;
     }
 
@@ -168,7 +170,7 @@
       justify-content: center;
       width: 100%;
       max-width: 360px;
-      margin-bottom: clamp(24px, 5vw, 40px);
+      margin-bottom: clamp(14px, 3vw, 22px);
     }
 
     .feature {
