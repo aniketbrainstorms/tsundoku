@@ -91,26 +91,19 @@
     .hero {
       width: 100%;
       position: relative;
-      overflow: hidden;
-      /* 
-        Height is deliberately unconstrained — the image 
-        dictates the ratio so the cat always shows fully.
-        On very tall phones it won't eat the content below.
-      */
-      max-height: 44vh;
+      /* No max-height — let the image dictate its natural height
+         so books + cat are never cropped */
       opacity: 0;
       animation: fadeIn 0.9s ease 0.28s forwards;
+      background: #f0ebe3; /* matches photo's white wall tone */
     }
 
     .hero img {
       width: 100%;
       display: block;
-      object-fit: cover;
-      object-position: center 40%;
-      /* 
-        Subtle warm tone-match to bg — the original photo is
-        slightly cooler than #f2ede6, so we warm it gently.
-      */
+      /* contain so the full landscape photo shows edge-to-edge
+         without cropping the books at bottom or cat at top */
+      object-fit: contain;
       filter: saturate(0.88) brightness(1.02) sepia(0.04);
     }
 
@@ -119,7 +112,7 @@
       content: '';
       position: absolute;
       inset: auto 0 0 0;
-      height: 96px;
+      height: 72px;
       background: linear-gradient(to bottom, transparent, var(--bg));
       pointer-events: none;
     }
