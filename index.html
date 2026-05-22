@@ -118,7 +118,16 @@
       filter: saturate(0.88) brightness(1.02) sepia(0.04);
     }
 
-    /* Bottom fade — photo bleeds into bg seamlessly */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 72px;
+      background: linear-gradient(to top, transparent, var(--bg));
+      pointer-events: none;
+      z-index: 1;
+    }
+
     .hero::after {
       content: '';
       position: absolute;
@@ -490,7 +499,7 @@
   document.getElementById('ctaBtn').addEventListener('click', () => {
     document.body.style.transition = 'opacity 0.35s ease';
     document.body.style.opacity = '0';
-    setTimeout(() => { window.location.href = 'index.html'; }, 350);
+    setTimeout(() => { window.location.href = 'app.html'; }, 350);
   });
 
   /* ── Dot clicks ──────────────────────────────────── */
