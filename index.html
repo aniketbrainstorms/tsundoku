@@ -685,7 +685,7 @@ if (heroImg.complete && heroImg.naturalWidth) {
 
     /* At 70% of the animation, flip the real theme + swap the hero image */
     setTimeout(() => {
-      applyTheme(dark, false);
+      applyTheme(dark);
     }, 380);
 
     /* After the circle fully covers, fade it out and remove */
@@ -699,12 +699,7 @@ if (heroImg.complete && heroImg.naturalWidth) {
     }, 560);
   }
 
-  /* Silent apply on load — no ripple, no flash */
-  if (stored) {
-    applyTheme(stored === 'dark', false);
-  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    applyTheme(true, false);
-  }
+  /* (theme already applied above — removed duplicate) */
 
   document.getElementById('themeToggle').addEventListener('click', () => {
     const goingDark = root.getAttribute('data-theme') !== 'dark';
