@@ -22,7 +22,9 @@ const DS = {
   // Store summary text for toggle
   summaryFull: '',
   summaryShort: '',
+  _callerRestore: null,
 };
+
 
 function dsGetHalfY() {
   return 0; // Auto-sizing sheet sits perfectly at bottom
@@ -118,6 +120,11 @@ function dsClose() {
     DS.summaryExpanded = false;
     editingId = null;
     closeEditSheet();
+    if (DS._callerRestore) {
+      const fn = DS._callerRestore;
+      DS._callerRestore = null;
+      fn();
+    }
   }, 380);
 }
 
@@ -716,9 +723,10 @@ window.openDetailModal = async function openDetailModal(id) {
     editCoverFile = null;
     editStatus = book.status;
 
-    // Reset state
+     // Reset state
     DS.summaryExpanded = false;
     DS.editVisible = false;
+    DS._callerRestore = null;
     const sec = document.getElementById('dsSummarySection');
     if (sec) sec.classList.remove('expanded');
 
