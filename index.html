@@ -344,17 +344,33 @@
       padding-bottom: 4px;
     }
 
-    .tagline {
+    .quote-carousel {
+      width: 100%;
+      max-width: 320px;
+      overflow: hidden;
+    }
+
+    .quote-track {
+      display: flex;
+      transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+    }
+
+    .quote-slide {
+      flex: 0 0 100%;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       font-size: 12px;
       font-weight: 300;
       color: var(--text-muted);
       letter-spacing: 0.03em;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
-    .tagline svg {
+    .quote-slide svg {
       flex-shrink: 0;
       opacity: 0.55;
     }
@@ -576,19 +592,27 @@
 
     <!-- Footer -->
     <div class="footer">
-      <div class="tagline" aria-label="every book has its time.">
-        <!-- leaf / sprig icon -->
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 22V12"/>
-          <path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/>
-        </svg>
-        <span>every book has its time.</span>
+      <div class="quote-carousel" id="quoteCarousel" aria-live="polite">
+        <div class="quote-track" id="quoteTrack">
+          <div class="quote-slide">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/></svg>
+            <span>Curiosity looks good in stacks.</span>
+          </div>
+          <div class="quote-slide">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/></svg>
+            <span>Not yet is not never.</span>
+          </div>
+          <div class="quote-slide">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/></svg>
+            <span>Bought by impulse, read by destiny.</span>
+          </div>
+        </div>
       </div>
 
       <div class="dots" role="tablist" aria-label="onboarding page indicator">
-        <div class="dot active" role="tab" aria-selected="true"  aria-label="page 1"></div>
-        <div class="dot"        role="tab" aria-selected="false" aria-label="page 2"></div>
-        <div class="dot"        role="tab" aria-selected="false" aria-label="page 3"></div>
+        <div class="dot active" role="tab" data-index="0" aria-selected="true"  aria-label="page 1"></div>
+        <div class="dot"        role="tab" data-index="1" aria-selected="false" aria-label="page 2"></div>
+        <div class="dot"        role="tab" data-index="2" aria-selected="false" aria-label="page 3"></div>
       </div>
     </div>
 
@@ -607,14 +631,52 @@
     setTimeout(() => { window.location.href = 'app.html'; }, 350);
   });
 
-  /* ── Dot clicks ──────────────────────────────────── */
-  document.querySelectorAll('.dot').forEach((dot, i, all) => {
-    dot.addEventListener('click', () => {
-      all.forEach(d => { d.classList.remove('active'); d.setAttribute('aria-selected','false'); });
-      dot.classList.add('active');
-      dot.setAttribute('aria-selected','true');
+  /* ── Quote carousel ──────────────────────────────── */
+  (() => {
+    const track = document.getElementById('quoteTrack');
+    const dots  = document.querySelectorAll('.dot');
+    let current = 0;
+    let startX  = 0;
+    let dragging = false;
+
+    function goTo(idx) {
+      current = (idx + 3) % 3;
+      track.style.transform = `translateX(-${current * 100}%)`;
+      dots.forEach((d, i) => {
+        d.classList.toggle('active', i === current);
+        d.setAttribute('aria-selected', i === current ? 'true' : 'false');
+      });
+    }
+
+    /* dot clicks */
+    dots.forEach(dot => {
+      dot.addEventListener('click', () => goTo(parseInt(dot.dataset.index)));
     });
-  });
+
+    /* swipe */
+    const carousel = document.getElementById('quoteCarousel');
+    carousel.addEventListener('touchstart', e => {
+      startX  = e.touches[0].clientX;
+      dragging = true;
+    }, { passive: true });
+
+    carousel.addEventListener('touchend', e => {
+      if (!dragging) return;
+      dragging = false;
+      const dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > 30) goTo(current + (dx < 0 ? 1 : -1));
+    });
+
+    /* mouse swipe for desktop */
+    carousel.addEventListener('mousedown',  e => { startX = e.clientX; dragging = true; });
+    carousel.addEventListener('mouseup',    e => {
+      if (!dragging) return;
+      dragging = false;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 30) goTo(current + (dx < 0 ? 1 : -1));
+    });
+    carousel.addEventListener('mouseleave', () => { dragging = false; });
+  })();
 
   /* ── Theme toggle ────────────────────────────────── */
   const root    = document.documentElement;
