@@ -207,6 +207,7 @@ function renderAuthorRows(rows) {
       if (!id) return;
       const book = books.find(b => String(b.id) === String(id));
       const isNotOwned = book && book.status === 'not-owned';
+      DS._callerRestore = () => openAuthorPage(_activeAuthorName);
       closeAuthorPage();
       setTimeout(() => {
         openDetailModal(id);
