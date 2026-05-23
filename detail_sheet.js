@@ -723,10 +723,9 @@ window.openDetailModal = async function openDetailModal(id) {
     editCoverFile = null;
     editStatus = book.status;
 
-     // Reset state
+    // Reset state
     DS.summaryExpanded = false;
     DS.editVisible = false;
-    DS._callerRestore = null;
     const sec = document.getElementById('dsSummarySection');
     if (sec) sec.classList.remove('expanded');
 
