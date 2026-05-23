@@ -743,6 +743,7 @@ function _renderSbsResults(q) {
 
   el.querySelectorAll('.sbs-result-row').forEach(row => {
     row.addEventListener('click', () => {
+      DS._callerRestore = () => openShelfSearch();
       closeShelfSearch();
       setTimeout(() => openDetailModal(row.dataset.id), 140);
     });
