@@ -1244,35 +1244,57 @@ function _alSetAvatarImg(el, imageUrl, authorName) {
   el.innerHTML = `<img src="${escapeAttr(imageUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${escapeAttr(initials)}'" />`;
 }
 
-async function _alFetchAndCacheAuthorImage(authorName, cacheKey, avatarEl) {
+// Serial queue — avoids hammering Open Library
+const _alFetchQueue = [];
+let _alFetchRunning = false;
+
+function _alEnqueueFetch(authorName, cacheKey, avatarEl) {
+  _alFetchQueue.push({ authorName, cacheKey, avatarEl });
+  if (!_alFetchRunning) _alDrainQueue();
+}
+
+async function _alDrainQueue() {
+  _alFetchRunning = true;
+  while (_alFetchQueue.length) {
+    const { authorName, cacheKey, avatarEl } = _alFetchQueue.shift();
+    await _alFetchOneAuthorImage(authorName, cacheKey, avatarEl);
+    await new Promise(r => setTimeout(r, 220)); // throttle: ~4-5 req/s
+  }
+  _alFetchRunning = false;
+}
+
+async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
   try {
     const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}&limit=3`);
     if (!r.ok) return;
     const d = await r.json();
-    // Find best match by name
     const doc = (d.docs || []).find(a => (a.name || '').toLowerCase() === authorName.toLowerCase()) || (d.docs || [])[0];
     if (!doc?.key) return;
     const olid = doc.key.replace('/authors/', '');
     const imageUrl = `https://covers.openlibrary.org/a/olid/${olid}-M.jpg`;
-    // Validate the image actually exists (OL returns placeholder for missing covers)
-    const img = new Image();
-    img.onload = async () => {
-      if (img.naturalWidth < 10) return; // broken/placeholder
-      if (typeof _authorCache !== 'undefined') {
-        _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imageUrl, name: authorName };
-      }
-      _alSetAvatarImg(avatarEl, imageUrl, authorName);
-      // Upsert to Supabase for future loads
-      if (currentUser) {
-        sb.from('authors').upsert({
-          name_key: cacheKey,
-          name: authorName,
-          image: imageUrl,
-          user_id: currentUser.id
-        }, { onConflict: 'name_key' }).catch(() => {});
-      }
-    };
-    img.src = imageUrl;
+    await new Promise(resolve => {
+      const img = new Image();
+      img.onload = async () => {
+        if (img.naturalWidth < 10) { resolve(); return; }
+        if (typeof _authorCache !== 'undefined') {
+          _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imageUrl, name: authorName };
+        }
+        _alSetAvatarImg(avatarEl, imageUrl, authorName);
+        if (currentUser) {
+          try {
+            await sb.from('authors').upsert({
+              name_key: cacheKey,
+              name: authorName,
+              image: imageUrl,
+              user_id: currentUser.id
+            }, { onConflict: 'name_key' });
+          } catch { /* silent */ }
+        }
+        resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = imageUrl;
+    });
   } catch { /* silent */ }
 }
 
@@ -1342,7 +1364,7 @@ function renderAuthorsList() {
       }, 60);
     });
 
-    // Hydrate avatar image async — check _authorCache first, then Supabase
+    // Hydrate avatar image — cache → Supabase → queued OL fetch
     const authorName = row.dataset.author;
     const cacheKey = (authorName || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
     const avatarEl = document.getElementById('al-av-' + i);
@@ -1356,14 +1378,13 @@ function renderAuthorsList() {
         .then(({ data }) => {
           if (data?.image) {
             if (typeof _authorCache !== 'undefined') {
-              _authorCache[cacheKey] = { ...(typeof _authorCache !== 'undefined' ? (_authorCache[cacheKey] || {}) : {}), image: data.image, name: authorName };
+              _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: data.image, name: authorName };
             }
             _alSetAvatarImg(avatarEl, data.image, authorName);
           } else {
-            // Not in Supabase — fetch from Open Library and upsert
-            _alFetchAndCacheAuthorImage(authorName, cacheKey, avatarEl);
+            _alEnqueueFetch(authorName, cacheKey, avatarEl);
           }
-        }).catch(() => {});
+        }).catch(() => _alEnqueueFetch(authorName, cacheKey, avatarEl));
     }
   });
 }
