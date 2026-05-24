@@ -2279,8 +2279,11 @@ html.standalone-webapp .add-popup {
 .bs-author-sep { height: 1px; background: var(--border); margin: 0 16px; opacity: 0.5; }
 
 /* ── AUTHORS LIST OVERLAY ── */
-#authorsListOverlay { z-index: 87; }
-
+#authorsListOverlay {
+  z-index: 87;
+  position: fixed;
+  inset: 0;
+}
 .al-shelf-sub {
   font-size: 12px; color: var(--text-muted);
   padding: 0 16px 12px; flex-shrink: 0; letter-spacing: 0.02em;
