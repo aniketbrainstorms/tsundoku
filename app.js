@@ -1238,6 +1238,44 @@ function openProfileModal() {
 // ── AUTHORS LIST OVERLAY ──
 let alSort = 'az'; // 'az' | 'count'
 
+function _alSetAvatarImg(el, imageUrl, authorName) {
+  if (!el) return;
+  const initials = authorName.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') || '?';
+  el.innerHTML = `<img src="${escapeAttr(imageUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${escapeAttr(initials)}'" />`;
+}
+
+async function _alFetchAndCacheAuthorImage(authorName, cacheKey, avatarEl) {
+  try {
+    const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}&limit=3`);
+    if (!r.ok) return;
+    const d = await r.json();
+    // Find best match by name
+    const doc = (d.docs || []).find(a => (a.name || '').toLowerCase() === authorName.toLowerCase()) || (d.docs || [])[0];
+    if (!doc?.key) return;
+    const olid = doc.key.replace('/authors/', '');
+    const imageUrl = `https://covers.openlibrary.org/a/olid/${olid}-M.jpg`;
+    // Validate the image actually exists (OL returns placeholder for missing covers)
+    const img = new Image();
+    img.onload = async () => {
+      if (img.naturalWidth < 10) return; // broken/placeholder
+      if (typeof _authorCache !== 'undefined') {
+        _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imageUrl, name: authorName };
+      }
+      _alSetAvatarImg(avatarEl, imageUrl, authorName);
+      // Upsert to Supabase for future loads
+      if (currentUser) {
+        sb.from('authors').upsert({
+          name_key: cacheKey,
+          name: authorName,
+          image: imageUrl,
+          user_id: currentUser.id
+        }, { onConflict: 'name_key' }).catch(() => {});
+      }
+    };
+    img.src = imageUrl;
+  } catch { /* silent */ }
+}
+
 function openAuthorsOverlay() {
   closeModal('profileModal');
   renderAuthorsList();
@@ -1295,7 +1333,7 @@ function renderAuthorsList() {
     </div>`;
   }).join('');
 
-  scroll.querySelectorAll('.al-author-row').forEach(row => {
+  scroll.querySelectorAll('.al-author-row').forEach((row, i) => {
     row.addEventListener('click', () => {
       const author = row.dataset.author;
       closeAuthorsOverlay();
@@ -1303,6 +1341,30 @@ function renderAuthorsList() {
         if (typeof openAuthorPage === 'function') openAuthorPage(author);
       }, 60);
     });
+
+    // Hydrate avatar image async — check _authorCache first, then Supabase
+    const authorName = row.dataset.author;
+    const cacheKey = (authorName || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const avatarEl = document.getElementById('al-av-' + i);
+    if (!avatarEl) return;
+
+    const cached = typeof _authorCache !== 'undefined' && _authorCache[cacheKey];
+    if (cached?.image) {
+      _alSetAvatarImg(avatarEl, cached.image, authorName);
+    } else if (currentUser) {
+      sb.from('authors').select('image').eq('name_key', cacheKey).maybeSingle()
+        .then(({ data }) => {
+          if (data?.image) {
+            if (typeof _authorCache !== 'undefined') {
+              _authorCache[cacheKey] = { ...(typeof _authorCache !== 'undefined' ? (_authorCache[cacheKey] || {}) : {}), image: data.image, name: authorName };
+            }
+            _alSetAvatarImg(avatarEl, data.image, authorName);
+          } else {
+            // Not in Supabase — fetch from Open Library and upsert
+            _alFetchAndCacheAuthorImage(authorName, cacheKey, avatarEl);
+          }
+        }).catch(() => {});
+    }
   });
 }
 
