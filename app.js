@@ -1227,7 +1227,83 @@ function openProfileModal() {
   if (countEl) countEl.textContent = shelfBooks.length === 1 ? '1 book' : `${shelfBooks.length} books`;
   updateShareUI();
   if (typeof updateListsCount === 'function') updateListsCount();
+  const authorsCountEl = document.getElementById('authorsCount');
+  if (authorsCountEl) {
+    const uniqueAuthors = new Set(books.filter(b => b.status !== 'not-owned' && b.author).map(b => b.author.trim())).size;
+    authorsCountEl.textContent = uniqueAuthors ? `${uniqueAuthors} authors` : '';
+  }
   document.getElementById('profileModal').classList.add('visible');
+}
+
+// ── AUTHORS LIST OVERLAY ──
+let alSort = 'az'; // 'az' | 'count'
+
+function openAuthorsOverlay() {
+  closeModal('profileModal');
+  renderAuthorsList();
+  document.getElementById('authorsListOverlay').classList.add('open');
+}
+function closeAuthorsOverlay() {
+  document.getElementById('authorsListOverlay').classList.remove('open');
+}
+function toggleAlSort() {
+  alSort = alSort === 'az' ? 'count' : 'az';
+  document.getElementById('alSortLabel').textContent = alSort === 'az' ? 'Sort A–Z' : 'Sort by count';
+  renderAuthorsList();
+}
+function renderAuthorsList() {
+  const q = (document.getElementById('alSearchInput')?.value || '').toLowerCase().trim();
+  const shelfBooks = books.filter(b => b.status !== 'not-owned' && b.author);
+
+  // Build author map: name → count
+  const authorMap = new Map();
+  shelfBooks.forEach(b => {
+    const a = (b.author || '').trim();
+    if (!a) return;
+    authorMap.set(a, (authorMap.get(a) || 0) + 1);
+  });
+
+  let entries = Array.from(authorMap.entries()); // [name, count]
+  if (q) entries = entries.filter(([name]) => name.toLowerCase().includes(q));
+  if (alSort === 'az') entries.sort((a, b) => a[0].localeCompare(b[0]));
+  else entries.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  const sub = document.getElementById('alShelfSub');
+  if (sub) sub.textContent = `All authors in your shelf.`;
+
+  const authorsCount = document.getElementById('authorsCount');
+  if (authorsCount) authorsCount.textContent = `${authorMap.size} authors`;
+
+  const scroll = document.getElementById('alScroll');
+  if (!scroll) return;
+
+  if (!entries.length) {
+    scroll.innerHTML = `<div class="al-empty">📭<br>${q ? 'No authors match your search.' : 'No authors yet.'}</div>`;
+    return;
+  }
+
+  scroll.innerHTML = entries.map(([name, count], i) => {
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+    const bookWord = count === 1 ? 'book' : 'books';
+    return `<div class="al-author-row" data-author="${escapeAttr(name)}" style="animation-delay:${Math.min(i, 14) * 0.028}s">
+      <div class="al-author-avatar" id="al-av-${i}">${escapeHtml(initials)}</div>
+      <div class="al-author-info">
+        <div class="al-author-name">${escapeHtml(name)}</div>
+        <div class="al-author-count">${count} ${bookWord}</div>
+      </div>
+      <svg class="al-author-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
+
+  scroll.querySelectorAll('.al-author-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const author = row.dataset.author;
+      closeAuthorsOverlay();
+      setTimeout(() => {
+        if (typeof openAuthorPage === 'function') openAuthorPage(author);
+      }, 60);
+    });
+  });
 }
 
 // ── MY SHELF VIEW ──
