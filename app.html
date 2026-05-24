@@ -345,10 +345,10 @@
       </div>
       
       <div class="toolbar">
-        <div class="filter-tabs">
-          <button class="tab-btn active" data-filter="reading" onclick="setFilter('reading')">Reading <span class="tab-count" id="count-reading">0</span></button>
-          <button class="tab-btn" data-filter="read" onclick="setFilter('read')">Read <span class="tab-count" id="count-read">0</span></button>
-          <button class="tab-btn" data-filter="unread" onclick="setFilter('unread')">Unread <span class="tab-count" id="count-unread">0</span></button>
+        <div class="filter-tabs" role="tablist" aria-label="Shelf filter">
+          <button class="tab-btn active" data-filter="reading" onclick="setFilter('reading')" role="tab" aria-selected="true">reading <span class="tab-count" id="count-reading">0</span></button>
+          <button class="tab-btn" data-filter="read" onclick="setFilter('read')" role="tab" aria-selected="false">read <span class="tab-count" id="count-read">0</span></button>
+          <button class="tab-btn" data-filter="unread" onclick="setFilter('unread')" role="tab" aria-selected="false">unread <span class="tab-count" id="count-unread">0</span></button>
         </div>
         <button class="sort-btn" id="sortToggleBtn" onclick="openSortMenu(this)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
@@ -356,7 +356,7 @@
       </div>
     </div>
     <div class="divider"></div>
-    <div class="hint-bar" id="hintBar">Tap to view · Hold to quick-edit</div>
+    <div class="hint-bar" id="hintBar">tap to open · hold for options</div>
     <div class="grid-container" id="mainGridContainer">
       <div class="book-grid" id="bookGrid"></div>
       <div class="alpha-bar" id="mainAlphaBar">
