@@ -1281,14 +1281,12 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
         }
         _alSetAvatarImg(avatarEl, imageUrl, authorName);
         if (currentUser) {
-          try {
-            await sb.from('authors').upsert({
-              name_key: cacheKey,
-              name: authorName,
-              image: imageUrl,
-              user_id: currentUser.id
-            }, { onConflict: 'name_key' });
-          } catch { /* silent */ }
+          sb.from('authors').upsert({
+            name_key: cacheKey,
+            name: authorName,
+            image: imageUrl,
+            user_id: currentUser.id
+          }, { onConflict: 'name_key' }).then(() => {}).catch(() => {});
         }
         resolve();
       };
@@ -1355,7 +1353,9 @@ function renderAuthorsList() {
     </div>`;
   }).join('');
 
-  scroll.querySelectorAll('.al-author-row').forEach((row, i) => {
+  // ── Batch hydration: one Supabase query for all authors ──
+  const allRows = Array.from(scroll.querySelectorAll('.al-author-row'));
+  allRows.forEach(row => {
     row.addEventListener('click', () => {
       const author = row.dataset.author;
       closeAuthorsOverlay();
@@ -1363,30 +1363,46 @@ function renderAuthorsList() {
         if (typeof openAuthorPage === 'function') openAuthorPage(author);
       }, 60);
     });
+  });
 
-    // Hydrate avatar image — cache → Supabase → queued OL fetch
+  // Collect authors needing images (not in memory cache)
+  const needsLookup = [];
+  allRows.forEach((row, i) => {
     const authorName = row.dataset.author;
     const cacheKey = (authorName || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
     const avatarEl = document.getElementById('al-av-' + i);
     if (!avatarEl) return;
-
     const cached = typeof _authorCache !== 'undefined' && _authorCache[cacheKey];
     if (cached?.image) {
       _alSetAvatarImg(avatarEl, cached.image, authorName);
-    } else if (currentUser) {
-      sb.from('authors').select('image').eq('name_key', cacheKey).maybeSingle()
-        .then(({ data }) => {
-          if (data?.image) {
-            if (typeof _authorCache !== 'undefined') {
-              _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: data.image, name: authorName };
-            }
-            _alSetAvatarImg(avatarEl, data.image, authorName);
-          } else {
-            _alEnqueueFetch(authorName, cacheKey, avatarEl);
-          }
-        }).catch(() => _alEnqueueFetch(authorName, cacheKey, avatarEl));
+    } else {
+      needsLookup.push({ authorName, cacheKey, avatarEl });
     }
   });
+
+  // One batch Supabase query for all missing authors
+  if (needsLookup.length && currentUser) {
+    const keys = needsLookup.map(x => x.cacheKey);
+    sb.from('authors').select('name_key, image').in('name_key', keys)
+      .then(({ data }) => {
+        const found = new Map((data || []).map(r => [r.name_key, r.image]));
+        needsLookup.forEach(({ authorName, cacheKey, avatarEl }) => {
+          if (found.has(cacheKey) && found.get(cacheKey)) {
+            if (typeof _authorCache !== 'undefined') {
+              _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: found.get(cacheKey), name: authorName };
+            }
+            _alSetAvatarImg(avatarEl, found.get(cacheKey), authorName);
+          } else {
+            // Not in Supabase — queue OL fetch (serialized, throttled)
+            _alEnqueueFetch(authorName, cacheKey, avatarEl);
+          }
+        });
+      }).catch(() => {
+        // Fallback: enqueue all for OL
+        needsLookup.forEach(({ authorName, cacheKey, avatarEl }) =>
+          _alEnqueueFetch(authorName, cacheKey, avatarEl));
+      });
+  }
 }
 
 // ── MY SHELF VIEW ──
