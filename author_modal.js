@@ -102,24 +102,34 @@ async function fetchAuthorProfile(authorName) {
     works: [...(fallback.works || [])]
   };
 
-  // 1. Wikipedia first
+  // 1. Wikipedia — search for page title, then fetch photo directly
+  let wikiCandidate = null;
   try {
-    const wikiName = authorName.trim().replace(/ /g, '_');
-    const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiName)}`);
-    if (wikiRes.ok) {
-      const wikiData = await wikiRes.json();
-      const candidate = wikiData?.thumbnail?.source;
-      if (candidate) {
-        const valid = await new Promise(resolve => {
-          const img = new Image();
-          img.onload = () => resolve(img.naturalWidth > 10);
-          img.onerror = () => resolve(false);
-          img.src = candidate;
-        });
-        if (valid) profile.image = candidate;
+    const wikiSearch = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(authorName + ' author')}&srlimit=1&format=json&origin=*`);
+    if (wikiSearch.ok) {
+      const wikiSearchData = await wikiSearch.json();
+      const pageTitle = wikiSearchData?.query?.search?.[0]?.title;
+      if (pageTitle) {
+        const wikiImg = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&pithumbsize=500&format=json&origin=*`);
+        if (wikiImg.ok) {
+          const wikiImgData = await wikiImg.json();
+          const pages = wikiImgData?.query?.pages || {};
+          const page = Object.values(pages)[0];
+          wikiCandidate = page?.thumbnail?.source || null;
+        }
       }
     }
   } catch {}
+  const candidate = wikiCandidate;
+  if (candidate) {
+    const valid = await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(img.naturalWidth > 10);
+      img.onerror = () => resolve(false);
+      img.src = candidate;
+    });
+    if (valid) profile.image = candidate;
+  }
 
   // 2. Fallback to Open Library if Wikipedia had nothing
   if (!profile.image) {
