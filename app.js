@@ -1265,6 +1265,38 @@ async function _alDrainQueue() {
 
 async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
   try {
+    // 1. Try Wikipedia first — better quality and coverage
+    const wikiName = authorName.trim().replace(/ /g, '_');
+    const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiName)}`);
+    if (wikiRes.ok) {
+      const wikiData = await wikiRes.json();
+      const imageUrl = wikiData?.thumbnail?.source;
+      if (imageUrl) {
+        const valid = await new Promise(resolve => {
+          const img = new Image();
+          img.onload = () => resolve(img.naturalWidth > 10);
+          img.onerror = () => resolve(false);
+          img.src = imageUrl;
+        });
+        if (valid) {
+          if (typeof _authorCache !== 'undefined') {
+            _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imageUrl, name: authorName };
+          }
+          _alSetAvatarImg(avatarEl, imageUrl, authorName);
+          if (currentUser) {
+            sb.from('authors').upsert({
+              name_key: cacheKey,
+              name: authorName,
+              image: imageUrl,
+              user_id: currentUser.id
+            }, { onConflict: 'name_key' }).then(() => {}).catch(() => {});
+          }
+          return;
+        }
+      }
+    }
+
+    // 2. Fallback to Open Library
     const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}&limit=3`);
     if (!r.ok) return;
     const d = await r.json();
@@ -1295,7 +1327,6 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
     });
   } catch { /* silent */ }
 }
-
 function openAuthorsOverlay() {
   closeModal('profileModal');
   renderAuthorsList();
