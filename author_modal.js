@@ -110,7 +110,7 @@ async function fetchAuthorProfile(authorName) {
       const wikiSearchData = await wikiSearch.json();
       const pageTitle = wikiSearchData?.query?.search?.[0]?.title;
       if (pageTitle) {
-        const wikiImg = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&pithumbsize=500&format=json&origin=*`);
+                const wikiImg = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&redirects=1&prop=pageimages&pithumbsize=500&format=json&origin=*`);
         if (wikiImg.ok) {
           const wikiImgData = await wikiImg.json();
           const pages = wikiImgData?.query?.pages || {};
@@ -137,7 +137,10 @@ async function fetchAuthorProfile(authorName) {
       const searchRes = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}`);
       if (searchRes.ok) {
         const searchData = await searchRes.json();
-        const doc = (searchData.docs || []).find(a => normalizeAuthorText(a.name) === cacheKey) || (searchData.docs || [])[0];
+        const doc = (searchData.docs || []).find(a => {
+          const docName = normalizeAuthorText(a.name);
+          return docName === cacheKey || docName.includes(cacheKey) || cacheKey.includes(docName);
+        }) || (searchData.docs || [])[0];
         if (doc?.key) {
           profile.name = fallback.name || doc.name || profile.name;
           const olid = doc.key.replace('/authors/', '');
@@ -335,3 +338,93 @@ function setAuthorFilter(filter) {
 document.querySelectorAll('[data-author-filter]').forEach(btn => {
   btn.addEventListener('click', () => setAuthorFilter(btn.dataset.authorFilter));
 });
+
+async function editAuthorPhoto() {
+  const authorName = _activeAuthorName;
+  if (!authorName) return;
+  const cacheKey = normalizeAuthorText(authorName);
+  const currentProfile = _authorCache[cacheKey] || { name: authorName, image: '' };
+  
+  const choice = prompt(
+    `Change photo for ${currentProfile.name}:\n\n` +
+    `• Type "fetch" to search Wikipedia & Open Library again.\n` +
+    `• Or paste a direct image URL (e.g., https://example.com/photo.jpg):\n` +
+    `• Leave blank to remove the photo.`,
+    currentProfile.image || ''
+  );
+  
+  if (choice === null) return; // User cancelled
+  
+  const trimmed = choice.trim();
+  if (trimmed.toLowerCase() === 'fetch') {
+    showToast('Searching APIs for photo...');
+    
+    // Clear database cache entry if exists so fetchAuthorProfile will query APIs
+    if (currentUser) {
+      try {
+        await sb.from('authors').delete().eq('name_key', cacheKey);
+      } catch {}
+    }
+    delete _authorCache[cacheKey];
+    
+    const newProfile = await fetchAuthorProfile(authorName);
+    if (newProfile.image) {
+      showToast('Photo updated successfully! ✓');
+    } else {
+      showToast('No photo found on Wikipedia or Open Library.');
+    }
+    
+    const rows = buildAuthorRows(authorName);
+    hydrateAuthorHeader(newProfile, rows);
+  } else if (trimmed === '') {
+    // Clear photo
+    if (currentUser) {
+      try {
+        await sb.from('authors').upsert({
+          name_key: cacheKey,
+          name: currentProfile.name,
+          image: '',
+          user_id: currentUser.id
+        }, { onConflict: 'name_key' });
+      } catch {}
+    }
+    currentProfile.image = '';
+    _authorCache[cacheKey] = currentProfile;
+    const rows = buildAuthorRows(authorName);
+    hydrateAuthorHeader(currentProfile, rows);
+    showToast('Photo removed');
+  } else {
+    // Validate image URL is somewhat valid and loads
+    showToast('Validating photo URL...');
+    const valid = await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve(img.naturalWidth > 10);
+      img.onerror = () => resolve(false);
+      img.src = trimmed;
+    });
+    
+    if (!valid) {
+      showToast('Invalid image URL (failed to load)');
+      return;
+    }
+    
+    if (currentUser) {
+      try {
+        await sb.from('authors').upsert({
+          name_key: cacheKey,
+          name: currentProfile.name,
+          image: trimmed,
+          user_id: currentUser.id
+        }, { onConflict: 'name_key' });
+      } catch {}
+    }
+    
+    currentProfile.image = trimmed;
+    _authorCache[cacheKey] = currentProfile;
+    const rows = buildAuthorRows(authorName);
+    hydrateAuthorHeader(currentProfile, rows);
+    showToast('Photo updated ✓');
+  }
+}
+
+document.getElementById('authorPhotoWrap')?.addEventListener('click', editAuthorPhoto);
