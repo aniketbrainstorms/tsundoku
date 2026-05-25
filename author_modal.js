@@ -102,17 +102,47 @@ async function fetchAuthorProfile(authorName) {
     works: [...(fallback.works || [])]
   };
 
+  // 1. Wikipedia first
   try {
-    const searchRes = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}`);
-    if (searchRes.ok) {
-      const searchData = await searchRes.json();
-      const doc = (searchData.docs || []).find(a => normalizeAuthorText(a.name) === cacheKey) || (searchData.docs || [])[0];
-      if (doc?.key) {
-        profile.name = fallback.name || doc.name || profile.name;
-        profile.image = profile.image || `https://covers.openlibrary.org/a/olid/${doc.key}-L.jpg`;
+    const wikiName = authorName.trim().replace(/ /g, '_');
+    const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiName)}`);
+    if (wikiRes.ok) {
+      const wikiData = await wikiRes.json();
+      const candidate = wikiData?.thumbnail?.source;
+      if (candidate) {
+        const valid = await new Promise(resolve => {
+          const img = new Image();
+          img.onload = () => resolve(img.naturalWidth > 10);
+          img.onerror = () => resolve(false);
+          img.src = candidate;
+        });
+        if (valid) profile.image = candidate;
       }
     }
   } catch {}
+
+  // 2. Fallback to Open Library if Wikipedia had nothing
+  if (!profile.image) {
+    try {
+      const searchRes = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}`);
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        const doc = (searchData.docs || []).find(a => normalizeAuthorText(a.name) === cacheKey) || (searchData.docs || [])[0];
+        if (doc?.key) {
+          profile.name = fallback.name || doc.name || profile.name;
+          const olid = doc.key.replace('/authors/', '');
+          const candidate = `https://covers.openlibrary.org/a/olid/${olid}-L.jpg`;
+          const valid = await new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => resolve(img.naturalWidth > 10);
+            img.onerror = () => resolve(false);
+            img.src = candidate;
+          });
+          if (valid) profile.image = candidate;
+        }
+      }
+    } catch {}
+  }
 
   // 3. Save to Supabase (fire and forget)
   if (currentUser) {
