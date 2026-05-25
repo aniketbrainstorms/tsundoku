@@ -1400,9 +1400,8 @@ function renderAuthorsList() {
   allRows.forEach(row => {
     row.addEventListener('click', () => {
       const author = row.dataset.author;
-      closeAuthorsOverlay();
       setTimeout(() => {
-        if (typeof openAuthorPage === 'function') openAuthorPage(author);
+          if (typeof openAuthorPage === 'function') openAuthorPage(author);
       }, 60);
     });
   });
