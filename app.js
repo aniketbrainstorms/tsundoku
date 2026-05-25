@@ -1283,7 +1283,6 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
         }
       }
     } catch {}
-      } catch {}
     if (imageUrl) {
       const valid = await new Promise(resolve => {
         const img = new Image();
