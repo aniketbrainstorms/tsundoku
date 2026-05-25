@@ -1283,28 +1283,28 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
         }
       }
     } catch {}
-      if (imageUrl) {
-        const valid = await new Promise(resolve => {
-          const img = new Image();
-          img.onload = () => resolve(img.naturalWidth > 10);
-          img.onerror = () => resolve(false);
-          img.src = imageUrl;
-        });
-        if (valid) {
-          if (typeof _authorCache !== 'undefined') {
-            _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imageUrl, name: authorName };
-          }
-          _alSetAvatarImg(avatarEl, imageUrl, authorName);
-          if (currentUser) {
-            sb.from('authors').upsert({
-              name_key: cacheKey,
-              name: authorName,
-              image: imageUrl,
-              user_id: currentUser.id
-            }, { onConflict: 'name_key' }).then(() => {}).catch(() => {});
-          }
-          return;
+      } catch {}
+    if (imageUrl) {
+      const valid = await new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(img.naturalWidth > 10);
+        img.onerror = () => resolve(false);
+        img.src = imageUrl;
+      });
+      if (valid) {
+        if (typeof _authorCache !== 'undefined') {
+          _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imageUrl, name: authorName };
         }
+        _alSetAvatarImg(avatarEl, imageUrl, authorName);
+        if (currentUser) {
+          sb.from('authors').upsert({
+            name_key: cacheKey,
+            name: authorName,
+            image: imageUrl,
+            user_id: currentUser.id
+          }, { onConflict: 'name_key' }).then(() => {}).catch(() => {});
+        }
+        return;
       }
     }
 
