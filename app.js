@@ -1399,11 +1399,13 @@ function renderAuthorsList() {
   const allRows = Array.from(scroll.querySelectorAll('.al-author-row'));
   allRows.forEach(row => {
     row.addEventListener('click', () => {
-      const author = row.dataset.author;
-      setTimeout(() => {
+        const author = row.dataset.author;
+        closeAuthorsOverlay();
+        window._authorOpenedFromList = true;
+        setTimeout(() => {
           if (typeof openAuthorPage === 'function') openAuthorPage(author);
-      }, 60);
-    });
+        }, 60);
+      });
   });
 
   // Collect authors needing images (not in memory cache)
