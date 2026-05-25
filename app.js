@@ -1273,7 +1273,7 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
         const wikiSearchData = await wikiSearch.json();
         const pageTitle = wikiSearchData?.query?.search?.[0]?.title;
         if (pageTitle) {
-          const wikiImg = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&pithumbsize=500&format=json&origin=*`);
+          const wikiImg = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&redirects=1&prop=pageimages&pithumbsize=500&format=json&origin=*`);
           if (wikiImg.ok) {
             const wikiImgData = await wikiImg.json();
             const pages = wikiImgData?.query?.pages || {};
@@ -1311,7 +1311,11 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
     const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}&limit=3`);
     if (!r.ok) return;
     const d = await r.json();
-    const doc = (d.docs || []).find(a => (a.name || '').toLowerCase() === authorName.toLowerCase()) || (d.docs || [])[0];
+    const doc = (d.docs || []).find(a => {
+      const docName = (a.name || '').toLowerCase();
+      const cleanSearch = authorName.toLowerCase();
+      return docName === cleanSearch || docName.includes(cleanSearch) || cleanSearch.includes(docName);
+    }) || (d.docs || [])[0];
     if (!doc?.key) return;
     const olid = doc.key.replace('/authors/', '');
     const olImageUrl = `https://covers.openlibrary.org/a/olid/${olid}-M.jpg`;
