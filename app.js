@@ -1258,7 +1258,7 @@ async function _alDrainQueue() {
   while (_alFetchQueue.length) {
     const { authorName, cacheKey, avatarEl } = _alFetchQueue.shift();
     await _alFetchOneAuthorImage(authorName, cacheKey, avatarEl);
-    await new Promise(r => setTimeout(r, 220)); // throttle: ~4-5 req/s
+        await new Promise(r => setTimeout(r, 1000)); // throttle: 1 req/s to respect Open Library rate limits
   }
   _alFetchRunning = false;
 }
@@ -1283,6 +1283,7 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
         }
       }
     } catch {}
+    
     if (imageUrl) {
       const valid = await new Promise(resolve => {
         const img = new Image();
@@ -1308,38 +1309,59 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
     }
 
     // 2. Fallback to Open Library
-    const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}&limit=3`);
-    if (!r.ok) return;
-    const d = await r.json();
-    const doc = (d.docs || []).find(a => {
-      const docName = (a.name || '').toLowerCase();
-      const cleanSearch = authorName.toLowerCase();
-      return docName === cleanSearch || docName.includes(cleanSearch) || cleanSearch.includes(docName);
-    }) || (d.docs || [])[0];
-    if (!doc?.key) return;
-    const olid = doc.key.replace('/authors/', '');
-    const olImageUrl = `https://covers.openlibrary.org/a/olid/${olid}-M.jpg`;
-    await new Promise(resolve => {
-      const img = new Image();
-      img.onload = async () => {
-        if (img.naturalWidth < 10) { resolve(); return; }
-        if (typeof _authorCache !== 'undefined') {
-          _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: olImageUrl, name: authorName };
+    let olImageUrl = null;
+    try {
+      const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}&limit=3`);
+      if (r.ok) {
+        const d = await r.json();
+        const doc = (d.docs || []).find(a => {
+          const docName = (a.name || '').toLowerCase();
+          const cleanSearch = authorName.toLowerCase();
+          return docName === cleanSearch || docName.includes(cleanSearch) || cleanSearch.includes(docName);
+        }) || (d.docs || [])[0];
+        if (doc?.key) {
+          const olid = doc.key.replace('/authors/', '');
+          const candidateUrl = `https://covers.openlibrary.org/a/olid/${olid}-M.jpg`;
+          const valid = await new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => resolve(img.naturalWidth > 10);
+            img.onerror = () => resolve(false);
+            img.src = candidateUrl;
+          });
+          if (valid) {
+            olImageUrl = candidateUrl;
+          }
         }
-        _alSetAvatarImg(avatarEl, olImageUrl, authorName);
-        if (currentUser) {
-          sb.from('authors').upsert({
-            name_key: cacheKey,
-            name: authorName,
-            image: olImageUrl,
-            user_id: currentUser.id
-          }, { onConflict: 'name_key' }).then(() => {}).catch(() => {});
         }
-        resolve();
-      };
-      img.onerror = () => resolve();
-      img.src = olImageUrl;
-    });
+    } catch {}
+
+    if (olImageUrl) {
+      if (typeof _authorCache !== 'undefined') {
+        _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: olImageUrl, name: authorName };
+      }
+      _alSetAvatarImg(avatarEl, olImageUrl, authorName);
+      if (currentUser) {
+        sb.from('authors').upsert({
+          name_key: cacheKey,
+          name: authorName,
+          image: olImageUrl,
+          user_id: currentUser.id
+        }, { onConflict: 'name_key' }).then(() => {}).catch(() => {});
+      }
+    } else {
+      // Neither API found a valid photo. Save empty status to Supabase and cache.
+      if (typeof _authorCache !== 'undefined') {
+        _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: '', name: authorName };
+      }
+      if (currentUser) {
+        sb.from('authors').upsert({
+          name_key: cacheKey,
+          name: authorName,
+          image: '',
+          user_id: currentUser.id
+        }, { onConflict: 'name_key' }).then(() => {}).catch(() => {});
+      }
+    }
   } catch { /* silent */ }
 }
 function openAuthorsOverlay() {
@@ -1434,11 +1456,14 @@ function renderAuthorsList() {
       .then(({ data }) => {
         const found = new Map((data || []).map(r => [r.name_key, r.image]));
         needsLookup.forEach(({ authorName, cacheKey, avatarEl }) => {
-          if (found.has(cacheKey) && found.get(cacheKey)) {
+          if (found.has(cacheKey)) {
+            const imgUrl = found.get(cacheKey) || '';
             if (typeof _authorCache !== 'undefined') {
-              _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: found.get(cacheKey), name: authorName };
+              _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imgUrl, name: authorName };
             }
-            _alSetAvatarImg(avatarEl, found.get(cacheKey), authorName);
+            if (imgUrl) {
+              _alSetAvatarImg(avatarEl, imgUrl, authorName);
+            }
           } else {
             // Not in Supabase — queue OL fetch (serialized, throttled)
             _alEnqueueFetch(authorName, cacheKey, avatarEl);
