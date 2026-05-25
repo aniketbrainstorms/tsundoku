@@ -1265,12 +1265,24 @@ async function _alDrainQueue() {
 
 async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
   try {
-    // 1. Try Wikipedia first — better quality and coverage
-    const wikiName = authorName.trim().replace(/ /g, '_');
-    const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiName)}`);
-    if (wikiRes.ok) {
-      const wikiData = await wikiRes.json();
-      const imageUrl = wikiData?.thumbnail?.source;
+    // 1. Wikipedia — search for page title, then fetch photo directly
+    let imageUrl = null;
+    try {
+      const wikiSearch = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(authorName + ' author')}&srlimit=1&format=json&origin=*`);
+      if (wikiSearch.ok) {
+        const wikiSearchData = await wikiSearch.json();
+        const pageTitle = wikiSearchData?.query?.search?.[0]?.title;
+        if (pageTitle) {
+          const wikiImg = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&pithumbsize=500&format=json&origin=*`);
+          if (wikiImg.ok) {
+            const wikiImgData = await wikiImg.json();
+            const pages = wikiImgData?.query?.pages || {};
+            const page = Object.values(pages)[0];
+            imageUrl = page?.thumbnail?.source || null;
+          }
+        }
+      }
+    } catch {}
       if (imageUrl) {
         const valid = await new Promise(resolve => {
           const img = new Image();
@@ -1303,27 +1315,27 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
     const doc = (d.docs || []).find(a => (a.name || '').toLowerCase() === authorName.toLowerCase()) || (d.docs || [])[0];
     if (!doc?.key) return;
     const olid = doc.key.replace('/authors/', '');
-    const imageUrl = `https://covers.openlibrary.org/a/olid/${olid}-M.jpg`;
+    const olImageUrl = `https://covers.openlibrary.org/a/olid/${olid}-M.jpg`;
     await new Promise(resolve => {
       const img = new Image();
       img.onload = async () => {
         if (img.naturalWidth < 10) { resolve(); return; }
         if (typeof _authorCache !== 'undefined') {
-          _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imageUrl, name: authorName };
+          _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: olImageUrl, name: authorName };
         }
-        _alSetAvatarImg(avatarEl, imageUrl, authorName);
+        _alSetAvatarImg(avatarEl, olImageUrl, authorName);
         if (currentUser) {
           sb.from('authors').upsert({
             name_key: cacheKey,
             name: authorName,
-            image: imageUrl,
+            image: olImageUrl,
             user_id: currentUser.id
           }, { onConflict: 'name_key' }).then(() => {}).catch(() => {});
         }
         resolve();
       };
       img.onerror = () => resolve();
-      img.src = imageUrl;
+      img.src = olImageUrl;
     });
   } catch { /* silent */ }
 }
