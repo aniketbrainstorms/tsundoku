@@ -314,8 +314,12 @@ function openAuthorPageFromDetail() {
 function closeAuthorPage() {
   const overlay = document.getElementById('authorOverlay');
   if (overlay) overlay.classList.remove('open');
+  if (window._authorOpenedFromList) {
+    window._authorOpenedFromList = false;
+    const authorsOverlay = document.getElementById('authorsListOverlay');
+    if (authorsOverlay) authorsOverlay.classList.add('open');
+  }
 }
-
 function updateAuthorControls() {
   document.querySelectorAll('[data-author-filter]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.authorFilter === _authorFilter);
