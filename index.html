@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#f0ebe3">
+  <meta name="theme-color" content="#FDF2E7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="icon" type="image/png" href="fav_icon_640.png">
@@ -12,7 +12,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=Noto+Serif+JP:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
 
   <style>
     @font-face {
@@ -23,9 +23,10 @@
       font-style: normal;
       font-display: swap;
     }
+
     /* ── Tokens ──────────────────────────────────────── */
     :root {
-      --bg:           #f0ebe3;
+      --bg:           #FDF2E7;
       --text:         #1a1714;
       --text-dim:     #5c5750;
       --text-muted:   #9a9189;
@@ -33,7 +34,7 @@
       --red:          #c8181a;
       --red-dark:     #a21215;
       --font-sans:    'DM Sans', -apple-system, sans-serif;
-      --font-jp:      'Noto Serif JP', serif;
+      --font-bristol: 'Bristol', cursive;
       --ease-spring:  cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -42,8 +43,8 @@
     html { height: 100%; }
 
     body {
-      min-height: 100vh;
-      min-height: 100dvh;
+      height: 100vh;
+      height: 100dvh;
       background: var(--bg);
       font-family: var(--font-sans);
       color: var(--text);
@@ -51,7 +52,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     /* ── Page shell ──────────────────────────────────── */
@@ -62,11 +63,34 @@
       height: 100dvh;
       display: flex;
       flex-direction: column;
-      padding-top: max(env(safe-area-inset-top), 0px);
-      padding-bottom: max(env(safe-area-inset-bottom), 28px);
-      overflow: hidden;
       position: relative;
-      justify-content: space-between;
+      /* safe area */
+      padding-top: max(env(safe-area-inset-top), 0px);
+      padding-bottom: max(env(safe-area-inset-bottom), 20px);
+    }
+
+    /* ── Hero image — absolute background layer ──────── */
+    .hero-bg {
+      position: absolute;
+      /* start below the title block — roughly 160px from top */
+      top: max(calc(env(safe-area-inset-top) + 148px), 148px);
+      left: 0;
+      width: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .hero-bg img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ── Everything above image ───────────────────────── */
+    .title-block,
+    .bottom {
+      position: relative;
+      z-index: 1;
     }
 
     /* ── Title block ─────────────────────────────────── */
@@ -76,11 +100,11 @@
       opacity: 0;
       transform: translateY(-12px);
       animation: riseIn 0.7s var(--ease-spring) 0.05s forwards;
-      z-index: 2;
+      flex-shrink: 0;
     }
 
     .wordmark {
-      font-family: 'Bristol', cursive;
+      font-family: var(--font-bristol);
       font-size: clamp(38px, 10vw, 56px);
       font-weight: 400;
       letter-spacing: 0.01em;
@@ -90,13 +114,13 @@
     }
 
     .byline {
-      font-family: 'Bristol', cursive;
+      font-family: var(--font-bristol);
       font-size: clamp(13px, 3.5vw, 17px);
       font-weight: 400;
       color: var(--text-dim);
       letter-spacing: 0.02em;
       display: block;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
 
     .definition-top {
@@ -109,36 +133,8 @@
       line-height: 1.85;
     }
 
-    /* ── Hero ────────────────────────────────────────── */
-    .hero {
-      width: 100%;
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-      opacity: 0;
-      animation: fadeIn 1s ease 0.25s forwards;
-      display: flex;
-      align-items: center;
-      min-height: 0;
-    }
-
-    .hero img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      object-position: center center;
-      display: block;
-    }
-
-    /* soft fade at bottom */
-    .hero::after {
-      content: '';
-      position: absolute;
-      inset: auto 0 0 0;
-      height: 120px;
-      background: linear-gradient(to bottom, transparent, var(--bg));
-      pointer-events: none;
-    }
+    /* ── Spacer pushes bottom to the end ─────────────── */
+    .spacer { flex: 1; }
 
     /* ── Bottom section ──────────────────────────────── */
     .bottom {
@@ -160,7 +156,7 @@
       justify-content: center;
       width: 100%;
       max-width: 360px;
-      margin-bottom: clamp(20px, 4vw, 28px);
+      margin-bottom: clamp(14px, 3vw, 20px);
       padding-top: 8px;
     }
 
@@ -210,7 +206,7 @@
       width: 100%;
       max-width: 380px;
       padding: 0 4px;
-      margin-bottom: clamp(14px, 3vw, 20px);
+      margin-bottom: clamp(10px, 2vw, 16px);
     }
 
     .btn {
@@ -237,20 +233,8 @@
       box-shadow: 0 6px 24px rgba(200, 24, 26, 0.32);
     }
 
-    .btn:hover {
-      background: var(--red-dark);
-      box-shadow: 0 8px 28px rgba(200, 24, 26, 0.40);
-    }
-
-    .btn:active {
-      transform: scale(0.978);
-      box-shadow: 0 2px 10px rgba(200, 24, 26, 0.22);
-    }
-
-    .btn-label {
-      font-size: 15px;
-      letter-spacing: 0.02em;
-    }
+    .btn:hover  { background: var(--red-dark); }
+    .btn:active { transform: scale(0.978); }
 
     .btn-arrow {
       width: 42px;
@@ -261,13 +245,10 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: transform 0.26s var(--ease-spring), background 0.2s ease;
+      transition: transform 0.26s var(--ease-spring);
     }
 
-    .btn:hover .btn-arrow {
-      transform: translateX(3px);
-      background: rgba(255,255,255,0.24);
-    }
+    .btn:hover .btn-arrow { transform: translateX(3px); }
 
     /* ── Footer ──────────────────────────────────────── */
     .footer {
@@ -303,10 +284,7 @@
       -webkit-user-select: none;
     }
 
-    .quote-slide svg {
-      flex-shrink: 0;
-      opacity: 0.5;
-    }
+    .quote-slide svg { flex-shrink: 0; opacity: 0.5; }
 
     .dots {
       display: flex;
@@ -329,17 +307,6 @@
       border-radius: 4px;
     }
 
-    /* ── iOS home bar ─────────────────────────────────── */
-    .home-bar {
-      width: 34%;
-      height: 5px;
-      background: var(--text);
-      border-radius: 3px;
-      opacity: 0.12;
-      margin: 14px auto 0;
-      flex-shrink: 0;
-    }
-
     /* ── Keyframes ───────────────────────────────────── */
     @keyframes riseIn {
       to { opacity: 1; transform: translateY(0); }
@@ -348,9 +315,8 @@
       to { opacity: 1; }
     }
 
-    /* ── Reduced motion ──────────────────────────────── */
     @media (prefers-reduced-motion: reduce) {
-      .title-block, .hero, .bottom {
+      .title-block, .hero-bg, .bottom {
         animation: none;
         opacity: 1;
         transform: none;
@@ -362,7 +328,16 @@
 
 <main class="page">
 
-  <!-- ① Title -->
+  <!-- Hero image sits behind everything -->
+  <div class="hero-bg" aria-hidden="true">
+    <img
+      src="hero_welcome.png"
+      alt=""
+      decoding="async"
+    >
+  </div>
+
+  <!-- ① Title — z-index:1, above image -->
   <div class="title-block">
     <span class="wordmark">Tsundoku</span>
     <span class="byline">by aniket</span>
@@ -373,24 +348,13 @@
     </p>
   </div>
 
-  <!-- ② Hero — swap src once you push the image to repo -->
-  <div class="hero">
-    <img
-      id="heroImg"
-      src="hero_welcome.png"
-      alt="Books floating around Japanese kanji with a sleeping cat, ink illustration"
-      width="800"
-      height="900"
-      decoding="async"
-    >
-  </div>
+  <!-- Spacer pushes bottom UI to the screen floor -->
+  <div class="spacer"></div>
 
-  <!-- ③ Bottom -->
+  <!-- ② Bottom — z-index:1, above image -->
   <div class="bottom">
 
-    <!-- Features -->
     <div class="features">
-
       <div class="feature">
         <div class="feat-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -427,10 +391,8 @@
         <span class="feat-label">read</span>
         <span class="feat-sub">at your own pace</span>
       </div>
-
     </div>
 
-    <!-- CTA -->
     <div class="cta-wrap">
       <button class="btn" id="ctaBtn" aria-label="Get started with Tsundoku">
         <span class="btn-label">get started</span>
@@ -442,7 +404,6 @@
       </button>
     </div>
 
-    <!-- Footer quotes -->
     <div class="footer">
       <div class="quote-carousel" id="quoteCarousel" aria-live="polite">
         <div class="quote-track" id="quoteTrack">
@@ -472,17 +433,13 @@
 
 </main>
 
-<div class="home-bar" aria-hidden="true"></div>
-
 <script>
-  /* ── CTA → app ──────────────────────────────────── */
   document.getElementById('ctaBtn').addEventListener('click', () => {
     document.body.style.transition = 'opacity 0.32s ease';
     document.body.style.opacity = '0';
     setTimeout(() => { window.location.href = 'app.html'; }, 320);
   });
 
-  /* ── Quote carousel ──────────────────────────────── */
   (() => {
     const track = document.getElementById('quoteTrack');
     const dots  = document.querySelectorAll('.dot');
@@ -514,7 +471,6 @@
     });
     c.addEventListener('mouseleave', () => { dragging = false; });
 
-    /* auto-advance every 4s */
     setInterval(() => goTo(current + 1), 4000);
   })();
 </script>
