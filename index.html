@@ -97,6 +97,9 @@
     .title-block {
       padding: clamp(10px, 2.5vw, 16px) 22px 0;
       text-align: left;
+      position: relative;
+      display: inline-block;
+      width: 100%;
       opacity: 0;
       transform: translateY(-12px);
       animation: riseIn 0.7s var(--ease-spring) 0.05s forwards;
@@ -109,21 +112,22 @@
       font-weight: 400;
       letter-spacing: 0.01em;
       color: var(--text);
-      display: inline-block;
-      position: relative;
+      display: block;
       margin-bottom: 0;
+      line-height: 1;
     }
 
     .byline {
       font-family: var(--font-bristol);
-      font-size: clamp(11px, 2.8vw, 14px);
+      font-size: clamp(11px, 2.8vw, 13px);
       font-weight: 400;
       color: var(--text-dim);
       letter-spacing: 0.02em;
       position: absolute;
-      top: 2px;
-      right: -8px;
+      top: clamp(6px, 1.5vw, 10px);
+      right: 22px;
       white-space: nowrap;
+      line-height: 1;
     }
 
     .definition-bottom {
@@ -347,8 +351,10 @@
 
   <!-- ① Title — z-index:1, above image -->
   <div class="title-block">
-    <span class="wordmark">Tsundoku<span class="byline">by aniket</span></span>
+    <span class="wordmark">Tsundoku</span>
+    <span class="byline">by aniket</span>
   </div>
+
 
   <!-- Spacer pushes bottom UI to the screen floor -->
   <div class="spacer"></div>
