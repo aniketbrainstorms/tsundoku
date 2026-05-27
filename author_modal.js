@@ -367,6 +367,10 @@ function openAuthorPhotoModal() {
   // Reset status
   _apSetStatus('');
 
+  // Sync small preview card
+  const previewCard = document.getElementById('apPreviewCard');
+  if (previewCard) previewCard.innerHTML = preview.innerHTML;
+
   modal.classList.add('visible');
 }
 
@@ -430,10 +434,13 @@ async function apSaveUrl() {
     try { await sb.from('authors').upsert({ name_key: cacheKey, name: currentProfile.name, image: url, user_id: currentUser.id }, { onConflict: 'name_key' }); } catch {}
   }
 
-  // Refresh preview inside modal
+  // Refresh both previews inside modal
   const preview = document.getElementById('apModalPreview');
+  const previewCard = document.getElementById('apPreviewCard');
   const initials = authorInitials(currentProfile.name);
-  if (preview) preview.innerHTML = `<img src="${escapeAttr(url)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='<span style=font-size:28px;font-weight:700;color:var(--accent)>${escapeAttr(initials)}</span>'">`;
+  const imgHtml = `<img src="${escapeAttr(url)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='<span style=font-size:28px;font-weight:700;color:var(--accent)>${escapeAttr(initials)}</span>'">`;
+  if (preview) preview.innerHTML = imgHtml;
+  if (previewCard) previewCard.innerHTML = imgHtml;
 
   _apSetStatus('Photo ready — image will update when you save');
   btn.disabled = false; btn.textContent = 'Set URL';
@@ -509,8 +516,11 @@ async function apRefetch() {
   btn.disabled = false; btn.textContent = 'Search Again';
   if (newProfile.image) {
     const preview = document.getElementById('apModalPreview');
+    const previewCard = document.getElementById('apPreviewCard');
     const initials = authorInitials(newProfile.name);
-    if (preview) preview.innerHTML = `<img src="${escapeAttr(newProfile.image)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='<span style=font-size:28px;font-weight:700;color:var(--accent)>${escapeAttr(initials)}</span>'">`;
+    const imgHtml = `<img src="${escapeAttr(newProfile.image)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='<span style=font-size:28px;font-weight:700;color:var(--accent)>${escapeAttr(initials)}</span>'">`;
+    if (preview) preview.innerHTML = imgHtml;
+    if (previewCard) previewCard.innerHTML = imgHtml;
     const urlInput = document.getElementById('apUrlInput');
     if (urlInput) urlInput.value = newProfile.image;
     _apSetStatus('Photo ready — image will update when you save');
