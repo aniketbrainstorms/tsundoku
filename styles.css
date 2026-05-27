@@ -2326,6 +2326,12 @@ html.standalone-webapp .add-popup {
   padding: 0 1px;
 }
 
+/* ── AUTHOR PHOTO MODAL — preview sync ── */
+#authorPhotoModal #apModalPreview img,
+#authorPhotoModal #apPreviewCard img {
+  width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+}
+
 /* Hide floating bar when add-book screens are active */
 .book-search-overlay.open ~ .floating-bar,
 .modal-overlay.visible ~ .floating-bar {
