@@ -72,12 +72,14 @@
     /* ── Hero image — absolute background layer ──────── */
     .hero-bg {
       position: absolute;
-      /* start below the title block — roughly 160px from top */
-      top: max(calc(env(safe-area-inset-top) + 148px), 148px);
+      top: 0;
       left: 0;
       width: 100%;
+      height: 100%;
       z-index: 0;
       pointer-events: none;
+      display: flex;
+      align-items: center;
     }
 
     .hero-bg img {
@@ -95,12 +97,15 @@
 
     /* ── Title block ─────────────────────────────────── */
     .title-block {
-      padding: clamp(20px, 5vw, 36px) 24px 0;
+      padding: clamp(20px, 5vw, 36px) 24px clamp(14px, 3vw, 20px);
       text-align: center;
       opacity: 0;
       transform: translateY(-12px);
       animation: riseIn 0.7s var(--ease-spring) 0.05s forwards;
       flex-shrink: 0;
+      background: var(--bg);
+      position: relative;
+      z-index: 2;
     }
 
     .wordmark {
@@ -138,7 +143,7 @@
 
     /* ── Bottom section ──────────────────────────────── */
     .bottom {
-      padding: 0 24px;
+      padding: clamp(12px, 2.5vw, 18px) 24px 0;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -147,6 +152,9 @@
       opacity: 0;
       transform: translateY(18px);
       animation: riseIn 0.8s var(--ease-spring) 0.4s forwards;
+      background: var(--bg);
+      position: relative;
+      z-index: 2;
     }
 
     /* ── Features ────────────────────────────────────── */
