@@ -72,7 +72,7 @@
     /* ── Hero image — absolute background layer ──────── */
     .hero-bg {
       position: absolute;
-      top: max(calc(env(safe-area-inset-top) + 104px), 104px);
+      top: max(calc(env(safe-area-inset-top) + 88px), 88px);
       left: 0;
       width: 100%;
       z-index: 0;
@@ -83,6 +83,7 @@
       width: 100%;
       height: auto;
       display: block;
+      margin-left: -0px;
     }
 
     /* ── Everything above image ───────────────────────── */
@@ -94,7 +95,7 @@
 
     /* ── Title block ─────────────────────────────────── */
     .title-block {
-      padding: clamp(20px, 5vw, 32px) 24px 0;
+      padding: clamp(12px, 3vw, 20px) 20px 0;
       text-align: center;
       opacity: 0;
       transform: translateY(-12px);
@@ -104,35 +105,37 @@
 
     .wordmark {
       font-family: var(--font-bristol);
-      font-size: clamp(38px, 10vw, 56px);
+      font-size: clamp(32px, 8.5vw, 48px);
       font-weight: 400;
       letter-spacing: 0.01em;
       color: var(--text);
       display: block;
-      margin-bottom: 2px;
+      margin-bottom: 0;
     }
 
     .byline {
       font-family: var(--font-bristol);
-      font-size: clamp(13px, 3.5vw, 17px);
+      font-size: clamp(12px, 3vw, 15px);
       font-weight: 400;
       color: var(--text-dim);
       letter-spacing: 0.02em;
       display: block;
-      margin-bottom: 10px;
+      margin-bottom: 0;
+      text-align: right;
+      padding-right: 4px;
     }
 
     .definition-bottom {
-      font-family: var(--font-sans);
-      font-size: clamp(9px, 2.5vw, 11px);
+      font-family: var(--font-bristol);
+      font-size: clamp(18px, 5vw, 24px);
       font-weight: 400;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
+      letter-spacing: 0.01em;
+      text-transform: none;
       color: var(--red);
-      line-height: 1.85;
+      line-height: 1.5;
       text-align: center;
-      max-width: 300px;
-      margin-bottom: clamp(10px, 2vw, 14px);
+      max-width: 320px;
+      margin-bottom: clamp(8px, 2vw, 12px);
     }
 
     /* ── Spacer pushes bottom to the end ─────────────── */
@@ -353,7 +356,7 @@
   <div class="bottom">
 
     <p class="definition-bottom">
-      the act of buying books and letting them pile up, unread.<br>not a bad habit. a lifestyle.
+      the act of buying books<br>and letting them pile up,<br>unread. not a bad habit. a lifestyle.
     </p>
 
     <div class="features">
