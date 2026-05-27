@@ -58,7 +58,7 @@
     /* ── Page shell ──────────────────────────────────── */
     .page {
       width: 100%;
-      max-width: 480px;
+      max-width: 430px;
       height: 100vh;
       height: 100dvh;
       display: flex;
@@ -66,7 +66,7 @@
       position: relative;
       /* safe area */
       padding-top: max(env(safe-area-inset-top), 0px);
-      padding-bottom: max(env(safe-area-inset-bottom), 20px);
+      padding-bottom: max(env(safe-area-inset-bottom), 24px);
     }
 
     /* ── Hero image — absolute background layer ──────── */
@@ -143,7 +143,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0;
+      gap: 4;
       opacity: 0;
       transform: translateY(18px);
       animation: riseIn 0.8s var(--ease-spring) 0.4s forwards;
@@ -156,8 +156,8 @@
       justify-content: center;
       width: 100%;
       max-width: 360px;
-      margin-bottom: clamp(14px, 3vw, 20px);
-      padding-top: 8px;
+      margin-bottom: clamp(16px, 3.5vw, 24px);
+      padding-top: 10px;
     }
 
     .feature {
@@ -165,7 +165,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .feature-sep {
@@ -183,6 +183,7 @@
       align-items: center;
       justify-content: center;
       height: 30px;
+      margin-bottom: 3px;
     }
 
     .feat-label {
@@ -204,9 +205,9 @@
     /* ── CTA ─────────────────────────────────────────── */
     .cta-wrap {
       width: 100%;
-      max-width: 380px;
-      padding: 0 4px;
-      margin-bottom: clamp(10px, 2vw, 16px);
+      max-width: 360px;
+      padding: 0;
+      margin-bottom: clamp(12px, 2.5vw, 18px);
     }
 
     .btn {
@@ -255,7 +256,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .quote-carousel {
