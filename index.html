@@ -72,7 +72,7 @@
     /* ── Hero image — absolute background layer ──────── */
     .hero-bg {
       position: absolute;
-      top: max(calc(env(safe-area-inset-top) + 88px), 88px);
+      top: max(calc(env(safe-area-inset-top) + 72px), 72px);
       left: 0;
       width: 100%;
       z-index: 0;
@@ -95,8 +95,8 @@
 
     /* ── Title block ─────────────────────────────────── */
     .title-block {
-      padding: clamp(12px, 3vw, 20px) 20px 0;
-      text-align: center;
+      padding: clamp(10px, 2.5vw, 16px) 22px 0;
+      text-align: left;
       opacity: 0;
       transform: translateY(-12px);
       animation: riseIn 0.7s var(--ease-spring) 0.05s forwards;
@@ -109,33 +109,35 @@
       font-weight: 400;
       letter-spacing: 0.01em;
       color: var(--text);
-      display: block;
+      display: inline-block;
+      position: relative;
       margin-bottom: 0;
     }
 
     .byline {
       font-family: var(--font-bristol);
-      font-size: clamp(12px, 3vw, 15px);
+      font-size: clamp(11px, 2.8vw, 14px);
       font-weight: 400;
       color: var(--text-dim);
       letter-spacing: 0.02em;
-      display: block;
-      margin-bottom: 0;
-      text-align: right;
-      padding-right: 4px;
+      position: absolute;
+      top: 2px;
+      right: -8px;
+      white-space: nowrap;
     }
 
     .definition-bottom {
       font-family: var(--font-bristol);
-      font-size: clamp(18px, 5vw, 24px);
+      font-size: clamp(15px, 4.2vw, 20px);
       font-weight: 400;
       letter-spacing: 0.01em;
       text-transform: none;
       color: var(--red);
-      line-height: 1.5;
+      line-height: 1.45;
       text-align: center;
-      max-width: 320px;
-      margin-bottom: clamp(8px, 2vw, 12px);
+      max-width: 280px;
+      margin-top: -4px;
+      margin-bottom: clamp(6px, 1.5vw, 10px);
     }
 
     /* ── Spacer pushes bottom to the end ─────────────── */
@@ -345,8 +347,7 @@
 
   <!-- ① Title — z-index:1, above image -->
   <div class="title-block">
-    <span class="wordmark">Tsundoku</span>
-    <span class="byline">by aniket</span>
+    <span class="wordmark">Tsundoku<span class="byline">by aniket</span></span>
   </div>
 
   <!-- Spacer pushes bottom UI to the screen floor -->
@@ -356,7 +357,7 @@
   <div class="bottom">
 
     <p class="definition-bottom">
-      the act of buying books<br>and letting them pile up,<br>unread. not a bad habit. a lifestyle.
+      the act of buying books<br>and letting them pile up,<br><span style="font-size:0.82em">unread. not a bad habit. a lifestyle.</span>
     </p>
 
     <div class="features">
