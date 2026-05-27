@@ -72,7 +72,7 @@
     /* ── Hero image — absolute background layer ──────── */
     .hero-bg {
       position: absolute;
-      top: max(calc(env(safe-area-inset-top) + 136px), 136px);
+      top: max(calc(env(safe-area-inset-top) + 104px), 104px);
       left: 0;
       width: 100%;
       z-index: 0;
@@ -94,7 +94,7 @@
 
     /* ── Title block ─────────────────────────────────── */
     .title-block {
-      padding: clamp(16px, 4vw, 28px) 24px 0;
+      padding: clamp(20px, 5vw, 32px) 24px 0;
       text-align: center;
       opacity: 0;
       transform: translateY(-12px);
@@ -122,14 +122,17 @@
       margin-bottom: 10px;
     }
 
-    .definition-top {
+    .definition-bottom {
       font-family: var(--font-sans);
       font-size: clamp(9px, 2.5vw, 11px);
       font-weight: 400;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--red);
       line-height: 1.85;
+      text-align: center;
+      max-width: 300px;
+      margin-bottom: clamp(10px, 2vw, 14px);
     }
 
     /* ── Spacer pushes bottom to the end ─────────────── */
@@ -341,11 +344,6 @@
   <div class="title-block">
     <span class="wordmark">Tsundoku</span>
     <span class="byline">by aniket</span>
-    <p class="definition-top">
-      the act of buying books<br>
-      and letting them pile up, unread.<br>
-      not a bad habit. a lifestyle.
-    </p>
   </div>
 
   <!-- Spacer pushes bottom UI to the screen floor -->
@@ -353,6 +351,10 @@
 
   <!-- ② Bottom — z-index:1, above image -->
   <div class="bottom">
+
+    <p class="definition-bottom">
+      the act of buying books and letting them pile up, unread.<br>not a bad habit. a lifestyle.
+    </p>
 
     <div class="features">
       <div class="feature">
