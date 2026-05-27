@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#f2ede6">
+  <meta name="theme-color" content="#f0ebe3">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="icon" type="image/png" href="fav_icon_640.png">
@@ -15,61 +15,22 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=Noto+Serif+JP:wght@400;500&display=swap" rel="stylesheet">
 
   <style>
-    @font-face {
-      font-family: 'Bristol';
-      src: url('Bristol.woff') format('woff'),
-           url('Bristol.otf') format('opentype');
-      font-weight: 400;
-      font-style: normal;
-      font-display: swap;
-    }
-
-/* ── Tokens ──────────────────────────────────────── */
+    /* ── Tokens ──────────────────────────────────────── */
     :root {
-      --bg:           #f2ede6;
-      --text:         #1e1b18;
+      --bg:           #f0ebe3;
+      --text:         #1a1714;
       --text-dim:     #5c5750;
       --text-muted:   #9a9189;
       --border:       #ddd8cf;
-      --cta-bg:       #2e2b27;
-      --cta-text:     #f2ede6;
-      --font-jp:      'Noto Serif JP', 'YuMincho', 'Hiragino Mincho ProN', serif;
+      --red:          #c8181a;
+      --red-dark:     #a21215;
       --font-sans:    'DM Sans', -apple-system, sans-serif;
-      --font-bristol: 'Bristol', cursive;
-      --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+      --font-jp:      'Noto Serif JP', serif;
+      --ease-spring:  cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    :root[data-theme="dark"] {
-      --bg:           #0f0d0b;
-      --text:         #f2ede6;
-      --text-dim:     #b0a89e;
-      --text-muted:   #6e6760;
-      --border:       #2a2520;
-      --cta-bg:       #c9714a;
-      --cta-text:     #0f0d0b;
-    }
-
-    body,
-    .hero::before,
-    .hero::after,
-    .theme-toggle,
-    .btn,
-    .dot,
-    .dot.active,
-    .feat-icon,
-    .feat-label,
-    .feat-sub,
-    .definition p,
-    .tagline,
-    .divider,
-    .feature-sep,
-    .kanji,
-    .romaji {
-      transition: background-color 0.36s ease, color 0.36s ease, border-color 0.36s ease, box-shadow 0.36s ease;
-    }
     /* ── Reset ───────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     html { height: 100%; }
 
     body {
@@ -79,7 +40,6 @@
       font-family: var(--font-sans);
       color: var(--text);
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -94,131 +54,94 @@
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      padding-bottom: max(env(safe-area-inset-bottom), 20px);
+      padding-bottom: max(env(safe-area-inset-bottom), 28px);
+      position: relative;
     }
 
     /* ── Title block ─────────────────────────────────── */
     .title-block {
-      padding: clamp(28px, 6vw, 44px) 24px clamp(12px, 2vw, 18px);
+      padding: clamp(32px, 7vw, 52px) 24px 0;
       text-align: center;
       opacity: 0;
-      transform: translateY(-14px);
-      animation: riseIn 0.75s var(--ease-out) 0.1s forwards;
+      transform: translateY(-12px);
+      animation: riseIn 0.7s var(--ease-spring) 0.05s forwards;
+      z-index: 2;
     }
 
-    .kanji {
-      font-family: var(--font-jp);
-      font-size: clamp(40px, 10vw, 58px);
+    .wordmark {
+      font-family: var(--font-sans);
+      font-size: clamp(26px, 7vw, 36px);
       font-weight: 500;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
       color: var(--text);
-      letter-spacing: 0.08em;
-      line-height: 1.1;
       display: block;
-      margin-bottom: 6px;
+      margin-bottom: 10px;
+      /* nudge left to optically center due to tracking */
+      margin-right: -0.45em;
     }
 
-    .romaji {
-      font-family: var(--font-bristol);
-      font-size: clamp(16px, 4vw, 20px);
+    .definition-top {
+      font-family: var(--font-sans);
+      font-size: clamp(9px, 2.5vw, 11px);
       font-weight: 400;
-      color: var(--text);
-      letter-spacing: 0.05em;
-      text-indent: 0;
-      display: block;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--red);
+      line-height: 1.85;
     }
 
     /* ── Hero ────────────────────────────────────────── */
     .hero {
       width: 100%;
+      flex: 1;
       position: relative;
-      aspect-ratio: 3 / 2;
       overflow: hidden;
       opacity: 0;
-      animation: fadeIn 0.9s ease 0.28s forwards;
-      background: #f0ebe3;
+      animation: fadeIn 1s ease 0.25s forwards;
+      /* let it grow to fill available space */
+      min-height: 300px;
     }
 
     .hero img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 40%;
-      filter: saturate(0.88) brightness(1.02) sepia(0.04);
+      object-position: center center;
       display: block;
-      transition: opacity 0.38s ease;
     }
 
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0 0 auto 0;
-      height: 72px;
-      background: linear-gradient(to top, transparent, var(--bg));
-      pointer-events: none;
-      z-index: 1;
-      transition: background 0.32s ease;
-    }
-
+    /* soft fade at bottom */
     .hero::after {
       content: '';
       position: absolute;
       inset: auto 0 0 0;
-      height: 72px;
+      height: 120px;
       background: linear-gradient(to bottom, transparent, var(--bg));
       pointer-events: none;
-      transition: background 0.32s ease;
     }
 
-    /* ── Body ────────────────────────────────────────── */
-    .body {
-      flex: 1;
+    /* ── Bottom section ──────────────────────────────── */
+    .bottom {
+      padding: 0 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0 28px;
       gap: 0;
       opacity: 0;
-      transform: translateY(20px);
-      animation: riseIn 0.85s var(--ease-out) 0.48s forwards;
-    }
-
-    /* ── Definition ──────────────────────────────────── */
-    .definition {
-      text-align: center;
-      padding: clamp(12px, 3vw, 20px) 0 clamp(10px, 2vw, 16px);
-    }
-
-    .definition p {
-      font-size: clamp(12.5px, 3.2vw, 14.5px);
-      font-weight: 300;
-      line-height: 1.95;
-      color: var(--text-dim);
-      /*
-        The mockup uses a fixed-width monospace-ish feel for
-        this text. We replicate with letter-spacing + tabular
-        numerals — no actual monospace font needed.
-      */
-      letter-spacing: 0.025em;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* ── Divider ──────────────────────────────────────── */
-    .divider {
-      width: 44px;
-      height: 1px;
-      background: var(--border);
-      margin: 0 auto clamp(12px, 2.5vw, 18px);
-      flex-shrink: 0;
+      transform: translateY(18px);
+      animation: riseIn 0.8s var(--ease-spring) 0.4s forwards;
     }
 
     /* ── Features ────────────────────────────────────── */
     .features {
       display: flex;
-      align-items: stretch;
+      align-items: flex-start;
       justify-content: center;
       width: 100%;
       max-width: 360px;
-      margin-bottom: clamp(14px, 3vw, 22px);
+      margin-bottom: clamp(20px, 4vw, 28px);
+      padding-top: clamp(12px, 2vw, 16px);
     }
 
     .feature {
@@ -226,8 +149,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      padding: 0 6px;
+      gap: 6px;
     }
 
     .feature-sep {
@@ -235,22 +157,22 @@
       background: var(--border);
       align-self: stretch;
       flex-shrink: 0;
-      margin: 4px 0;
+      margin: 6px 0;
     }
 
     .feat-icon {
       color: var(--text);
-      opacity: 0.8;
+      opacity: 0.75;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 34px;
+      height: 30px;
     }
 
     .feat-label {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
-      color: var(--text);
+      color: var(--red);
       letter-spacing: 0.01em;
       line-height: 1;
     }
@@ -258,7 +180,7 @@
     .feat-sub {
       font-size: 11px;
       font-weight: 300;
-      color: var(--text-muted);
+      color: var(--text-dim);
       text-align: center;
       line-height: 1.45;
     }
@@ -268,7 +190,7 @@
       width: 100%;
       max-width: 380px;
       padding: 0 4px;
-      margin-bottom: clamp(16px, 3.5vw, 24px);
+      margin-bottom: clamp(14px, 3vw, 20px);
     }
 
     .btn {
@@ -276,62 +198,55 @@
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      height: 56px;
-      padding: 0 8px 0 26px;
+      height: 58px;
+      padding: 0 8px 0 28px;
       border-radius: 999px;
-      background: var(--cta-bg);
-      color: var(--cta-text);
+      background: var(--red);
+      color: #fff;
       border: none;
       font-family: var(--font-sans);
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 400;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.025em;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       transition:
-        background 0.22s ease,
-        transform  0.2s var(--ease-out),
-        box-shadow 0.22s ease;
-      /* Subtle inner highlight — makes it feel physical */
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.06),
-        0 4px 18px rgba(30,27,24,0.14);
+        background 0.2s ease,
+        transform  0.18s var(--ease-spring),
+        box-shadow 0.2s ease;
+      box-shadow: 0 6px 24px rgba(200, 24, 26, 0.32);
     }
 
     .btn:hover {
-      background: #3d3935;
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.07),
-        0 6px 24px rgba(30,27,24,0.20);
+      background: var(--red-dark);
+      box-shadow: 0 8px 28px rgba(200, 24, 26, 0.40);
     }
 
     .btn:active {
-      transform: scale(0.982);
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.04),
-        0 2px 8px rgba(30,27,24,0.10);
+      transform: scale(0.978);
+      box-shadow: 0 2px 10px rgba(200, 24, 26, 0.22);
     }
 
     .btn-label {
-      position: relative;
-      top: 0;
+      font-size: 15px;
+      letter-spacing: 0.02em;
     }
 
     .btn-arrow {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.18);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: transform 0.28s var(--ease-out), background 0.22s ease;
+      transition: transform 0.26s var(--ease-spring), background 0.2s ease;
     }
 
     .btn:hover .btn-arrow {
       transform: translateX(3px);
-      background: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.24);
     }
 
     /* ── Footer ──────────────────────────────────────── */
@@ -340,8 +255,6 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
-      margin-top: auto;
-      padding-bottom: 4px;
     }
 
     .quote-carousel {
@@ -352,7 +265,7 @@
 
     .quote-track {
       display: flex;
-      transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.38s var(--ease-spring);
       will-change: transform;
     }
 
@@ -362,7 +275,7 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 300;
       color: var(--text-muted);
       letter-spacing: 0.03em;
@@ -372,7 +285,7 @@
 
     .quote-slide svg {
       flex-shrink: 0;
-      opacity: 0.55;
+      opacity: 0.5;
     }
 
     .dots {
@@ -386,97 +299,38 @@
       height: 7px;
       border-radius: 50%;
       background: var(--border);
-      transition: background 0.3s ease, width 0.35s var(--ease-out), border-radius 0.35s var(--ease-out);
+      transition: background 0.3s ease, width 0.35s var(--ease-spring), border-radius 0.35s var(--ease-spring);
       cursor: pointer;
     }
 
     .dot.active {
-      background: var(--text);
+      background: var(--red);
       width: 22px;
       border-radius: 4px;
     }
 
-/* iOS home bar */
+    /* ── iOS home bar ─────────────────────────────────── */
     .home-bar {
       width: 34%;
       height: 5px;
       background: var(--text);
       border-radius: 3px;
-      opacity: 0.15;
+      opacity: 0.12;
       margin: 14px auto 0;
       flex-shrink: 0;
     }
-
-    /* ── Theme toggle ────────────────────────────────── */
-    .theme-toggle {
-      position: fixed;
-      top: max(env(safe-area-inset-top), 16px);
-      right: 20px;
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 100;
-      -webkit-tap-highlight-color: transparent;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-      transition: transform 0.22s var(--ease-out), box-shadow 0.22s ease;
-    }
-
-    .theme-toggle:active {
-      transform: scale(0.9);
-    }
-
-    .theme-toggle .icon-moon,
-    .theme-toggle .icon-sun {
-      position: absolute;
-      transition: opacity 0.22s ease, transform 0.28s var(--ease-out);
-    }
-
-    .theme-toggle {
-      position: fixed;
-      top: max(env(safe-area-inset-top), 16px);
-      right: 20px;
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 100;
-      -webkit-tap-highlight-color: transparent;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    }
-
-    .theme-toggle .icon-moon { opacity: 1; transform: rotate(0deg) scale(1); }
-    .theme-toggle .icon-sun  { opacity: 0; transform: rotate(45deg) scale(0.7); }
-
-    :root[data-theme="dark"] .theme-toggle .icon-moon { opacity: 0; transform: rotate(-45deg) scale(0.7); }
-    :root[data-theme="dark"] .theme-toggle .icon-sun  { opacity: 1; transform: rotate(0deg) scale(1); }
-
-    .theme-toggle:active { transform: scale(0.88); }
 
     /* ── Keyframes ───────────────────────────────────── */
     @keyframes riseIn {
       to { opacity: 1; transform: translateY(0); }
     }
-
     @keyframes fadeIn {
       to { opacity: 1; }
     }
 
     /* ── Reduced motion ──────────────────────────────── */
     @media (prefers-reduced-motion: reduce) {
-      .title-block, .hero, .body {
+      .title-block, .hero, .bottom {
         animation: none;
         opacity: 1;
         transform: none;
@@ -486,60 +340,39 @@
 </head>
 <body>
 
-<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-  <svg class="icon-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-  </svg>
-  <svg class="icon-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="5"/>
-    <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-  </svg>
-</button>
-
 <main class="page">
 
   <!-- ① Title -->
   <div class="title-block">
-    <span class="kanji">積ん読</span>
-    <span class="romaji">tsundoku</span>
+    <span class="wordmark">tsundoku</span>
+    <p class="definition-top">
+      the act of buying books<br>
+      and letting them pile up, unread.<br>
+      not a bad habit. a lifestyle.
+    </p>
   </div>
 
-  <!-- ② Hero photo -->
+  <!-- ② Hero — swap src once you push the image to repo -->
   <div class="hero">
     <img
       id="heroImg"
-      src=""
-      alt="Stacks of old books with a cat sleeping on top, warm afternoon light"
-      width="960"
-      height="640"
+      src="hero_welcome.png"
+      alt="Books floating around Japanese kanji with a sleeping cat, ink illustration"
+      width="800"
+      height="900"
       decoding="async"
-      style="opacity:0"
     >
   </div>
 
-  <!-- ③ Body -->
-  <div class="body">
-
-    <div class="definition">
-      <p>
-        the act of buying books<br>
-        and letting them pile up, unread.<br>
-        not a bad habit. a lifestyle.
-      </p>
-    </div>
-
-    <div class="divider"></div>
+  <!-- ③ Bottom -->
+  <div class="bottom">
 
     <!-- Features -->
     <div class="features">
 
       <div class="feature">
         <div class="feat-icon">
-          <!-- Three books / collect -->
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="3"  y="5"  width="4" height="14" rx="0.75"/>
             <rect x="9"  y="3"  width="4" height="16" rx="0.75"/>
             <rect x="15" y="7"  width="4" height="12" rx="0.75"/>
@@ -553,8 +386,7 @@
 
       <div class="feature">
         <div class="feat-icon">
-          <!-- Bookmark / organize -->
-          <svg width="26" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg width="24" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
           </svg>
         </div>
@@ -566,8 +398,7 @@
 
       <div class="feature">
         <div class="feat-icon">
-          <!-- Open book / read -->
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
           </svg>
@@ -583,28 +414,28 @@
       <button class="btn" id="ctaBtn" aria-label="Get started with Tsundoku">
         <span class="btn-label">get started</span>
         <span class="btn-arrow" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
         </span>
       </button>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer quotes -->
     <div class="footer">
       <div class="quote-carousel" id="quoteCarousel" aria-live="polite">
         <div class="quote-track" id="quoteTrack">
           <div class="quote-slide">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/></svg>
-            <span>Curiosity looks good in stacks.</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/></svg>
+            <span>curiosity looks good in stacks.</span>
           </div>
           <div class="quote-slide">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/></svg>
-            <span>Not yet is not never.</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/></svg>
+            <span>not yet is not never.</span>
           </div>
           <div class="quote-slide">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/></svg>
-            <span>Bought by impulse, read by destiny.</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M5 12C5 7 8.5 4 12 4c3.5 0 7 3 7 8-2 0-4.5-.5-7-3C9.5 11.5 7 12 5 12z"/></svg>
+            <span>bought by impulse, read by destiny.</span>
           </div>
         </div>
       </div>
@@ -616,31 +447,28 @@
       </div>
     </div>
 
-  </div><!-- /body -->
+  </div><!-- /bottom -->
 
 </main>
 
-<!-- iOS home indicator -->
 <div class="home-bar" aria-hidden="true"></div>
 
 <script>
   /* ── CTA → app ──────────────────────────────────── */
   document.getElementById('ctaBtn').addEventListener('click', () => {
-    document.body.style.transition = 'opacity 0.35s ease';
+    document.body.style.transition = 'opacity 0.32s ease';
     document.body.style.opacity = '0';
-    setTimeout(() => { window.location.href = 'app.html'; }, 350);
+    setTimeout(() => { window.location.href = 'app.html'; }, 320);
   });
 
   /* ── Quote carousel ──────────────────────────────── */
   (() => {
     const track = document.getElementById('quoteTrack');
     const dots  = document.querySelectorAll('.dot');
-    let current = 0;
-    let startX  = 0;
-    let dragging = false;
+    let current = 0, startX = 0, dragging = false;
 
     function goTo(idx) {
-      current = (idx + 3) % 3;
+      current = ((idx % 3) + 3) % 3;
       track.style.transform = `translateX(-${current * 100}%)`;
       dots.forEach((d, i) => {
         d.classList.toggle('active', i === current);
@@ -648,126 +476,26 @@
       });
     }
 
-    /* dot clicks */
-    dots.forEach(dot => {
-      dot.addEventListener('click', () => goTo(parseInt(dot.dataset.index)));
-    });
+    dots.forEach(d => d.addEventListener('click', () => goTo(+d.dataset.index)));
 
-    /* swipe */
-    const carousel = document.getElementById('quoteCarousel');
-    carousel.addEventListener('touchstart', e => {
-      startX  = e.touches[0].clientX;
-      dragging = true;
-    }, { passive: true });
-
-    carousel.addEventListener('touchend', e => {
-      if (!dragging) return;
-      dragging = false;
+    const c = document.getElementById('quoteCarousel');
+    c.addEventListener('touchstart', e => { startX = e.touches[0].clientX; dragging = true; }, { passive: true });
+    c.addEventListener('touchend',   e => {
+      if (!dragging) return; dragging = false;
       const dx = e.changedTouches[0].clientX - startX;
       if (Math.abs(dx) > 30) goTo(current + (dx < 0 ? 1 : -1));
     });
-
-    /* mouse swipe for desktop */
-    carousel.addEventListener('mousedown',  e => { startX = e.clientX; dragging = true; });
-    carousel.addEventListener('mouseup',    e => {
-      if (!dragging) return;
-      dragging = false;
+    c.addEventListener('mousedown',  e => { startX = e.clientX; dragging = true; });
+    c.addEventListener('mouseup',    e => {
+      if (!dragging) return; dragging = false;
       const dx = e.clientX - startX;
       if (Math.abs(dx) > 30) goTo(current + (dx < 0 ? 1 : -1));
     });
-    carousel.addEventListener('mouseleave', () => { dragging = false; });
+    c.addEventListener('mouseleave', () => { dragging = false; });
+
+    /* auto-advance every 4s */
+    setInterval(() => goTo(current + 1), 4000);
   })();
-
-  /* ── Theme toggle ────────────────────────────────── */
-  const root    = document.documentElement;
-  const heroImg = document.getElementById('heroImg');
-  const stored  = localStorage.getItem('tsundoku-theme');
-  let   rippling = false;
-
-  /* Preload both images so the swap is instant */
-  const imgLight = new Image(); imgLight.src = 'hero_books.png';
-  const imgDark  = new Image(); imgDark.src  = 'heroimagedark.png';
-
-  function applyTheme(dark) {
-    root.setAttribute('data-theme', dark ? 'dark' : 'light');
-    heroImg.src = dark ? 'heroimagedark.png' : 'hero_books.png';
-    localStorage.setItem('tsundoku-theme', dark ? 'dark' : 'light');
-}
-
-/* On load: set theme before first paint, then fade image in */
-const prefersDark = stored
-    ? stored === 'dark'
-    : window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-applyTheme(prefersDark);
-
-heroImg.onload = () => {
-    heroImg.style.transition = 'opacity 0.4s ease';
-    heroImg.style.opacity = '1';
-};
-if (heroImg.complete && heroImg.naturalWidth) {
-    heroImg.style.opacity = '1';
-}
-
-  function rippleToggle(dark) {
-    if (rippling) return;
-    rippling = true;
-
-    const btn    = document.getElementById('themeToggle');
-    const rect   = btn.getBoundingClientRect();
-    const cx     = rect.left + rect.width  / 2;
-    const cy     = rect.top  + rect.height / 2;
-
-    /* Farthest corner from the button — determines final circle radius */
-    const dx = Math.max(cx, window.innerWidth  - cx);
-    const dy = Math.max(cy, window.innerHeight - cy);
-    const maxR = Math.ceil(Math.sqrt(dx * dx + dy * dy)) + 8;
-
-    /* The overlay is the *destination* theme's background color */
-    const overlayColor = dark ? '#0f0d0b' : '#f2ede6';
-
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      inset: 0;
-      background: ${overlayColor};
-      opacity: 0.7;
-      clip-path: circle(0px at ${cx}px ${cy}px);
-      z-index: 9999;
-      pointer-events: none;
-      will-change: clip-path;
-    `;
-    document.body.appendChild(overlay);
-
-    /* Force reflow so the initial clip-path registers */
-    overlay.getBoundingClientRect();
-
-    /* Expand the circle */
-    overlay.style.transition = `clip-path 0.20s cubic-bezier(0.16, 1, 0.3, 1)`;
-    overlay.style.clipPath   = `circle(${maxR}px at ${cx}px ${cy}px)`;
-
-    /* At 70% of the animation, flip the real theme + swap the hero image */
-    setTimeout(() => {
-      applyTheme(dark);
-    }, 80);
-
-    /* After the circle fully covers, fade it out and remove */
-    setTimeout(() => {
-      overlay.style.transition = `opacity 0.22s ease`;
-      overlay.style.opacity    = '0';
-      setTimeout(() => {
-        overlay.remove();
-        rippling = false;
-      }, 240);
-    }, 210);
-  }
-
-  /* (theme already applied above — removed duplicate) */
-
-  document.getElementById('themeToggle').addEventListener('click', () => {
-    const goingDark = root.getAttribute('data-theme') !== 'dark';
-    rippleToggle(goingDark);
-  });
 </script>
 
 </body>
