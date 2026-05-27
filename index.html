@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#FDF2E7">
+  <meta name="theme-color" content="#F7EDE2">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="icon" type="image/png" href="fav_icon_640.png">
@@ -26,7 +26,7 @@
 
     /* ── Tokens ──────────────────────────────────────── */
     :root {
-      --bg:           #FDF2E7;
+      --bg:           #F7EDE2;
       --text:         #1a1714;
       --text-dim:     #5c5750;
       --text-muted:   #9a9189;
@@ -72,8 +72,7 @@
     /* ── Hero image — absolute background layer ──────── */
     .hero-bg {
       position: absolute;
-      /* start below the title block — roughly 160px from top */
-      top: max(calc(env(safe-area-inset-top) + 148px), 148px);
+      top: max(calc(env(safe-area-inset-top) + 136px), 136px);
       left: 0;
       width: 100%;
       z-index: 0;
@@ -95,7 +94,7 @@
 
     /* ── Title block ─────────────────────────────────── */
     .title-block {
-      padding: clamp(20px, 5vw, 36px) 24px 0;
+      padding: clamp(16px, 4vw, 28px) 24px 0;
       text-align: center;
       opacity: 0;
       transform: translateY(-12px);
