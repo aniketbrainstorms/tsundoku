@@ -502,6 +502,80 @@
     </div>
   </div>
 
+  <!-- ── AUTHOR PHOTO EDIT MODAL ── -->
+<div class="modal-overlay" id="authorPhotoModal">
+  <div class="modal-sheet" style="padding-bottom:max(calc(var(--safe-bottom) + 32px),44px)">
+    <div class="modal-handle"></div>
+
+    <!-- Section label -->
+    <p class="field-label" style="font-size:10px;letter-spacing:0.14em;margin-bottom:18px">AUTHOR PHOTO</p>
+
+    <!-- Current photo + change area -->
+    <div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:20px">
+      <!-- Left: preview -->
+      <div style="position:relative;flex-shrink:0">
+        <div id="apModalPreview" style="width:88px;height:88px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.4)"></div>
+        <!-- Camera badge -->
+        <label style="position:absolute;bottom:2px;right:2px;width:26px;height:26px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(201,113,74,0.5)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <input type="file" accept="image/*" style="display:none" onchange="apUploadFile(event)">
+        </label>
+      </div>
+
+      <!-- Right: title + URL input -->
+      <div style="flex:1;min-width:0;padding-top:4px">
+        <p id="apModalAuthorName" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;line-height:1.2">Change author photo</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.4">Choose how you want to update the author photo</p>
+        <input id="apUrlInput" type="url" class="text-input" placeholder="https://example.com/image.jpg" style="margin-bottom:0;font-size:13px;padding:10px 12px" inputmode="url" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+      </div>
+    </div>
+
+    <!-- OR divider -->
+    <div style="display:flex;align-items:center;gap:10px;margin:4px 0 12px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:11px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase">OR</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <!-- Upload image button -->
+    <label style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:13px;border:1.5px solid var(--accent);background:rgba(201,113,74,0.07);cursor:pointer;margin-bottom:14px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--accent);font-family:'DM Sans',sans-serif">Upload image</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:1px;font-family:'DM Sans',sans-serif">JPG, PNG or WebP. Max 5MB</div>
+      </div>
+      <input type="file" accept="image/*" style="display:none" onchange="apUploadFile(event)">
+    </label>
+
+    <!-- Preview card -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:13px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:14px">
+      <div id="apPreviewCard" style="width:48px;height:48px;border-radius:50%;overflow:hidden;background:var(--surface);border:1.5px solid var(--border);flex-shrink:0"></div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);font-family:'DM Sans',sans-serif;margin-bottom:2px">Preview</div>
+        <div style="font-size:12px;color:var(--text-muted);font-family:'DM Sans',sans-serif">This is how the new photo will appear.</div>
+      </div>
+    </div>
+
+    <!-- Status message -->
+    <div id="apStatusMsg" style="display:none;align-items:center;gap:7px;font-size:13px;font-weight:600;margin-bottom:10px;padding:0 2px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      <span></span>
+    </div>
+
+    <!-- Info note -->
+    <p style="font-size:11.5px;color:var(--text-muted);display:flex;align-items:flex-start;gap:6px;margin-bottom:20px;line-height:1.5">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Recommended size: at least 512×512px. Square images work best.
+    </p>
+
+    <!-- Action buttons -->
+    <button id="apSaveUrlBtn" class="modal-btn" onclick="apSaveUrl()" style="margin-bottom:8px">Set URL</button>
+    <button id="apRefetchBtn" class="modal-btn ghost" onclick="apRefetch()" style="margin-bottom:8px">Search Again</button>
+    <button class="modal-btn secondary" onclick="closeAuthorPhotoModal()" style="color:var(--text-muted)">Cancel</button>
+  </div>
+</div>
+
+  
   <!-- SCANNER MODAL -->
   <div class="modal-overlay" id="scannerModal" onclick="handleOverlayClick(event,'scannerModal')">
     <div class="modal-sheet">
