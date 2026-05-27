@@ -339,92 +339,186 @@ document.querySelectorAll('[data-author-filter]').forEach(btn => {
   btn.addEventListener('click', () => setAuthorFilter(btn.dataset.authorFilter));
 });
 
-async function editAuthorPhoto() {
+// ── AUTHOR PHOTO EDIT MODAL ──────────────────────────────────────────────
+function openAuthorPhotoModal() {
   const authorName = _activeAuthorName;
   if (!authorName) return;
   const cacheKey = normalizeAuthorText(authorName);
   const currentProfile = _authorCache[cacheKey] || { name: authorName, image: '' };
-  
-  const choice = prompt(
-    `Change photo for ${currentProfile.name}:\n\n` +
-    `• Type "fetch" to search Wikipedia & Open Library again.\n` +
-    `• Or paste a direct image URL (e.g., https://example.com/photo.jpg):\n` +
-    `• Leave blank to remove the photo.`,
-    currentProfile.image || ''
-  );
-  
-  if (choice === null) return; // User cancelled
-  
-  const trimmed = choice.trim();
-  if (trimmed.toLowerCase() === 'fetch') {
-    showToast('Searching APIs for photo...');
-    
-    // Clear database cache entry if exists so fetchAuthorProfile will query APIs
-    if (currentUser) {
-      try {
-        await sb.from('authors').delete().eq('name_key', cacheKey);
-      } catch {}
-    }
-    delete _authorCache[cacheKey];
-    
-    const newProfile = await fetchAuthorProfile(authorName);
-    if (newProfile.image) {
-      showToast('Photo updated successfully! ✓');
-    } else {
-      showToast('No photo found on Wikipedia or Open Library.');
-    }
-    
-    const rows = buildAuthorRows(authorName);
-    hydrateAuthorHeader(newProfile, rows);
-  } else if (trimmed === '') {
+
+  const modal = document.getElementById('authorPhotoModal');
+  if (!modal) return;
+
+  // Populate preview
+  const preview = document.getElementById('apModalPreview');
+  const initials = authorInitials(currentProfile.name);
+  preview.innerHTML = currentProfile.image
+    ? `<img src="${escapeAttr(currentProfile.image)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='<span style=font-size:28px;font-weight:700;color:var(--accent)>${escapeAttr(initials)}</span>'">`
+    : `<span style="font-size:28px;font-weight:700;color:var(--accent)">${escapeAttr(initials)}</span>`;
+
+  // Set author name label
+  const nameEl = document.getElementById('apModalAuthorName');
+  if (nameEl) nameEl.textContent = `Change photo for ${currentProfile.name}`;
+
+  // Clear URL input
+  const urlInput = document.getElementById('apUrlInput');
+  if (urlInput) urlInput.value = currentProfile.image || '';
+
+  // Reset status
+  _apSetStatus('');
+
+  modal.classList.add('visible');
+}
+
+function closeAuthorPhotoModal() {
+  const modal = document.getElementById('authorPhotoModal');
+  if (modal) modal.classList.remove('visible');
+  document.getElementById('apUrlInput').value = '';
+  _apSetStatus('');
+}
+
+function _apSetStatus(msg, isError) {
+  const el = document.getElementById('apStatusMsg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? '#c06060' : 'var(--green)';
+  el.style.display = msg ? 'flex' : 'none';
+}
+
+async function apSaveUrl() {
+  const authorName = _activeAuthorName;
+  if (!authorName) return;
+  const cacheKey = normalizeAuthorText(authorName);
+  const currentProfile = _authorCache[cacheKey] || { name: authorName, image: '' };
+  const url = (document.getElementById('apUrlInput').value || '').trim();
+
+  const btn = document.getElementById('apSaveUrlBtn');
+  btn.disabled = true; btn.textContent = 'Validating…';
+  _apSetStatus('');
+
+  if (!url) {
     // Clear photo
-    if (currentUser) {
-      try {
-        await sb.from('authors').upsert({
-          name_key: cacheKey,
-          name: currentProfile.name,
-          image: '',
-          user_id: currentUser.id
-        }, { onConflict: 'name_key' });
-      } catch {}
-    }
     currentProfile.image = '';
     _authorCache[cacheKey] = currentProfile;
-    const rows = buildAuthorRows(authorName);
-    hydrateAuthorHeader(currentProfile, rows);
-    showToast('Photo removed');
-  } else {
-    // Validate image URL is somewhat valid and loads
-    showToast('Validating photo URL...');
-    const valid = await new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => resolve(img.naturalWidth > 10);
-      img.onerror = () => resolve(false);
-      img.src = trimmed;
-    });
-    
-    if (!valid) {
-      showToast('Invalid image URL (failed to load)');
-      return;
-    }
-    
     if (currentUser) {
-      try {
-        await sb.from('authors').upsert({
-          name_key: cacheKey,
-          name: currentProfile.name,
-          image: trimmed,
-          user_id: currentUser.id
-        }, { onConflict: 'name_key' });
-      } catch {}
+      try { await sb.from('authors').upsert({ name_key: cacheKey, name: currentProfile.name, image: '', user_id: currentUser.id }, { onConflict: 'name_key' }); } catch {}
     }
-    
-    currentProfile.image = trimmed;
-    _authorCache[cacheKey] = currentProfile;
     const rows = buildAuthorRows(authorName);
     hydrateAuthorHeader(currentProfile, rows);
-    showToast('Photo updated ✓');
+    btn.disabled = false; btn.textContent = 'Set URL';
+    closeAuthorPhotoModal();
+    showToast('Photo removed');
+    return;
+  }
+
+  const valid = await new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(img.naturalWidth > 10);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+
+  if (!valid) {
+    _apSetStatus('Could not load that image URL.', true);
+    btn.disabled = false; btn.textContent = 'Set URL';
+    return;
+  }
+
+  currentProfile.image = url;
+  _authorCache[cacheKey] = currentProfile;
+  if (currentUser) {
+    try { await sb.from('authors').upsert({ name_key: cacheKey, name: currentProfile.name, image: url, user_id: currentUser.id }, { onConflict: 'name_key' }); } catch {}
+  }
+
+  // Refresh preview inside modal
+  const preview = document.getElementById('apModalPreview');
+  const initials = authorInitials(currentProfile.name);
+  if (preview) preview.innerHTML = `<img src="${escapeAttr(url)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='<span style=font-size:28px;font-weight:700;color:var(--accent)>${escapeAttr(initials)}</span>'">`;
+
+  _apSetStatus('Photo ready — image will update when you save');
+  btn.disabled = false; btn.textContent = 'Set URL';
+
+  const rows = buildAuthorRows(authorName);
+  hydrateAuthorHeader(currentProfile, rows);
+}
+
+async function apUploadFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const authorName = _activeAuthorName;
+  if (!authorName) return;
+  const cacheKey = normalizeAuthorText(authorName);
+  const currentProfile = _authorCache[cacheKey] || { name: authorName, image: '' };
+
+  _apSetStatus('');
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const dataUrl = ev.target.result;
+    // Upload to Supabase storage
+    const btn = document.getElementById('apSaveUrlBtn');
+    if (btn) { btn.disabled = true; }
+    showToast('Uploading photo…');
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `authors/${cacheKey}.${ext}`;
+      const { error } = await sb.storage.from('covers').upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      const { data: { publicUrl } } = sb.storage.from('covers').getPublicUrl(path);
+      currentProfile.image = publicUrl;
+      _authorCache[cacheKey] = currentProfile;
+      if (currentUser) {
+        try { await sb.from('authors').upsert({ name_key: cacheKey, name: currentProfile.name, image: publicUrl, user_id: currentUser.id }, { onConflict: 'name_key' }); } catch {}
+      }
+      const preview = document.getElementById('apModalPreview');
+      const initials = authorInitials(currentProfile.name);
+      if (preview) preview.innerHTML = `<img src="${escapeAttr(publicUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='<span style=font-size:28px;font-weight:700;color:var(--accent)>${escapeAttr(initials)}</span>'">`;
+      _apSetStatus('Photo ready — image will update when you save');
+      const rows = buildAuthorRows(authorName);
+      hydrateAuthorHeader(currentProfile, rows);
+      showToast('Photo uploaded ✓');
+    } catch (err) {
+      // Fallback: use data URL locally (won't persist after reload)
+      currentProfile.image = dataUrl;
+      _authorCache[cacheKey] = currentProfile;
+      const preview = document.getElementById('apModalPreview');
+      if (preview) preview.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      _apSetStatus('Photo ready — image will update when you save');
+      const rows = buildAuthorRows(authorName);
+      hydrateAuthorHeader(currentProfile, rows);
+      showToast('Photo set locally ✓');
+    }
+    if (btn) { btn.disabled = false; }
+  };
+  reader.readAsDataURL(file);
+  // Reset file input
+  e.target.value = '';
+}
+
+async function apRefetch() {
+  const authorName = _activeAuthorName;
+  if (!authorName) return;
+  const cacheKey = normalizeAuthorText(authorName);
+  const btn = document.getElementById('apRefetchBtn');
+  btn.disabled = true; btn.textContent = 'Searching…';
+  _apSetStatus('');
+  if (currentUser) {
+    try { await sb.from('authors').delete().eq('name_key', cacheKey); } catch {}
+  }
+  delete _authorCache[cacheKey];
+  const newProfile = await fetchAuthorProfile(authorName);
+  btn.disabled = false; btn.textContent = 'Search Again';
+  if (newProfile.image) {
+    const preview = document.getElementById('apModalPreview');
+    const initials = authorInitials(newProfile.name);
+    if (preview) preview.innerHTML = `<img src="${escapeAttr(newProfile.image)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='<span style=font-size:28px;font-weight:700;color:var(--accent)>${escapeAttr(initials)}</span>'">`;
+    const urlInput = document.getElementById('apUrlInput');
+    if (urlInput) urlInput.value = newProfile.image;
+    _apSetStatus('Photo ready — image will update when you save');
+    const rows = buildAuthorRows(authorName);
+    hydrateAuthorHeader(newProfile, rows);
+  } else {
+    _apSetStatus('No photo found on Wikipedia or Open Library.', true);
   }
 }
 
-document.getElementById('authorPhotoWrap')?.addEventListener('click', editAuthorPhoto);
+document.getElementById('authorPhotoWrap')?.addEventListener('click', openAuthorPhotoModal);
