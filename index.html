@@ -64,27 +64,31 @@
       display: flex;
       flex-direction: column;
       position: relative;
-      /* safe area */
       padding-top: max(env(safe-area-inset-top), 0px);
       padding-bottom: max(env(safe-area-inset-bottom), 20px);
     }
 
+    .title-block { flex: 0 0 22%; min-height: 0; }
+    .spacer      { flex: 0 0 48%; min-height: 0; }
+    .bottom      { flex: 0 0 30%; min-height: 0; justify-content: flex-end; }
+
     /* ── Hero image — absolute background layer ──────── */
     .hero-bg {
       position: absolute;
-      top: 0;
+      top: 22%;
       left: 0;
       width: 100%;
-      height: 100%;
+      height: 48%;
       z-index: 0;
       pointer-events: none;
-      display: flex;
-      align-items: center;
+      overflow: hidden;
     }
 
     .hero-bg img {
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
       display: block;
     }
 
@@ -97,15 +101,15 @@
 
     /* ── Title block ─────────────────────────────────── */
     .title-block {
-      padding: clamp(20px, 5vw, 36px) 24px clamp(14px, 3vw, 20px);
+      padding: clamp(12px, 3vw, 24px) 24px 0;
       text-align: center;
       opacity: 0;
       transform: translateY(-12px);
       animation: riseIn 0.7s var(--ease-spring) 0.05s forwards;
-      flex-shrink: 0;
-      background: var(--bg);
-      position: relative;
-      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     .wordmark {
@@ -139,22 +143,19 @@
     }
 
     /* ── Spacer pushes bottom to the end ─────────────── */
-    .spacer { flex: 1; }
+    .spacer { flex: 0 0 48%; min-height: 0; }
 
     /* ── Bottom section ──────────────────────────────── */
     .bottom {
-      padding: clamp(12px, 2.5vw, 18px) 24px 0;
-      flex-shrink: 0;
+      padding: 0 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-end;
       gap: 0;
       opacity: 0;
       transform: translateY(18px);
       animation: riseIn 0.8s var(--ease-spring) 0.4s forwards;
-      background: var(--bg);
-      position: relative;
-      z-index: 2;
     }
 
     /* ── Features ────────────────────────────────────── */
