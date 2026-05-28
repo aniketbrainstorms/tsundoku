@@ -1371,6 +1371,7 @@ function openAuthorsOverlay() {
 }
 function closeAuthorsOverlay() {
   document.getElementById('authorsListOverlay').classList.remove('open');
+  openProfileModal();
 }
 function toggleAlSort() {
   alSort = alSort === 'az' ? 'count' : 'az';
