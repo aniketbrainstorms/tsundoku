@@ -447,6 +447,7 @@ async function apSaveUrl() {
 
   const rows = buildAuthorRows(authorName);
   hydrateAuthorHeader(currentProfile, rows);
+  _refreshAuthorListAvatar(cacheKey, url, authorName);
 }
 
 async function apUploadFile(e) {
@@ -482,6 +483,7 @@ async function apUploadFile(e) {
       _apSetStatus('Photo ready — image will update when you save');
       const rows = buildAuthorRows(authorName);
       hydrateAuthorHeader(currentProfile, rows);
+      _refreshAuthorListAvatar(cacheKey, publicUrl, authorName);
       showToast('Photo uploaded ✓');
     } catch (err) {
       // Fallback: use data URL locally (won't persist after reload)
@@ -492,6 +494,7 @@ async function apUploadFile(e) {
       _apSetStatus('Photo ready — image will update when you save');
       const rows = buildAuthorRows(authorName);
       hydrateAuthorHeader(currentProfile, rows);
+      _refreshAuthorListAvatar(cacheKey, dataUrl, authorName);
       showToast('Photo set locally ✓');
     }
     if (btn) { btn.disabled = false; }
@@ -526,9 +529,30 @@ async function apRefetch() {
     _apSetStatus('Photo ready — image will update when you save');
     const rows = buildAuthorRows(authorName);
     hydrateAuthorHeader(newProfile, rows);
+    _refreshAuthorListAvatar(cacheKey, newProfile.image, authorName);
   } else {
     _apSetStatus('No photo found on Wikipedia or Open Library.', true);
   }
 }
 
 document.getElementById('authorPhotoWrap')?.addEventListener('click', openAuthorPhotoModal);
+
+// ── Sync author list overlay avatar after photo change ──────────────────
+function _refreshAuthorListAvatar(cacheKey, imageUrl, authorName) {
+  const scroll = document.getElementById('alScroll');
+  if (!scroll) return;
+  scroll.querySelectorAll('.al-author-row').forEach(row => {
+    const rowKey = (row.dataset.author || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (rowKey !== cacheKey) return;
+    const avatarEl = row.querySelector('[id^="al-av-"]');
+    if (!avatarEl) return;
+    if (imageUrl) {
+      if (typeof _alSetAvatarImg === 'function') {
+        _alSetAvatarImg(avatarEl, imageUrl, authorName);
+      }
+    } else {
+      const initials = authorName.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') || '?';
+      avatarEl.textContent = initials;
+    }
+  });
+}
