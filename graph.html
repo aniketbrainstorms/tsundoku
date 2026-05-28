@@ -7,13 +7,14 @@ canvas { display: block; }
 #tooltip { position: absolute; pointer-events: none; background: rgba(18,16,13,0.95); border: 1px solid #c9714a44; border-radius: 8px; padding: 8px 12px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: #f0ebe3; display: none; z-index: 10; max-width: 220px; line-height: 1.5; }
 #tooltip .author { font-weight: 500; color: #c9714a; margin-bottom: 2px; }
 #tooltip .count { color: #888; font-size: 12px; }
-#controls { position: absolute; bottom: 20px; right: 16px; display: flex; gap: 10px; }
-#controls button { background: rgba(18,16,13,0.9); border: 1px solid #c9714a55; color: #c9714a; border-radius: 10px; padding: 0; font-size: 13px; cursor: pointer; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: background 0.15s, transform 0.1s; }
+#controls { position: absolute; bottom: max(20px, env(safe-area-inset-bottom, 20px) + 8px); right: 16px; display: flex; gap: 10px; }
+#controls button { background: rgba(18,16,13,0.9); border: 1px solid #c9714a55; color: #c9714a; border-radius: 10px; padding: 0; font-size: 15px; cursor: pointer; min-width: 52px; min-height: 52px; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: background 0.15s, transform 0.1s; }
 #controls button:hover { background: #c9714a22; }
 #controls button:active { background: #c9714a33; transform: scale(0.93); }
 #controls #btn-reset { min-width: 54px; font-size: 11px; letter-spacing: 0.03em; }
-#search-wrap { position: absolute; top: 14px; left: 14px; }
-#search-wrap input { background: rgba(18,16,13,0.9); border: 1px solid #c9714a44; border-radius: 10px; padding: 10px 14px; font-size: 16px; color: #f0ebe3; outline: none; width: 170px; -webkit-appearance: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+#search-wrap { position: absolute; top: max(14px, env(safe-area-inset-top, 14px) + 4px); left: 14px; }
+@media (max-width: 480px) { #legend { display: none; } #controls #btn-reset { min-width: 48px; font-size: 10px; } }
+#search-wrap input { background: rgba(18,16,13,0.9); border: 1px solid #c9714a44; border-radius: 10px; padding: 10px 14px; font-size: 16px; color: #f0ebe3; outline: none; width: 140px; -webkit-appearance: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 #search-wrap input::placeholder { color: #555; }
 #legend { position: absolute; top: 14px; right: 14px; font-size: 11px; color: #666; line-height: 1.8; }
 #legend span { display: inline-block; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
@@ -214,7 +215,7 @@ const searchEl = document.getElementById('search');
 
 let W, H;
 let nodes = [], edges = [];
-let transform = { x: 0, y: 0, scale: 1 };
+let transform = { x: 0, y: 0, scale: window.innerWidth < 480 ? 0.52 : 1 };
 let dragging = false, lastMouse = null;
 let hoveredNode = null;
 let highlightSet = null;
@@ -354,7 +355,8 @@ function draw() {
       ctx.fill();
       if (!dimmed && transform.scale > 0.7) {
         ctx.fillStyle = hovered ? 'rgba(240,235,227,0.95)' : 'rgba(200,180,160,0.7)';
-        ctx.font = `${Math.round(10 * Math.min(transform.scale, 1.2))}px DM Sans, sans-serif`;
+        const baseFontSize = window.innerWidth < 480 ? 12 : 10;
+        ctx.font = `${Math.round(baseFontSize * Math.min(transform.scale, 1.2))}px DM Sans, sans-serif`;
         ctx.textAlign = 'center';
         const maxW = n.label.length > 16 ? n.label.substring(0, 14) + '…' : n.label;
         ctx.fillText(maxW, s.x, s.y - r - 4);
@@ -370,7 +372,8 @@ function draw() {
 
 function findNodeAt(sx, sy) {
   const w = toWorld(sx, sy);
-  let best = null, bestDist = 16 / transform.scale;
+  const isTouchDevice = 'ontouchstart' in window;
+  let best = null, bestDist = (isTouchDevice ? 28 : 16) / transform.scale;
   nodes.forEach(n => {
     const dx = n.x - w.x, dy = n.y - w.y;
     const d = Math.sqrt(dx * dx + dy * dy);
@@ -396,8 +399,8 @@ canvas.addEventListener('mousemove', e => {
   if (n) {
     canvas.style.cursor = 'pointer';
     tooltip.style.display = 'block';
-    tooltip.style.left = (sx + 14) + 'px';
-    tooltip.style.top = (sy - 10) + 'px';
+    tooltip.style.left = Math.min(sx + 14, W - 230) + 'px';
+    tooltip.style.top = Math.max(sy - 10, 8) + 'px';
     if (n.type === 'author') {
       const books = RAW.find(([a]) => a === n.label)?.[1] || [];
       tooltip.innerHTML = `<div class="author">${n.label}</div><div class="count">${books.length} book${books.length !== 1 ? 's' : ''}</div>`;
