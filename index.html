@@ -63,10 +63,11 @@
       height: 100dvh;
       display: flex;
       flex-direction: column;
+      justify-content: center;
       position: relative;
       /* safe area */
       padding-top: max(env(safe-area-inset-top), 0px);
-      padding-bottom: max(env(safe-area-inset-bottom), 24px);
+      padding-bottom: max(env(safe-area-inset-bottom), 0px);
     }
 
     /* ── Hero image — absolute background layer ──────── */
@@ -145,7 +146,7 @@
     }
 
     /* ── Spacer pushes bottom to the end ─────────────── */
-    .spacer { flex: 1; }
+    .spacer { flex: 0; }
 
     /* ── Bottom section ──────────────────────────────── */
     .bottom {
