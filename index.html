@@ -72,11 +72,8 @@
 
     /* ── Hero image — absolute background layer ──────── */
     .hero-bg {
-      position: absolute;
-      top: max(calc(env(safe-area-inset-top) + 72px), 72px);
-      left: 0;
       width: 100%;
-      z-index: 0;
+      flex-shrink: 0;
       pointer-events: none;
     }
 
@@ -89,6 +86,7 @@
 
     /* ── Everything above image ───────────────────────── */
     .title-block,
+    .hero-bg,
     .bottom {
       position: relative;
       z-index: 1;
@@ -341,15 +339,6 @@
 
 <main class="page">
 
-  <!-- Hero image sits behind everything -->
-  <div class="hero-bg" aria-hidden="true">
-    <img
-      src="hero_welcome.png"
-      alt=""
-      decoding="async"
-    >
-  </div>
-
   <!-- ① Title — z-index:1, above image -->
   <div class="title-block">
     <span class="wordmark">Tsundoku</span>
@@ -357,8 +346,10 @@
   </div>
 
 
-  <!-- Spacer pushes bottom UI to the screen floor -->
-  <div class="spacer"></div>
+<!-- Hero image sits between title and content -->
+  <div class="hero-bg" aria-hidden="true">
+    <img src="hero_welcome.png" alt="" decoding="async">
+  </div>
 
   <!-- ② Bottom — z-index:1, above image -->
   <div class="bottom">
