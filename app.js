@@ -1476,8 +1476,8 @@ function renderAuthorsList() {
           _alEnqueueFetch(authorName, cacheKey, avatarEl));
       });
   }
+  if (typeof alphaBarRefresh === 'function') alphaBarRefresh('authors');
 }
-
 // ── MY SHELF VIEW ──
 let shelfSort = 'recent';
 function updateShelfStats() {
@@ -2094,6 +2094,14 @@ Description: ${description || 'No description available.'}`;
       containerId: 'publicShelfContent',
       getSort: () => publicSort,
     },
+    authors: {
+      barId: 'authorsAlphaBar',
+      trackId: 'authorsAlphaTrack',
+      bubbleId: 'authorsAlphaBubble',
+      gridId: 'alScroll',
+      containerId: 'alScroll',
+      getSort: () => alSort === 'az' ? 'author' : 'recent',
+    },
   };
 
   const lastLetter = { main: null, shelf: null, public: null };
@@ -2112,7 +2120,9 @@ Description: ${description || 'No description available.'}`;
 
   function getCards(ctx) {
     const grid = document.getElementById(CONTEXTS[ctx].gridId);
-    return grid ? Array.from(grid.querySelectorAll('.book-card[data-id], .pub-book-card[data-id]')) : [];
+    if (!grid) return [];
+    if (ctx === 'authors') return Array.from(grid.querySelectorAll('.al-author-row[data-author]'));
+    return Array.from(grid.querySelectorAll('.book-card[data-id], .pub-book-card[data-id]'));
   }
 
   function getActiveLetters(ctx) {
@@ -2303,16 +2313,31 @@ Description: ${description || 'No description available.'}`;
       if (ctx === 'main' || !ctx) buildBar('main');
       if (ctx === 'shelf' || !ctx) buildBar('shelf');
       if (ctx === 'public' || !ctx) buildBar('public');
+      if (ctx === 'authors' || !ctx) buildBar('authors');
     }, 80);
   };
 
   document.addEventListener('DOMContentLoaded', () => {
+    const authorsOverlay = document.getElementById('authorsListOverlay');
+    if (authorsOverlay) {
+      const barEl = document.createElement('div');
+      barEl.className = 'alpha-bar';
+      barEl.id = 'authorsAlphaBar';
+      barEl.innerHTML = '<div class="alpha-track" id="authorsAlphaTrack"></div>';
+      authorsOverlay.appendChild(barEl);
+      const bubbleEl = document.createElement('div');
+      bubbleEl.className = 'alpha-bubble';
+      bubbleEl.id = 'authorsAlphaBubble';
+      document.body.appendChild(bubbleEl);
+    }
     setupTouchEvents('main');
     setupMouseEvents('main');
     setupTouchEvents('shelf');
     setupMouseEvents('shelf');
     setupTouchEvents('public');
     setupMouseEvents('public');
+    setupTouchEvents('authors');
+    setupMouseEvents('authors');
 
     // Reposition resiliently across iOS screen rotation animation delays
     const handleLayoutShift = () => {
