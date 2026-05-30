@@ -313,7 +313,8 @@ function openAuthorPageFromDetail() {
   if (!trimmed) return;
   if (typeof dsClose === 'function') dsClose();
   else closeModal('detailModal');
-  setTimeout(() => openAuthorPage(trimmed), 220);
+  // callerEl = null: author page exits right, nothing springs back (detail sheet is floating)
+  setTimeout(() => openAuthorPage(trimmed, null), 220);
 }
 
 function closeAuthorPage() {
