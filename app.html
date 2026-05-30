@@ -479,7 +479,7 @@
 </div>
   
   <!-- BOOK SEARCH OVERLAY -->
-  <div class="book-search-overlay" id="bookSearchOverlay">
+  <div class="book-search-overlay nav-panel" id="bookSearchOverlay">
     <div class="bs-header">
       <button class="bs-back" onclick="closeBookSearch()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -966,7 +966,7 @@
   </div>
 
   <!-- PROFILE MODAL -->
-  <div class="modal-overlay" id="profileModal" onclick="handleOverlayClick(event,'profileModal')">
+  <div class="modal-overlay nav-panel" id="profileModal" onclick="handleOverlayClick(event,'profileModal')">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
       <div style="margin-bottom:14px">
@@ -1042,7 +1042,7 @@
   </div>
 
   <!-- MY SHELF OVERLAY -->
-  <div class="shelf-overlay" id="shelfOverlay">
+  <div class="shelf-overlay nav-panel" id="shelfOverlay">
     <div class="shelf-header">
       <button class="shelf-back-btn" onclick="closeShelfView()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -1088,7 +1088,7 @@
   </div>
 
   <!-- MY LISTS OVERLAY -->
-  <div class="shelf-overlay" id="listsOverlay">
+  <div class="shelf-overlay nav-panel" id="listsOverlay">
     <div class="lo-header">
       <button class="shelf-back-btn" onclick="closeListsOverlay()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -1145,7 +1145,7 @@
     </div>
 
     <!-- LIST DETAIL OVERLAY -->
-    <div id="listDetailOverlay" style="position:absolute;inset:0;background:var(--bg);z-index:60;flex-direction:column;overflow:hidden;">
+    <div id="listDetailOverlay" class="nav-panel" style="position:absolute;inset:0;background:var(--bg);z-index:60;flex-direction:column;overflow:hidden;">
       <div class="ld-header">
         <button class="shelf-back-btn" onclick="closeListDetail()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -1283,7 +1283,7 @@
 </div>
 
 <!-- AUTHORS LIST OVERLAY -->
-<div class="shelf-overlay" id="authorsListOverlay">
+<div class="shelf-overlay nav-panel" id="authorsListOverlay">
   <div class="shelf-header">
     <button class="shelf-back-btn" onclick="closeAuthorsOverlay()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -1307,8 +1307,7 @@
 </div>
 
 <!-- AUTHOR PAGE OVERLAY -->
-<div class="author-overlay" id="authorOverlay">
-
+<div class="author-overlay nav-panel" id="authorOverlay">
   <!-- Sticky header -->
   <div class="author-header">
     <button class="shelf-back-btn" onclick="closeAuthorPage()">
