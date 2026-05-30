@@ -745,7 +745,7 @@ function _renderSbsResults(q) {
   if (sbsAuthorRowEl) {
     sbsAuthorRowEl.addEventListener('click', () => {
       closeShelfSearch();
-      setTimeout(() => openAuthorPageFromSearch(sbsAuthorRowEl.dataset.author), 80);
+      setTimeout(() => openAuthorPage(sbsAuthorRowEl.dataset.author, document.getElementById('shelfSearchOverlay')), 80);
     });
     // Hydrate photo from DB if not already cached
     if (!_sbsAuthorImg && authorHit && currentUser) {
