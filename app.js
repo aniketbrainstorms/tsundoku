@@ -1427,7 +1427,7 @@ function renderAuthorsList() {
   allRows.forEach(row => {
     row.addEventListener('click', () => {
         const author = row.dataset.author;
-        closeAuthorsOverlay();
+        document.getElementById('authorsListOverlay').classList.remove('open');
         window._authorOpenedFromList = true;
         setTimeout(() => {
           if (typeof openAuthorPage === 'function') openAuthorPage(author);
