@@ -1451,11 +1451,7 @@ function renderAuthorsList() {
   allRows.forEach(row => {
     row.addEventListener('click', () => {
         const author = row.dataset.author;
-        document.getElementById('authorsListOverlay').classList.remove('open');
-        window._authorOpenedFromList = true;
-        setTimeout(() => {
-          if (typeof openAuthorPage === 'function') openAuthorPage(author);
-        }, 60);
+        if (typeof openAuthorPage === 'function') openAuthorPage(author, document.getElementById('authorsListOverlay'));
       });
   });
 
