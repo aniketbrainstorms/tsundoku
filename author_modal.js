@@ -28,6 +28,7 @@ let _authorCache = {};
 let _activeAuthorName = '';
 let _authorRows = [];
 let _authorFilter = 'all';
+let _authorCallerEl = null;
 
 function normalizeAuthorText(str) {
   return (str || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -277,11 +278,12 @@ function hydrateAuthorHeader(profile, rows) {
   renderAuthorPhoto(profile);
 }
 
-async function openAuthorPage(authorName) {
+async function openAuthorPage(authorName, callerEl) {
   if (!authorName || !authorName.trim()) return;
   const rows = buildAuthorRows(authorName);
   if (!rows.length) return;
   _activeAuthorName = authorName;
+  _authorCallerEl = callerEl || null;
   const overlay = document.getElementById('authorOverlay');
   const scroll = document.getElementById('authorScroll');
   const fallback = authorFallback(authorName);
@@ -291,7 +293,7 @@ async function openAuthorPage(authorName) {
   updateAuthorControls();
 
   if (scroll) scroll.scrollTop = 0;
-  if (overlay) overlay.classList.add('open');
+  navPush(_authorCallerEl, overlay);
   hydrateAuthorHeader(fallback, initialRows);
   renderAuthorRows(getVisibleAuthorRows());
   document.getElementById('authorState').textContent = '';
@@ -316,12 +318,9 @@ function openAuthorPageFromDetail() {
 
 function closeAuthorPage() {
   const overlay = document.getElementById('authorOverlay');
-  if (overlay) overlay.classList.remove('open');
-  if (window._authorOpenedFromList) {
-    window._authorOpenedFromList = false;
-    const authorsOverlay = document.getElementById('authorsListOverlay');
-    if (authorsOverlay) authorsOverlay.classList.add('open');
-  }
+  navPop(overlay, _authorCallerEl);
+  _authorCallerEl = null;
+  window._authorOpenedFromList = false;
 }
 function updateAuthorControls() {
   document.querySelectorAll('[data-author-filter]').forEach(btn => {
