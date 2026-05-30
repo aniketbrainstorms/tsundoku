@@ -4,6 +4,29 @@ const sb = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJybnJ5c3pndmN0eGFpbnF5dXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODg3NTcsImV4cCI6MjA5MDQ2NDc1N30.GkGvfR_ZlGIupbwOOl1BL5gb58M-E2LD5sD7pVl4tso'
 );
 
+// ── NAV STACK ──
+const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay'];
+
+function navPush(prevEl, nextEl) {
+  if (prevEl) prevEl.classList.add('nav-behind');
+  nextEl.classList.remove('nav-behind');
+  nextEl.classList.add('open');
+}
+
+function navPop(currentEl, prevEl) {
+  currentEl.classList.remove('open');
+  if (prevEl) prevEl.classList.remove('nav-behind');
+}
+
+function _updateAppRecede() {
+  const anyOpen = _LAYER2_IDS.some(id => {
+    const el = document.getElementById(id);
+    return el && (el.classList.contains('open') || el.classList.contains('nav-behind'));
+  });
+  const appScreen = document.getElementById('appScreen');
+  if (appScreen) appScreen.classList.toggle('nav-receded', anyOpen);
+}
+
 // ── STATE ──
 let books = [], currentFilter = 'reading';
 let addStatus = 'unread', editStatus = 'unread';
@@ -1232,7 +1255,10 @@ function openProfileModal() {
     const uniqueAuthors = new Set(books.filter(b => b.status !== 'not-owned' && b.author).map(b => b.author.trim())).size;
     authorsCountEl.textContent = uniqueAuthors ? `${uniqueAuthors} authors` : '';
   }
-  document.getElementById('profileModal').classList.add('visible');
+  const profileModal = document.getElementById('profileModal');
+  profileModal.classList.add('visible');
+  navPush(null, profileModal);
+  _updateAppRecede();
 }
 
 // ── AUTHORS LIST OVERLAY ──
@@ -1365,13 +1391,11 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
   } catch { /* silent */ }
 }
 function openAuthorsOverlay() {
-  closeModal('profileModal');
   renderAuthorsList();
-  document.getElementById('authorsListOverlay').classList.add('open');
+  navPush(document.getElementById('profileModal'), document.getElementById('authorsListOverlay'));
 }
 function closeAuthorsOverlay() {
-  document.getElementById('authorsListOverlay').classList.remove('open');
-  openProfileModal();
+  navPop(document.getElementById('authorsListOverlay'), document.getElementById('profileModal'));
 }
 function toggleAlSort() {
   alSort = alSort === 'az' ? 'count' : 'az';
@@ -1492,9 +1516,13 @@ function openShelfView() {
   if (si) { si.value = ''; document.getElementById('shelfSearchClear').classList.remove('visible'); }
   updateShelfStats();
   renderShelfGrid();
-  document.getElementById('shelfOverlay').classList.add('open');
+  navPush(null, document.getElementById('shelfOverlay'));
+  _updateAppRecede();
 }
-function closeShelfView() { document.getElementById('shelfOverlay').classList.remove('open'); }
+function closeShelfView() {
+  navPop(document.getElementById('shelfOverlay'), null);
+  _updateAppRecede();
+}
 function clearShelfSearch() {
   const si = document.getElementById('shelfSearchInput');
   si.value = ''; document.getElementById('shelfSearchClear').classList.remove('visible');
@@ -1600,13 +1628,17 @@ function setAddContext(context) {
 }
 function openBookSearch(context = 'shelf') {
   setAddContext(context);
-  document.getElementById('bookSearchOverlay').classList.add('open');
+  const bsOverlay = document.getElementById('bookSearchOverlay');
+  navPush(null, bsOverlay);
+  _updateAppRecede();
   const bar = document.getElementById('floatingBar');
   if (bar) bar.style.display = 'none';
   setTimeout(() => document.getElementById('bsInput').focus(), 380);
 }
 function closeBookSearch() {
-  document.getElementById('bookSearchOverlay').classList.remove('open');
+  const bsOverlay = document.getElementById('bookSearchOverlay');
+  navPop(bsOverlay, null);
+  _updateAppRecede();
   if (addContext !== 'list') document.getElementById('floatingBar').style.display = '';
   document.getElementById('bsInput').value = '';
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>';
@@ -1902,7 +1934,12 @@ async function fetchEditIsbn() {
 
 // ── SHARED HELPERS ──
 function closeModal(id) {
-  document.getElementById(id).classList.remove('visible');
+  const el = document.getElementById(id);
+  el.classList.remove('visible');
+  if (id === 'profileModal') {
+    navPop(el, null);
+    _updateAppRecede();
+  }
   if (id === 'addModal') {
     const wasListAdd = addContext === 'list';
     resetAddModal();
@@ -2553,14 +2590,14 @@ Description: ${description || 'No description available.'}`;
   // ── LISTS OVERLAY ──
   window.openListsOverlay = async function () {
     document.getElementById('loSearchInput').value = '';
-    document.getElementById('listsOverlay').classList.add('open');
+    navPush(document.getElementById('profileModal'), document.getElementById('listsOverlay'));
     await loLoadLists();
     updateListsCount();
     loRenderLists();
     loBuildEmojiRow();
   };
   window.closeListsOverlay = function () {
-    document.getElementById('listsOverlay').classList.remove('open');
+    navPop(document.getElementById('listsOverlay'), document.getElementById('profileModal'));
   };
 
   function loRenderLists() {
@@ -2762,7 +2799,7 @@ Description: ${description || 'No description available.'}`;
     ldBuildAlphaBar();
 
     const ld = document.getElementById('listDetailOverlay');
-    requestAnimationFrame(() => ld.classList.add('open'));
+    requestAnimationFrame(() => navPush(document.getElementById('listsOverlay'), ld));
 
     // 2. Background Sync
     await Promise.allSettled([
@@ -2786,8 +2823,7 @@ Description: ${description || 'No description available.'}`;
   };
 
   window.closeListDetail = function () {
-    const ld = document.getElementById('listDetailOverlay');
-    ld.classList.remove('open');
+    navPop(document.getElementById('listDetailOverlay'), document.getElementById('listsOverlay'));
     ldCloseAddSheet();
     const floatingBar = document.getElementById('floatingBar');
     if (floatingBar) floatingBar.style.display = '';
