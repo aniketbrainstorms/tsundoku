@@ -1646,7 +1646,7 @@ function closeBookSearch() {
   setBsCategory('all');
 }
 function openAuthorPageFromSearch(authorName) {
-  if (typeof openAuthorPage === 'function') openAuthorPage(authorName);
+  if (typeof openAuthorPage === 'function') openAuthorPage(authorName, document.getElementById('bookSearchOverlay'));
 }
 function setBsCategory(cat) {
   bsSearchCategory = cat;
