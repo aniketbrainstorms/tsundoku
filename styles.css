@@ -13,7 +13,10 @@
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
 }
-
+/* Desktop elements — hidden on mobile */
+.desk-detail-panel,
+.desk-hamburger,
+.dsb-backdrop { display: none; }
 * {
   margin: 0; padding: 0; box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -2515,4 +2518,207 @@ html.standalone-webapp .add-popup {
 .al-empty {
   padding: 56px 0; text-align: center;
   font-size: 14px; color: var(--text-muted); line-height: 1.7;
+}
+
+/* ─── TABLET (768–1023px): hamburger + overlay sidebar ─── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .desk-hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 24px;
+    left: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    z-index: 48;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    transition: color 0.15s;
+  }
+  .desk-hamburger:hover { color: var(--text); }
+
+  /* sidebar slides in as overlay */
+  .header {
+    position: fixed !important;
+    top: 0; left: 0; bottom: 0;
+    transform: translateX(calc(-1 * var(--header-w, 220px) - 2px));
+    transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+    z-index: 50;
+    border-right: 1px solid var(--border);
+    border-bottom: none !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    width: var(--header-w, 220px) !important;
+    min-width: 0 !important;
+  }
+  .header.dsb-open {
+    transform: translateX(0);
+  }
+  .dsb-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    z-index: 49;
+    pointer-events: none;
+    transition: background 0.28s;
+  }
+  .dsb-backdrop.open {
+    background: rgba(0,0,0,0.55);
+    pointer-events: auto;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+  /* main content fills full width on tablet */
+  .app-screen { flex-direction: column !important; }
+  .grid-container { padding-left: 16px !important; padding-right: 16px !important; }
+  .floating-bar { left: 16px !important; right: 16px !important; }
+  .book-grid { grid-template-columns: repeat(4, 1fr) !important; }
+}
+
+/* ─── DESKTOP (≥1024px): hide hamburger ─── */
+@media (min-width: 1024px) {
+  .desk-hamburger { display: none !important; }
+  .dsb-backdrop { display: none !important; }
+}
+
+/* ─── DETAIL PANEL — all desktop widths ─── */
+@media (min-width: 768px) {
+  /* override the existing center-modal rule for detail */
+  #detailModal {
+    display: none !important; /* desktop uses the panel instead */
+  }
+
+  .desk-shell {
+    display: flex;
+    flex-direction: row;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .desk-detail-panel {
+    display: flex;
+    flex-direction: column;
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    background: var(--surface);
+    border-left: 0px solid var(--border);
+    flex-shrink: 0;
+    transition: width 0.28s cubic-bezier(0.32,0.72,0,1),
+                min-width 0.28s cubic-bezier(0.32,0.72,0,1),
+                border-left-width 0.28s;
+    height: 100dvh;
+    position: sticky;
+    top: 0;
+  }
+
+  .desk-detail-panel.ddp-open {
+    width: 260px;
+    min-width: 260px;
+    border-left-width: 1px;
+  }
+
+  .ddp-inner {
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .ddp-close {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); z-index: 2;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .ddp-close:hover { color: var(--text); border-color: var(--text-muted); }
+
+  .ddp-scroll {
+    flex: 1; overflow-y: auto; padding: 14px 14px 24px;
+    scrollbar-width: none;
+  }
+  .ddp-scroll::-webkit-scrollbar { width: 0; }
+
+  .ddp-cover {
+    width: 100%; aspect-ratio: 2/3; border-radius: 9px;
+    overflow: hidden; background: var(--surface2);
+    margin-bottom: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .ddp-cover img { width: 100%; height: 100%; object-fit: cover; }
+
+  .ddp-title { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.25; letter-spacing: -0.02em; margin-bottom: 2px; }
+  .ddp-author { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+  .ddp-year { font-size: 10px; color: var(--text-muted); opacity: 0.6; margin-bottom: 9px; }
+
+  .ddp-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 100px; font-size: 10px; font-weight: 500;
+    background: rgba(201,113,74,0.15); color: var(--accent); margin-bottom: 12px;
+  }
+  .ddp-badge-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+
+  .ddp-meta {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 7px;
+    background: var(--surface2); border-radius: 7px;
+    padding: 8px 9px; margin-bottom: 12px;
+  }
+  .ddp-meta-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 2px; font-weight: 600; opacity: 0.6; }
+  .ddp-meta-val { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+
+  .ddp-progress-wrap { margin-bottom: 12px; }
+  .ddp-progress-meta { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-bottom: 5px; }
+  .ddp-progress-meta span:last-child { color: var(--accent); }
+  .ddp-bar-bg { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .ddp-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+
+  .ddp-sum-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; opacity: 0.5; }
+  .ddp-sum-text { font-size: 11px; color: var(--text-muted); line-height: 1.65; margin-bottom: 14px; }
+
+  .ddp-primary {
+    width: 100%; padding: 9px; background: var(--accent); border: none;
+    border-radius: 7px; color: #fff; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit; display: flex;
+    align-items: center; justify-content: center; gap: 5px;
+    margin-bottom: 5px; transition: opacity 0.15s;
+  }
+  .ddp-primary:hover { opacity: 0.88; }
+
+  .ddp-secondary {
+    width: 100%; padding: 9px; background: transparent;
+    border: 1.5px solid var(--border); border-radius: 7px;
+    color: var(--text-muted); font-size: 12px; cursor: pointer;
+    font-family: inherit; display: flex; align-items: center;
+    justify-content: center; gap: 5px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .ddp-secondary:hover { border-color: var(--text-muted); color: var(--text); }
+
+  /* book cards — desktop hover lift instead of scale */
+  .book-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+  .book-card.ddp-selected {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* grid compression when panel open */
+  #bookGrid.grid-narrow {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
 }
