@@ -3775,3 +3775,145 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
   window.addEventListener('focusout', () => setTimeout(update, 60));
   update();
 })();
+
+// ─── DESKTOP DETAIL PANEL ──────────────────────────────────────────────────
+;(function () {
+  const isDesktopLayout = () => window.innerWidth >= 768;
+  let ddpSelectedId = null;
+
+  // ── Hamburger (tablet) ──
+  const hamburger = document.getElementById('deskHamburger');
+  const backdrop  = document.getElementById('dsbBackdrop');
+  const sidebar   = document.querySelector('.header');
+
+  function openSidebar() {
+    sidebar.classList.add('dsb-open');
+    backdrop.classList.add('open');
+    hamburger.setAttribute('aria-expanded', 'true');
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('dsb-open');
+    backdrop.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+  }
+  if (hamburger) {
+    hamburger.addEventListener('click', () =>
+      sidebar.classList.contains('dsb-open') ? closeSidebar() : openSidebar());
+  }
+  if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+  // ── Detail panel ──
+  const panel   = document.getElementById('deskDetailPanel');
+  const closeBtn = document.getElementById('ddpClose');
+  const bookGrid = document.getElementById('bookGrid');
+
+  function openDDP(book) {
+    if (!panel || !isDesktopLayout()) return;
+    ddpSelectedId = book.id;
+
+    // Cover
+    const coverEl = document.getElementById('ddpCover');
+    coverEl.innerHTML = book.cover_url
+      ? `<img src="${escapeAttr(book.cover_url)}" alt="">`
+      : makePlaceholder(book, 22);
+
+    document.getElementById('ddpTitle').textContent  = book.title || '—';
+    document.getElementById('ddpAuthor').textContent = book.author || '—';
+    document.getElementById('ddpYear').textContent   = [book.year, book.publisher].filter(Boolean).join(' · ') || '';
+
+    // Badge
+    const badgeMap = { reading: 'Reading', read: 'Read', unread: 'Unread', 'not-owned': 'Not owned' };
+    document.getElementById('ddpBadgeLabel').textContent = badgeMap[book.status] || book.status;
+
+    // Meta
+    document.getElementById('ddpGenre').textContent = book.genre || '—';
+    document.getElementById('ddpPages').textContent = book.page_count ? book.page_count + ' pg' : '—';
+
+    // Progress
+    const pw = document.getElementById('ddpProgressWrap');
+    if (book.status === 'reading' && book.total_pages > 0) {
+      const pct = Math.round((book.pages_read || 0) / book.total_pages * 100);
+      document.getElementById('ddpProgressPages').textContent = `${book.pages_read || 0} / ${book.total_pages} pages`;
+      document.getElementById('ddpProgressPct').textContent   = pct + '%';
+      document.getElementById('ddpBarFill').style.width = pct + '%';
+      pw.style.display = '';
+    } else {
+      pw.style.display = 'none';
+    }
+
+    // Summary
+    document.getElementById('ddpSummary').textContent = book.description || book.ai_summary || '—';
+
+    // CTAs
+    const primary   = document.getElementById('ddpPrimary');
+    const secondary = document.getElementById('ddpSecondary');
+    const statusNext = { reading: ['read', 'Mark as read'], unread: ['reading', 'Start reading'], read: ['reading', 'Re-read'] };
+    const statusSec  = { reading: ['unread', 'Move to unread'], unread: ['read', 'Mark as read'], read: ['unread', 'Move to unread'] };
+    const [pStatus, pLabel] = statusNext[book.status] || ['reading', 'Start reading'];
+    const [sStatus, sLabel] = statusSec[book.status]  || ['unread', 'Move to unread'];
+    primary.textContent   = pLabel;
+    secondary.textContent = sLabel;
+    primary.onclick = async () => { await ddpSetStatus(book.id, pStatus); };
+    secondary.onclick = async () => { await ddpSetStatus(book.id, sStatus); };
+
+    // Open
+    panel.classList.add('ddp-open');
+    if (bookGrid) bookGrid.classList.add('grid-narrow');
+    document.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
+    const card = bookGrid?.querySelector(`.book-card[data-id="${book.id}"]`);
+    if (card) card.classList.add('ddp-selected');
+  }
+
+  function closeDDP() {
+    if (!panel) return;
+    panel.classList.remove('ddp-open');
+    if (bookGrid) bookGrid.classList.remove('grid-narrow');
+    document.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
+    ddpSelectedId = null;
+  }
+
+  async function ddpSetStatus(id, status) {
+    const book = books.find(b => String(b.id) === String(id));
+    if (!book) return;
+    book.status = status;
+    renderGrid();
+    await dbUpdate(id, { status });
+    showToast('Status updated ✓');
+    // refresh panel CTAs
+    openDDP(book);
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', closeDDP);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeDDP(); closeSidebar(); }
+  });
+
+  // ── Override book card click for desktop ──
+  // Monkey-patch renderGrid to add desktop click handler after render
+  const _origRenderGrid = window.renderGrid || renderGrid;
+  function renderGridDesktop() {
+    _origRenderGrid.call(this);
+    if (!isDesktopLayout()) return;
+    document.querySelectorAll('#bookGrid .book-card').forEach(card => {
+      card.addEventListener('click', () => {
+        if (!isDesktopLayout()) return;
+        const book = books.find(b => String(b.id) === String(card.dataset.id));
+        if (book) openDDP(book);
+      }, { capture: true });
+    });
+    // right-click → quick menu
+    document.querySelectorAll('#bookGrid .book-card').forEach(card => {
+      card.addEventListener('contextmenu', e => {
+        if (!isDesktopLayout()) return;
+        e.preventDefault();
+        openQuickMenu(card.dataset.id, card);
+      });
+    });
+  }
+  window.renderGrid = renderGridDesktop;
+
+  // ── Resize: clean up if viewport drops below 768px ──
+  window.addEventListener('resize', () => {
+    if (!isDesktopLayout()) { closeDDP(); closeSidebar(); }
+  });
+})();
