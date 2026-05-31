@@ -3888,29 +3888,35 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
     if (e.key === 'Escape') { closeDDP(); closeSidebar(); }
   });
 
-  // ── Override book card click for desktop ──
-  // Monkey-patch renderGrid to add desktop click handler after render
-  const _origRenderGrid = window.renderGrid || renderGrid;
-  function renderGridDesktop() {
-    _origRenderGrid.call(this);
+  // ── Desktop clicks — event delegation (survives every renderGrid call) ──
+  bookGrid?.addEventListener('click', e => {
     if (!isDesktopLayout()) return;
-    document.querySelectorAll('#bookGrid .book-card').forEach(card => {
-      card.addEventListener('click', () => {
-        if (!isDesktopLayout()) return;
-        const book = books.find(b => String(b.id) === String(card.dataset.id));
-        if (book) openDDP(book);
-      }, { capture: true });
-    });
-    // right-click → quick menu
-    document.querySelectorAll('#bookGrid .book-card').forEach(card => {
-      card.addEventListener('contextmenu', e => {
-        if (!isDesktopLayout()) return;
-        e.preventDefault();
-        openQuickMenu(card.dataset.id, card);
-      });
-    });
-  }
-  window.renderGrid = renderGridDesktop;
+    const card = e.target.closest('.book-card');
+    if (!card) return;
+    e.stopPropagation();
+    const book = books.find(b => String(b.id) === String(card.dataset.id));
+    if (book) openDDP(book);
+  }, true);
+
+  bookGrid?.addEventListener('contextmenu', e => {
+    if (!isDesktopLayout()) return;
+    e.preventDefault();
+    const card = e.target.closest('.book-card');
+    if (!card) return;
+    openQuickMenu(card.dataset.id, card);
+  });
+
+  // ── Redirect openDetailModal → DDP on desktop (deferred until detail_sheet.js loads) ──
+  window.addEventListener('load', () => {
+    const _orig = window.openDetailModal;
+    window.openDetailModal = function(id) {
+      if (isDesktopLayout()) {
+        const book = books.find(b => String(b.id) === String(id));
+        if (book) { openDDP(book); return; }
+      }
+      if (_orig) _orig.call(this, id);
+    };
+  });
 
   // ── Resize: clean up if viewport drops below 768px ──
   window.addEventListener('resize', () => {
