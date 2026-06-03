@@ -2,7 +2,6 @@
  * desktop.js — Tsundoku desktop layer
  * Injects all desktop HTML, CSS, and interaction logic.
  * Mobile files (app.html, styles.css, app.js) are never touched.
- * To modify anything on desktop, edit only this file.
  */
 (function () {
 
@@ -13,35 +12,43 @@
   style.textContent = `
 
 /* ── Hide mobile-only elements on desktop ── */
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .hint-bar { display: none; }
   .divider  { display: none; }
 }
 
-/* ── Sidebar layout ── */
-@media (min-width: 1024px) {
+/* ── Desktop shell: sidebar always visible, never overlaid ── */
+@media (min-width: 768px) {
   #app {
-    flex-direction: row;
+    flex-direction: row !important;
+    height: 100dvh;
+    overflow: hidden;
   }
   .app-screen {
-    flex-direction: row;
-    overflow: visible;
+    flex-direction: row !important;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
   }
+
+  /* Sidebar: always sticky, never moves */
   .header {
     width: 200px;
     min-width: 200px;
     flex-shrink: 0;
-    height: 100vh;
     height: 100dvh;
     border-right: 1px solid var(--border);
-    border-bottom: none;
-    display: flex;
+    border-bottom: none !important;
+    display: flex !important;
     flex-direction: column;
     padding: max(var(--safe-top), 24px) 0 max(var(--safe-bottom), 20px);
     background: var(--surface);
     position: sticky;
     top: 0;
     overflow: hidden;
+    z-index: 10;
+    /* NEVER let anything slide over it */
+    isolation: isolate;
   }
   .header-top {
     padding: 0 16px;
@@ -49,75 +56,98 @@
   }
   .header-top .profile-avatar { display: none; }
 
-  /* ── Unified nav system: all sidebar items same treatment ── */
+  /* All sidebar nav items unified */
   .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-    padding: 0 8px;
-    margin-bottom: 0;
-    flex: 0 0 auto;
-    overflow: visible;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 2px !important;
+    padding: 0 8px !important;
+    margin-bottom: 0 !important;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
   }
   .filter-tabs {
-    flex-direction: column;
-    gap: 2px;
-    overflow: visible;
-    width: auto;
+    flex-direction: column !important;
+    gap: 2px !important;
+    overflow: visible !important;
+    width: auto !important;
   }
   .tab-btn {
-    border-radius: 8px;
-    justify-content: flex-start;
-    padding: 8px 10px;
-    font-size: 13px;
-    font-weight: 500;
-    border-color: transparent;
-    background: transparent;
-    color: var(--text-muted);
-    min-height: 0;
-    height: 36px;
-    transition: background 0.12s, color 0.12s;
+    border-radius: 8px !important;
+    justify-content: flex-start !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    min-height: 0 !important;
+    height: 36px !important;
+    transition: background 0.12s, color 0.12s !important;
   }
   .tab-btn:hover {
-    background: rgba(255,255,255,0.04);
-    color: var(--text-dim);
+    background: rgba(255,255,255,0.04) !important;
+    color: var(--text-dim) !important;
   }
   .tab-btn.active {
-    background: rgba(201,113,74,0.1);
-    border-color: transparent;
-    color: var(--accent);
+    background: rgba(201,113,74,0.10) !important;
+    border-color: transparent !important;
+    color: var(--accent) !important;
   }
   .tab-count {
-    margin-left: auto;
-    font-size: 10px;
-    font-weight: 500;
-    background: transparent;
-    border-radius: 100px;
-    padding: 0;
-    opacity: 0.5;
-    color: inherit;
+    margin-left: auto !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    background: transparent !important;
+    border-radius: 100px !important;
+    padding: 0 !important;
+    opacity: 0.5 !important;
+    color: inherit !important;
   }
   .tab-btn.active .tab-count {
-    background: transparent;
-    color: var(--accent);
-    opacity: 0.7;
+    color: var(--accent) !important;
+    opacity: 0.7 !important;
   }
-  #sortToggleBtn { display: none; }
+  #sortToggleBtn { display: none !important; }
 
+  /* Main content area */
   .grid-container {
     flex: 1;
+    min-width: 0;
     padding-left: 16px;
     padding-right: 16px;
+    overflow-y: auto;
+    height: 100dvh;
   }
   .floating-bar {
     left: 216px;
     right: 16px;
   }
 
-  /* Default: 7 columns — small, dense, magazine-shelf feel */
+  /* Book grid */
   .book-grid {
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 10px;
+  }
+
+  /* ── Force all full-screen overlays to respect sidebar ──
+     Any overlay opened by app.js must sit to the right of the sidebar */
+  .lo-overlay,
+  #listsOverlay,
+  #authorsOverlay,
+  #loScreen,
+  .screen-overlay,
+  [id$="Overlay"]:not(#addModalOverlay):not(#dsbSharePop) {
+    left: 200px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .header { width: 216px; min-width: 216px; }
+  .book-grid { grid-template-columns: repeat(7, 1fr); }
+  .floating-bar { left: 232px; }
+  [id$="Overlay"]:not(#addModalOverlay):not(#dsbSharePop) {
+    left: 216px !important;
   }
 }
 
@@ -135,7 +165,7 @@
 .dsb-nav-section,
 .dsb-bottom { display: none; }
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .dsb-nav-section {
     display: flex;
     flex-direction: column;
@@ -147,7 +177,7 @@
     display: flex;
     flex-direction: column;
     margin-top: auto;
-    padding: 0 8px 0;
+    padding: 0 8px;
     flex-shrink: 0;
   }
   .dsb-divider {
@@ -158,7 +188,6 @@
     opacity: 0.6;
   }
 
-  /* ── Unified nav item — same as .tab-btn above ── */
   .dsb-nav-item {
     display: flex;
     align-items: center;
@@ -179,7 +208,7 @@
     min-height: 0;
   }
   .dsb-nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text-dim); }
-  .dsb-nav-item.active { color: var(--accent); background: rgba(201,113,74,0.1); }
+  .dsb-nav-item.active { color: var(--accent); background: rgba(201,113,74,0.10); }
   .dsb-nav-count {
     margin-left: auto;
     font-size: 10px;
@@ -187,12 +216,9 @@
     color: inherit;
     opacity: 0.5;
   }
-  .dsb-nav-item.active .dsb-nav-count {
-    color: var(--accent);
-    opacity: 0.7;
-  }
+  .dsb-nav-item.active .dsb-nav-count { color: var(--accent); opacity: 0.7; }
 
-  /* ── Sort row — visible, readable ── */
+  /* Sort row */
   .dsb-sort-row {
     display: flex;
     align-items: center;
@@ -215,15 +241,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .dsb-sort-arrow {
-    margin-left: auto;
-    color: var(--text-muted);
-    font-size: 10px;
-    opacity: 0.5;
-    flex-shrink: 0;
-  }
+  .dsb-sort-arrow { margin-left: auto; color: var(--text-muted); font-size: 10px; opacity: 0.5; flex-shrink: 0; }
 
-  /* ── Share ── */
+  /* Share */
   .dsb-share-wrap { position: relative; }
   .dsb-share-btn {
     display: flex;
@@ -301,26 +321,19 @@
     align-items: center;
     justify-content: space-between;
   }
-  .dsb-share-toggle-label {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
+  .dsb-share-toggle-label { font-size: 11px; color: var(--text-muted); }
 
-  /* ── Profile row ── */
+  /* Profile row — no modal, just display */
   .dsb-profile-row {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 6px 8px;
     border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.12s;
+    cursor: default;
     user-select: none;
     -webkit-user-select: none;
   }
-  .dsb-profile-row:hover { background: rgba(255,255,255,0.04); }
-
-  /* bigger initials in sidebar */
   #dsbProfileAvatar {
     width: 26px !important;
     height: 26px !important;
@@ -328,7 +341,6 @@
     border-radius: 50%;
     flex-shrink: 0;
   }
-
   .dsb-profile-email {
     font-size: 11px;
     color: var(--text-muted);
@@ -340,97 +352,16 @@
   }
 }
 
-/* ─── TABLET (768–1023px): hamburger + overlay sidebar ─── */
+/* ── Tablet hamburger — only below 768px ── */
 .desk-hamburger,
-.dsb-backdrop { display: none; }
+.dsb-backdrop { display: none !important; }
 
-@media (min-width: 768px) and (max-width: 1023px) {
-  .desk-hamburger {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    bottom: 24px;
-    left: 16px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    cursor: pointer;
-    z-index: 48;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-    transition: color 0.15s;
-  }
-  .desk-hamburger:hover { color: var(--text); }
-  .header {
-    position: fixed !important;
-    top: 0; left: 0; bottom: 0;
-    transform: translateX(calc(-1 * 220px - 2px));
-    transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
-    z-index: 50;
-    border-right: 1px solid var(--border);
-    border-bottom: none !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    width: 220px !important;
-    min-width: 0 !important;
-    display: flex;
-    padding: max(var(--safe-top), 24px) 0 max(var(--safe-bottom), 20px);
-    background: var(--surface);
-    overflow: hidden;
-  }
-  .header.dsb-open { transform: translateX(0); }
-  .dsb-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0);
-    z-index: 49;
-    pointer-events: none;
-    transition: background 0.28s;
-  }
-  .dsb-backdrop.open {
-    background: rgba(0,0,0,0.55);
-    pointer-events: auto;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-  }
-  .app-screen { flex-direction: column !important; }
-  .grid-container { padding-left: 16px !important; padding-right: 16px !important; }
-  .floating-bar { left: 16px !important; right: 16px !important; }
-  .book-grid { grid-template-columns: repeat(5, 1fr) !important; gap: 10px !important; }
-  .dsb-nav-section { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; margin-top: 2px; }
-  .dsb-bottom { display: flex; flex-direction: column; margin-top: auto; padding: 0 8px 0; flex-shrink: 0; }
-  .header-top { padding: 0 16px; margin-bottom: 20px; }
-  .header-top .profile-avatar { display: none; }
-  #sortToggleBtn { display: none; }
-  .filter-tabs { flex-direction: column; gap: 2px; overflow: visible; width: auto; }
-  .tab-btn { border-radius: 8px; justify-content: flex-start; padding: 8px 10px; font-size: 13px; border-color: transparent; background: transparent; height: 36px; min-height: 0; }
-  .tab-btn.active { background: rgba(201,113,74,0.1); border-color: transparent; color: var(--accent); }
-  .tab-count { margin-left: auto; font-size: 10px; background: transparent; border-radius: 100px; padding: 0; opacity: 0.5; color: inherit; }
-  .tab-btn.active .tab-count { background: transparent; color: var(--accent); opacity: 0.7; }
-  .toolbar { flex-direction: column; align-items: stretch; gap: 2px; padding: 0 8px; margin-bottom: 0; flex: 0 0 auto; overflow: visible; }
-}
-
-@media (min-width: 1024px) {
-  .desk-hamburger { display: none !important; }
-  .dsb-backdrop { display: none !important; }
-}
-
-/* ─── DESKTOP DETAIL PANEL ─── */
+/* ── Desktop detail panel ── */
 .desk-detail-panel { display: none; }
 
 @media (min-width: 768px) {
+  /* Hide mobile bottom-sheet detail modal */
   #detailModal { display: none !important; }
-
-  .desk-shell {
-    display: flex;
-    flex-direction: row;
-    height: 100dvh;
-    overflow: hidden;
-  }
 
   .desk-detail-panel {
     display: flex;
@@ -444,7 +375,7 @@
     transition:
       width 0.26s cubic-bezier(0.32,0.72,0,1),
       min-width 0.26s cubic-bezier(0.32,0.72,0,1),
-      border-left-width 0.26s;
+      border-left-width 0.1s;
     height: 100dvh;
     position: sticky;
     top: 0;
@@ -485,7 +416,6 @@
   }
   .ddp-scroll::-webkit-scrollbar { width: 0; }
 
-  /* Cover — taller, more presence */
   .ddp-cover {
     width: 100%;
     aspect-ratio: 2/3;
@@ -497,7 +427,6 @@
   }
   .ddp-cover img { width: 100%; height: 100%; object-fit: cover; }
 
-  /* Title block — generous spacing */
   .ddp-title {
     font-size: 15px;
     font-weight: 700;
@@ -521,7 +450,6 @@
     margin-bottom: 12px;
   }
 
-  /* Status badge */
   .ddp-badge {
     display: inline-flex;
     align-items: center;
@@ -537,7 +465,6 @@
   }
   .ddp-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 
-  /* Meta — stripped down, just genre + pages as plain text pairs */
   .ddp-meta {
     display: flex;
     gap: 16px;
@@ -554,13 +481,8 @@
     font-weight: 600;
     opacity: 0.5;
   }
-  .ddp-meta-val {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-dim);
-  }
+  .ddp-meta-val { font-size: 12px; font-weight: 500; color: var(--text-dim); }
 
-  /* Progress — only shown when reading */
   .ddp-progress-wrap { margin-bottom: 16px; }
   .ddp-progress-meta {
     display: flex;
@@ -573,7 +495,6 @@
   .ddp-bar-bg { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
   .ddp-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
 
-  /* Summary — collapsed by default, just a hint */
   .ddp-sum-label {
     font-size: 9px;
     text-transform: uppercase;
@@ -594,7 +515,6 @@
     overflow: hidden;
   }
 
-  /* CTAs — pill style, consistent with app language */
   .ddp-primary {
     width: 100%;
     padding: 11px;
@@ -611,12 +531,12 @@
     justify-content: center;
     gap: 5px;
     margin-bottom: 7px;
-    transition: opacity 0.15s, transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+    transition: opacity 0.15s;
     box-shadow: 0 4px 16px rgba(201,113,74,0.3);
     letter-spacing: -0.01em;
   }
-  .ddp-primary:hover { opacity: 0.9; }
-  .ddp-primary:active { transform: scale(0.975); opacity: 0.85; }
+  .ddp-primary:hover { opacity: 0.88; }
+  .ddp-primary:active { opacity: 0.75; }
 
   .ddp-secondary {
     width: 100%;
@@ -632,13 +552,12 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-    transition: border-color 0.12s, color 0.12s, transform 0.15s;
+    transition: border-color 0.12s, color 0.12s;
     letter-spacing: -0.01em;
   }
   .ddp-secondary:hover { border-color: var(--text-muted); color: var(--text); }
-  .ddp-secondary:active { transform: scale(0.975); }
 
-  /* Book card hover — desktop only, no scale on touch */
+  /* Hover effect — desktop pointer only */
   @media (hover: hover) and (pointer: fine) {
     .book-card:hover {
       transform: translateY(-3px);
@@ -652,28 +571,26 @@
     border-radius: 9px;
   }
 
-  /* Grid collapse when panel opens: 7→5 col, smooth */
+  /* Grid narrows when panel opens */
   #bookGrid.grid-narrow {
-    grid-template-columns: repeat(5, 1fr) !important;
+    grid-template-columns: repeat(4, 1fr) !important;
   }
-
-  /* Suppress bookIn re-animation on grid reflow */
   #bookGrid.grid-narrow .book-card,
   #bookGrid.grid-narrow .book-card * {
     animation: none !important;
   }
 }
 
+@media (min-width: 1024px) {
+  #bookGrid.grid-narrow { grid-template-columns: repeat(5, 1fr) !important; }
+}
+
 @media (min-width: 1280px) {
-  #bookGrid.grid-narrow {
-    grid-template-columns: repeat(6, 1fr) !important;
-  }
+  #bookGrid.grid-narrow { grid-template-columns: repeat(6, 1fr) !important; }
 }
 
 @media (min-width: 1600px) {
-  #bookGrid.grid-narrow {
-    grid-template-columns: repeat(7, 1fr) !important;
-  }
+  #bookGrid.grid-narrow { grid-template-columns: repeat(7, 1fr) !important; }
 }
   `;
   document.head.appendChild(style);
@@ -683,8 +600,7 @@
   // 2. INJECT HTML
   // ─────────────────────────────────────────────
 
-  // ── 2a. Sidebar nav section (Lists + Authors + Sort row) ──
-  // Inserted at the end of .toolbar, after the filter tabs and sort button
+  // ── 2a. Sidebar nav section ──
   const toolbar = document.querySelector('.toolbar');
   if (toolbar) {
     toolbar.insertAdjacentHTML('beforeend', `
@@ -712,7 +628,6 @@
   }
 
   // ── 2b. Sidebar bottom (share + profile) ──
-  // Inserted at end of .header
   const header = document.querySelector('.header');
   if (header) {
     header.insertAdjacentHTML('beforeend', `
@@ -748,8 +663,7 @@
     `);
   }
 
-  // ── 2c. Desktop detail panel ──
-  // Inserted as last child of #app (sibling of .app-screen)
+  // ── 2c. Desktop detail panel — sibling of .app-screen, inside #app ──
   const appEl = document.getElementById('app');
   if (appEl) {
     appEl.insertAdjacentHTML('beforeend', `
@@ -782,51 +696,14 @@
     `);
   }
 
-  // ── 2d. Hamburger + backdrop ──
-  document.body.insertAdjacentHTML('beforeend', `
-    <button class="desk-hamburger" id="deskHamburger" aria-label="Open navigation" aria-expanded="false">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-    <div id="dsbBackdrop" class="dsb-backdrop"></div>
-  `);
-
 
   // ─────────────────────────────────────────────
   // 3. LOGIC
   // ─────────────────────────────────────────────
 
-  const isDesktopLayout = () => window.innerWidth >= 768;
+  const isDesktop = () => window.innerWidth >= 768;
 
-  // ── 3a. Hamburger (tablet) ──
-  function openSidebar() {
-    const header = document.querySelector('.header');
-    const backdrop = document.getElementById('dsbBackdrop');
-    const hamburger = document.getElementById('deskHamburger');
-    if (header) header.classList.add('dsb-open');
-    if (backdrop) backdrop.classList.add('open');
-    if (hamburger) hamburger.setAttribute('aria-expanded', 'true');
-  }
-  function closeSidebar() {
-    const header = document.querySelector('.header');
-    const backdrop = document.getElementById('dsbBackdrop');
-    const hamburger = document.getElementById('deskHamburger');
-    if (header) header.classList.remove('dsb-open');
-    if (backdrop) backdrop.classList.remove('open');
-    if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
-  }
-
-  document.addEventListener('click', e => {
-    const hamburger = document.getElementById('deskHamburger');
-    const backdrop = document.getElementById('dsbBackdrop');
-    if (hamburger && hamburger.contains(e.target)) {
-      const header = document.querySelector('.header');
-      header && header.classList.contains('dsb-open') ? closeSidebar() : openSidebar();
-      return;
-    }
-    if (backdrop && backdrop.contains(e.target)) { closeSidebar(); return; }
-  });
-
-  // ── 3b. Desktop sidebar: sort row cycles sort ──
+  // ── 3a. Sort row cycles sort ──
   document.addEventListener('click', e => {
     const sortRow = document.getElementById('dsbSortRow');
     if (!sortRow || !sortRow.contains(e.target)) return;
@@ -835,30 +712,43 @@
     const valEl = document.getElementById('dsbSortVal');
     if (!valEl) return;
     const cur = valEl.textContent.trim();
-    const idx = sorts.indexOf(cur);
-    const next = sorts[(idx + 1) % sorts.length];
+    const next = sorts[(sorts.indexOf(cur) + 1) % sorts.length];
     valEl.textContent = next;
     if (typeof window.setSort === 'function') window.setSort(sortMap[next]);
   });
 
-  // ── 3c. Sidebar nav: Lists + Authors ──
-  window.dsbNavTo = function (view) {
-    document.querySelectorAll('.dsb-nav-item').forEach(i => i.classList.remove('active'));
-    if (view === 'lists') {
+  // ── 3b. Sidebar nav: Lists + Authors
+  //    On desktop: open the overlay but it will be offset right of the sidebar via CSS.
+  //    The overlay CSS rule `left: 200px` ensures sidebar stays visible.
+  document.addEventListener('click', e => {
+    if (e.target.closest('#dsbNavLists')) {
+      e.stopPropagation();
+      document.querySelectorAll('.dsb-nav-item').forEach(i => i.classList.remove('active'));
       document.getElementById('dsbNavLists')?.classList.add('active');
       if (typeof window.openListsOverlay === 'function') window.openListsOverlay();
-    } else if (view === 'authors') {
+    }
+    if (e.target.closest('#dsbNavAuthors')) {
+      e.stopPropagation();
+      document.querySelectorAll('.dsb-nav-item').forEach(i => i.classList.remove('active'));
       document.getElementById('dsbNavAuthors')?.classList.add('active');
       if (typeof window.openAuthorsOverlay === 'function') window.openAuthorsOverlay();
     }
-  };
-
-  document.addEventListener('click', e => {
-    if (e.target.closest('#dsbNavLists')) { e.stopPropagation(); window.dsbNavTo('lists'); }
-    if (e.target.closest('#dsbNavAuthors')) { e.stopPropagation(); window.dsbNavTo('authors'); }
   });
 
-  // ── 3d. Share popover ──
+  // Deactivate nav item when overlays close — patch close functions after load
+  window.addEventListener('load', () => {
+    ['closeListsOverlay', 'closeAuthorsOverlay', 'loClose'].forEach(fnName => {
+      const orig = window[fnName];
+      if (typeof orig === 'function') {
+        window[fnName] = function (...args) {
+          document.querySelectorAll('.dsb-nav-item').forEach(i => i.classList.remove('active'));
+          return orig.apply(this, args);
+        };
+      }
+    });
+  });
+
+  // ── 3c. Share popover ──
   document.addEventListener('click', e => {
     const btn = document.getElementById('dsbShareBtn');
     const pop = document.getElementById('dsbSharePop');
@@ -881,16 +771,11 @@
     if (typeof window.toggleShelfPublic === 'function') window.toggleShelfPublic();
   });
 
-  // ── 3e. Profile row → open profile modal ──
-  document.addEventListener('click', e => {
-    if (e.target.closest('#dsbProfileRow')) {
-      if (typeof window.openProfileModal === 'function') window.openProfileModal();
-    }
-  });
+  // ── 3d. Profile row — NO modal on desktop, it's just a display row ──
+  // (clicking does nothing; profile management is handled via mobile sheet on mobile only)
 
-  // ── 3f. Sync desktop sidebar with app state ──
+  // ── 3e. Sync sidebar state ──
   window.dsbSyncProfile = function () {
-    // guard — only run if app state is ready
     if (typeof window.currentUser === 'undefined') return;
 
     const email = window.currentUser?.email || '—';
@@ -902,7 +787,6 @@
     if (avatarEl) avatarEl.textContent = initials;
     if (emailEl)  emailEl.textContent  = email;
 
-    // counts
     const lists = typeof window._getLoLists === 'function' ? window._getLoLists() : [];
     const listCountEl = document.getElementById('dsbListsCount');
     if (listCountEl) listCountEl.textContent = lists.length || '';
@@ -916,26 +800,21 @@
       authorsCountEl.textContent = n || '';
     }
 
-    // share URL
     const profile = window.userProfile;
     const urlEl   = document.getElementById('dsbShareUrl');
     const toggle  = document.getElementById('dsbShareToggle');
     if (urlEl) {
-      if (profile?.shelf_slug) {
-        urlEl.textContent = `${location.origin}${location.pathname}?shelf=${profile.shelf_slug}`;
-      } else {
-        urlEl.textContent = 'set a name in profile first';
-      }
+      urlEl.textContent = profile?.shelf_slug
+        ? `${location.origin}${location.pathname}?shelf=${profile.shelf_slug}`
+        : 'set a name in profile first';
     }
     if (toggle) toggle.classList.toggle('on', !!profile?.shelf_public);
   };
 
-  // Patch app.js functions to also call dsbSyncProfile after they run
-  // We wait for load so app.js functions are defined first
   window.addEventListener('load', () => {
     // Patch loadProfile
     const _origLoadProfile = window.loadProfile;
-    if (_origLoadProfile) {
+    if (typeof _origLoadProfile === 'function') {
       window.loadProfile = async function (...args) {
         const result = await _origLoadProfile.apply(this, args);
         window.dsbSyncProfile();
@@ -945,7 +824,7 @@
 
     // Patch renderGrid
     const _origRenderGrid = window.renderGrid;
-    if (_origRenderGrid) {
+    if (typeof _origRenderGrid === 'function') {
       window.renderGrid = function (...args) {
         _origRenderGrid.apply(this, args);
         window.dsbSyncProfile();
@@ -954,146 +833,157 @@
 
     // Patch loLoadLists
     const _origLoLoadLists = window.loLoadLists;
-    if (_origLoLoadLists) {
+    if (typeof _origLoLoadLists === 'function') {
       window.loLoadLists = async function (...args) {
         const result = await _origLoLoadLists.apply(this, args);
         window.dsbSyncProfile();
         return result;
       };
     }
+  });
 
-    // ── 3g. Desktop detail panel logic ──
-    const panel    = document.getElementById('deskDetailPanel');
-    const closeBtn = document.getElementById('ddpClose');
-    const bookGrid = document.getElementById('bookGrid');
+  // ── 3f. Desktop detail panel ──
+  const panel    = document.getElementById('deskDetailPanel');
+  const closeBtn = document.getElementById('ddpClose');
+  const bookGrid = document.getElementById('bookGrid');
 
-    let ddpSelectedId = null;
+  let ddpSelectedId = null;
 
-    function openDDP(book) {
-      if (!panel || !isDesktopLayout()) return;
-      ddpSelectedId = book.id;
+  function openDDP(book) {
+    if (!panel || !isDesktop()) return;
+    ddpSelectedId = book.id;
 
-      // cover
-      const coverEl = document.getElementById('ddpCover');
-      if (coverEl) {
-        coverEl.innerHTML = book.cover_url
-          ? `<img src="${book.cover_url.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" alt="">`
-          : (typeof window.makePlaceholder === 'function' ? window.makePlaceholder(book, 22) : '');
-      }
+    const coverEl = document.getElementById('ddpCover');
+    if (coverEl) {
+      coverEl.innerHTML = book.cover_url
+        ? `<img src="${book.cover_url}" alt="">`
+        : (typeof window.makePlaceholder === 'function' ? window.makePlaceholder(book, 22) : '');
+    }
 
-      const safe = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-      const el   = id => document.getElementById(id);
+    const el = id => document.getElementById(id);
 
-      if (el('ddpTitle'))       el('ddpTitle').textContent  = book.title  || '—';
-      if (el('ddpAuthor'))      el('ddpAuthor').textContent = book.author || '—';
-      if (el('ddpYear'))        el('ddpYear').textContent   = [book.year, book.publisher].filter(Boolean).join(' · ') || '';
-      if (el('ddpBadgeLabel'))  el('ddpBadgeLabel').textContent = { reading: 'Reading', read: 'Read', unread: 'Unread', 'not-owned': 'Not owned' }[book.status] || book.status || '';
-      if (el('ddpGenre'))       el('ddpGenre').textContent  = book.genre      || '—';
-      if (el('ddpPages'))       el('ddpPages').textContent  = book.page_count ? book.page_count + ' pg' : '—';
+    if (el('ddpTitle'))      el('ddpTitle').textContent  = book.title  || '—';
+    if (el('ddpAuthor'))     el('ddpAuthor').textContent = book.author || '—';
+    if (el('ddpYear'))       el('ddpYear').textContent   = [book.year, book.publisher].filter(Boolean).join(' · ') || '';
+    if (el('ddpBadgeLabel')) el('ddpBadgeLabel').textContent = {
+      reading: 'Reading', read: 'Read', unread: 'Unread', 'not-owned': 'Not owned'
+    }[book.status] || book.status || '';
+    if (el('ddpGenre'))  el('ddpGenre').textContent  = book.genre      || '—';
+    if (el('ddpPages'))  el('ddpPages').textContent  = book.page_count ? book.page_count + ' pg' : '—';
 
-      // progress
-      const pw = el('ddpProgressWrap');
-      if (pw) {
-        if (book.status === 'reading' && book.total_pages > 0) {
-          const pct = Math.round((book.pages_read || 0) / book.total_pages * 100);
-          if (el('ddpProgressPages')) el('ddpProgressPages').textContent = `${book.pages_read || 0} / ${book.total_pages} pages`;
-          if (el('ddpProgressPct'))   el('ddpProgressPct').textContent   = pct + '%';
-          if (el('ddpBarFill'))       el('ddpBarFill').style.width        = pct + '%';
-          pw.style.display = '';
-        } else {
-          pw.style.display = 'none';
-        }
-      }
-
-      // summary
-      if (el('ddpSummary')) el('ddpSummary').textContent = book.description || book.ai_summary || '—';
-
-      // CTAs
-      const statusNext = { reading: ['read',    'Mark as read'],      unread: ['reading', 'Start reading'],  read: ['reading', 'Re-read']      };
-      const statusSec  = { reading: ['unread',  'Move to unread'],    unread: ['read',    'Mark as read'],   read: ['unread',  'Move to unread'] };
-      const [pStatus, pLabel] = statusNext[book.status] || ['reading', 'Start reading'];
-      const [sStatus, sLabel] = statusSec[book.status]  || ['unread',  'Move to unread'];
-      const primary   = el('ddpPrimary');
-      const secondary = el('ddpSecondary');
-      if (primary)   { primary.textContent   = pLabel; primary.onclick   = () => ddpSetStatus(book.id, pStatus); }
-      if (secondary) { secondary.textContent = sLabel; secondary.onclick = () => ddpSetStatus(book.id, sStatus); }
-
-      panel.classList.add('ddp-open');
-      if (bookGrid) bookGrid.classList.add('grid-narrow');
-
-      // highlight selected card
-      if (bookGrid) {
-        bookGrid.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
-        const card = bookGrid.querySelector(`.book-card[data-id="${book.id}"]`);
-        if (card) card.classList.add('ddp-selected');
+    const pw = el('ddpProgressWrap');
+    if (pw) {
+      if (book.status === 'reading' && book.total_pages > 0) {
+        const pct = Math.round((book.pages_read || 0) / book.total_pages * 100);
+        if (el('ddpProgressPages')) el('ddpProgressPages').textContent = `${book.pages_read || 0} / ${book.total_pages} pages`;
+        if (el('ddpProgressPct'))   el('ddpProgressPct').textContent   = pct + '%';
+        if (el('ddpBarFill'))       el('ddpBarFill').style.width        = pct + '%';
+        pw.style.display = '';
+      } else {
+        pw.style.display = 'none';
       }
     }
 
-    function closeDDP() {
-      if (!panel) return;
-      panel.classList.remove('ddp-open');
-      if (bookGrid) bookGrid.classList.remove('grid-narrow');
-      if (bookGrid) bookGrid.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
-      ddpSelectedId = null;
-    }
+    if (el('ddpSummary')) el('ddpSummary').textContent = book.description || book.ai_summary || '—';
 
-    async function ddpSetStatus(id, status) {
-      const booksArr = window.books || [];
-      const book = booksArr.find(b => String(b.id) === String(id));
-      if (!book) return;
-      book.status = status;
-      if (typeof window.renderGrid === 'function') window.renderGrid();
-      if (typeof window.dbUpdate === 'function') await window.dbUpdate(id, { status });
-      if (typeof window.showToast === 'function') window.showToast('Status updated ✓');
-      openDDP(book); // refresh panel CTAs
-    }
+    const statusNext = {
+      reading: ['read',   'Mark as read'],
+      unread:  ['reading','Start reading'],
+      read:    ['reading','Re-read']
+    };
+    const statusSec = {
+      reading: ['unread', 'Move to unread'],
+      unread:  ['read',   'Mark as read'],
+      read:    ['unread', 'Move to unread']
+    };
+    const [pStatus, pLabel] = statusNext[book.status] || ['reading', 'Start reading'];
+    const [sStatus, sLabel] = statusSec[book.status]  || ['unread',  'Move to unread'];
 
-    if (closeBtn) closeBtn.addEventListener('click', closeDDP);
+    const primary   = el('ddpPrimary');
+    const secondary = el('ddpSecondary');
+    if (primary)   { primary.textContent   = pLabel; primary.onclick   = () => ddpSetStatus(book.id, pStatus); }
+    if (secondary) { secondary.textContent = sLabel; secondary.onclick = () => ddpSetStatus(book.id, sStatus); }
 
-    // Keyboard: Escape closes panel
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { closeDDP(); closeSidebar(); }
+    panel.classList.add('ddp-open');
+    if (bookGrid) bookGrid.classList.add('grid-narrow');
+
+    // Highlight selected card
+    document.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
+    const card = bookGrid?.querySelector(`.book-card[data-id="${book.id}"]`);
+    if (card) card.classList.add('ddp-selected');
+  }
+
+  function closeDDP() {
+    if (!panel) return;
+    panel.classList.remove('ddp-open');
+    if (bookGrid) bookGrid.classList.remove('grid-narrow');
+    document.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
+    ddpSelectedId = null;
+  }
+
+  async function ddpSetStatus(id, status) {
+    const book = (window.books || []).find(b => String(b.id) === String(id));
+    if (!book) return;
+    book.status = status;
+    if (typeof window.renderGrid === 'function') window.renderGrid();
+    if (typeof window.dbUpdate  === 'function') await window.dbUpdate(id, { status });
+    if (typeof window.showToast === 'function') window.showToast('Status updated ✓');
+    openDDP(book);
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', closeDDP);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeDDP();
+  });
+
+  // ── Book card click → open detail panel ──
+  // Use bubbling (not capture) so it doesn't fight mobile handlers.
+  // Registered directly on #bookGrid so it survives renderGrid rewrites.
+  if (bookGrid) {
+    bookGrid.addEventListener('click', e => {
+      if (!isDesktop()) return;
+      // Only fire for direct book-card clicks, not buttons inside the card
+      const card = e.target.closest('.book-card');
+      if (!card) return;
+      // Don't intercept if a button/link inside the card was clicked
+      if (e.target.closest('button, a, [role="button"]')) return;
+      const book = (window.books || []).find(b => String(b.id) === String(card.dataset.id));
+      if (book) openDDP(book);
     });
 
-    // Book grid click → open detail panel (event delegation, survives every renderGrid call)
-    if (bookGrid) {
-      bookGrid.addEventListener('click', e => {
-        if (!isDesktopLayout()) return;
-        const card = e.target.closest('.book-card');
-        if (!card) return;
-        e.stopPropagation();
-        const booksArr = window.books || [];
-        const book = booksArr.find(b => String(b.id) === String(card.dataset.id));
-        if (book) openDDP(book);
-      }, true);
+    bookGrid.addEventListener('contextmenu', e => {
+      if (!isDesktop()) return;
+      e.preventDefault();
+      const card = e.target.closest('.book-card');
+      if (!card) return;
+      if (typeof window.openQuickMenu === 'function') window.openQuickMenu(card.dataset.id, card);
+    });
+  }
 
-      bookGrid.addEventListener('contextmenu', e => {
-        if (!isDesktopLayout()) return;
-        e.preventDefault();
-        const card = e.target.closest('.book-card');
-        if (!card) return;
-        if (typeof window.openQuickMenu === 'function') window.openQuickMenu(card.dataset.id, card);
-      });
-    }
-
-    // Override openDetailModal so desktop click goes to panel instead of bottom sheet
-    const _origOpenDetailModal = window.openDetailModal;
+  // Override openDetailModal globally so any code path that calls it
+  // routes to the panel on desktop instead of the bottom sheet.
+  // We do this immediately (not on load) so it's ready before any click.
+  const _hookDetailModal = () => {
+    const orig = window.openDetailModal;
     window.openDetailModal = function (id) {
-      if (isDesktopLayout()) {
-        const booksArr = window.books || [];
-        const book = booksArr.find(b => String(b.id) === String(id));
+      if (isDesktop()) {
+        const book = (window.books || []).find(b => String(b.id) === String(id));
         if (book) { openDDP(book); return; }
       }
-      if (_origOpenDetailModal) _origOpenDetailModal.call(this, id);
+      if (typeof orig === 'function') orig.call(this, id);
     };
+  };
 
-    // Resize: clean up if viewport drops below tablet breakpoint
-    window.addEventListener('resize', () => {
-      if (!isDesktopLayout()) { closeDDP(); closeSidebar(); }
-    });
+  // Try immediately, and again after load in case app.js defines it late
+  _hookDetailModal();
+  window.addEventListener('load', _hookDetailModal);
 
-    // Initial sync
-    window.dsbSyncProfile();
+  window.addEventListener('resize', () => {
+    if (!isDesktop()) { closeDDP(); }
   });
+
+  // Initial sync after DOM settles
+  window.addEventListener('load', () => window.dsbSyncProfile());
 
 })();
