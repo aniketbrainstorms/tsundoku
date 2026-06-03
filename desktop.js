@@ -843,10 +843,7 @@
   });
 
   // ── 3f. Desktop detail panel ──
-  const panel    = document.getElementById('deskDetailPanel');
-  const closeBtn = document.getElementById('ddpClose');
-  const bookGrid = document.getElementById('bookGrid');
-
+  let panel, closeBtn, bookGrid;
   let ddpSelectedId = null;
 
   function openDDP(book) {
@@ -931,35 +928,36 @@
     openDDP(book);
   }
 
-  if (closeBtn) closeBtn.addEventListener('click', closeDDP);
+  document.addEventListener('DOMContentLoaded', () => {
+    panel    = document.getElementById('deskDetailPanel');
+    closeBtn = document.getElementById('ddpClose');
+    bookGrid = document.getElementById('bookGrid');
 
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeDDP();
+    if (closeBtn) closeBtn.addEventListener('click', closeDDP);
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeDDP();
+    });
+
+    if (bookGrid) {
+      bookGrid.addEventListener('click', e => {
+        if (!isDesktop()) return;
+        const card = e.target.closest('.book-card');
+        if (!card) return;
+        if (e.target.closest('button, a, [role="button"]')) return;
+        const book = (window.books || []).find(b => String(b.id) === String(card.dataset.id));
+        if (book) openDDP(book);
+      });
+
+      bookGrid.addEventListener('contextmenu', e => {
+        if (!isDesktop()) return;
+        e.preventDefault();
+        const card = e.target.closest('.book-card');
+        if (!card) return;
+        if (typeof window.openQuickMenu === 'function') window.openQuickMenu(card.dataset.id, card);
+      });
+    }
   });
-
-  // ── Book card click → open detail panel ──
-  // Use bubbling (not capture) so it doesn't fight mobile handlers.
-  // Registered directly on #bookGrid so it survives renderGrid rewrites.
-  if (bookGrid) {
-    bookGrid.addEventListener('click', e => {
-      if (!isDesktop()) return;
-      // Only fire for direct book-card clicks, not buttons inside the card
-      const card = e.target.closest('.book-card');
-      if (!card) return;
-      // Don't intercept if a button/link inside the card was clicked
-      if (e.target.closest('button, a, [role="button"]')) return;
-      const book = (window.books || []).find(b => String(b.id) === String(card.dataset.id));
-      if (book) openDDP(book);
-    });
-
-    bookGrid.addEventListener('contextmenu', e => {
-      if (!isDesktop()) return;
-      e.preventDefault();
-      const card = e.target.closest('.book-card');
-      if (!card) return;
-      if (typeof window.openQuickMenu === 'function') window.openQuickMenu(card.dataset.id, card);
-    });
-  }
 
   // Override openDetailModal globally so any code path that calls it
   // routes to the panel on desktop instead of the bottom sheet.
