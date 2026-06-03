@@ -364,34 +364,6 @@
       </div>
       <div class="alpha-bubble" id="mainAlphaBubble"></div>
     </div>
-
-    <!-- DESKTOP RIGHT DETAIL PANEL -->
-    <aside class="desk-detail-panel" id="deskDetailPanel">
-      <div class="ddp-inner">
-        <button class="ddp-close" id="ddpClose" aria-label="Close detail panel">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-        <div class="ddp-scroll">
-          <div class="ddp-cover" id="ddpCover"></div>
-          <div class="ddp-title" id="ddpTitle"></div>
-          <div class="ddp-author" id="ddpAuthor"></div>
-          <div class="ddp-year" id="ddpYear"></div>
-          <div class="ddp-badge" id="ddpBadge"><span class="ddp-badge-dot"></span><span id="ddpBadgeLabel"></span></div>
-          <div class="ddp-meta" id="ddpMeta">
-            <div><div class="ddp-meta-label">Genre</div><div class="ddp-meta-val" id="ddpGenre">—</div></div>
-            <div><div class="ddp-meta-label">Pages</div><div class="ddp-meta-val" id="ddpPages">—</div></div>
-          </div>
-          <div class="ddp-progress-wrap" id="ddpProgressWrap" style="display:none">
-            <div class="ddp-progress-meta"><span id="ddpProgressPages"></span><span id="ddpProgressPct"></span></div>
-            <div class="ddp-bar-bg"><div class="ddp-bar-fill" id="ddpBarFill"></div></div>
-          </div>
-          <div class="ddp-sum-label">summary</div>
-          <p class="ddp-sum-text" id="ddpSummary">—</p>
-          <button class="ddp-primary" id="ddpPrimary"></button>
-          <button class="ddp-secondary" id="ddpSecondary"></button>
-        </div>
-      </div>
-    </aside>
     
     <!-- FLOATING SEARCH + ADD BAR -->
     <div class="floating-bar" id="floatingBar">
@@ -1398,11 +1370,6 @@
 <script src="app.js"></script>
 <script src="detail_sheet.js"></script>
 <script src="author_modal.js"></script>
-
-<button class="desk-hamburger" id="deskHamburger" aria-label="Open navigation" aria-expanded="false">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-</button>
-<div id="dsbBackdrop" class="dsb-backdrop"></div>
-  
+<script src="desktop.js"></script>
 </body>
 </html>
