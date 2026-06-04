@@ -1418,7 +1418,18 @@
       Back
     </button>
     <span class="shelf-header-title">Authors</span>
-    <div class="al-header-actions">
+    <button class="al-sort-btn" id="alSortBtn" onclick="toggleAlSort()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+      <span id="alSortLabel">Sort A–Z</span>
+    </button>
+  </div>
+  <p class="al-shelf-sub" id="alShelfSub"></p>
+  <div style="padding:0 16px 10px;">
+    <div class="al-search-row">
+      <div class="al-search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="al-search-input" id="alSearchInput" placeholder="Search authors…" oninput="renderAuthorsList()" autocomplete="off" autocorrect="off" spellcheck="false" />
+      </div>
       <div class="al-view-seg" aria-label="Author view">
         <button class="al-view-btn active" data-al-view="list" onclick="setAlView('list')" title="List view">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -1429,17 +1440,6 @@
           <span>Card</span>
         </button>
       </div>
-      <button class="al-sort-btn" id="alSortBtn" onclick="toggleAlSort()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
-        <span id="alSortLabel">Sort A–Z</span>
-      </button>
-    </div>
-  </div>
-  <p class="al-shelf-sub" id="alShelfSub"></p>
-  <div style="padding:0 16px 10px;">
-    <div class="al-search-wrap">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" class="al-search-input" id="alSearchInput" placeholder="Search authors…" oninput="renderAuthorsList()" autocomplete="off" autocorrect="off" spellcheck="false" />
     </div>
   </div>
   <div class="divider"></div>
