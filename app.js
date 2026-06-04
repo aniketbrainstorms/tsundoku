@@ -2430,7 +2430,6 @@ Description: ${description || 'No description available.'}`;
       const l = letterFromY(e.clientY);
       if (l) activateLd(l, e.clientY);
     });
-  }
 
     window.addEventListener('mousemove', e => {
       if (!mouseState[ctx]) return;
