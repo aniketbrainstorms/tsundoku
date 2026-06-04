@@ -1263,6 +1263,7 @@ function openProfileModal() {
 
 // ── AUTHORS LIST OVERLAY ──
 let alSort = 'az'; // 'az' | 'count'
+let alView = localStorage.getItem('tsundoku_al_view') || 'list'; // 'list' | 'cards'
 
 function _alSetAvatarImg(el, imageUrl, authorName) {
   if (!el) return;
@@ -1402,8 +1403,206 @@ function toggleAlSort() {
   document.getElementById('alSortLabel').textContent = alSort === 'az' ? 'Sort A–Z' : 'Sort by count';
   renderAuthorsList();
 }
+function setAlView(view) {
+  alView = view;
+  try { localStorage.setItem('tsundoku_al_view', view); } catch {}
+  document.getElementById('alViewList').classList.toggle('active', view === 'list');
+  document.getElementById('alViewCards').classList.toggle('active', view === 'cards');
+  renderAuthorsList();
+}
 function renderAuthorsList() {
   const q = (document.getElementById('alSearchInput')?.value || '').toLowerCase().trim();
+  const shelfBooks = books.filter(b => b.status !== 'not-owned' && b.author);
+
+  const authorMap = new Map();
+  shelfBooks.forEach(b => {
+    const a = (b.author || '').trim();
+    if (!a) return;
+    authorMap.set(a, (authorMap.get(a) || 0) + 1);
+  });
+
+  let entries = Array.from(authorMap.entries());
+  if (q) entries = entries.filter(([name]) => name.toLowerCase().includes(q));
+  if (alSort === 'az') entries.sort((a, b) => a[0].localeCompare(b[0]));
+  else entries.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  const sub = document.getElementById('alShelfSub');
+  if (sub) sub.textContent = `All authors in your shelf.`;
+
+  const authorsCount = document.getElementById('authorsCount');
+  if (authorsCount) authorsCount.textContent = `${authorMap.size} authors`;
+
+  // Sync view button state on re-render
+  const listBtn = document.getElementById('alViewList');
+  const cardsBtn = document.getElementById('alViewCards');
+  if (listBtn) listBtn.classList.toggle('active', alView === 'list');
+  if (cardsBtn) cardsBtn.classList.toggle('active', alView === 'cards');
+
+  const scroll = document.getElementById('alScroll');
+  if (!scroll) return;
+
+  if (!entries.length) {
+    scroll.innerHTML = `<div class="al-empty">📭<br>${q ? 'No authors match your search.' : 'No authors yet.'}</div>`;
+    return;
+  }
+
+  if (alView === 'cards') {
+    renderAuthorsCardView(entries, scroll);
+    return;
+  }
+
+  // ── LIST VIEW (original) ──
+  scroll.innerHTML = entries.map(([name, count], i) => {
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+    const bookWord = count === 1 ? 'book' : 'books';
+    return `<div class="al-author-row" data-author="${escapeAttr(name)}" style="animation-delay:${Math.min(i, 14) * 0.028}s">
+      <div class="al-author-avatar" id="al-av-${i}">${escapeHtml(initials)}</div>
+      <div class="al-author-info">
+        <div class="al-author-name">${escapeHtml(name)}</div>
+        <div class="al-author-count">${count} ${bookWord}</div>
+      </div>
+      <svg class="al-author-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
+
+  const allRows = Array.from(scroll.querySelectorAll('.al-author-row'));
+  allRows.forEach(row => {
+    row.addEventListener('click', () => {
+      const author = row.dataset.author;
+      if (typeof openAuthorPage === 'function') openAuthorPage(author, document.getElementById('authorsListOverlay'));
+    });
+  });
+
+  const needsLookup = [];
+  allRows.forEach((row, i) => {
+    const authorName = row.dataset.author;
+    const cacheKey = (authorName || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const avatarEl = document.getElementById('al-av-' + i);
+    if (!avatarEl) return;
+    const cached = typeof _authorCache !== 'undefined' && _authorCache[cacheKey];
+    if (cached?.image) {
+      _alSetAvatarImg(avatarEl, cached.image, authorName);
+    } else {
+      needsLookup.push({ authorName, cacheKey, avatarEl });
+    }
+  });
+
+  if (needsLookup.length && currentUser) {
+    const keys = needsLookup.map(x => x.cacheKey);
+    sb.from('authors').select('name_key, image').in('name_key', keys)
+      .then(({ data }) => {
+        const found = new Map((data || []).map(r => [r.name_key, r.image]));
+        needsLookup.forEach(({ authorName, cacheKey, avatarEl }) => {
+          if (found.has(cacheKey)) {
+            const imgUrl = found.get(cacheKey) || '';
+            if (typeof _authorCache !== 'undefined') {
+              _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imgUrl, name: authorName };
+            }
+            if (imgUrl) _alSetAvatarImg(avatarEl, imgUrl, authorName);
+          } else {
+            _alEnqueueFetch(authorName, cacheKey, avatarEl);
+          }
+        });
+      }).catch(() => {
+        needsLookup.forEach(({ authorName, cacheKey, avatarEl }) =>
+          _alEnqueueFetch(authorName, cacheKey, avatarEl));
+      });
+  }
+  if (typeof alphaBarRefresh === 'function') alphaBarRefresh('authors');
+}
+
+function _alCardSize(count, fav) {
+  if (count >= 10 || (fav && count >= 5)) return 'xl';
+  if (count >= 7) return 'lg';
+  if (count >= 3) return 'md';
+  return 'sm';
+}
+
+const _AL_CARD_COLORS = ['tan', 'slate', 'forest', 'rust'];
+const _AL_CARD_DECOS = ['✦', '☕', '✿', '☽', '★', '⛩', '🌿'];
+function _alCardColor(name) {
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return _AL_CARD_COLORS[h % _AL_CARD_COLORS.length];
+}
+function _alCardDeco(name) {
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0) + 7) >>> 0;
+  return _AL_CARD_DECOS[h % _AL_CARD_DECOS.length];
+}
+
+function renderAuthorsCardView(entries, scroll) {
+  const favAuthors = new Set(); // future: could read from a DB favourites table
+
+  const left = [], right = [];
+  entries.forEach((entry, i) => (i % 2 === 0 ? left : right).push(entry));
+
+  function cardHtml([name, count], i) {
+    const sz = _alCardSize(count, favAuthors.has(name));
+    const color = _alCardColor(name);
+    const deco = _alCardDeco(name);
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') || '?';
+    const avatarSize = sz;
+    const nameCls = sz === 'xl' || sz === 'lg' ? 'al-card-name--large' : sz === 'sm' ? 'al-card-name--small' : '';
+    const bookWord = count === 1 ? 'book' : 'books';
+    const tape = (color === 'tan' || color === 'forest')
+      ? `<div class="al-card-tape"></div>`
+      : `<div class="al-card-clip">⌐</div>`;
+    const avatarPad = sz === 'xl' ? 'style="padding-bottom:20px"' : sz === 'lg' ? 'style="padding-bottom:14px"' : '';
+
+    return `<div class="al-author-card al-card-${color}" data-author="${escapeAttr(name)}" data-avid="alc-av-${i}" ${avatarPad}>
+      ${tape}
+      <div class="al-card-name ${nameCls}">${escapeHtml(name)}</div>
+      <div class="al-card-count">${count} ${bookWord}</div>
+      <div class="al-card-avatar-wrap">
+        <div class="al-card-avatar al-card-avatar--${avatarSize}" id="alc-av-${i}">${escapeHtml(initials)}</div>
+      </div>
+      <div class="al-card-deco" aria-hidden="true">${deco}</div>
+    </div>`;
+  }
+
+  scroll.innerHTML = `<div class="al-card-columns">
+    <div class="al-card-col">${left.map((e, i) => cardHtml(e, i * 2)).join('')}</div>
+    <div class="al-card-col">${right.map((e, i) => cardHtml(e, i * 2 + 1)).join('')}</div>
+  </div>`;
+
+  scroll.querySelectorAll('.al-author-card').forEach(card => {
+    card.addEventListener('click', () => {
+      if (typeof openAuthorPage === 'function')
+        openAuthorPage(card.dataset.author, document.getElementById('authorsListOverlay'));
+    });
+  });
+
+  // Hydrate avatars
+  const needsLookup = [];
+  entries.forEach(([name], i) => {
+    const cacheKey = name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const avatarEl = document.getElementById(`alc-av-${i}`);
+    if (!avatarEl) return;
+    const cached = typeof _authorCache !== 'undefined' && _authorCache[cacheKey];
+    if (cached?.image) {
+      _alSetAvatarImg(avatarEl, cached.image, name);
+    } else {
+      needsLookup.push({ authorName: name, cacheKey, avatarEl });
+    }
+  });
+  if (needsLookup.length && currentUser) {
+    const keys = needsLookup.map(x => x.cacheKey);
+    sb.from('authors').select('name_key, image').in('name_key', keys)
+      .then(({ data }) => {
+        const found = new Map((data || []).map(r => [r.name_key, r.image]));
+        needsLookup.forEach(({ authorName, cacheKey, avatarEl }) => {
+          if (found.has(cacheKey)) {
+            const imgUrl = found.get(cacheKey) || '';
+            if (typeof _authorCache !== 'undefined')
+              _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imgUrl, name: authorName };
+            if (imgUrl) _alSetAvatarImg(avatarEl, imgUrl, authorName);
+          } else {
+            _alEnqueueFetch(authorName, cacheKey, avatarEl);
+          }
+        });
+      }).catch(() => needsLookup.forEach(({ authorName, cacheKey, avatarEl }) =>
+        _alEnqueueFetch(authorName, cacheKey, avatarEl)));
+  }
+}
   const shelfBooks = books.filter(b => b.status !== 'not-owned' && b.author);
 
   // Build author map: name → count
