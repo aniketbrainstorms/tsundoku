@@ -2521,10 +2521,10 @@ Description: ${description || 'No description available.'}`;
 
     bar.addEventListener('mousedown', e => {
       e.preventDefault();
-      mouseState[ctx] = true;
-      const letter = letterFromY(ctx, e.clientY);
-      if (letter) activateLetter(ctx, letter, e.clientY);
+      const l = letterFromY(e.clientY);
+      if (l) activateLd(l, e.clientY);
     });
+  }
 
     window.addEventListener('mousemove', e => {
       if (!mouseState[ctx]) return;
