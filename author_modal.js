@@ -293,6 +293,7 @@ async function openAuthorPage(authorName, callerEl) {
   updateAuthorControls();
 
   if (scroll) scroll.scrollTop = 0;
+  if (_authorCallerEl) _authorCallerEl.style.pointerEvents = 'none';
   navPush(_authorCallerEl, overlay);
   hydrateAuthorHeader(fallback, initialRows);
   renderAuthorRows(getVisibleAuthorRows());
@@ -319,6 +320,7 @@ function openAuthorPageFromDetail() {
 
 function closeAuthorPage() {
   const overlay = document.getElementById('authorOverlay');
+  if (_authorCallerEl) _authorCallerEl.style.pointerEvents = '';
   navPop(overlay, _authorCallerEl);
   _authorCallerEl = null;
   window._authorOpenedFromList = false;
