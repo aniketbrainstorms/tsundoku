@@ -1393,10 +1393,14 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
 }
 function openAuthorsOverlay() {
   renderAuthorsList();
-  navPush(document.getElementById('profileModal'), document.getElementById('authorsListOverlay'));
+  const pm = document.getElementById('profileModal');
+  pm.style.pointerEvents = 'none';
+  navPush(pm, document.getElementById('authorsListOverlay'));
 }
 function closeAuthorsOverlay() {
-  navPop(document.getElementById('authorsListOverlay'), document.getElementById('profileModal'));
+  const pm = document.getElementById('profileModal');
+  navPop(document.getElementById('authorsListOverlay'), pm);
+  pm.style.pointerEvents = '';
 }
 function toggleAlSort() {
   alSort = alSort === 'az' ? 'count' : 'az';
