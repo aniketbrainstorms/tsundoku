@@ -338,6 +338,35 @@ function updateShareUI() {
     document.getElementById('shareShelfRow').style.opacity = '0.5';
     document.getElementById('shareCopyBtn').style.display = 'none';
   }
+
+  // Desktop share UI sync
+  const dUrlEl = document.getElementById('deskShareUrl');
+  const dToggle = document.getElementById('deskShareToggle');
+  const dCopyBtn = document.getElementById('deskShareCopy');
+  if (dUrlEl) {
+    if (slug) {
+      const displayUrl = `${location.host}${location.pathname}?shelf=${slug}`;
+      dUrlEl.textContent = displayUrl;
+      if (dToggle) {
+        dToggle.classList.toggle('on', isPublic);
+        dToggle.disabled = false;
+        dToggle.style.opacity = '1';
+        const knob = dToggle.querySelector('.share-knob');
+        if (knob) knob.style.transform = isPublic ? 'translateX(14px)' : 'translateX(0)';
+      }
+      if (dCopyBtn) dCopyBtn.style.display = isPublic ? 'flex' : 'none';
+    } else {
+      dUrlEl.textContent = 'Set name in settings';
+      if (dToggle) {
+        dToggle.classList.remove('on');
+        dToggle.disabled = true;
+        dToggle.style.opacity = '0.5';
+        const knob = dToggle.querySelector('.share-knob');
+        if (knob) knob.style.transform = 'translateX(0)';
+      }
+      if (dCopyBtn) dCopyBtn.style.display = 'none';
+    }
+  }
 }
 
 async function saveSlug() {
@@ -489,9 +518,15 @@ function getSortedFiltered() {
 function updateTabCounts() {
   const el = id => document.getElementById(id);
   const visible = books.filter(b => !isHiddenFromShelf(b));
-  if (el('count-reading')) el('count-reading').textContent = visible.filter(b => b.status === 'reading').length;
-  if (el('count-read')) el('count-read').textContent = visible.filter(b => b.status === 'read').length;
-  if (el('count-unread')) el('count-unread').textContent = visible.filter(b => b.status === 'unread').length;
+  const reading = visible.filter(b => b.status === 'reading').length;
+  const read = visible.filter(b => b.status === 'read').length;
+  const unread = visible.filter(b => b.status === 'unread').length;
+  if (el('count-reading')) el('count-reading').textContent = reading;
+  if (el('count-read')) el('count-read').textContent = read;
+  if (el('count-unread')) el('count-unread').textContent = unread;
+  if (el('deskCountReading')) el('deskCountReading').textContent = reading;
+  if (el('deskCountRead')) el('deskCountRead').textContent = read;
+  if (el('deskCountUnread')) el('deskCountUnread').textContent = unread;
 }
 function renderSkeleton() {
   const grid = document.getElementById('bookGrid');
@@ -548,13 +583,14 @@ function renderGrid() {
   updateTabCounts();
   const grid = document.getElementById('bookGrid');
   const filtered = getSortedFiltered();
+  const useDesktopShelfGrid = window.matchMedia('(min-width: 1024px)').matches;
   if (!filtered.length) {
     grid.classList.remove('reading-mode');
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span>
       <p>Nothing here yet.<br>Tap <strong style="color:var(--accent)">+</strong> to search and add a book.</p></div>`;
     return;
   }
-  if (currentFilter === 'reading') {
+  if (currentFilter === 'reading' && !useDesktopShelfGrid) {
     grid.classList.add('reading-mode');
     grid.innerHTML = filtered.map((b, i) => readingCardHtml(b, i)).join('');
     grid.querySelectorAll('.reading-card').forEach(attachReadingCardEvents);
@@ -890,6 +926,12 @@ function closeSortMenu() {
 function setSort(sortType) {
   currentSort = sortType;
   document.querySelectorAll('#sortMenu .qm-item').forEach(btn => btn.classList.toggle('current-status', btn.dataset.sort === sortType));
+  
+  // Desktop sidebar sort label sync
+  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)' };
+  const dSortVal = document.getElementById('deskSortVal');
+  if (dSortVal) dSortVal.textContent = sortMap[sortType] || sortType;
+
   closeSortMenu();
   renderGrid();
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
@@ -1263,7 +1305,6 @@ function openProfileModal() {
 
 // ── AUTHORS LIST OVERLAY ──
 let alSort = 'az'; // 'az' | 'count'
-let alView = localStorage.getItem('tsundoku_al_view') || 'list'; // 'list' | 'cards'
 
 function _alSetAvatarImg(el, imageUrl, authorName) {
   if (!el) return;
@@ -1393,31 +1434,21 @@ async function _alFetchOneAuthorImage(authorName, cacheKey, avatarEl) {
 }
 function openAuthorsOverlay() {
   renderAuthorsList();
-  const pm = document.getElementById('profileModal');
-  pm.style.pointerEvents = 'none';
-  navPush(pm, document.getElementById('authorsListOverlay'));
+  navPush(document.getElementById('profileModal'), document.getElementById('authorsListOverlay'));
 }
 function closeAuthorsOverlay() {
-  const pm = document.getElementById('profileModal');
-  navPop(document.getElementById('authorsListOverlay'), pm);
-  pm.style.pointerEvents = '';
+  navPop(document.getElementById('authorsListOverlay'), document.getElementById('profileModal'));
 }
 function toggleAlSort() {
   alSort = alSort === 'az' ? 'count' : 'az';
   document.getElementById('alSortLabel').textContent = alSort === 'az' ? 'Sort A–Z' : 'Sort by count';
   renderAuthorsList();
 }
-function setAlView(view) {
-  alView = view;
-  try { localStorage.setItem('tsundoku_al_view', view); } catch {}
-  document.getElementById('alViewList').classList.toggle('active', view === 'list');
-  document.getElementById('alViewCards').classList.toggle('active', view === 'cards');
-  renderAuthorsList();
-}
 function renderAuthorsList() {
   const q = (document.getElementById('alSearchInput')?.value || '').toLowerCase().trim();
   const shelfBooks = books.filter(b => b.status !== 'not-owned' && b.author);
 
+  // Build author map: name → count
   const authorMap = new Map();
   shelfBooks.forEach(b => {
     const a = (b.author || '').trim();
@@ -1425,7 +1456,7 @@ function renderAuthorsList() {
     authorMap.set(a, (authorMap.get(a) || 0) + 1);
   });
 
-  let entries = Array.from(authorMap.entries());
+  let entries = Array.from(authorMap.entries()); // [name, count]
   if (q) entries = entries.filter(([name]) => name.toLowerCase().includes(q));
   if (alSort === 'az') entries.sort((a, b) => a[0].localeCompare(b[0]));
   else entries.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
@@ -1436,12 +1467,6 @@ function renderAuthorsList() {
   const authorsCount = document.getElementById('authorsCount');
   if (authorsCount) authorsCount.textContent = `${authorMap.size} authors`;
 
-  // Sync view button state on re-render
-  const listBtn = document.getElementById('alViewList');
-  const cardsBtn = document.getElementById('alViewCards');
-  if (listBtn) listBtn.classList.toggle('active', alView === 'list');
-  if (cardsBtn) cardsBtn.classList.toggle('active', alView === 'cards');
-
   const scroll = document.getElementById('alScroll');
   if (!scroll) return;
 
@@ -1450,12 +1475,6 @@ function renderAuthorsList() {
     return;
   }
 
-  if (alView === 'cards') {
-    renderAuthorsCardView(entries, scroll);
-    return;
-  }
-
-  // ── LIST VIEW (original) ──
   scroll.innerHTML = entries.map(([name, count], i) => {
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
     const bookWord = count === 1 ? 'book' : 'books';
@@ -1469,14 +1488,16 @@ function renderAuthorsList() {
     </div>`;
   }).join('');
 
+  // ── Batch hydration: one Supabase query for all authors ──
   const allRows = Array.from(scroll.querySelectorAll('.al-author-row'));
   allRows.forEach(row => {
     row.addEventListener('click', () => {
-      const author = row.dataset.author;
-      if (typeof openAuthorPage === 'function') openAuthorPage(author, document.getElementById('authorsListOverlay'));
-    });
+        const author = row.dataset.author;
+        if (typeof openAuthorPage === 'function') openAuthorPage(author, document.getElementById('authorsListOverlay'));
+      });
   });
 
+  // Collect authors needing images (not in memory cache)
   const needsLookup = [];
   allRows.forEach((row, i) => {
     const authorName = row.dataset.author;
@@ -1491,6 +1512,7 @@ function renderAuthorsList() {
     }
   });
 
+  // One batch Supabase query for all missing authors
   if (needsLookup.length && currentUser) {
     const keys = needsLookup.map(x => x.cacheKey);
     sb.from('authors').select('name_key, image').in('name_key', keys)
@@ -1502,110 +1524,21 @@ function renderAuthorsList() {
             if (typeof _authorCache !== 'undefined') {
               _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imgUrl, name: authorName };
             }
-            if (imgUrl) _alSetAvatarImg(avatarEl, imgUrl, authorName);
+            if (imgUrl) {
+              _alSetAvatarImg(avatarEl, imgUrl, authorName);
+            }
           } else {
+            // Not in Supabase — queue OL fetch (serialized, throttled)
             _alEnqueueFetch(authorName, cacheKey, avatarEl);
           }
         });
       }).catch(() => {
+        // Fallback: enqueue all for OL
         needsLookup.forEach(({ authorName, cacheKey, avatarEl }) =>
           _alEnqueueFetch(authorName, cacheKey, avatarEl));
       });
   }
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('authors');
-}
-
-function _alCardSize(count, fav) {
-  if (count >= 10 || (fav && count >= 5)) return 'xl';
-  if (count >= 7) return 'lg';
-  if (count >= 3) return 'md';
-  return 'sm';
-}
-
-const _AL_CARD_COLORS = ['tan', 'slate', 'forest', 'rust'];
-const _AL_CARD_DECOS = ['✦', '☕', '✿', '☽', '★', '⛩', '🌿'];
-function _alCardColor(name) {
-  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return _AL_CARD_COLORS[h % _AL_CARD_COLORS.length];
-}
-function _alCardDeco(name) {
-  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0) + 7) >>> 0;
-  return _AL_CARD_DECOS[h % _AL_CARD_DECOS.length];
-}
-
-function renderAuthorsCardView(entries, scroll) {
-  const favAuthors = new Set(); // future: could read from a DB favourites table
-
-  const left = [], right = [];
-  entries.forEach((entry, i) => (i % 2 === 0 ? left : right).push(entry));
-
-  function cardHtml([name, count], i) {
-    const sz = _alCardSize(count, favAuthors.has(name));
-    const color = _alCardColor(name);
-    const deco = _alCardDeco(name);
-    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') || '?';
-    const avatarSize = sz;
-    const nameCls = sz === 'xl' || sz === 'lg' ? 'al-card-name--large' : sz === 'sm' ? 'al-card-name--small' : '';
-    const bookWord = count === 1 ? 'book' : 'books';
-    const tape = (color === 'tan' || color === 'forest')
-      ? `<div class="al-card-tape"></div>`
-      : `<div class="al-card-clip">⌐</div>`;
-    const avatarPad = sz === 'xl' ? 'style="padding-bottom:20px"' : sz === 'lg' ? 'style="padding-bottom:14px"' : '';
-
-    return `<div class="al-author-card al-card-${color}" data-author="${escapeAttr(name)}" data-avid="alc-av-${i}" ${avatarPad}>
-      ${tape}
-      <div class="al-card-name ${nameCls}">${escapeHtml(name)}</div>
-      <div class="al-card-count">${count} ${bookWord}</div>
-      <div class="al-card-avatar-wrap">
-        <div class="al-card-avatar al-card-avatar--${avatarSize}" id="alc-av-${i}">${escapeHtml(initials)}</div>
-      </div>
-      <div class="al-card-deco" aria-hidden="true">${deco}</div>
-    </div>`;
-  }
-
-  scroll.innerHTML = `<div class="al-card-columns">
-    <div class="al-card-col">${left.map((e, i) => cardHtml(e, i * 2)).join('')}</div>
-    <div class="al-card-col">${right.map((e, i) => cardHtml(e, i * 2 + 1)).join('')}</div>
-  </div>`;
-
-  scroll.querySelectorAll('.al-author-card').forEach(card => {
-    card.addEventListener('click', () => {
-      if (typeof openAuthorPage === 'function')
-        openAuthorPage(card.dataset.author, document.getElementById('authorsListOverlay'));
-    });
-  });
-
-  // Hydrate avatars
-  const needsLookup = [];
-  entries.forEach(([name], i) => {
-    const cacheKey = name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-    const avatarEl = document.getElementById(`alc-av-${i}`);
-    if (!avatarEl) return;
-    const cached = typeof _authorCache !== 'undefined' && _authorCache[cacheKey];
-    if (cached?.image) {
-      _alSetAvatarImg(avatarEl, cached.image, name);
-    } else {
-      needsLookup.push({ authorName: name, cacheKey, avatarEl });
-    }
-  });
-  if (needsLookup.length && currentUser) {
-    const keys = needsLookup.map(x => x.cacheKey);
-    sb.from('authors').select('name_key, image').in('name_key', keys)
-      .then(({ data }) => {
-        const found = new Map((data || []).map(r => [r.name_key, r.image]));
-        needsLookup.forEach(({ authorName, cacheKey, avatarEl }) => {
-          if (found.has(cacheKey)) {
-            const imgUrl = found.get(cacheKey) || '';
-            if (typeof _authorCache !== 'undefined')
-              _authorCache[cacheKey] = { ...(_authorCache[cacheKey] || {}), image: imgUrl, name: authorName };
-            if (imgUrl) _alSetAvatarImg(avatarEl, imgUrl, authorName);
-          } else {
-            _alEnqueueFetch(authorName, cacheKey, avatarEl);
-          }
-        });
-      }).catch(() => needsLookup.forEach(({ authorName, cacheKey, avatarEl }) =>
-        _alEnqueueFetch(authorName, cacheKey, avatarEl)));
-  }
 }
 // ── MY SHELF VIEW ──
 let shelfSort = 'recent';
@@ -2085,8 +2018,87 @@ function handleCoverUpload(e, ctx) {
 function setFilter(filter) {
   currentFilter = filter;
   document.querySelectorAll('.filter-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+  document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach(el => el.classList.toggle('active', el.dataset.filter === filter));
+  document.getElementById('deskNavShelf')?.classList.add('active');
+  document.getElementById('deskNavLists')?.classList.remove('active');
+  document.getElementById('deskNavAuthors')?.classList.remove('active');
   renderGrid();
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
+}
+
+function closeDesktopNavPanels() {
+  ['listsOverlay', 'authorsListOverlay', 'profileModal'].forEach(id => {
+    const panel = document.getElementById(id);
+    if (panel) panel.classList.remove('open', 'nav-behind');
+  });
+  _updateAppRecede();
+}
+
+function setDesktopNavActive(activeId) {
+  ['deskNavShelf', 'deskNavLists', 'deskNavAuthors'].forEach(id => {
+    document.getElementById(id)?.classList.toggle('active', id === activeId);
+  });
+}
+
+function initDesktopNav() {
+  const bind = (id, handler) => {
+    const node = document.getElementById(id);
+    if (!node || node.dataset.bound === 'true') return;
+    node.dataset.bound = 'true';
+    node.addEventListener('click', handler);
+  };
+
+  bind('deskNavShelf', () => {
+    closeDesktopNavPanels();
+    setDesktopNavActive('deskNavShelf');
+    renderGrid();
+  });
+
+  document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach(item => {
+    if (item.dataset.bound === 'true') return;
+    item.dataset.bound = 'true';
+    item.addEventListener('click', () => {
+      closeDesktopNavPanels();
+      setDesktopNavActive('deskNavShelf');
+      setFilter(item.dataset.filter);
+    });
+  });
+
+  bind('deskSortRow', e => openSortMenu(e.currentTarget));
+  bind('deskNavLists', async () => {
+    closeDesktopNavPanels();
+    setDesktopNavActive('deskNavLists');
+    if (typeof window.openListsOverlay === 'function') await window.openListsOverlay();
+  });
+  bind('deskNavAuthors', () => {
+    closeDesktopNavPanels();
+    setDesktopNavActive('deskNavAuthors');
+    if (typeof openAuthorsOverlay === 'function') openAuthorsOverlay();
+  });
+  bind('deskSearchBar', openShelfSearch);
+  bind('deskAddBtn', () => openBookSearch('shelf'));
+  bind('deskProfilePill', openProfileModal);
+  bind('deskLogoutBtn', signOut);
+
+  bind('deskShareBtn', e => {
+    e.stopPropagation();
+    const pop = document.getElementById('deskSharePop');
+    if (pop) pop.style.display = pop.style.display === 'none' ? 'block' : 'none';
+  });
+  bind('deskShareToggle', e => {
+    e.stopPropagation();
+    toggleShelfPublic();
+  });
+  bind('deskShareCopy', e => {
+    e.stopPropagation();
+    copyShelfLink();
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDesktopNav);
+} else {
+  initDesktopNav();
 }
 function resetAddModal() {
   document.getElementById('addTitle').value = '';
@@ -2431,8 +2443,9 @@ Description: ${description || 'No description available.'}`;
 
     bar.addEventListener('mousedown', e => {
       e.preventDefault();
-      const l = letterFromY(e.clientY);
-      if (l) activateLd(l, e.clientY);
+      mouseState[ctx] = true;
+      const letter = letterFromY(ctx, e.clientY);
+      if (letter) activateLetter(ctx, letter, e.clientY);
     });
 
     window.addEventListener('mousemove', e => {
@@ -3886,7 +3899,7 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
 
 // ─── DESKTOP DETAIL PANEL ──────────────────────────────────────────────────
 ;(function () {
-  const isDesktopLayout = () => window.innerWidth >= 768;
+  const isDesktopLayout = () => window.innerWidth >= 1024;
   let ddpSelectedId = null;
 
   // ── Hamburger (tablet) ──
@@ -4029,5 +4042,6 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
   // ── Resize: clean up if viewport drops below 768px ──
   window.addEventListener('resize', () => {
     if (!isDesktopLayout()) { closeDDP(); closeSidebar(); }
+    if (currentFilter === 'reading') renderGrid();
   });
 })();
