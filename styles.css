@@ -755,6 +755,12 @@ html.standalone-webapp .add-popup {
   #authorOverlay {
     z-index: 88;
   }
+  #authorsListOverlay {
+    z-index: 87;
+  }
+  #authorOverlay {
+    z-index: 88;
+  }
 
   /* Desktop Dropdown positioning for Add Popup */
   .add-popup {
