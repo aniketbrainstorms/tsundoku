@@ -1418,10 +1418,22 @@
       Back
     </button>
     <span class="shelf-header-title">Authors</span>
-    <button class="al-sort-btn" id="alSortBtn" onclick="toggleAlSort()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
-      <span id="alSortLabel">Sort A–Z</span>
-    </button>
+    <div class="al-header-actions">
+      <div class="al-view-seg" aria-label="Author view">
+        <button class="al-view-btn active" data-al-view="list" onclick="setAlView('list')" title="List view">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>List</span>
+        </button>
+        <button class="al-view-btn" data-al-view="card" onclick="setAlView('card')" title="Card view">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Card</span>
+        </button>
+      </div>
+      <button class="al-sort-btn" id="alSortBtn" onclick="toggleAlSort()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+        <span id="alSortLabel">Sort A–Z</span>
+      </button>
+    </div>
   </div>
   <p class="al-shelf-sub" id="alShelfSub"></p>
   <div style="padding:0 16px 10px;">
