@@ -2545,3 +2545,102 @@ html.standalone-webapp .add-popup {
     grid-template-columns: repeat(4, 1fr) !important;
   }
 }
+/* ── AUTHORS VIEW SWITCHER ── */
+.al-view-switcher {
+  display: flex;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.al-view-btn {
+  width: 34px; height: 30px;
+  border-radius: 7px; border: none;
+  background: none; color: var(--text-dim);
+  font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+.al-view-btn.active {
+  background: var(--accent); color: #fff;
+}
+
+/* ── AUTHORS MASONRY CARD VIEW ── */
+.al-card-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 8px 0 32px;
+  align-items: start;
+}
+.al-card-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.al-author-card {
+  border-radius: 18px;
+  padding: 14px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.14s ease;
+  animation: bookIn 0.3s ease both;
+}
+.al-author-card:active { transform: scale(0.97); }
+.al-card-tan   { background: #2a2319; border: 1px solid rgba(201,113,74,0.22); }
+.al-card-slate { background: #1a1f24; border: 1px solid rgba(255,255,255,0.06); }
+.al-card-forest{ background: #1a2018; border: 1px solid rgba(122,158,107,0.2); }
+.al-card-rust  { background: #251b15; border: 1px solid rgba(201,113,74,0.16); }
+
+.al-card-name {
+  font-size: 14px; font-weight: 700;
+  color: var(--text); line-height: 1.2;
+  margin-bottom: 3px;
+}
+.al-card-name--large { font-size: 16px; }
+.al-card-name--small { font-size: 13px; }
+.al-card-count {
+  font-size: 11px; color: var(--accent);
+  font-weight: 500; margin-bottom: 10px;
+}
+.al-card-avatar-wrap {
+  width: 100%; display: flex; justify-content: center;
+  margin-top: 4px;
+}
+.al-card-avatar {
+  border-radius: 50%;
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: var(--accent);
+  border: 2px solid rgba(201,113,74,0.28);
+  overflow: hidden; flex-shrink: 0;
+  font-family: 'DM Sans', sans-serif;
+  transition: none;
+}
+.al-card-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.al-card-avatar--sm  { width: 54px;  height: 54px;  font-size: 18px; }
+.al-card-avatar--md  { width: 68px;  height: 68px;  font-size: 22px; }
+.al-card-avatar--lg  { width: 78px;  height: 78px;  font-size: 26px; }
+.al-card-avatar--xl  { width: 88px;  height: 88px;  font-size: 30px; }
+
+.al-card-deco {
+  position: absolute; bottom: 10px; right: 10px;
+  font-size: 15px; opacity: 0.22; pointer-events: none;
+}
+.al-card-tape {
+  position: absolute; top: -2px; left: 50%;
+  transform: translateX(-50%);
+  width: 30px; height: 13px;
+  background: rgba(201,113,74,0.2);
+  border-radius: 3px; opacity: 0.65;
+}
+.al-card-clip {
+  position: absolute; top: 8px; right: 10px;
+  color: var(--text-dim); font-size: 14px;
+  opacity: 0.35; transform: rotate(15deg);
+  pointer-events: none;
+}
