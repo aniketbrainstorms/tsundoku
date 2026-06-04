@@ -1305,7 +1305,7 @@ function openProfileModal() {
 
 // ── AUTHORS LIST OVERLAY ──
 let alSort = 'az'; // 'az' | 'count'
-
+let alView = 'list'; // 'list' | 'card'
 function _alSetAvatarImg(el, imageUrl, authorName) {
   if (!el) return;
   const initials = authorName.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') || '?';
@@ -1444,6 +1444,13 @@ function toggleAlSort() {
   document.getElementById('alSortLabel').textContent = alSort === 'az' ? 'Sort A–Z' : 'Sort by count';
   renderAuthorsList();
 }
+function setAlView(view) {
+  alView = view === 'card' ? 'card' : 'list';
+  document.querySelectorAll('[data-al-view]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.alView === alView);
+  });
+  renderAuthorsList();
+}
 function renderAuthorsList() {
   const q = (document.getElementById('alSearchInput')?.value || '').toLowerCase().trim();
   const shelfBooks = books.filter(b => b.status !== 'not-owned' && b.author);
@@ -1469,6 +1476,7 @@ function renderAuthorsList() {
 
   const scroll = document.getElementById('alScroll');
   if (!scroll) return;
+  scroll.classList.toggle('al-card-view', alView === 'card');
 
   if (!entries.length) {
     scroll.innerHTML = `<div class="al-empty">📭<br>${q ? 'No authors match your search.' : 'No authors yet.'}</div>`;
@@ -1478,6 +1486,13 @@ function renderAuthorsList() {
   scroll.innerHTML = entries.map(([name, count], i) => {
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
     const bookWord = count === 1 ? 'book' : 'books';
+    if (alView === 'card') {
+      return `<div class="al-author-card" data-author="${escapeAttr(name)}" style="animation-delay:${Math.min(i, 14) * 0.028}s">
+      <div class="al-author-avatar al-author-card-avatar" id="al-av-${i}">${escapeHtml(initials)}</div>
+      <div class="al-author-card-name">${escapeHtml(name)}</div>
+      <div class="al-author-count">${count} ${bookWord}</div>
+    </div>`;
+    }
     return `<div class="al-author-row" data-author="${escapeAttr(name)}" style="animation-delay:${Math.min(i, 14) * 0.028}s">
       <div class="al-author-avatar" id="al-av-${i}">${escapeHtml(initials)}</div>
       <div class="al-author-info">
@@ -1489,7 +1504,7 @@ function renderAuthorsList() {
   }).join('');
 
   // ── Batch hydration: one Supabase query for all authors ──
-  const allRows = Array.from(scroll.querySelectorAll('.al-author-row'));
+  const allRows = Array.from(scroll.querySelectorAll('.al-author-row, .al-author-card'));
   allRows.forEach(row => {
     row.addEventListener('click', () => {
         const author = row.dataset.author;
