@@ -126,6 +126,13 @@ function getShelfParam() {
 // ── INIT ──
 (async function init() {
   const slug = getShelfParam();
+  const _loadingStart = Date.now();
+  function hideLoadingScreen() {
+    const elapsed = Date.now() - _loadingStart;
+    const remaining = Math.max(0, 2800 - elapsed);
+    setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), remaining);
+  }
+
   if (slug) {
     document.getElementById('loadingScreen').classList.add('hidden');
     await loadPublicShelf(slug);
@@ -137,7 +144,7 @@ function getShelfParam() {
       await sb.auth.signOut();
       return;
     }
-    setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 300);
+    hideLoadingScreen();
     if (session) {
       currentUser = session.user;
       const initials = getUserInitials(currentUser?.email);
