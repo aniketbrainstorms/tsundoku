@@ -13,6 +13,208 @@
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
 }
+
+/* ── LIGHT MODE ── */
+[data-theme="light"] {
+  --bg: #f5f0ea;
+  --surface: #faf7f4;
+  --surface2: #ede8e1;
+  --border: #d8d0c6;
+  --accent: #c9714a;
+  --text: #2a2319;
+  --text-muted: #8a7e72;
+  --text-dim: #4a3f34;
+  --green: #3d6e4f;
+}
+
+/* Light mode specific overrides */
+[data-theme="light"] body {
+  background: var(--bg);
+}
+[data-theme="light"] .loading-screen {
+  background: var(--bg);
+}
+[data-theme="light"] .floating-search-field {
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 2px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+[data-theme="light"] .floating-search-input::placeholder {
+  color: rgba(0,0,0,0.35);
+}
+[data-theme="light"] .add-popup {
+  background: rgba(245,240,234,0.88);
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+[data-theme="light"] .add-popup::after {
+  background: rgba(245,240,234,0.9);
+}
+[data-theme="light"] .add-popup-icon {
+  background: rgba(0,0,0,0.07);
+  border-color: rgba(0,0,0,0.09);
+}
+[data-theme="light"] .add-popup-title { color: rgba(0,0,0,0.88); }
+[data-theme="light"] .modal-overlay {
+  background: rgba(180,165,148,0.65);
+}
+[data-theme="light"] .sbs-backdrop.open {
+  background: rgba(180,165,148,0.55);
+}
+[data-theme="light"] .sbs-sheet {
+  background: var(--surface);
+  border-color: rgba(201,113,74,0.2);
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+}
+[data-theme="light"] .detail-sheet {
+  background: var(--surface);
+  border-color: rgba(201,113,74,0.22);
+  box-shadow: 0 -8px 48px rgba(0,0,0,0.14);
+}
+[data-theme="light"] .ds-top { background: var(--surface); }
+[data-theme="light"] .ds-cover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.1);
+  border-color: rgba(0,0,0,0.08);
+}
+[data-theme="light"] .summary-section {
+  background: rgba(237,232,225,0.9);
+  border-color: rgba(0,0,0,0.1);
+}
+[data-theme="light"] .summary-section.expanded {
+  border-color: rgba(201,113,74,0.3);
+  background: rgba(250,247,244,0.98);
+}
+[data-theme="light"] .alpha-track {
+  background: rgba(245,240,234,0.92);
+  border-color: rgba(201,113,74,0.25);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+}
+[data-theme="light"] .alpha-letter { color: var(--accent); }
+[data-theme="light"] .alpha-letter.dim { color: rgba(201,113,74,0.2); }
+[data-theme="light"] .quick-menu {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+[data-theme="light"] .book-card { background: var(--surface2); }
+[data-theme="light"] .skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%);
+}
+[data-theme="light"] #authorsListOverlay,
+[data-theme="light"] .author-overlay,
+[data-theme="light"] .shelf-overlay,
+[data-theme="light"] #listsOverlay { background: var(--bg); }
+[data-theme="light"] .author-hero {
+  background: var(--surface2);
+  border-color: var(--border);
+}
+[data-theme="light"] .author-photo-wrap { background: var(--surface); }
+[data-theme="light"] .author-photo-fallback { background: var(--surface); }
+[data-theme="light"] .sidebar {
+  background: #ede8e1;
+  border-color: #d0c8be;
+}
+[data-theme="light"] .sb-logo { color: #b0a89e; }
+[data-theme="light"] .main-header {
+  background: var(--bg);
+  border-color: var(--border);
+}
+[data-theme="light"] .search-bar {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.08);
+}
+[data-theme="light"] .search-bar-text { color: var(--text-muted); }
+[data-theme="light"] .search-kbd {
+  background: var(--surface2);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+[data-theme="light"] .es-sheet,
+[data-theme="light"] .modal-sheet {
+  background: var(--surface);
+}
+[data-theme="light"] .ldas-result-cover,
+[data-theme="light"] .bs-result-cover { background: var(--surface2); }
+[data-theme="light"] #ldAddSheet { background: var(--surface); }
+[data-theme="light"] #listDetailOverlay { background: var(--bg); }
+[data-theme="light"] .reading-card { background: var(--surface2); }
+[data-theme="light"] .lo-card { background: var(--surface2); }
+[data-theme="light"] .toast {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+/* Theme toggle pill */
+.theme-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 5px 6px 5px 16px;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+.theme-toggle-label-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.theme-toggle-icon {
+  width: 32px; height: 32px;
+  border-radius: 9px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+.theme-toggle-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+.theme-toggle-seg {
+  display: flex;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.theme-seg-btn {
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.18s cubic-bezier(0.32,0.72,0,1),
+              color 0.18s ease,
+              box-shadow 0.18s ease;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.theme-seg-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.06) inset;
+}
+[data-theme="light"] .theme-seg-btn.active {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12), 0 1px 0 rgba(255,255,255,0.8) inset;
+}
 /* Desktop elements — hidden on mobile */
 .sidebar,
 .desk-detail-panel,
