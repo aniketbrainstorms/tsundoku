@@ -3421,3 +3421,17 @@ html.standalone-webapp .add-popup {
     grid-template-columns: repeat(auto-fill, minmax(78px, 96px)) !important;
   }
 }
+
+[data-theme="light"] .header-logo img,
+[data-theme="light"] .public-shelf-logo img,
+[data-theme="light"] .sb-logo-img {
+  filter: brightness(0.15);
+}
+
+[data-theme="light"] .auth-logo-wrap img {
+  filter: brightness(0.15);
+}
+
+[data-theme="light"] .profile-modal-logo img {
+  filter: brightness(0.15);
+}
