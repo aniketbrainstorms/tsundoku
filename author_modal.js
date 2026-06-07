@@ -80,11 +80,24 @@ function authorFallback(authorName) {
 
 async function _fetchAuthorQuote(authorName) {
   try {
-    const res = await fetch(`https://quoteslate.vercel.app/api/quotes/random?author=${encodeURIComponent(authorName)}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.quote) return data.quote;
-    }
+    const searchRes = await fetch(
+      `https://en.wikiquote.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(authorName)}&srlimit=3&format=json&origin=*`
+    );
+    const searchData = await searchRes.json();
+    const pages = searchData?.query?.search || [];
+    if (!pages.length) return '';
+    const match = pages.find(p => p.title.toLowerCase() === authorName.toLowerCase()) || pages[0];
+    const parseRes = await fetch(
+      `https://en.wikiquote.org/w/api.php?action=parse&page=${encodeURIComponent(match.title)}&prop=text&format=json&origin=*`
+    );
+    const parseData = await parseRes.json();
+    const html = parseData?.parse?.text?.['*'];
+    if (!html) return '';
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('li ul, li ol, sup, .reference, .mw-editsection').forEach(el => el.remove());
+    return [...doc.querySelectorAll('li')]
+      .map(li => li.textContent.trim().replace(/\s+/g, ' '))
+      .find(t => t.length >= 50 && t.length <= 280 && !/^\[|\{\{|^[0-9]/.test(t)) || '';
   } catch {}
   return '';
 }
