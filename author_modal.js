@@ -194,7 +194,9 @@ function getVisibleAuthorRows() {
   let rows = [..._authorRows];
   if (_authorFilter === 'wishlist') {
     rows = rows.filter(row => row.status === 'not-owned');
-  } else if (_authorFilter !== 'all') {
+  } else if (_authorFilter === 'all') {
+    rows = rows.filter(row => row.status !== 'not-owned');
+  } else {
     rows = rows.filter(row => row.status === _authorFilter);
   }
   rows.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
