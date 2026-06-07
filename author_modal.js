@@ -78,7 +78,18 @@ function authorFallback(authorName) {
   };
 }
 
-// NEW
+async function _fetchAuthorQuote(authorName) {
+  try {
+    const slug = authorName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const res = await fetch(`https://api.quotable.io/quotes/random?author=${slug}&limit=1`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data[0]?.content) return data[0].content;
+    }
+  } catch {}
+  return '';
+}
+
 async function fetchAuthorProfile(authorName) {
   const cacheKey = normalizeAuthorText(authorName);
   if (_authorCache[cacheKey]) return _authorCache[cacheKey];
@@ -87,7 +98,13 @@ async function fetchAuthorProfile(authorName) {
   try {
     const { data } = await sb.from('authors').select('*').eq('name_key', cacheKey).maybeSingle();
     if (data) {
-      const profile = { name: data.name, image: data.image || '', intro: '', quote: '', works: [] };
+      const profile = { name: data.name, image: data.image || '', intro: '', quote: data.quote || '', works: [] };
+      if (!profile.quote) {
+        profile.quote = await _fetchAuthorQuote(authorName);
+        if (profile.quote && currentUser) {
+          sb.from('authors').upsert({ name_key: cacheKey, name: profile.name, image: profile.image, quote: profile.quote, user_id: currentUser.id }, { onConflict: 'name_key' }).then(() => {});
+        }
+      }
       _authorCache[cacheKey] = profile;
       return profile;
     }
@@ -158,12 +175,16 @@ async function fetchAuthorProfile(authorName) {
     } catch {}
   }
 
-  // 3. Save to Supabase (fire and forget)
+  // 3. Fetch quote
+  if (!profile.quote) profile.quote = await _fetchAuthorQuote(authorName);
+
+  // 4. Save to Supabase (fire and forget)
   if (currentUser) {
     sb.from('authors').upsert({
       name_key: cacheKey,
       name: profile.name,
       image: profile.image,
+      quote: profile.quote,
       user_id: currentUser.id
     }, { onConflict: 'name_key' }).then(() => {});
   }
