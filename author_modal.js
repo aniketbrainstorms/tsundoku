@@ -80,11 +80,10 @@ function authorFallback(authorName) {
 
 async function _fetchAuthorQuote(authorName) {
   try {
-    const slug = authorName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const res = await fetch(`https://quotable.kurokeita.dev/api/quotes?author.name=${slug}&limit=1`);
+    const res = await fetch(`https://quoteslate.vercel.app/api/quotes/random?author=${encodeURIComponent(authorName)}`);
     if (res.ok) {
       const data = await res.json();
-      if (data.data?.[0]?.content) return data.data[0].content;
+      if (data.quote) return data.quote;
     }
   } catch {}
   return '';
