@@ -1294,22 +1294,50 @@ function updateProgressPreview() {
   const pr = parseInt(document.getElementById('progressPagesRead').value) || 0;
   const tp = parseInt(document.getElementById('progressTotalPages').value) || 0;
   const pct = tp > 0 ? Math.min(100, Math.round((pr / tp) * 100)) : 0;
-  document.getElementById('progressPreviewBar').style.width = pct + '%';
+  const isComplete = tp > 0 && pr >= tp;
+
+  const bar = document.getElementById('progressPreviewBar');
+  bar.style.width = pct + '%';
+  bar.style.background = isComplete ? 'var(--green)' : 'var(--accent)';
+
+  const pctEl = document.getElementById('progressPreviewPct');
+  pctEl.textContent = pct + '%';
+  pctEl.style.color = isComplete ? 'var(--green)' : 'var(--accent)';
+
   document.getElementById('progressPreviewPages').textContent = `${pr} / ${tp > 0 ? tp : '?'} pages`;
-  document.getElementById('progressPreviewPct').textContent = pct + '%';
+
+  const hint = document.getElementById('progressFinishHint');
+  if (hint) hint.style.display = isComplete ? 'flex' : 'none';
+
+  const btn = document.getElementById('saveProgressBtn');
+  btn.textContent = isComplete ? 'finish book' : 'Save Progress';
 }
 async function confirmProgress() {
   let pagesRead = parseInt(document.getElementById('progressPagesRead').value) || 0;
   const totalPages = parseInt(document.getElementById('progressTotalPages').value) || 0;
   if (totalPages > 0) pagesRead = Math.min(pagesRead, totalPages);
+  const isComplete = totalPages > 0 && pagesRead >= totalPages;
+
   const btn = document.getElementById('saveProgressBtn');
   btn.disabled = true; btn.textContent = 'Saving…';
-  const ok = await dbUpdate(progressBookId, { pages_read: pagesRead, total_pages: totalPages });
-  btn.disabled = false; btn.textContent = 'Save Progress';
+
+  const updates = { pages_read: pagesRead, total_pages: totalPages };
+  if (isComplete) updates.status = 'read';
+
+  const ok = await dbUpdate(progressBookId, updates);
+  btn.disabled = false; btn.textContent = isComplete ? 'finish book' : 'Save Progress';
   if (!ok) { showToast('Could not save — check connection'); return; }
+
   const book = books.find(b => b.id === progressBookId);
-  if (book) { book.pages_read = pagesRead; book.total_pages = totalPages; }
-  closeModal('progressModal'); renderGrid(); showToast('Progress saved ✓');
+  if (book) {
+    book.pages_read = pagesRead;
+    book.total_pages = totalPages;
+    if (isComplete) book.status = 'read';
+  }
+
+  closeModal('progressModal');
+  renderGrid();
+  showToast(isComplete ? 'moved to read ✓' : 'Progress saved ✓');
 }
 
 // ── PROFILE ──
