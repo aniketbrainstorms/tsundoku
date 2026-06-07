@@ -1770,6 +1770,7 @@ function onBsInput() {
   clearTimeout(bookSearchTimer);
   const q = document.getElementById('bsInput').value.trim();
   if (!q) { document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>'; return; }
+  if (q.length < 3) { document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Keep typing…</p></div>'; return; }
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><div class="loading-spinner"></div></div>';
   bookSearchTimer = setTimeout(() => fetchBookSearch(q), 500);
 }
