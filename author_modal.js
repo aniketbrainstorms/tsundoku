@@ -104,12 +104,14 @@ async function _fetchAuthorQuote(authorName) {
 
 async function fetchAuthorProfile(authorName) {
   const cacheKey = normalizeAuthorText(authorName);
-  if (_authorCache[cacheKey]) return _authorCache[cacheKey];
+  // Only use cache if it has a quote — otherwise re-fetch from Supabase
+  if (_authorCache[cacheKey]?.quote) return _authorCache[cacheKey];
 
   // 1. Try Supabase first (wait for auth session to restore)
   try {
     await sb.auth.getSession();
-    const { data } = await sb.from('authors').select('*').eq('name_key', cacheKey).maybeSingle();
+    const { data, error } = await sb.from('authors').select('*').eq('name_key', cacheKey).maybeSingle();
+    if (error) console.warn('[author] supabase fetch error:', error.message);
     if (data) {
       const profile = { name: data.name || authorName, image: data.image || '', intro: '', quote: data.quote || '', works: [] };
       if (!profile.quote) {
@@ -118,10 +120,10 @@ async function fetchAuthorProfile(authorName) {
           sb.from('authors').upsert({ name_key: cacheKey, name: profile.name, image: profile.image, quote: profile.quote, user_id: currentUser.id }, { onConflict: 'name_key' }).then(() => {});
         }
       }
-      _authorCache[cacheKey] = profile;
+      if (profile.quote) _authorCache[cacheKey] = profile;
       return profile;
     }
-  } catch {}
+  } catch (e) { console.warn('[author] supabase exception:', e.message); }
 
   // 2. Fetch from Open Library
   const fallback = authorFallback(authorName);
@@ -202,7 +204,7 @@ async function fetchAuthorProfile(authorName) {
     }, { onConflict: 'name_key' }).then(() => {});
   }
 
-  _authorCache[cacheKey] = profile;
+  if (profile.quote) _authorCache[cacheKey] = profile;
   return profile;
 }
 
