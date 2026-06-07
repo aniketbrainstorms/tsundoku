@@ -106,8 +106,9 @@ async function fetchAuthorProfile(authorName) {
   const cacheKey = normalizeAuthorText(authorName);
   if (_authorCache[cacheKey]) return _authorCache[cacheKey];
 
-  // 1. Try Supabase first
+  // 1. Try Supabase first (wait for auth session to restore)
   try {
+    await sb.auth.getSession();
     const { data } = await sb.from('authors').select('*').eq('name_key', cacheKey).maybeSingle();
     if (data) {
       const profile = { name: data.name || authorName, image: data.image || '', intro: '', quote: data.quote || '', works: [] };
