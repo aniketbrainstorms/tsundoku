@@ -110,7 +110,7 @@ async function fetchAuthorProfile(authorName) {
   try {
     const { data } = await sb.from('authors').select('*').eq('name_key', cacheKey).maybeSingle();
     if (data) {
-      const profile = { name: data.name, image: data.image || '', intro: '', quote: data.quote || '', works: [] };
+      const profile = { name: data.name || authorName, image: data.image || '', intro: '', quote: data.quote || '', works: [] };
       if (!profile.quote) {
         profile.quote = await _fetchAuthorQuote(authorName);
         if (profile.quote && currentUser) {
