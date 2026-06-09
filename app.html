@@ -509,7 +509,18 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
       </button>
       <!-- ADD POPUP -->
-      <div class="add-popup" id="addPopup">
+       <div class="add-popup" id="addPopup">
+        <button class="add-popup-item" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation(); event.preventDefault(); closeAddPopup(); openBorrowedAdd()" onclick="closeAddPopup(); openBorrowedAdd()">
+          <div class="add-popup-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7l3 3 3-3" stroke-width="1.8"/></svg>
+          </div>
+          <div class="add-popup-text">
+            <span class="add-popup-title">Track borrowed book</span>
+            <span class="add-popup-sub">A book you're reading but don't own</span>
+          </div>
+          <svg class="add-popup-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="add-popup-sep"></div>
         <button class="add-popup-item" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation(); event.preventDefault(); closeAddPopup(); openBookSearch()" onclick="closeAddPopup(); openBookSearch()">
           <div class="add-popup-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -724,8 +735,52 @@
     </div>
   </div>
 
+   <!-- FINISH BORROWED SHEET -->
+  <div class="modal-overlay" id="finishBorrowedSheet" style="z-index:115" onclick="if(event.target===this)closeFinishBorrowedSheet()">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title" style="text-align:center;margin-bottom:6px">you finished a borrowed book</h2>
+      <div id="finishBorrowedPreview" style="display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px">
+        <div id="finishBorrowedCover" style="width:38px;height:56px;border-radius:5px;overflow:hidden;flex-shrink:0;background:var(--surface)"></div>
+        <div>
+          <div id="finishBorrowedTitle" style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px"></div>
+          <div id="finishBorrowedAuthor" style="font-size:12px;color:var(--text-muted)"></div>
+          <div id="finishBorrowedFrom" style="font-size:11px;color:var(--accent);margin-top:3px"></div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:20px;text-align:center">add it to your "read but not owned" list?<br>a record of books that passed through your hands.</p>
+      <button class="modal-btn" style="display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600" onclick="addToReadNotOwned()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        add to read but not owned
+      </button>
+      <button class="modal-btn ghost" onclick="skipToReadNotOwned()">skip — just mark as read</button>
+    </div>
+  </div>
+
+  <!-- READ BUT NOT OWNED OVERLAY -->
+  <div class="shelf-overlay nav-panel" id="readNotOwnedOverlay">
+    <div class="shelf-header">
+      <button class="shelf-back-btn" onclick="closeReadNotOwnedOverlay()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back
+      </button>
+      <span class="shelf-header-title">read but not owned</span>
+      <span class="shelf-header-count" id="readNotOwnedCount"></span>
+    </div>
+    <div class="divider"></div>
+    <p style="font-size:12px;color:var(--text-muted);padding:0 20px 14px;flex-shrink:0">books that passed through your hands</p>
+    <div style="flex:1;overflow-y:auto;padding:0 20px 40px;scrollbar-width:none" id="readNotOwnedList">
+      <div id="readNotOwnedEmpty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 24px;text-align:center">
+        <div style="font-size:36px;margin-bottom:12px;opacity:0.35">↩</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">nothing here yet</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.7">finish a borrowed book and you'll<br>be asked to add it here</div>
+      </div>
+    </div>
+  </div>
+
   <!-- QM DISMISS -->
   <div class="qm-dismiss" id="qmDismiss" onclick="closeQuickMenu(); closeSortMenu(); closePublicSortMenu(); closeShelfSortMenu(); closeAddPopup();"></div>
+
 
   <!-- SORT MENU (main app) -->
   <div class="quick-menu" id="sortMenu">
@@ -857,7 +912,20 @@
         <button class="ef-seg-btn" data-status="read" onclick="setPillStatus('add','read')">Read</button>
       </div>
 
+      <!-- Borrowed from (hidden by default) -->
+      <div id="borrowedFromGroup" style="display:none" class="add-shelf-only">
+        <p class="ef-section-label">Borrowed from</p>
+        <div class="ef-field">
+          <input type="text" class="ef-input" id="borrowedFromInput" placeholder="who lent you this book? (optional)" autocomplete="off" />
+        </div>
+        <div class="info-banner" id="addBorrowedBanner">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(201,113,74,0.8)" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <div class="info-banner-text">borrowed books go straight to reading. when you finish, you'll be asked to add to your "read but not owned" list.</div>
+        </div>
+      </div>
+
       <button class="modal-btn" id="addBookBtn" onclick="confirmAdd()">Add to Shelf</button>
+
     </div>
   </div>
 
@@ -1171,7 +1239,14 @@
         <span class="profile-shelf-count" id="listsCount">0 lists</span>
         <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
+      <button class="profile-shelf-btn" onclick="openReadNotOwnedOverlay()" id="readNotOwnedBtn" style="display:none">
+        <span class="profile-shelf-icon" style="color:var(--accent)">↩</span>
+        Read but not owned
+        <span class="profile-shelf-count" id="readNotOwnedProfileCount"></span>
+        <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
       <div class="divider" style="margin:4px 0 16px"></div>
+
       <p class="profile-section-label">Share My Shelf</p>
       <div class="share-slug-row">
         <input type="text" class="share-slug-input" id="shareSlugInput" placeholder="your-name (e.g. aniket)" />
