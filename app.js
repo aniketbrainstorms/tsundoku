@@ -5,7 +5,7 @@ const sb = createClient(
 );
 
 // ── NAV STACK ──
-const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay'];
+const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay', 'readNotOwnedOverlay'];
 
 function navPush(prevEl, nextEl) {
   if (prevEl) prevEl.classList.add('nav-behind');
@@ -30,6 +30,7 @@ function _updateAppRecede() {
 // ── STATE ──
 let books = [], currentFilter = 'reading';
 let addStatus = 'unread', editStatus = 'unread';
+let addOwnership = 'owned';
 let addCoverFile = null, addCoverUrl = null;
 let editCoverFile = null, editCoverUrl = null, editingId = null;
 let qmBookId = null, longPressTimer = null, isPressing = false, didLongPress = false;
@@ -585,6 +586,7 @@ function readingCardHtml(book, i) {
     <div class="rc-info">
       <div class="rc-title">${escapeHtml(book.title)}</div>
       <div class="rc-author">${escapeHtml(book.author || '')}</div>
+      ${book.borrowed_from ? `<div class="rc-borrowed-chip">↩ borrowed from ${escapeHtml(book.borrowed_from)}</div>` : (book.borrowed_from === '' ? '<div class="rc-borrowed-chip">↩ borrowed</div>' : '')}
       ${progressHtml}
     </div>
     <button class="rc-edit-btn" data-id="${book.id}">
@@ -1072,6 +1074,10 @@ function closeScannerModal() {
 async function quickSetStatus(status) {
   const id = qmBookId; closeQuickMenu();
   const book = books.find(b => b.id === id); if (!book) return;
+  if (status === 'read' && book.borrowed_from != null) {
+    openFinishBorrowedSheet(id);
+    return;
+  }
   book.status = status; renderGrid();
   await dbUpdate(id, { status });
 }
@@ -1322,6 +1328,19 @@ async function confirmProgress() {
   btn.disabled = true; btn.textContent = 'Saving…';
 
   const updates = { pages_read: pagesRead, total_pages: totalPages };
+
+  const progBook = books.find(b => b.id === progressBookId);
+  if (isComplete && progBook?.borrowed_from != null) {
+    const ok = await dbUpdate(progressBookId, updates);
+    btn.disabled = false; btn.textContent = 'finish book';
+    if (!ok) { showToast('Could not save — check connection'); return; }
+    if (progBook) { progBook.pages_read = pagesRead; progBook.total_pages = totalPages; }
+    closeModal('progressModal');
+    renderGrid();
+    openFinishBorrowedSheet(progressBookId);
+    return;
+  }
+
   if (isComplete) updates.status = 'read';
 
   const ok = await dbUpdate(progressBookId, updates);
@@ -1355,6 +1374,13 @@ function openProfileModal() {
   if (authorsCountEl) {
     const uniqueAuthors = new Set(books.filter(b => b.status !== 'not-owned' && b.author).map(b => b.author.trim())).size;
     authorsCountEl.textContent = uniqueAuthors ? `${uniqueAuthors} authors` : '';
+  }
+  const rnoBooks = books.filter(b => b.status === 'not-owned' && b.borrowed_from != null);
+  const rnoBtn = document.getElementById('readNotOwnedBtn');
+  if (rnoBtn) {
+    rnoBtn.style.display = rnoBooks.length ? '' : 'none';
+    const rnoCount = document.getElementById('readNotOwnedProfileCount');
+    if (rnoCount) rnoCount.textContent = rnoBooks.length === 1 ? '1 book' : `${rnoBooks.length} books`;
   }
   const profileModal = document.getElementById('profileModal');
   profileModal.classList.add('visible');
@@ -1634,6 +1660,93 @@ function openShelfView() {
 function closeShelfView() {
   navPop(document.getElementById('shelfOverlay'), null);
   _updateAppRecede();
+}
+
+// ── BORROWED ADD ──
+function openBorrowedAdd() {
+  addOwnership = 'borrowed';
+  const bfGroup = document.getElementById('borrowedFromGroup');
+  if (bfGroup) bfGroup.style.display = '';
+  const addBookBtn = document.getElementById('addBookBtn');
+  if (addBookBtn) addBookBtn.textContent = 'Start Reading';
+  setTimeout(() => document.getElementById('addModal').classList.add('visible'), 80);
+}
+
+// ── FINISH BORROWED SHEET ──
+let _finishBorrowedId = null;
+function openFinishBorrowedSheet(id) {
+  _finishBorrowedId = id;
+  const book = books.find(b => b.id === id); if (!book) return;
+  const coverEl = document.getElementById('finishBorrowedCover');
+  if (coverEl) coverEl.innerHTML = book.cover_url ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:5px"/>` : makePlaceholder(book, 14);
+  const titleEl = document.getElementById('finishBorrowedTitle');
+  if (titleEl) titleEl.textContent = book.title;
+  const authorEl = document.getElementById('finishBorrowedAuthor');
+  if (authorEl) authorEl.textContent = book.author || '';
+  const fromEl = document.getElementById('finishBorrowedFrom');
+  if (fromEl) fromEl.textContent = book.borrowed_from ? `↩ borrowed from ${book.borrowed_from}` : '↩ borrowed';
+  document.getElementById('finishBorrowedSheet').classList.add('visible');
+}
+function closeFinishBorrowedSheet() {
+  document.getElementById('finishBorrowedSheet').classList.remove('visible');
+  _finishBorrowedId = null;
+}
+async function addToReadNotOwned() {
+  const id = _finishBorrowedId; closeFinishBorrowedSheet();
+  const book = books.find(b => b.id === id); if (!book) return;
+  book.status = 'not-owned';
+  renderGrid();
+  await dbUpdate(id, { status: 'not-owned' });
+  openProfileModal();  // refresh count badge
+  closeModal('profileModal');
+  showToast('added to read but not owned ✓');
+}
+async function skipToReadNotOwned() {
+  const id = _finishBorrowedId; closeFinishBorrowedSheet();
+  const book = books.find(b => b.id === id); if (!book) return;
+  book.status = 'read';
+  renderGrid();
+  await dbUpdate(id, { status: 'read' });
+  showToast('moved to read ✓');
+}
+
+// ── READ BUT NOT OWNED OVERLAY ──
+function openReadNotOwnedOverlay() {
+  renderReadNotOwnedList();
+  navPush(document.getElementById('profileModal'), document.getElementById('readNotOwnedOverlay'));
+  _updateAppRecede();
+}
+function closeReadNotOwnedOverlay() {
+  navPop(document.getElementById('readNotOwnedOverlay'), document.getElementById('profileModal'));
+  _updateAppRecede();
+}
+function renderReadNotOwnedList() {
+  const list = books.filter(b => b.status === 'not-owned' && b.borrowed_from != null);
+  const countEl = document.getElementById('readNotOwnedCount');
+  if (countEl) countEl.textContent = list.length === 1 ? '1 book' : `${list.length} books`;
+  const emptyEl = document.getElementById('readNotOwnedEmpty');
+  const listEl = document.getElementById('readNotOwnedList');
+  if (!list.length) {
+    if (emptyEl) emptyEl.style.display = 'flex';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  const rows = list.map(b => {
+    const date = b.updated_at ? new Date(b.updated_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
+    return `<div class="rno-book-row" data-id="${b.id}">
+      <div class="rno-cover">${b.cover_url ? `<img src="${escapeAttr(b.cover_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:5px"/>` : makePlaceholder(b, 12)}</div>
+      <div class="rno-info">
+        <div class="rno-title">${escapeHtml(b.title)}</div>
+        <div class="rno-author">${escapeHtml(b.author || '')}</div>
+        ${b.borrowed_from ? `<div class="rno-from-chip">↩ from ${escapeHtml(b.borrowed_from)}</div>` : ''}
+        ${date ? `<div class="rno-date">finished ${date}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  listEl.innerHTML = (emptyEl ? emptyEl.outerHTML : '') + rows;
+  listEl.querySelectorAll('.rno-book-row').forEach(row => {
+    row.addEventListener('click', () => openDetailModal(row.dataset.id));
+  });
 }
 function clearShelfSearch() {
   const si = document.getElementById('shelfSearchInput');
@@ -1955,10 +2068,12 @@ async function confirmAdd() {
   if (!title) { document.getElementById('addTitle').style.borderColor = 'var(--accent)'; return; }
   const btn = document.getElementById('addBookBtn'); btn.disabled = true; btn.textContent = 'Adding…';
   const isListAdd = addContext === 'list';
+  const isBorrowed = !isListAdd && addOwnership === 'borrowed';
+  const borrowedFrom = isBorrowed ? (document.getElementById('borrowedFromInput')?.value.trim() || '') : null;
   const newBook = await dbAdd({
     title,
     author: document.getElementById('addAuthor').value.trim() || '',
-    status: isListAdd ? 'not-owned' : addStatus,
+    status: isListAdd ? 'not-owned' : (isBorrowed ? 'reading' : addStatus),
     cover_url: null,
     pages_read: 0,
     total_pages: isListAdd ? null : 0,
@@ -1966,6 +2081,7 @@ async function confirmAdd() {
     genre: document.getElementById('addGenre')?.value.trim() || null,
     page_count: parseInt(document.getElementById('addPageCount')?.value) || null,
     description: window._pendingDescription || null,
+    borrowed_from: borrowedFrom,
   });
   if (newBook) {
     let finalUrl = null;
@@ -2186,6 +2302,13 @@ function resetAddModal() {
   addCoverFile = null; addCoverUrl = null;
   window._pendingDescription = null;
   addStatus = 'unread'; setPillStatus('add', 'unread');
+  addOwnership = 'owned';
+  const bfGroup = document.getElementById('borrowedFromGroup');
+  if (bfGroup) bfGroup.style.display = 'none';
+  const bfInput = document.getElementById('borrowedFromInput');
+  if (bfInput) bfInput.value = '';
+  const addBookBtn = document.getElementById('addBookBtn');
+  if (addBookBtn) addBookBtn.textContent = addContext === 'list' ? 'Add to List' : 'Add to Shelf';
   const addThumb = document.getElementById('addCoverThumb');
   if (addThumb) addThumb.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
   const addReady = document.getElementById('addCoverReadyMsg');
