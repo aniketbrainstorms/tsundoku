@@ -321,9 +321,19 @@ function dsRenderCTA(status, notOwned) {
   };
 
   if (status === 'reading') {
+    const currentBook = books.find(b => b.id === editingId);
     primary.className = 'ds-primary-btn btn-accent';
     primary.innerHTML = `${icons.check} Mark as Read`;
-    secondary.innerHTML = `${icons.undo} Move to Unread`;
+    if (currentBook?.borrowed_from != null) {
+      secondary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg> Return book`;
+      secondary.onclick = async () => {
+        dsClose();
+        await removeOrHideBook(editingId);
+        showToast('book returned');
+      };
+    } else {
+      secondary.innerHTML = `${icons.undo} Move to Unread`;
+    }
   } else if (status === 'read') {
     primary.className = 'ds-primary-btn btn-green';
     primary.innerHTML = `${icons.history} Move to Reading`;
@@ -733,6 +743,15 @@ window.openDetailModal = async function openDetailModal(id) {
     document.getElementById('detailTitleEl').textContent = book.title;
     document.getElementById('detailAuthorEl').textContent = book.author || '';
     document.getElementById('detailCoverEl').innerHTML = coverHtml(book, 14);
+    const dsBorrowedChip = document.getElementById('dsBorrowedChip');
+    if (dsBorrowedChip) {
+      if (book.borrowed_from != null) {
+        dsBorrowedChip.textContent = book.borrowed_from ? `↩ borrowed from ${book.borrowed_from}` : '↩ borrowed';
+        dsBorrowedChip.style.display = 'inline-flex';
+      } else {
+        dsBorrowedChip.style.display = 'none';
+      }
+    }
 
     // Render from DB values immediately
     dsRenderMetaGrid(book);
