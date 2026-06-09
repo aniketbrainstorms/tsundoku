@@ -1341,7 +1341,10 @@ async function confirmProgress() {
     return;
   }
 
-  if (isComplete) updates.status = 'read';
+  if (isComplete) {
+    updates.status = 'read';
+    updates.created_at = new Date().toISOString();
+  }
 
   const ok = await dbUpdate(progressBookId, updates);
   btn.disabled = false; btn.textContent = isComplete ? 'finish book' : 'Save Progress';
@@ -2886,8 +2889,9 @@ Description: ${description || 'No description available.'}`;
     // PERMANENT PROMOTION/DEMOTION TO SHELF
     const book = books.find(b => String(b.id) === id);
     if (nowOwned && book && book.status === 'not-owned') {
-      book.status = 'unread';
-      await sb.from('books').update({ status: 'unread' }).eq('id', id);
+      const newStatus = (book.borrowed_from != null) ? 'read' : 'unread';
+      book.status = newStatus;
+      await sb.from('books').update({ status: newStatus }).eq('id', id);
     } else if (!nowOwned && book && book.status !== 'not-owned' && book.pages_read === 0) {
       book.status = 'not-owned';
       await sb.from('books').update({ status: 'not-owned' }).eq('id', id);
@@ -3696,9 +3700,10 @@ Description: ${description || 'No description available.'}`;
       // Check if book already exists on shelf (total_pages === -1 means hidden)
       let book = books.find(b => String(b.id) === String(id));
       if (book && book.status === 'not-owned') {
-        // Re-surface it
-        book.status = 'unread';
-        await dbUpdate(id, { status: 'unread' });
+        // Re-surface it — borrowed reads go to 'read', others go to 'unread'
+        const newStatus = (book.borrowed_from != null) ? 'read' : 'unread';
+        book.status = newStatus;
+        await dbUpdate(id, { status: newStatus });
       } else if (!book) {
         // Shouldn't happen (list books are always DB records), but guard
         showToast('Book not found on shelf');
