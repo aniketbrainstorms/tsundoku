@@ -279,8 +279,9 @@ function dsRenderCTA(status, notOwned) {
     primary.onclick = async () => {
       const book = books.find(b => b.id === editingId);
       if (!book) return;
-      book.status = 'unread';
-      await dbUpdate(editingId, { status: 'unread' });
+      const newStatus = book.borrowed_from != null ? 'read' : 'unread';
+      book.status = newStatus;
+      await dbUpdate(editingId, { status: newStatus });
       // Mark owned in whichever list owns this book
       const allLists = window._getLoLists ? window._getLoLists() : [];
       for (const l of allLists) {
