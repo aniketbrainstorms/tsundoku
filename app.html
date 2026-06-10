@@ -1266,10 +1266,23 @@
         </button>
       </div>
       <div class="divider" style="margin:16px 0 20px"></div>
-      <p class="profile-section-label">coming soon</p>
-      <div class="profile-coming-soon">
-        Reading stats · Annual reading goal<br>Import from Goodreads
-      </div>
+      <p class="profile-section-label">reading</p>
+<button class="profile-shelf-btn" onclick="window.location.href='progress.html'">
+  <span class="profile-shelf-icon">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="4" height="14" rx="0.5"/>
+      <rect x="9" y="1" width="4" height="16" rx="0.5"/>
+      <rect x="15" y="5" width="4" height="12" rx="0.5"/>
+    </svg>
+  </span>
+  yearly progress
+  <span class="profile-shelf-count">2026</span>
+  <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+</button>
+<p class="profile-section-label">coming soon</p>
+<div class="profile-coming-soon">
+  Annual reading goal · Import from Goodreads
+</div>
       <button class="modal-btn secondary" onclick="signOut()">Log Out</button>
     </div>
   </div>
