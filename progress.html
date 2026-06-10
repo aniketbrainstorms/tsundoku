@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>tsundoku — progress</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+
+<style>
+/* ── Tokens ─────────────────────────────────── */
+:root {
+  --bg:         #0f0d0b;
+  --bg2:        #1a1612;
+  --surface:    #242018;
+  --surface2:   #2e2920;
+  --surface3:   #362f25;
+  --border:     #3a342a;
+  --border2:    #4a4238;
+
+  --text:       #f0ebe3;
+  --text-dim:   #a09484;
+  --text-muted: #6b5f52;
+  --text-ghost: #3f3629;
+
+  --accent:     #c9714a;
+  --accent-dim: #8a4b31;
+  --accent-hi:  #e08a60;
+  --green:      #5a8a6a;
+
+  --radius:     14px;
+  --radius-lg:  20px;
+  --radius-xl:  28px;
+  --ease:       cubic-bezier(0.16,1,0.3,1);
+}
+
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { font-size:16px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "DM Sans", system-ui, sans-serif;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+/* ── Layout ── */
+.phone {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top, 20px) 0 120px;
+}
+
+/* ── Header ── */
+.header { padding: 24px 20px 0; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.brand-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.brand-back:hover { color: var(--text-dim); }
+.brand-back svg { flex-shrink: 0; }
+.brand-sep { width:3px; height:3px; border-radius:50%; background:var(--text-ghost); }
+.brand-sub {
+  font-family: "DM Serif Display", serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.year-block {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  margin-bottom: 6px;
+}
+.year-num {
+  font-family: "DM Serif Display", serif;
+  font-size: 88px;
+  line-height: 0.9;
+  color: var(--text);
+  letter-spacing: -0.03em;
+}
+.year-badge {
+  margin-bottom: 10px;
+  margin-left: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+.year-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+/* ── Stats strip ── */
+.stats-strip {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr 1px 1fr;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 0 20px 28px;
+  overflow: hidden;
+}
+.stat-cell { padding: 16px 14px; display: flex; flex-direction: column; gap: 4px; }
+.stat-divider { background: var(--border); width: 1px; }
+.stat-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; font-weight: 500; }
+.stat-value {
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  min-height: 26px;
+}
+.stat-value.accent { color: var(--accent); }
+
+/* ── Section header ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  margin-bottom: 16px;
+}
+.section-title { font-size: 11px; font-weight: 500; color: var(--text-muted); letter-spacing: 0.1em; }
+.section-meta  { font-size: 11px; color: var(--text-ghost); }
+
+/* ── Year grid ── */
+.year-view {
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 20px 16px;
+}
+.month { display: flex; flex-direction: column; gap: 6px; }
+.month-name { font-size: 10px; font-weight: 500; color: var(--text-muted); letter-spacing: 0.08em; }
+.month-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2.5px; }
+
+.day {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease), filter 0.12s ease;
+  -webkit-appearance: none;
+  outline: none;
+  padding: 0;
+}
+.day:hover  { filter: brightness(1.35); }
+.day:active { transform: scale(0.82); }
+
+.level-0 { background: #1e1b16; }
+.level-1 { background: #4a2f22; }
+.level-2 { background: #7a4433; }
+.level-3 { background: #b06040; }
+.level-4 { background: #c9714a; }
+.level-5 { background: #d99671; }
+.future  { background: #1e1b16; opacity: 0.3; cursor: default; }
+.today   { box-shadow: 0 0 0 1.5px var(--text) inset; }
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 20px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.legend-label { font-size: 10px; color: var(--text-ghost); margin-right: 4px; }
+.legend-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── Loading skeleton ── */
+.skeleton-strip {
+  margin: 0 20px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  height: 68px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.skeleton-grid {
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 20px 16px;
+}
+.skeleton-month {
+  height: 76px;
+  background: var(--surface);
+  border-radius: 8px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+/* ── Auth wall ── */
+.auth-wall {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60dvh;
+  padding: 40px 32px;
+  text-align: center;
+  gap: 12px;
+}
+.auth-wall.show { display: flex; }
+.auth-icon { font-size: 40px; margin-bottom: 8px; }
+.auth-title { font-size: 20px; font-weight: 300; letter-spacing: -0.01em; }
+.auth-sub   { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+.auth-btn {
+  margin-top: 8px;
+  padding: 13px 28px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.auth-btn:hover { background: var(--accent-hi); }
+
+/* ── Sheet (day detail) ── */
+.sheet {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-xl);
+  transform: translateY(calc(100% + 24px));
+  transition: transform 0.42s var(--ease);
+  z-index: 200;
+  will-change: transform;
+}
+.sheet.show { transform: translateY(0); }
+
+.handle-wrap { padding: 12px 0 4px; display: flex; justify-content: center; }
+.handle { width: 36px; height: 4px; background: var(--border2); border-radius: 99px; }
+.sheet-inner { padding: 4px 18px 18px; }
+
+.detail-date  { font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; margin-bottom: 4px; }
+.detail-pages {
+  font-size: 52px;
+  font-weight: 200;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 2px;
+}
+.detail-pages-unit { font-size: 16px; font-weight: 300; color: var(--text-dim); }
+.detail-books { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.detail-book-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.detail-book-cover {
+  width: 28px;
+  height: 38px;
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--surface3);
+}
+.detail-book-cover img { width:100%; height:100%; object-fit:cover; }
+.detail-book-info { flex: 1; min-width: 0; }
+.detail-book-title  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.detail-book-author { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.detail-book-pages  { font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+.detail-note { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+.edit-btn {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.edit-btn:hover { background: var(--surface3); }
+
+/* ── Overlay ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 190;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.overlay.show { opacity: 1; pointer-events: auto; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: 99px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s var(--ease);
+  z-index: 300;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Auth wall (shown when not logged in) -->
+<div class="auth-wall" id="authWall">
+  <div class="auth-icon">📖</div>
+  <div class="auth-title">sign in to see your progress</div>
+  <div class="auth-sub">your yearly reading data lives with your tsundoku account</div>
+  <a class="auth-btn" href="app.html">go to tsundoku</a>
+</div>
+
+<!-- Main content (hidden until auth check passes) -->
+<div class="phone hidden" id="mainContent">
+
+  <div class="header">
+    <div class="brand">
+      <a class="brand-back" href="app.html">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        shelf
+      </a>
+      <span class="brand-sep"></span>
+      <span class="brand-sub">tsundoku</span>
+    </div>
+
+    <div class="year-block">
+      <div class="year-num" id="yearNum">2026</div>
+      <div class="year-badge" id="yearBadge">in progress</div>
+    </div>
+    <div class="year-subtitle">pages read each day</div>
+  </div>
+
+  <!-- Skeleton shown while loading -->
+  <div id="skeleton">
+    <div class="skeleton-strip"></div>
+    <div class="skeleton-grid">
+      <div class="skeleton-month"></div><div class="skeleton-month"></div><div class="skeleton-month"></div>
+      <div class="skeleton-month"></div><div class="skeleton-month"></div><div class="skeleton-month"></div>
+    </div>
+  </div>
+
+  <!-- Real content shown after data loads -->
+  <div id="dataContent" class="hidden">
+    <div class="stats-strip">
+      <div class="stat-cell">
+        <span class="stat-label">pages</span>
+        <span class="stat-value accent" id="statPages">—</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-cell">
+        <span class="stat-label">days read</span>
+        <span class="stat-value" id="statDays">—</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-cell">
+        <span class="stat-label">avg / day</span>
+        <span class="stat-value" id="statAvg">—</span>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">every day this year</span>
+      <span class="section-meta" id="todayLabel"></span>
+    </div>
+
+    <div class="year-view" id="yearView"></div>
+
+    <div class="legend" style="margin-bottom: 32px;">
+      <span class="legend-label">less</span>
+      <div class="legend-dot level-0"></div>
+      <div class="legend-dot level-1"></div>
+      <div class="legend-dot level-2"></div>
+      <div class="legend-dot level-3"></div>
+      <div class="legend-dot level-4"></div>
+      <div class="legend-dot level-5"></div>
+      <span class="legend-label" style="margin-left:2px">more</span>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Day detail sheet -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="handle-wrap"><div class="handle"></div></div>
+  <div class="sheet-inner" id="sheetInner">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://rrnryszgvctxainqyuyr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJybnJ5c3pndmN0eGFpbnF5dXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODg3NTcsImV4cCI6MjA5MDQ2NDc1N30.GkGvfR_ZlGIupbwOOl1BL5gb58M-E2LD5sD7pVl4tso';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Calendar constants ─────────────────────────────────────────────────────
+const YEAR = new Date().getFullYear();
+const IS_LEAP = (YEAR % 4 === 0 && YEAR % 100 !== 0) || YEAR % 400 === 0;
+
+const MONTHS = [
+  ['jan',31],['feb', IS_LEAP ? 29 : 28],['mar',31],['apr',30],
+  ['may',31],['jun',30],['jul',31],['aug',31],
+  ['sep',30],['oct',31],['nov',30],['dec',31]
+];
+
+const MONTH_NAMES = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+// Current day-of-year (1-indexed)
+function calcDOY(date) {
+  const start = new Date(date.getFullYear(), 0, 0);
+  return Math.floor((date - start) / 86400000);
+}
+const TODAY = new Date();
+const TODAY_DOY = calcDOY(TODAY);
+const TOTAL_DAYS = calcDOY(new Date(YEAR, 11, 31));
+
+// ── State ──────────────────────────────────────────────────────────────────
+// dayData[doy] = { pages: number, entries: [{book_id, title, author, cover_url, pages_read}] }
+const dayData = {};
+
+// Pre-fill all days empty
+let n = 1;
+MONTHS.forEach(([, count]) => {
+  for (let i = 0; i < count; i++) {
+    dayData[n] = { pages: 0, entries: [] };
+    n++;
+  }
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function level(v) {
+  if (v === 0)   return 0;
+  if (v <= 10)   return 1;
+  if (v <= 30)   return 2;
+  if (v <= 60)   return 3;
+  if (v <= 100)  return 4;
+  return 5;
+}
+
+function doyToLabel(doy) {
+  let rem = doy;
+  for (let m = 0; m < MONTHS.length; m++) {
+    if (rem <= MONTHS[m][1]) return MONTH_NAMES[m] + ' ' + rem;
+    rem -= MONTHS[m][1];
+  }
+  return '';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── DOM refs ───────────────────────────────────────────────────────────────
+const yearView = document.getElementById('yearView');
+const sheet    = document.getElementById('sheet');
+const overlay  = document.getElementById('overlay');
+
+// ── Build grid (empty cells first, then fill) ──────────────────────────────
+function buildGrid() {
+  yearView.innerHTML = '';
+  let doy = 1;
+
+  MONTHS.forEach(([name, count]) => {
+    const month = document.createElement('div');
+    month.className = 'month';
+
+    const title = document.createElement('div');
+    title.className = 'month-name';
+    title.textContent = name;
+
+    const grid = document.createElement('div');
+    grid.className = 'month-grid';
+
+    for (let i = 0; i < count; i++) {
+      const d = doy;
+      const cell = document.createElement('button');
+      updateCell(cell, d);
+      cell.setAttribute('aria-label', `${doyToLabel(d)}: ${dayData[d]?.pages || 0} pages`);
+      cell.addEventListener('click', () => {
+        if (d > TODAY_DOY) return;
+        showDaySheet(d);
+      });
+      grid.appendChild(cell);
+      doy++;
+    }
+
+    month.appendChild(title);
+    month.appendChild(grid);
+    yearView.appendChild(month);
+  });
+}
+
+function updateCell(cell, doy) {
+  const data = dayData[doy];
+  const pages = data?.pages || 0;
+  cell.className = 'day';
+
+  if (doy > TODAY_DOY) {
+    cell.classList.add('future');
+  } else {
+    cell.classList.add('level-' + level(pages));
+  }
+  if (doy === TODAY_DOY) cell.classList.add('today');
+}
+
+// Rebuild all cells after data load (reuse existing DOM, just update classes)
+function refreshCells() {
+  const cells = yearView.querySelectorAll('.day');
+  let doy = 1;
+  cells.forEach(cell => {
+    updateCell(cell, doy);
+    cell.setAttribute('aria-label', `${doyToLabel(doy)}: ${dayData[doy]?.pages || 0} pages`);
+    doy++;
+  });
+}
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+function updateStats() {
+  let total = 0, daysRead = 0;
+  for (let d = 1; d <= TODAY_DOY; d++) {
+    if (dayData[d]?.pages > 0) {
+      total += dayData[d].pages;
+      daysRead++;
+    }
+  }
+  document.getElementById('statPages').textContent = total.toLocaleString();
+  document.getElementById('statDays').textContent  = daysRead;
+  document.getElementById('statAvg').textContent   = TODAY_DOY > 0
+    ? Math.round(total / TODAY_DOY)
+    : 0;
+}
+
+// ── Day sheet ──────────────────────────────────────────────────────────────
+function showDaySheet(doy) {
+  const data = dayData[doy];
+  const pages = data?.pages || 0;
+  const entries = data?.entries || [];
+
+  let html = `
+    <div class="detail-date">${doyToLabel(doy)} · day ${doy}</div>
+    <div class="detail-pages">
+      <span>${pages}</span>
+      <span class="detail-pages-unit"> pages</span>
+    </div>`;
+
+  if (entries.length) {
+    html += '<div class="detail-books">';
+    entries.forEach(e => {
+      const coverHtml = e.cover_url
+        ? `<img src="${e.cover_url}" alt=""/>`
+        : '';
+      html += `
+        <div class="detail-book-row">
+          <div class="detail-book-cover">${coverHtml}</div>
+          <div class="detail-book-info">
+            <div class="detail-book-title">${escHtml(e.title || 'Unknown')}</div>
+            <div class="detail-book-author">${escHtml(e.author || '')}</div>
+          </div>
+          <div class="detail-book-pages">${e.pages_read}p</div>
+        </div>`;
+    });
+    html += '</div>';
+  } else {
+    html += `<div style="font-size:13px;color:var(--text-muted);margin-top:8px">no reading logged</div>`;
+  }
+
+  if (doy === TODAY_DOY) {
+    html += `
+      <div class="divider"></div>
+      <div class="detail-note">log today's pages from your shelf</div>
+      <a class="edit-btn" href="app.html" style="display:block;text-align:center;text-decoration:none">open shelf →</a>`;
+  }
+
+  document.getElementById('sheetInner').innerHTML = html;
+  sheet.classList.add('show');
+  overlay.classList.add('show');
+}
+
+function closeSheet() {
+  sheet.classList.remove('show');
+  overlay.classList.remove('show');
+}
+
+overlay.addEventListener('click', closeSheet);
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+// ── Load data from Supabase ────────────────────────────────────────────────
+async function loadData(userId) {
+  const { data, error } = await sb
+    .from('reading_log')
+    .select(`
+      date,
+      pages_read,
+      book_id,
+      books ( title, author, cover_url )
+    `)
+    .eq('user_id', userId)
+    .gte('date', `${YEAR}-01-01`)
+    .lte('date', `${YEAR}-12-31`)
+    .order('date', { ascending: true });
+
+  if (error) {
+    showToast('could not load reading data');
+    console.error(error);
+    return;
+  }
+
+  // Aggregate: multiple books can be logged on the same day
+  (data || []).forEach(row => {
+    // Parse date string to day-of-year
+    // row.date is 'YYYY-MM-DD' — parse without timezone shift
+    const parts = row.date.split('-');
+    const d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    const doy = calcDOY(d);
+    if (!dayData[doy]) return;
+
+    dayData[doy].pages += row.pages_read;
+    dayData[doy].entries.push({
+      book_id:    row.book_id,
+      title:      row.books?.title   || '',
+      author:     row.books?.author  || '',
+      cover_url:  row.books?.cover_url || null,
+      pages_read: row.pages_read,
+    });
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+(async function init() {
+  // Set year display
+  document.getElementById('yearNum').textContent = YEAR;
+  document.getElementById('yearBadge').textContent =
+    TODAY_DOY >= TOTAL_DAYS ? 'complete' : 'in progress';
+  document.getElementById('todayLabel').textContent =
+    'today · ' + doyToLabel(TODAY_DOY);
+
+  // Auth check
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (!session) {
+    // Not signed in — show auth wall
+    document.getElementById('authWall').classList.add('show');
+    return;
+  }
+
+  // Signed in — show skeleton while loading
+  document.getElementById('mainContent').classList.remove('hidden');
+
+  // Build empty grid immediately (cells exist, all level-0)
+  buildGrid();
+
+  // Fetch real data
+  await loadData(session.user.id);
+
+  // Swap skeleton → real content
+  document.getElementById('skeleton').classList.add('hidden');
+  document.getElementById('dataContent').classList.remove('hidden');
+
+  // Refresh grid cells + stats with real data
+  refreshCells();
+  updateStats();
+
+  // Listen for auth changes (e.g. sign-out in another tab)
+  sb.auth.onAuthStateChange((event, newSession) => {
+    if (!newSession) window.location.reload();
+  });
+})();
+</script>
+</body>
+</html>
