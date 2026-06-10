@@ -269,20 +269,27 @@ function dsInitDragEvents() {
 
 // ── CTA rendering ──
 function dsRenderCTA(status, notOwned) {
-  const primary = document.getElementById('dsPrimaryBtn');
+  const primary   = document.getElementById('dsPrimaryBtn');
   const secondary = document.getElementById('dsSecondaryBtn');
+  const tertiary  = document.getElementById('dsTertiaryBtn');
   if (!primary || !secondary) return;
 
+  const book = books.find(b => b.id === editingId);
+  const isBorrowed = book?.borrowed_from != null;
+
+  // Hide tertiary by default — only Surface 1 shows it
+  if (tertiary) tertiary.style.display = 'none';
+
+  // ── Surface 3: RNO (read but not owned) ──
   if (notOwned) {
     primary.className = 'ds-primary-btn btn-green';
     primary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mark as Owned`;
     primary.onclick = async () => {
-      const book = books.find(b => b.id === editingId);
       if (!book) return;
       const newStatus = book.borrowed_from != null ? 'read' : 'unread';
       book.status = newStatus;
-      await dbUpdate(editingId, { status: newStatus });
-      // Mark owned in whichever list owns this book
+      book.borrowed_from = null;
+      await dbUpdate(editingId, { status: newStatus, borrowed_from: null });
       const allLists = window._getLoLists ? window._getLoLists() : [];
       for (const l of allLists) {
         if ((l._books || []).some(b => String(b.id) === String(editingId))) {
@@ -298,9 +305,9 @@ function dsRenderCTA(status, notOwned) {
       dsClose();
       showToast('Marked as owned — added to shelf ✓');
     };
+    secondary.className = 'ds-secondary-btn';
     secondary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Remove from List`;
     secondary.onclick = async () => {
-      const book = books.find(b => b.id === editingId);
       if (!book) return;
       dsClose();
       await removeOrHideBook(editingId);
@@ -309,9 +316,78 @@ function dsRenderCTA(status, notOwned) {
     return;
   }
 
-  // Reset onclick to defaults for owned books
+  // ── Surface 1: borrowed + reading ──
+  if (status === 'reading' && isBorrowed) {
+    primary.className = 'ds-primary-btn btn-accent';
+    primary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg> Move to Read but Not Owned`;
+    primary.onclick = async () => {
+      if (!book) return;
+      book.status = 'not-owned';
+      renderGrid();
+      await dbUpdate(editingId, { status: 'not-owned' });
+      dsClose();
+      showToast('Moved to read but not owned ✓');
+    };
+    secondary.className = 'ds-secondary-btn';
+    secondary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mark as Read`;
+    secondary.onclick = async () => {
+      if (!book) return;
+      book.status = 'read';
+      editStatus = 'read';
+      updateDetailBadge('read');
+      dsRenderCTA('read', false);
+      renderGrid();
+      await dbUpdate(editingId, { status: 'read' });
+      showToast('Marked as read ✓');
+    };
+    if (tertiary) {
+      tertiary.style.display = 'flex';
+      tertiary.textContent = 'Mark as Owned';
+      tertiary.onclick = async () => {
+        if (!book) return;
+        book.borrowed_from = null;
+        await dbUpdate(editingId, { borrowed_from: null });
+        renderGrid();
+        dsRenderCTA('reading', false);
+        const dsBorrowedChip = document.getElementById('dsBorrowedChip');
+        if (dsBorrowedChip) dsBorrowedChip.style.display = 'none';
+        showToast('Marked as owned ✓');
+      };
+    }
+    return;
+  }
+
+  // ── Surface 2: borrowed + read ──
+  if (status === 'read' && isBorrowed) {
+    primary.className = 'ds-primary-btn btn-accent';
+    primary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg> Move to Read but Not Owned`;
+    primary.onclick = async () => {
+      if (!book) return;
+      book.status = 'not-owned';
+      renderGrid();
+      await dbUpdate(editingId, { status: 'not-owned' });
+      dsClose();
+      showToast('Moved to read but not owned ✓');
+    };
+    secondary.className = 'ds-secondary-btn';
+    secondary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mark as Owned`;
+    secondary.onclick = async () => {
+      if (!book) return;
+      book.borrowed_from = null;
+      await dbUpdate(editingId, { borrowed_from: null });
+      renderGrid();
+      const dsBorrowedChip = document.getElementById('dsBorrowedChip');
+      if (dsBorrowedChip) dsBorrowedChip.style.display = 'none';
+      dsRenderCTA('read', false);
+      showToast('Marked as owned ✓');
+    };
+    return;
+  }
+
+  // ── Default: owned book (reading / read / unread) ──
   primary.onclick = doPrimaryAction;
   secondary.onclick = doSecondaryAction;
+  secondary.className = 'ds-secondary-btn';
 
   const icons = {
     book: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
@@ -322,24 +398,14 @@ function dsRenderCTA(status, notOwned) {
   };
 
   if (status === 'reading') {
-    const currentBook = books.find(b => b.id === editingId);
     primary.className = 'ds-primary-btn btn-accent';
     primary.innerHTML = `${icons.check} Mark as Read`;
-    if (currentBook?.borrowed_from != null) {
-      secondary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg> Return book`;
-      secondary.onclick = async () => {
-        dsClose();
-        await removeOrHideBook(editingId);
-        showToast('book returned');
-      };
-    } else {
-      secondary.innerHTML = `${icons.undo} Move to Unread`;
-    }
+    secondary.innerHTML = `${icons.undo} Move to Unread`;
   } else if (status === 'read') {
     primary.className = 'ds-primary-btn btn-green';
     primary.innerHTML = `${icons.history} Move to Reading`;
     secondary.innerHTML = `${icons.archive} Mark as Unread`;
-  } else { // unread
+  } else {
     primary.className = 'ds-primary-btn btn-accent';
     primary.innerHTML = `${icons.book} Move to Reading`;
     secondary.innerHTML = `${icons.check} Mark as Read`;
