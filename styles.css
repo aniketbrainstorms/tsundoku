@@ -2528,6 +2528,28 @@ html.standalone-webapp .add-popup {
 .ds-secondary-btn:hover { color: var(--text-dim); border-color: rgba(201,113,74,0.35); }
 .ds-secondary-btn:active { transform: scale(0.97); color: var(--accent); border-color: var(--accent); }
 
+.ds-tertiary-btn {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ds-tertiary-btn:active {
+  color: var(--text);
+}
+
 /* Scroll hint (half-state only) */
 .ds-scroll-hint {
   position: absolute;
