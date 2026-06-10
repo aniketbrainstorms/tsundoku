@@ -1357,6 +1357,14 @@ async function confirmProgress() {
     if (isComplete) book.status = 'read';
   }
 
+  if (pagesRead > 0 && currentUser) {
+    const today = new Date().toISOString().slice(0, 10);
+    sb.from('reading_log').upsert(
+      { user_id: currentUser.id, book_id: progressBookId, date: today, pages_read: pagesRead },
+      { onConflict: 'user_id,book_id,date' }
+    ).then(() => {}).catch(() => {});
+  }
+  
   closeModal('progressModal');
   renderGrid();
   showToast(isComplete ? 'moved to read ✓' : 'Progress saved ✓');
