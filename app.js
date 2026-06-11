@@ -1196,7 +1196,7 @@ async function confirmEdit() {
 
   const saveBtn = document.getElementById('saveEditBtn');
   saveBtn.disabled = true;
-  saveBtn.textContent = 'Saving…';
+  saveBtn.textContent = 'saving…';
 
   const updates = {
     title,
@@ -1219,10 +1219,14 @@ async function confirmEdit() {
   }
 
   const ok = await dbUpdate(editingId, updates);
+  if (!ok) {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Changes';
+    showToast('Could not save — try again');
+    return;
+  }
   saveBtn.disabled = false;
   saveBtn.textContent = 'Save Changes';
-
-  if (!ok) { showToast('Could not save — try again'); return; }
 
   const book = books.find(b => String(b.id) === String(editingId));
   if (book) {
@@ -1239,7 +1243,9 @@ async function confirmEdit() {
     });
     window._editingListBookMode = false;
   }
+  saveBtn.textContent = '✓ saved';
   if (typeof closeEditSheet === 'function') closeEditSheet();
+  setTimeout(() => { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }, 400);
   if (typeof window.dsRefreshDetailSheet === 'function') window.dsRefreshDetailSheet();
 
   // Refresh grid in background
