@@ -508,12 +508,9 @@ body {
     <!-- Date -->
     <div style="margin-bottom:8px;">
       <div style="font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:7px;">DATE</div>
-      <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;justify-content:space-between;">
-        <div style="position:relative;flex:1;">
-          <input id="logDateInput" type="date" style="background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;width:100%;appearance:none;-webkit-appearance:none;padding-right:24px;"/>
-          <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <span id="logTodayPill" style="font-size:10px;padding:3px 8px;background:rgba(201,113,74,0.12);border:1px solid rgba(201,113,74,0.3);border-radius:99px;color:var(--accent);cursor:pointer;flex-shrink:0;margin-left:8px;">today</span>
+      <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;justify-content:space-between;cursor:pointer;" onclick="document.getElementById('logDateInput').showPicker()">
+        <input id="logDateInput" type="date" style="background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;pointer-events:none;flex:1;"/>
+        <span id="logTodayPill" style="font-size:10px;padding:3px 8px;background:rgba(201,113,74,0.12);border:1px solid rgba(201,113,74,0.3);border-radius:99px;color:var(--accent);cursor:pointer;flex-shrink:0;margin-left:8px;pointer-events:auto;" onclick="event.stopPropagation();document.getElementById('logDateInput').value=new Date().toISOString().slice(0,10);updateSpreadSub()">today</span>
       </div>
     </div>
 
@@ -526,9 +523,8 @@ body {
     <!-- End date row (hidden by default) -->
     <div id="logEndDateRow" style="display:none;margin-bottom:8px;">
       <div style="font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:7px;">END DATE</div>
-      <div style="position:relative;">
-        <input id="logEndDateInput" type="date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px 11px 13px;padding-right:40px;color:var(--text);font-size:13px;font-family:inherit;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;"/>
-        <svg style="position:absolute;right:13px;top:50%;transform:translateY(-50%);pointer-events:none;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;cursor:pointer;" onclick="document.getElementById('logEndDateInput').showPicker()">
+        <input id="logEndDateInput" type="date" style="width:100%;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;pointer-events:none;"/>
       </div>
     </div>
 
@@ -884,12 +880,6 @@ async function loadData(userId) {
   document.getElementById('logReadingBtn').addEventListener('click', async () => {
     if (!logShelfBooks.length) await loadLogBooks();
     openLogSheet();
-  });
-
-  // Today pill
-  document.getElementById('logTodayPill').addEventListener('click', () => {
-    document.getElementById('logDateInput').value = new Date().toISOString().slice(0, 10);
-    updateSpreadSub();
   });
 
   // Pages stepper
