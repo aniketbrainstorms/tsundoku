@@ -393,6 +393,14 @@ body {
     <div class="year-subtitle">pages read each day</div>
   </div>
 
+  <!-- Log reading button -->
+  <div style="padding: 0 20px 24px; display:flex; justify-content:flex-end;">
+    <button id="logReadingBtn" style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(201,113,74,0.12);border:1px solid rgba(201,113,74,0.3);border-radius:99px;color:var(--accent);font-size:12px;font-family:inherit;font-weight:500;cursor:pointer;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      log reading
+    </button>
+  </div>
+
   <!-- Skeleton shown while loading -->
   <div id="skeleton">
     <div class="skeleton-strip"></div>
@@ -455,6 +463,80 @@ body {
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Log reading sheet -->
+<div class="overlay" id="logOverlay"></div>
+<div class="sheet" id="logSheet" role="dialog" aria-modal="true" style="max-height:85dvh;overflow-y:auto;">
+  <div class="handle-wrap"><div class="handle"></div></div>
+  <div style="padding:0 18px 32px;">
+    <div style="font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.1em;margin-bottom:20px;">LOG READING</div>
+
+    <!-- Book picker -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:7px;">BOOK</div>
+      <div id="logBookPicker" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <div id="logBookCover" style="width:28px;height:38px;border-radius:3px;background:var(--surface3);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div id="logBookTitle" style="font-size:13px;font-weight:500;color:var(--text-dim);">choose a book…</div>
+          <div id="logBookAuthor" style="font-size:11px;color:var(--text-muted);margin-top:1px;"></div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <!-- Book list (hidden until picker tapped) -->
+      <div id="logBookList" style="display:none;margin-top:6px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;max-height:200px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- Pages -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:7px;">PAGES READ</div>
+      <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+        <button id="logPagesMinus" style="width:48px;height:48px;border:none;background:transparent;color:var(--accent);font-size:22px;cursor:pointer;flex-shrink:0;">−</button>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+          <input id="logPagesInput" type="number" min="1" max="9999" value="10" style="width:80px;text-align:center;font-size:26px;font-weight:300;color:var(--text);background:transparent;border:none;outline:none;font-family:inherit;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;"/>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">pages</div>
+        </div>
+        <button id="logPagesPlus" style="width:48px;height:48px;border:none;background:transparent;color:var(--accent);font-size:22px;cursor:pointer;flex-shrink:0;">+</button>
+      </div>
+    </div>
+
+    <!-- Date -->
+    <div style="margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:7px;">DATE</div>
+      <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;justify-content:space-between;">
+        <input id="logDateInput" type="date" style="background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;"/>
+        <span id="logTodayPill" style="font-size:10px;padding:3px 8px;background:rgba(201,113,74,0.12);border:1px solid rgba(201,113,74,0.3);border-radius:99px;color:var(--accent);cursor:pointer;flex-shrink:0;margin-left:8px;">today</span>
+      </div>
+    </div>
+
+    <!-- Add end date link -->
+    <div style="display:flex;align-items:center;gap:8px;padding:0 2px;margin-bottom:20px;">
+      <span style="font-size:12px;color:var(--text-muted);">read across multiple days?</span>
+      <span id="logAddEndDate" style="font-size:12px;color:var(--accent);text-decoration:underline;text-underline-offset:2px;cursor:pointer;">add end date</span>
+    </div>
+
+    <!-- End date row (hidden by default) -->
+    <div id="logEndDateRow" style="display:none;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:7px;">END DATE</div>
+      <input id="logEndDateInput" type="date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;color:var(--text);font-size:13px;font-family:inherit;outline:none;cursor:pointer;"/>
+    </div>
+
+    <!-- Spread toggle (shown only when end date set) -->
+    <div id="logSpreadRow" style="display:none;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;display:none;align-items:center;gap:10px;">
+      <div style="flex:1;">
+        <div style="font-size:13px;color:var(--text-dim);" id="logSpreadLabel">distribute across days</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:1px;" id="logSpreadSub"></div>
+      </div>
+      <div id="logSpreadToggle" style="width:36px;height:20px;background:var(--accent);border-radius:99px;position:relative;cursor:pointer;flex-shrink:0;" data-on="true">
+        <div style="width:16px;height:16px;background:var(--text);border-radius:50%;position:absolute;top:2px;right:2px;transition:transform 0.18s ease;" id="logSpreadKnob"></div>
+      </div>
+    </div>
+
+    <button id="logSaveBtn" style="width:100%;padding:14px;background:var(--accent);border:none;border-radius:13px;color:#fff;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;margin-bottom:10px;">save</button>
+    <div style="font-size:11px;color:var(--text-muted);text-align:center;">heatmap updates immediately</div>
+  </div>
+</div>
 
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -746,6 +828,235 @@ async function loadData(userId) {
   sb.auth.onAuthStateChange((event, newSession) => {
     if (!newSession) window.location.reload();
   });
+
+  // ── Log reading sheet ──────────────────────────────────────────────────
+  const logSheet   = document.getElementById('logSheet');
+  const logOverlay = document.getElementById('logOverlay');
+  let logSelectedBook = null;
+  let logSpreadOn = true;
+  let logShelfBooks = [];
+
+  // Load shelf books for picker
+  async function loadLogBooks() {
+    const { data } = await sb.from('books')
+      .select('id, title, author, cover_url, pages_read, total_pages, status')
+      .eq('user_id', session.user.id)
+      .neq('status', 'not-owned')
+      .order('title', { ascending: true });
+    logShelfBooks = data || [];
+  }
+
+  function openLogSheet() {
+    // Default date to today
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('logDateInput').value = today;
+    document.getElementById('logEndDateInput').value = today;
+    document.getElementById('logEndDateRow').style.display = 'none';
+    document.getElementById('logSpreadRow').style.display = 'none';
+    document.getElementById('logPagesInput').value = '10';
+    logSelectedBook = null;
+    document.getElementById('logBookTitle').textContent = 'choose a book…';
+    document.getElementById('logBookTitle').style.color = 'var(--text-dim)';
+    document.getElementById('logBookAuthor').textContent = '';
+    document.getElementById('logBookCover').innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+    document.getElementById('logBookList').style.display = 'none';
+    logSheet.classList.add('show');
+    logOverlay.classList.add('show');
+  }
+
+  function closeLogSheet() {
+    logSheet.classList.remove('show');
+    logOverlay.classList.remove('show');
+  }
+
+  logOverlay.addEventListener('click', closeLogSheet);
+
+  document.getElementById('logReadingBtn').addEventListener('click', async () => {
+    if (!logShelfBooks.length) await loadLogBooks();
+    openLogSheet();
+  });
+
+  // Today pill
+  document.getElementById('logTodayPill').addEventListener('click', () => {
+    document.getElementById('logDateInput').value = new Date().toISOString().slice(0, 10);
+    updateSpreadSub();
+  });
+
+  // Pages stepper
+  document.getElementById('logPagesMinus').addEventListener('click', () => {
+    const inp = document.getElementById('logPagesInput');
+    inp.value = Math.max(1, (parseInt(inp.value) || 1) - 1);
+  });
+  document.getElementById('logPagesPlus').addEventListener('click', () => {
+    const inp = document.getElementById('logPagesInput');
+    inp.value = (parseInt(inp.value) || 0) + 1;
+  });
+
+  // Book picker
+  document.getElementById('logBookPicker').addEventListener('click', () => {
+    const list = document.getElementById('logBookList');
+    if (list.style.display !== 'none') { list.style.display = 'none'; return; }
+    list.innerHTML = logShelfBooks.map(b => {
+      const coverHtml = b.cover_url
+        ? `<img src="${b.cover_url}" style="width:100%;height:100%;object-fit:cover;border-radius:2px"/>`
+        : `<div style="width:100%;height:100%;background:var(--surface3)"></div>`;
+      return `<div class="log-book-opt" data-id="${b.id}" style="display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;border-bottom:1px solid var(--border);">
+        <div style="width:22px;height:30px;border-radius:2px;overflow:hidden;flex-shrink:0;">${coverHtml}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(b.title)}</div>
+          <div style="font-size:11px;color:var(--text-muted);">${escHtml(b.author || '')}</div>
+        </div>
+      </div>`;
+    }).join('');
+    list.style.display = 'block';
+    list.querySelectorAll('.log-book-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const book = logShelfBooks.find(b => String(b.id) === opt.dataset.id);
+        if (!book) return;
+        logSelectedBook = book;
+        document.getElementById('logBookTitle').textContent = book.title;
+        document.getElementById('logBookTitle').style.color = 'var(--text)';
+        document.getElementById('logBookAuthor').textContent = book.author || '';
+        document.getElementById('logBookCover').innerHTML = book.cover_url
+          ? `<img src="${book.cover_url}" style="width:100%;height:100%;object-fit:cover;"/>`
+          : '';
+        // Pre-fill pages as a sensible default
+        if (book.total_pages > 0) {
+          const remaining = book.total_pages - (book.pages_read || 0);
+          document.getElementById('logPagesInput').value = Math.max(1, Math.min(50, remaining));
+        }
+        list.style.display = 'none';
+      });
+    });
+  });
+
+  // End date toggle
+  document.getElementById('logAddEndDate').addEventListener('click', () => {
+    const row = document.getElementById('logEndDateRow');
+    const spreadRow = document.getElementById('logSpreadRow');
+    const isHidden = row.style.display === 'none';
+    row.style.display = isHidden ? 'block' : 'none';
+    spreadRow.style.display = isHidden ? 'flex' : 'none';
+    document.getElementById('logAddEndDate').textContent = isHidden ? 'single day only' : 'add end date';
+    if (isHidden) updateSpreadSub();
+  });
+
+  document.getElementById('logDateInput').addEventListener('change', updateSpreadSub);
+  document.getElementById('logEndDateInput').addEventListener('change', updateSpreadSub);
+  document.getElementById('logPagesInput').addEventListener('input', updateSpreadSub);
+
+  function updateSpreadSub() {
+    const start = document.getElementById('logDateInput').value;
+    const end   = document.getElementById('logEndDateInput').value;
+    const pages = parseInt(document.getElementById('logPagesInput').value) || 0;
+    if (!start || !end) return;
+    const days = Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
+    const perDay = Math.round(pages / days);
+    document.getElementById('logSpreadSub').textContent = `~${perDay} pages/day over ${days} days`;
+  }
+
+  // Spread toggle
+  document.getElementById('logSpreadToggle').addEventListener('click', () => {
+    logSpreadOn = !logSpreadOn;
+    const toggle = document.getElementById('logSpreadToggle');
+    const knob   = document.getElementById('logSpreadKnob');
+    toggle.style.background = logSpreadOn ? 'var(--accent)' : 'var(--border2)';
+    knob.style.transform = logSpreadOn ? 'translateX(0)' : 'translateX(-16px)';
+  });
+
+  // Save
+  document.getElementById('logSaveBtn').addEventListener('click', async () => {
+    if (!logSelectedBook) { showToast('choose a book first'); return; }
+    const pages = parseInt(document.getElementById('logPagesInput').value) || 0;
+    if (pages < 1) { showToast('enter at least 1 page'); return; }
+
+    const startStr = document.getElementById('logDateInput').value;
+    const endStr   = document.getElementById('logEndDateRow').style.display !== 'none'
+      ? document.getElementById('logEndDateInput').value
+      : startStr;
+
+    const btn = document.getElementById('logSaveBtn');
+    btn.disabled = true; btn.textContent = 'saving…';
+
+    const startDate = new Date(startStr + 'T00:00:00');
+    const endDate   = new Date(endStr   + 'T00:00:00');
+    const days = Math.max(1, Math.round((endDate - startDate) / 86400000) + 1);
+    const isRange = days > 1 && logSpreadOn;
+
+    // Build upsert rows for reading_log
+    const rows = [];
+    if (isRange) {
+      const perDay = Math.floor(pages / days);
+      const remainder = pages - perDay * days;
+      for (let i = 0; i < days; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().slice(0, 10);
+        rows.push({ user_id: session.user.id, book_id: logSelectedBook.id, date: dateStr, pages_read: perDay + (i === 0 ? remainder : 0) });
+      }
+    } else {
+      rows.push({ user_id: session.user.id, book_id: logSelectedBook.id, date: startStr, pages_read: pages });
+    }
+
+    // Upsert all rows — onConflict adds to existing rather than replacing
+    // Supabase doesn't support increment via upsert directly, so we fetch existing first
+    for (const row of rows) {
+      const { data: existing } = await sb.from('reading_log')
+        .select('id, pages_read')
+        .eq('user_id', session.user.id)
+        .eq('book_id', row.book_id)
+        .eq('date', row.date)
+        .maybeSingle();
+
+      if (existing) {
+        await sb.from('reading_log').update({ pages_read: existing.pages_read + row.pages_read }).eq('id', existing.id);
+      } else {
+        await sb.from('reading_log').insert(row);
+      }
+    }
+
+    // Sync books.pages_read only for today's date or if single entry on today
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const touchesToday = rows.some(r => r.date === todayStr);
+    if (touchesToday) {
+      const todayRow = rows.find(r => r.date === todayStr);
+      const newPagesRead = Math.min(
+        (logSelectedBook.total_pages || 99999),
+        (logSelectedBook.pages_read || 0) + (todayRow?.pages_read || 0)
+      );
+      await sb.from('books').update({ pages_read: newPagesRead }).eq('id', logSelectedBook.id);
+    }
+
+    // Update local dayData and refresh heatmap
+    rows.forEach(row => {
+      const parts = row.date.split('-');
+      const d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+      const doy = calcDOY(d);
+      if (dayData[doy]) {
+        dayData[doy].pages += row.pages_read;
+        // Add entry if not already present
+        const exists = dayData[doy].entries.find(e => e.book_id === row.book_id);
+        if (exists) {
+          exists.pages_read += row.pages_read;
+        } else {
+          dayData[doy].entries.push({
+            book_id: logSelectedBook.id,
+            title: logSelectedBook.title,
+            author: logSelectedBook.author || '',
+            cover_url: logSelectedBook.cover_url || null,
+            pages_read: row.pages_read,
+          });
+        }
+      }
+    });
+
+    refreshCells();
+    updateStats();
+    closeLogSheet();
+    btn.disabled = false; btn.textContent = 'save';
+    showToast('reading logged ✓');
+  });
+  // ── End log reading sheet ──────────────────────────────────────────────
 })();
 </script>
 </body>
