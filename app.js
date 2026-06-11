@@ -1329,6 +1329,7 @@ async function confirmProgress() {
 
   const updates = { pages_read: pagesRead, total_pages: totalPages };
 
+  const progBook = books.find(b => b.id === progressBookId);
   const prevPagesRead = progBook ? (progBook.pages_read || 0) : 0;
   if (isComplete && progBook?.borrowed_from != null) {
     const ok = await dbUpdate(progressBookId, updates);
