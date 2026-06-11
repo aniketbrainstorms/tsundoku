@@ -1002,22 +1002,33 @@ async function loadData(userId) {
       rows.push({ user_id: session.user.id, book_id: logSelectedBook.id, date: startStr, pages_read: pages });
     }
 
-    // Upsert all rows — onConflict adds to existing rather than replacing
-    // Supabase doesn't support increment via upsert directly, so we fetch existing first
-    for (const row of rows) {
-      const { data: existing } = await sb.from('reading_log')
-        .select('id, pages_read')
-        .eq('user_id', session.user.id)
-        .eq('book_id', row.book_id)
-        .eq('date', row.date)
-        .maybeSingle();
+    // Fetch all existing rows for this book in the date range in one query
+    const dates = rows.map(r => r.date);
+    const { data: existingRows } = await sb.from('reading_log')
+      .select('id, date, pages_read')
+      .eq('user_id', session.user.id)
+      .eq('book_id', logSelectedBook.id)
+      .in('date', dates);
 
+    const existingMap = new Map((existingRows || []).map(r => [r.date, r]));
+    const toInsert = [];
+    const updatePromises = [];
+
+    for (const row of rows) {
+      const existing = existingMap.get(row.date);
       if (existing) {
-        await sb.from('reading_log').update({ pages_read: existing.pages_read + row.pages_read }).eq('id', existing.id);
+        updatePromises.push(
+          sb.from('reading_log').update({ pages_read: existing.pages_read + row.pages_read }).eq('id', existing.id)
+        );
       } else {
-        await sb.from('reading_log').insert(row);
+        toInsert.push(row);
       }
     }
+
+    // Batch insert new rows + fire all updates in parallel
+    const ops = [...updatePromises];
+    if (toInsert.length) ops.push(sb.from('reading_log').insert(toInsert));
+    await Promise.all(ops);
 
     // Sync books.pages_read only for today's date or if single entry on today
     const todayStr = new Date().toISOString().slice(0, 10);
