@@ -366,7 +366,30 @@ body {
 
 .hidden { display: none !important; }
 
-input[type="date"]::-webkit-calendar-picker-indicator { display: none; }</style>
+input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
+
+/* ── Custom Calendar ── */
+.cal-day-btn {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s ease;
+}
+.cal-day-btn:hover { background: var(--surface3); }
+.cal-day-btn.is-today { background: rgba(201,113,74,0.18); color: var(--accent); font-weight: 500; }
+.cal-day-btn.is-selected { background: var(--accent); color: #fff; font-weight: 500; }
+.cal-day-btn.is-selected.is-today { background: var(--accent); }
+.cal-day-btn.is-filler { color: var(--text-ghost); cursor: default; }
+.cal-day-btn.is-filler:hover { background: transparent; }
+</style>
 </head>
 <body>
 
@@ -509,10 +532,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }</style>
     <!-- Date -->
     <div style="margin-bottom:8px;">
       <div style="font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:7px;">DATE</div>
-      <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;justify-content:space-between;cursor:pointer;" onclick="document.getElementById('logDateInput').showPicker()">
-        <input id="logDateInput" type="date" style="background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;pointer-events:none;flex:1;"/>
-        <span id="logTodayPill" style="font-size:10px;padding:3px 8px;background:rgba(201,113,74,0.12);border:1px solid rgba(201,113,74,0.3);border-radius:99px;color:var(--accent);cursor:pointer;flex-shrink:0;margin-left:8px;pointer-events:auto;" onclick="event.stopPropagation();document.getElementById('logDateInput').value=new Date().toISOString().slice(0,10);updateSpreadSub()">today</span>
+      <div id="logDateTrigger" style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;justify-content:space-between;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span id="logDateDisplay" style="font-size:13px;color:var(--text);">—</span>
+        </div>
+        <span id="logTodayPill" style="font-size:10px;padding:3px 8px;background:rgba(201,113,74,0.12);border:1px solid rgba(201,113,74,0.3);border-radius:99px;color:var(--accent);cursor:pointer;flex-shrink:0;">today</span>
       </div>
+      <input id="logDateInput" type="hidden"/>
     </div>
 
     <!-- Add end date link -->
@@ -524,9 +551,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }</style>
     <!-- End date row (hidden by default) -->
     <div id="logEndDateRow" style="display:none;margin-bottom:8px;">
       <div style="font-size:11px;font-weight:500;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:7px;">END DATE</div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;cursor:pointer;" onclick="document.getElementById('logEndDateInput').showPicker()">
-        <input id="logEndDateInput" type="date" style="width:100%;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;pointer-events:none;"/>
+      <div id="logEndDateTrigger" style="display:flex;align-items:center;gap:9px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;cursor:pointer;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="logEndDateDisplay" style="font-size:13px;color:var(--text);">—</span>
       </div>
+      <input id="logEndDateInput" type="hidden"/>
     </div>
 
     <!-- Spread toggle (shown only when end date set) -->
@@ -542,6 +571,49 @@ input[type="date"]::-webkit-calendar-picker-indicator { display: none; }</style>
 
     <button id="logSaveBtn" style="width:100%;padding:14px;background:var(--accent);border:none;border-radius:13px;color:#fff;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;margin-bottom:10px;">save</button>
     <div style="font-size:11px;color:var(--text-muted);text-align:center;">heatmap updates immediately</div>
+  </div>
+</div>
+
+<!-- Custom Calendar Picker -->
+<div id="calBackdrop" style="display:none;position:fixed;inset:0;z-index:350;background:rgba(0,0,0,0.3);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);"></div>
+<div id="customCal" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:360;width:min(336px,calc(100vw - 32px));background:#1a1612;border:1px solid var(--border2);border-radius:22px;box-shadow:0 32px 80px rgba(0,0,0,0.7);padding:20px 16px 16px;">
+  <!-- Cal header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+    <button id="calLabel" style="background:none;border:none;color:var(--text);font-size:16px;font-weight:500;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px;padding:0;">
+      <span id="calLabelText"></span>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div style="display:flex;gap:4px;">
+      <button id="calPrev" style="width:32px;height:32px;border:none;background:var(--surface2);border-radius:8px;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button id="calNext" style="width:32px;height:32px;border:none;background:var(--surface2);border-radius:8px;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+  <!-- Weekday headers -->
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px;">
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);font-weight:500;padding:3px 0;">Su</div>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);font-weight:500;padding:3px 0;">Mo</div>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);font-weight:500;padding:3px 0;">Tu</div>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);font-weight:500;padding:3px 0;">We</div>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);font-weight:500;padding:3px 0;">Th</div>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);font-weight:500;padding:3px 0;">Fr</div>
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);font-weight:500;padding:3px 0;">Sa</div>
+  </div>
+  <!-- Day grid -->
+  <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:14px;"></div>
+  <!-- Clear / Today -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+    <button id="calClearBtn" style="padding:12px;border:1px solid var(--border);border-radius:12px;background:transparent;color:var(--accent);font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;">Clear</button>
+    <button id="calTodayBtn" style="padding:12px;border:1px solid var(--border);border-radius:12px;background:transparent;color:var(--accent);font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;">Today</button>
+  </div>
+  <!-- Selected date display -->
+  <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span id="calSelectedText" style="font-size:13px;color:var(--text);flex:1;"></span>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
   </div>
 </div>
 
@@ -857,7 +929,9 @@ async function loadData(userId) {
     // Default date to today
     const today = new Date().toISOString().slice(0, 10);
     document.getElementById('logDateInput').value = today;
+    document.getElementById('logDateDisplay').textContent = formatDateDisplay(today);
     document.getElementById('logEndDateInput').value = today;
+    document.getElementById('logEndDateDisplay').textContent = formatDateDisplay(today);
     document.getElementById('logEndDateRow').style.display = 'none';
     document.getElementById('logSpreadRow').style.display = 'none';
     document.getElementById('logPagesInput').value = '10';
@@ -942,8 +1016,136 @@ async function loadData(userId) {
     if (isHidden) updateSpreadSub();
   });
 
-  document.getElementById('logDateInput').addEventListener('change', updateSpreadSub);
-  document.getElementById('logEndDateInput').addEventListener('change', updateSpreadSub);
+  // ── Custom Calendar ──────────────────────────────────────────────────────
+  const MONTH_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let calYear, calMonth, calTarget;
+
+  function formatDateDisplay(dateStr) {
+    if (!dateStr) return '—';
+    const [y, m, d] = dateStr.split('-');
+    return new Date(+y, +m - 1, +d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function openCal(target) {
+    calTarget = target;
+    const val = target === 'start'
+      ? document.getElementById('logDateInput').value
+      : document.getElementById('logEndDateInput').value;
+    const ref = val ? new Date(val + 'T00:00:00') : new Date();
+    calYear  = ref.getFullYear();
+    calMonth = ref.getMonth();
+    renderCal();
+    document.getElementById('calBackdrop').style.display = 'block';
+    document.getElementById('customCal').style.display  = 'block';
+  }
+
+  function closeCal() {
+    document.getElementById('calBackdrop').style.display = 'none';
+    document.getElementById('customCal').style.display  = 'none';
+  }
+
+  function renderCal() {
+    document.getElementById('calLabelText').textContent = MONTH_LONG[calMonth] + ', ' + calYear;
+    const todayStr    = new Date().toISOString().slice(0, 10);
+    const selectedStr = calTarget === 'start'
+      ? document.getElementById('logDateInput').value
+      : document.getElementById('logEndDateInput').value;
+
+    const firstDOW    = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const prevDays    = new Date(calYear, calMonth, 0).getDate();
+
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+
+    // Filler cells (prev month)
+    for (let i = 0; i < firstDOW; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'cal-day-btn is-filler';
+      btn.textContent = prevDays - firstDOW + i + 1;
+      btn.disabled = true;
+      grid.appendChild(btn);
+    }
+
+    // Current month days
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const btn = document.createElement('button');
+      btn.className = 'cal-day-btn';
+      if (dateStr === todayStr)    btn.classList.add('is-today');
+      if (dateStr === selectedStr) btn.classList.add('is-selected');
+      btn.textContent = d;
+      btn.addEventListener('click', e => { e.stopPropagation(); selectCalDay(dateStr); });
+      grid.appendChild(btn);
+    }
+
+    // Filler cells (next month)
+    const total = firstDOW + daysInMonth;
+    const tail  = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let i = 1; i <= tail; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'cal-day-btn is-filler';
+      btn.textContent = i;
+      btn.disabled = true;
+      grid.appendChild(btn);
+    }
+
+    // Selected display
+    document.getElementById('calSelectedText').textContent = formatDateDisplay(selectedStr) || '—';
+  }
+
+  function selectCalDay(dateStr) {
+    if (calTarget === 'start') {
+      document.getElementById('logDateInput').value    = dateStr;
+      document.getElementById('logDateDisplay').textContent = formatDateDisplay(dateStr);
+    } else {
+      document.getElementById('logEndDateInput').value    = dateStr;
+      document.getElementById('logEndDateDisplay').textContent = formatDateDisplay(dateStr);
+    }
+    updateSpreadSub();
+    renderCal();
+    setTimeout(closeCal, 160);
+  }
+
+  document.getElementById('calBackdrop').addEventListener('click', closeCal);
+  document.getElementById('customCal').addEventListener('click', e => e.stopPropagation());
+
+  document.getElementById('calPrev').addEventListener('click', e => {
+    e.stopPropagation();
+    calMonth--; if (calMonth < 0)  { calMonth = 11; calYear--; }
+    renderCal();
+  });
+  document.getElementById('calNext').addEventListener('click', e => {
+    e.stopPropagation();
+    calMonth++; if (calMonth > 11) { calMonth = 0;  calYear++; }
+    renderCal();
+  });
+  document.getElementById('calTodayBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    selectCalDay(new Date().toISOString().slice(0, 10));
+  });
+  document.getElementById('calClearBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    if (calTarget === 'start') {
+      document.getElementById('logDateInput').value = '';
+      document.getElementById('logDateDisplay').textContent = '—';
+    } else {
+      document.getElementById('logEndDateInput').value = '';
+      document.getElementById('logEndDateDisplay').textContent = '—';
+    }
+    updateSpreadSub();
+    renderCal();
+  });
+
+  document.getElementById('logDateTrigger').addEventListener('click', () => openCal('start'));
+  document.getElementById('logEndDateTrigger').addEventListener('click', () => openCal('end'));
+  document.getElementById('logTodayPill').addEventListener('click', e => {
+    e.stopPropagation();
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('logDateInput').value = today;
+    document.getElementById('logDateDisplay').textContent = formatDateDisplay(today);
+    updateSpreadSub();
+  });
   document.getElementById('logPagesInput').addEventListener('input', updateSpreadSub);
 
   function updateSpreadSub() {
