@@ -4135,14 +4135,14 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
   const sidebar   = document.querySelector('.header');
 
   function openSidebar() {
-    sidebar.classList.add('dsb-open');
-    backdrop.classList.add('open');
-    hamburger.setAttribute('aria-expanded', 'true');
+    if (sidebar) sidebar.classList.add('dsb-open');
+    if (backdrop) backdrop.classList.add('open');
+    if (hamburger) hamburger.setAttribute('aria-expanded', 'true');
   }
   function closeSidebar() {
-    sidebar.classList.remove('dsb-open');
-    backdrop.classList.remove('open');
-    hamburger.setAttribute('aria-expanded', 'false');
+    if (sidebar) sidebar.classList.remove('dsb-open');
+    if (backdrop) backdrop.classList.remove('open');
+    if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
   }
   if (hamburger) {
     hamburger.addEventListener('click', () =>
