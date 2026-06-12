@@ -77,7 +77,13 @@ const isTouch = () => window.matchMedia('(hover:none)').matches;
 
 function updateHintBar() {
   const hint = document.getElementById('hintBar');
-  if (hint) hint.textContent = isTouch() ? 'Hold to quick-edit' : 'Click to quick-edit';
+  if (!hint) return;
+  const msgs = {
+    reading: 'in progress. just like me.',
+    read: 'the rare case of ownership and completion.',
+    unread: 'read it? i own it, but no i have not read it'
+  };
+  hint.textContent = msgs[currentFilter] || msgs.reading;
 }
 
 // ── PALETTES ──
@@ -967,6 +973,7 @@ function setSort(sortType) {
 
   closeSortMenu();
   renderGrid();
+  updateHintBar();
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
 }
 
@@ -2233,6 +2240,7 @@ function setFilter(filter) {
   document.getElementById('deskNavLists')?.classList.remove('active');
   document.getElementById('deskNavAuthors')?.classList.remove('active');
   renderGrid();
+  updateHintBar();
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
 }
 
