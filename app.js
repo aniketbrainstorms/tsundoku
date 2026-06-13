@@ -892,14 +892,10 @@ function startPress(e, id, card) {
   isPressing = true; didLongPress = false; card.classList.add('pressing');
   _pressStartX = e.touches ? e.touches[0].clientX : 0;
   _pressStartY = e.touches ? e.touches[0].clientY : 0;
-  longPressTimer = setTimeout(() => {
-    didLongPress = true; card.classList.remove('pressing'); card.classList.add('long-pressed');
-    if (navigator.vibrate) navigator.vibrate(25);
-    openQuickMenu(id, card);
-  }, 500);
+  _peekTimer = setTimeout(() => { if (isPressing) { didLongPress = true; card.classList.remove('pressing'); openPeek(id); } }, 300);
 }
 function endPress(e, id, card) {
-  if (!isPressing) return; isPressing = false; clearTimeout(longPressTimer);
+  if (!isPressing) return; isPressing = false; clearTimeout(_peekTimer); closePeek();
   card.classList.remove('pressing', 'long-pressed');
   if (!didLongPress) {
     const touch = e.changedTouches ? e.changedTouches[0] : null;
@@ -915,8 +911,7 @@ function endPress(e, id, card) {
   setTimeout(() => { didLongPress = false; }, 10);
 }
 function cancelPress(card) {
-  if (didLongPress) return;
-  isPressing = false; clearTimeout(longPressTimer);
+  isPressing = false; clearTimeout(_peekTimer); closePeek();
   if (card) card.classList.remove('pressing', 'long-pressed');
 }
 
@@ -2366,6 +2361,53 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── BOOK PEEK PREVIEW ──────────────────────────────────────────────────────
+let _peekTimer = null;
+let _peekActive = false;
+
+function _ensurePeekPortal() {
+  if (document.getElementById('bookPeekPortal')) return;
+  const portal = document.createElement('div');
+  portal.id = 'bookPeekPortal';
+  portal.innerHTML = `
+    <div id="bookPeekOverlay"></div>
+    <div id="bookPeekCard">
+      <div id="bookPeekCover"></div>
+      <div id="bookPeekMeta">
+        <div id="bookPeekTitle"></div>
+        <div id="bookPeekAuthor"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(portal);
+  document.getElementById('bookPeekPortal').addEventListener('pointerdown', closePeek);
+}
+
+function openPeek(bookId) {
+  _ensurePeekPortal();
+  const book = books.find(b => String(b.id) === String(bookId));
+  if (!book) return;
+  _peekActive = true;
+
+  document.getElementById('bookPeekCover').innerHTML = book.cover_url
+    ? `<img src="${escapeAttr(book.cover_url)}" alt="" draggable="false"/>`
+    : makePlaceholder(book, 28);
+  document.getElementById('bookPeekTitle').textContent = book.title || '';
+  document.getElementById('bookPeekAuthor').textContent = book.author || '';
+
+  const portal = document.getElementById('bookPeekPortal');
+  portal.classList.add('peek-visible');
+
+  if (navigator.vibrate) navigator.vibrate(18);
+}
+
+function closePeek() {
+  if (!_peekActive) return;
+  _peekActive = false;
+  clearTimeout(_peekTimer);
+  const portal = document.getElementById('bookPeekPortal');
+  if (portal) portal.classList.remove('peek-visible');
 }
 
 // ── AI LIBRARIAN ──
