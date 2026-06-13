@@ -318,6 +318,7 @@ body {
 
 .divider { height: 1px; background: var(--border); margin: 14px 0; }
 .detail-note { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+/* Replace with: */
 .edit-btn {
   width: 100%;
   padding: 13px;
@@ -331,6 +332,58 @@ body {
   transition: background 0.12s ease;
 }
 .edit-btn:hover { background: var(--surface3); }
+
+.delete-entry-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.delete-entry-btn:hover { color: #c0483a; background: rgba(192,72,58,0.1); }
+
+.delete-confirm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(192,72,58,0.08);
+  border: 1px solid rgba(192,72,58,0.25);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin-top: 6px;
+}
+.delete-confirm-label {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.delete-confirm-yes {
+  padding: 5px 12px;
+  background: #c0483a;
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+.delete-confirm-no {
+  padding: 5px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
 
 /* ── Overlay ── */
 .overlay {
@@ -783,18 +836,26 @@ function showDaySheet(doy) {
 
   if (entries.length) {
     html += '<div class="detail-books">';
-    entries.forEach(e => {
+    entries.forEach((e, idx) => {
       const coverHtml = e.cover_url
         ? `<img src="${e.cover_url}" alt=""/>`
         : '';
       html += `
-        <div class="detail-book-row">
+        <div class="detail-book-row" id="entry-row-${doy}-${idx}">
           <div class="detail-book-cover">${coverHtml}</div>
           <div class="detail-book-info">
             <div class="detail-book-title">${escHtml(e.title || 'Unknown')}</div>
             <div class="detail-book-author">${escHtml(e.author || '')}</div>
           </div>
           <div class="detail-book-pages">${e.pages_read}p</div>
+          <button class="delete-entry-btn" aria-label="delete log" data-doy="${doy}" data-idx="${idx}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+        <div class="delete-confirm-row" id="del-confirm-${doy}-${idx}" style="display:none;">
+          <span class="delete-confirm-label">delete this log entry?</span>
+          <button class="delete-confirm-no" data-doy="${doy}" data-idx="${idx}">cancel</button>
+          <button class="delete-confirm-yes" data-doy="${doy}" data-idx="${idx}">delete</button>
         </div>`;
     });
     html += '</div>';
@@ -812,6 +873,81 @@ function showDaySheet(doy) {
   document.getElementById('sheetInner').innerHTML = html;
   sheet.classList.add('show');
   overlay.classList.add('show');
+
+  // Wire delete buttons
+  document.querySelectorAll('.delete-entry-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const { doy: d, idx } = btn.dataset;
+      const confirmRow = document.getElementById(`del-confirm-${d}-${idx}`);
+      // Toggle confirm row; close any other open confirms first
+      document.querySelectorAll('.delete-confirm-row').forEach(r => {
+        if (r !== confirmRow) r.style.display = 'none';
+      });
+      confirmRow.style.display = confirmRow.style.display === 'none' ? 'flex' : 'none';
+    });
+  });
+  document.querySelectorAll('.delete-confirm-no').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById(`del-confirm-${btn.dataset.doy}-${btn.dataset.idx}`).style.display = 'none';
+    });
+  });
+  document.querySelectorAll('.delete-confirm-yes').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const d = parseInt(btn.dataset.doy);
+      const idx = parseInt(btn.dataset.idx);
+      const entry = dayData[d]?.entries?.[idx];
+      if (!entry) return;
+
+      btn.textContent = '…';
+      btn.disabled = true;
+
+      // Delete from Supabase — match by user, book, date, pages_read
+      // Convert doy back to date string
+      function doyToDateStr(doy) {
+        let rem = doy;
+        for (let m = 0; m < MONTHS.length; m++) {
+          if (rem <= MONTHS[m][1]) {
+            return `${YEAR}-${String(m + 1).padStart(2,'0')}-${String(rem).padStart(2,'0')}`;
+          }
+          rem -= MONTHS[m][1];
+        }
+        return null;
+      }
+      const dateStr = doyToDateStr(d);
+      const { data: { session: sess } } = await sb.auth.getSession();
+
+      const { error } = await sb.from('reading_log')
+        .delete()
+        .eq('user_id', sess.user.id)
+        .eq('book_id', entry.book_id)
+        .eq('date', dateStr)
+        .eq('pages_read', entry.pages_read);
+
+      if (error) {
+        showToast('could not delete entry');
+        btn.textContent = 'delete';
+        btn.disabled = false;
+        return;
+      }
+
+      // Update local state
+      dayData[d].pages -= entry.pages_read;
+      dayData[d].entries.splice(idx, 1);
+
+      refreshCells();
+      updateStats();
+      closeSheet();
+      showToast('log deleted');
+
+      // Reopen sheet if there are still entries on that day
+      if (dayData[d].entries.length > 0 || d === TODAY_DOY) {
+        setTimeout(() => showDaySheet(d), 320);
+      }
+    });
+  });
 }
 
 function closeSheet() {
