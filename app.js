@@ -4222,6 +4222,8 @@ function _swipeStripSnapTo(filter, animate) {
 // Called once on first touchstart, then again whenever books change.
 function _swipePreRenderAll() {
   if (window.matchMedia('(min-width: 1024px)').matches) return;
+  const strip = document.getElementById('swipeStrip');
+  if (strip) strip.classList.add('no-anim');
   const savedFilter = currentFilter;
   _SWIPE_FILTERS.forEach(f => {
     const pane = document.getElementById('pane-' + f);
@@ -4231,6 +4233,7 @@ function _swipePreRenderAll() {
   });
   currentFilter = savedFilter;
   _swipeRendered = true;
+  if (strip) requestAnimationFrame(() => strip.classList.remove('no-anim'));
 }
 
 ;(function () {
