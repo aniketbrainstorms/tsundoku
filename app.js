@@ -618,18 +618,20 @@ function attachReadingCardEvents(card) {
     }
   });
 }
-function renderGrid() {
-  updateTabCounts();
-  const grid = document.getElementById('bookGrid');
-  const filtered = getSortedFiltered();
+function _renderGridIntoEl(grid, filter) {
   const useDesktopShelfGrid = window.matchMedia('(min-width: 1024px)').matches;
+  const savedFilter = currentFilter;
+  currentFilter = filter;
+  const filtered = getSortedFiltered();
+  currentFilter = savedFilter;
+
   if (!filtered.length) {
     grid.classList.remove('reading-mode');
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span>
       <p>Nothing here yet.<br>Tap <strong style="color:var(--accent)">+</strong> to search and add a book.</p></div>`;
     return;
   }
-  if (currentFilter === 'reading' && !useDesktopShelfGrid) {
+  if (filter === 'reading' && !useDesktopShelfGrid) {
     grid.classList.add('reading-mode');
     grid.innerHTML = filtered.map((b, i) => readingCardHtml(b, i)).join('');
     grid.querySelectorAll('.reading-card').forEach(attachReadingCardEvents);
@@ -645,16 +647,46 @@ function renderGrid() {
       card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
       card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
       card.addEventListener('click', e => {
-        if (isTouch()) {
-          openDetailModal(id);
-          return;
-        }
+        if (isTouch()) { openDetailModal(id); return; }
         if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
         else openQuickMenu(id, card);
       });
     });
   }
-  // refresh A–Z bar after DOM settles
+}
+
+function renderGrid() {
+  updateTabCounts();
+  const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+
+  if (isDesktop) {
+    // Desktop: single pane, use legacy #bookGrid alias
+    const grid = document.getElementById('bookGrid');
+    _renderGridIntoEl(grid, currentFilter);
+    // show only active pane on desktop
+    document.querySelectorAll('.swipe-pane').forEach(p => p.classList.remove('active'));
+    const activePane = document.getElementById('pane-' + currentFilter);
+    if (activePane) {
+      activePane.classList.add('active');
+      const g = activePane.querySelector('.book-grid');
+      if (g) _renderGridIntoEl(g, currentFilter);
+    }
+    if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
+    return;
+  }
+
+  // Mobile: render all three panes so swipe sees real content
+  const FILTERS = ['reading', 'read', 'unread'];
+  FILTERS.forEach(f => {
+    const pane = document.getElementById('pane-' + f);
+    if (!pane) return;
+    const grid = pane.querySelector('.book-grid');
+    if (grid) _renderGridIntoEl(grid, f);
+  });
+
+  // Position strip to current tab instantly (no animation)
+  _swipeStripSnapTo(currentFilter, false);
+
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
 }
 
@@ -4169,146 +4201,123 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
 })();
 
 // ── SWIPE TAB NAVIGATION ──────────────────────────────────────────────────
-;(function () {
-  const FILTERS = ['reading', 'read', 'unread'];
-  const SWIPE_THRESHOLD = 0.3;   // 30% of screen width to commit
-  const VELOCITY_THRESHOLD = 0.4; // px/ms — fast flick commits regardless of distance
-  const RUBBER_BAND = 0.18;       // resistance factor past first/last pane
+const _SWIPE_FILTERS = ['reading', 'read', 'unread'];
 
-  let _touchStartX = 0, _touchStartY = 0;
-  let _touchStartTime = 0;
-  let _isDragging = false;
-  let _isDecided = false;      // have we decided swipe vs scroll?
-  let _isHorizontal = false;   // if decided, which direction?
-  let _startFilter = 'reading';
-  let _currentDeltaX = 0;
+function _swipeStripSnapTo(filter, animate) {
+  const strip = document.getElementById('swipeStrip');
+  if (!strip) return;
+  const idx = _SWIPE_FILTERS.indexOf(filter);
+  if (idx < 0) return;
+  const pct = -(idx * 33.3333);
+  strip.style.transition = animate
+    ? 'transform 0.38s cubic-bezier(0.32,0.72,0,1)'
+    : 'none';
+  strip.style.transform = `translateX(${pct}%)`;
+}
+
+;(function () {
+  const VELOCITY_THRESHOLD = 0.35; // px/ms
+  const DISTANCE_THRESHOLD = 0.22; // fraction of screen width
+
+  let _tx = 0, _startX = 0, _startY = 0, _startTime = 0;
+  let _dragging = false, _decided = false, _isHoriz = false;
+  let _baseOffsetPct = 0; // the strip's resting offset in %
+
+  const isDesktop = () => window.innerWidth >= 1024;
 
   const container = document.getElementById('mainGridContainer');
   if (!container) return;
 
-  // Only activate on touch devices
-  const isTouch = () => window.matchMedia('(hover:none)').matches;
-  // Disable on desktop layout
-  const isDesktop = () => window.innerWidth >= 1024;
+  function currentIdx() { return _SWIPE_FILTERS.indexOf(currentFilter); }
 
-  function getFilterIndex(f) { return FILTERS.indexOf(f); }
-
-  function applyDrag(deltaX) {
-    const idx = getFilterIndex(currentFilter);
+  function applyLiveDrag(dx) {
     const w = window.innerWidth;
-    let tx = deltaX;
+    const idx = currentIdx();
+    const restPct = -(idx * 33.3333);
+    // dx in px → convert to % of strip width (strip = 3× screen)
+    const dPct = (dx / (w * 3)) * 100;
+    let newPct = restPct + dPct;
 
     // Rubber-band at edges
-    if ((idx === 0 && deltaX > 0) || (idx === FILTERS.length - 1 && deltaX < 0)) {
-      tx = deltaX * RUBBER_BAND;
+    const atStart = idx === 0 && dx > 0;
+    const atEnd   = idx === _SWIPE_FILTERS.length - 1 && dx < 0;
+    if (atStart || atEnd) {
+      const excess = (dx / (w * 3)) * 100;
+      newPct = restPct + excess * 0.18;
     }
 
-    container.style.transition = 'none';
-    container.style.transform = `translateX(${tx}px)`;
-    container.style.willChange = 'transform';
-
-    // Peek opacity on dots to hint next pane
-    const pct = Math.abs(tx) / w;
-    const dir = tx < 0 ? 1 : -1;
-    const nextIdx = idx + dir;
-    document.querySelectorAll('.swipe-dot').forEach((d, i) => {
-      if (i === nextIdx) d.style.opacity = 0.4 + pct * 0.6;
-      else d.style.opacity = '';
-    });
-  }
-
-  function commitSwipe(direction) {
-    // direction: -1 = left (next), +1 = right (prev)
-    const idx = getFilterIndex(currentFilter);
-    const newIdx = Math.max(0, Math.min(FILTERS.length - 1, idx - direction));
-    const w = window.innerWidth;
-    const targetX = direction * w;
-
-    container.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-    container.style.transform = `translateX(${targetX}px)`;
-
-    setTimeout(() => {
-      container.style.transition = 'none';
-      container.style.transform = '';
-      container.style.willChange = '';
-      document.querySelectorAll('.swipe-dot').forEach(d => d.style.opacity = '');
-      if (newIdx !== idx) setFilter(FILTERS[newIdx]);
-    }, 300);
-  }
-
-  function snapBack() {
-    container.style.transition = 'transform 0.28s cubic-bezier(0.34,1.56,0.64,1)';
-    container.style.transform = 'translateX(0)';
-    setTimeout(() => {
-      container.style.transition = 'none';
-      container.style.transform = '';
-      container.style.willChange = '';
-      document.querySelectorAll('.swipe-dot').forEach(d => d.style.opacity = '');
-    }, 280);
+    const strip = document.getElementById('swipeStrip');
+    if (strip) {
+      strip.style.transition = 'none';
+      strip.style.transform = `translateX(${newPct}%)`;
+    }
   }
 
   container.addEventListener('touchstart', e => {
     if (isDesktop()) return;
-    // Don't hijack if a modal/overlay is open
-    const anyOverlay = document.querySelector('.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open');
+    const anyOverlay = document.querySelector(
+      '.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open, .book-search-overlay.open'
+    );
     if (anyOverlay) return;
 
-    _touchStartX = e.touches[0].clientX;
-    _touchStartY = e.touches[0].clientY;
-    _touchStartTime = Date.now();
-    _isDragging = true;
-    _isDecided = false;
-    _isHorizontal = false;
-    _startFilter = currentFilter;
-    _currentDeltaX = 0;
+    _startX = e.touches[0].clientX;
+    _startY = e.touches[0].clientY;
+    _startTime = Date.now();
+    _dragging = true;
+    _decided = false;
+    _isHoriz = false;
+    _tx = 0;
   }, { passive: true });
 
   container.addEventListener('touchmove', e => {
-    if (!_isDragging || isDesktop()) return;
+    if (!_dragging || isDesktop()) return;
 
-    const dx = e.touches[0].clientX - _touchStartX;
-    const dy = e.touches[0].clientY - _touchStartY;
+    const dx = e.touches[0].clientX - _startX;
+    const dy = e.touches[0].clientY - _startY;
 
-    if (!_isDecided) {
-      // Need at least 5px of movement to decide direction
-      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
-      _isDecided = true;
-      _isHorizontal = Math.abs(dx) > Math.abs(dy);
+    if (!_decided) {
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+      _decided = true;
+      _isHoriz = Math.abs(dx) > Math.abs(dy) * 1.2;
     }
 
-    if (!_isHorizontal) return; // vertical scroll — don't interfere
-
-    // It's a horizontal swipe — prevent vertical scroll
+    if (!_isHoriz) return;
     e.preventDefault();
-    _currentDeltaX = dx;
-    applyDrag(dx);
+    _tx = dx;
+    applyLiveDrag(dx);
   }, { passive: false });
 
   container.addEventListener('touchend', e => {
-    if (!_isDragging || isDesktop()) return;
-    _isDragging = false;
+    if (!_dragging || isDesktop()) return;
+    _dragging = false;
+    if (!_isHoriz) return;
 
-    if (!_isHorizontal) return;
-
-    const elapsed = Date.now() - _touchStartTime;
-    const velocity = Math.abs(_currentDeltaX) / elapsed; // px/ms
+    const elapsed = Date.now() - _startTime;
+    const velocity = elapsed > 0 ? Math.abs(_tx) / elapsed : 0;
     const w = window.innerWidth;
-    const pct = Math.abs(_currentDeltaX) / w;
-    const direction = _currentDeltaX < 0 ? -1 : 1; // -1 = swipe left = go to next
+    const pct = Math.abs(_tx) / w;
+    const dir = _tx < 0 ? 1 : -1; // 1 = go forward, -1 = go back
 
-    const shouldCommit = pct > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD;
+    const idx = currentIdx();
+    const shouldCommit = (pct > DISTANCE_THRESHOLD || velocity > VELOCITY_THRESHOLD)
+      && !(dir === 1 && idx === _SWIPE_FILTERS.length - 1)
+      && !(dir === -1 && idx === 0);
 
     if (shouldCommit) {
-      commitSwipe(direction);
+      const newFilter = _SWIPE_FILTERS[idx + dir];
+      // Animate strip to new position, then setFilter (which re-renders & re-snaps without anim)
+      _swipeStripSnapTo(newFilter, true);
+      setTimeout(() => setFilter(newFilter), 360);
     } else {
-      snapBack();
+      // Snap back to current
+      _swipeStripSnapTo(currentFilter, true);
     }
   }, { passive: true });
 
   container.addEventListener('touchcancel', () => {
-    if (!_isDragging) return;
-    _isDragging = false;
-    if (_isHorizontal) snapBack();
+    if (!_dragging) return;
+    _dragging = false;
+    if (_isHoriz) _swipeStripSnapTo(currentFilter, true);
   }, { passive: true });
 })();
 // ── END SWIPE TAB NAVIGATION ───────────────────────────────────────────────
