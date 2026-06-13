@@ -4202,6 +4202,7 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
 
 // ── SWIPE TAB NAVIGATION ──────────────────────────────────────────────────
 const _SWIPE_FILTERS = ['reading', 'read', 'unread'];
+let _swipeRendered = false; // true once all 3 panes have been pre-rendered
 
 function _swipeStripSnapTo(filter, animate) {
   const strip = document.getElementById('swipeStrip');
@@ -4209,56 +4210,76 @@ function _swipeStripSnapTo(filter, animate) {
   const idx = _SWIPE_FILTERS.indexOf(filter);
   if (idx < 0) return;
   const pct = -(idx * 33.3333);
-  strip.style.transition = animate
-    ? 'transform 0.38s cubic-bezier(0.32,0.72,0,1)'
-    : 'none';
+  if (animate) {
+    strip.style.transition = 'transform 0.36s cubic-bezier(0.32,0.72,0,1)';
+  } else {
+    strip.style.transition = 'none';
+  }
   strip.style.transform = `translateX(${pct}%)`;
 }
 
+// Pre-render all 3 panes so swipe sees real content immediately.
+// Called once on first touchstart, then again whenever books change.
+function _swipePreRenderAll() {
+  if (window.matchMedia('(min-width: 1024px)').matches) return;
+  const savedFilter = currentFilter;
+  _SWIPE_FILTERS.forEach(f => {
+    const pane = document.getElementById('pane-' + f);
+    if (!pane) return;
+    const grid = pane.querySelector('.book-grid');
+    if (grid) _renderGridIntoEl(grid, f);
+  });
+  currentFilter = savedFilter;
+  _swipeRendered = true;
+}
+
 ;(function () {
-  const VELOCITY_THRESHOLD = 0.35; // px/ms
-  const DISTANCE_THRESHOLD = 0.22; // fraction of screen width
+  const VELOCITY_THRESHOLD = 0.3;
+  const DISTANCE_THRESHOLD = 0.2;
 
   let _tx = 0, _startX = 0, _startY = 0, _startTime = 0;
   let _dragging = false, _decided = false, _isHoriz = false;
-  let _baseOffsetPct = 0; // the strip's resting offset in %
+  let _animating = false;
 
   const isDesktop = () => window.innerWidth >= 1024;
-
   const container = document.getElementById('mainGridContainer');
   if (!container) return;
 
   function currentIdx() { return _SWIPE_FILTERS.indexOf(currentFilter); }
 
   function applyLiveDrag(dx) {
+    const strip = document.getElementById('swipeStrip');
+    if (!strip) return;
     const w = window.innerWidth;
     const idx = currentIdx();
     const restPct = -(idx * 33.3333);
-    // dx in px → convert to % of strip width (strip = 3× screen)
     const dPct = (dx / (w * 3)) * 100;
     let newPct = restPct + dPct;
 
-    // Rubber-band at edges
     const atStart = idx === 0 && dx > 0;
-    const atEnd   = idx === _SWIPE_FILTERS.length - 1 && dx < 0;
+    const atEnd = idx === _SWIPE_FILTERS.length - 1 && dx < 0;
     if (atStart || atEnd) {
-      const excess = (dx / (w * 3)) * 100;
-      newPct = restPct + excess * 0.18;
+      newPct = restPct + (dPct * 0.15);
     }
 
-    const strip = document.getElementById('swipeStrip');
-    if (strip) {
-      strip.style.transition = 'none';
-      strip.style.transform = `translateX(${newPct}%)`;
-    }
+    strip.style.transition = 'none';
+    strip.style.transform = `translateX(${newPct}%)`;
   }
 
   container.addEventListener('touchstart', e => {
-    if (isDesktop()) return;
+    if (isDesktop() || _animating) return;
     const anyOverlay = document.querySelector(
       '.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open, .book-search-overlay.open'
     );
     if (anyOverlay) return;
+
+    // KEY: pre-render all panes NOW, before finger has moved at all
+    // This runs synchronously while the user hasn't swiped yet — zero perceived cost
+    if (!_swipeRendered) _swipePreRenderAll();
+
+    // Promote strip to GPU layer immediately so animation is compositor-only
+    const strip = document.getElementById('swipeStrip');
+    if (strip) strip.style.willChange = 'transform';
 
     _startX = e.touches[0].clientX;
     _startY = e.touches[0].clientY;
@@ -4271,14 +4292,13 @@ function _swipeStripSnapTo(filter, animate) {
 
   container.addEventListener('touchmove', e => {
     if (!_dragging || isDesktop()) return;
-
     const dx = e.touches[0].clientX - _startX;
     const dy = e.touches[0].clientY - _startY;
 
     if (!_decided) {
-      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
       _decided = true;
-      _isHoriz = Math.abs(dx) > Math.abs(dy) * 1.2;
+      _isHoriz = Math.abs(dx) > Math.abs(dy) * 1.3;
     }
 
     if (!_isHoriz) return;
@@ -4290,34 +4310,75 @@ function _swipeStripSnapTo(filter, animate) {
   container.addEventListener('touchend', e => {
     if (!_dragging || isDesktop()) return;
     _dragging = false;
-    if (!_isHoriz) return;
+
+    const strip = document.getElementById('swipeStrip');
+
+    if (!_isHoriz) {
+      if (strip) strip.style.willChange = '';
+      return;
+    }
 
     const elapsed = Date.now() - _startTime;
     const velocity = elapsed > 0 ? Math.abs(_tx) / elapsed : 0;
-    const w = window.innerWidth;
-    const pct = Math.abs(_tx) / w;
-    const dir = _tx < 0 ? 1 : -1; // 1 = go forward, -1 = go back
-
+    const pct = Math.abs(_tx) / window.innerWidth;
+    const dir = _tx < 0 ? 1 : -1;
     const idx = currentIdx();
-    const shouldCommit = (pct > DISTANCE_THRESHOLD || velocity > VELOCITY_THRESHOLD)
-      && !(dir === 1 && idx === _SWIPE_FILTERS.length - 1)
-      && !(dir === -1 && idx === 0);
+
+    const canMove = !(dir === 1 && idx === _SWIPE_FILTERS.length - 1)
+                 && !(dir === -1 && idx === 0);
+    const shouldCommit = canMove && (pct > DISTANCE_THRESHOLD || velocity > VELOCITY_THRESHOLD);
 
     if (shouldCommit) {
       const newFilter = _SWIPE_FILTERS[idx + dir];
-      // Animate strip to new position, then setFilter (which re-renders & re-snaps without anim)
+      _animating = true;
+
+      // 1. Animate strip to new position — pure CSS on compositor, no JS work
       _swipeStripSnapTo(newFilter, true);
-      setTimeout(() => setFilter(newFilter), 360);
+
+      // 2. After animation completes, update JS state (no DOM writes — strip is already there)
+      const onEnd = () => {
+        strip.removeEventListener('transitionend', onEnd);
+        strip.style.willChange = '';
+        _animating = false;
+
+        // Update currentFilter + tab highlight + dots — NO renderGrid call
+        currentFilter = newFilter;
+        document.querySelectorAll('.filter-tabs .tab-btn').forEach(b =>
+          b.classList.toggle('active', b.dataset.filter === newFilter));
+        document.querySelectorAll('.swipe-dot').forEach(d =>
+          d.classList.toggle('active', d.dataset.filter === newFilter));
+        document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach(el =>
+          el.classList.toggle('active', el.dataset.filter === newFilter));
+        updateHintBar();
+        if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
+
+        // Re-render all panes in next idle frame so it never blocks
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(() => _swipePreRenderAll(), { timeout: 1000 });
+        } else {
+          setTimeout(_swipePreRenderAll, 300);
+        }
+      };
+      strip.addEventListener('transitionend', onEnd, { once: true });
+
     } else {
-      // Snap back to current
+      // Snap back
       _swipeStripSnapTo(currentFilter, true);
+      const onBack = () => {
+        strip.removeEventListener('transitionend', onBack);
+        strip.style.willChange = '';
+        _animating = false;
+      };
+      strip.addEventListener('transitionend', onBack, { once: true });
     }
   }, { passive: true });
 
   container.addEventListener('touchcancel', () => {
     if (!_dragging) return;
     _dragging = false;
+    const strip = document.getElementById('swipeStrip');
     if (_isHoriz) _swipeStripSnapTo(currentFilter, true);
+    if (strip) strip.style.willChange = '';
   }, { passive: true });
 })();
 // ── END SWIPE TAB NAVIGATION ───────────────────────────────────────────────
