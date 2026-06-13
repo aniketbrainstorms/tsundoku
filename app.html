@@ -465,7 +465,13 @@
 
       <!-- Main grid container -->
       <div class="grid-container" id="mainGridContainer">
-        <div class="book-grid" id="bookGrid"></div>
+        <div class="swipe-strip" id="swipeStrip">
+          <div class="swipe-pane" id="pane-reading"><div class="book-grid" id="bookGrid-reading"></div></div>
+          <div class="swipe-pane" id="pane-read"><div class="book-grid" id="bookGrid-read"></div></div>
+          <div class="swipe-pane" id="pane-unread"><div class="book-grid" id="bookGrid-unread"></div></div>
+        </div>
+        <!-- legacy alias — keeps all existing code that queries #bookGrid working -->
+        <div style="display:none" id="bookGrid"></div>
         <div class="alpha-bar" id="mainAlphaBar">
           <div class="alpha-track" id="mainAlphaTrack"></div>
         </div>
