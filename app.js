@@ -4253,19 +4253,36 @@ function _swipePreRenderAll() {
     const w = window.innerWidth;
     const idx = currentIdx();
     const restPct = -(idx * 33.3333);
-    const dPct = (dx / (w * 3)) * 100;
-    let newPct = restPct + dPct;
 
     const atStart = idx === 0 && dx > 0;
     const atEnd = idx === _SWIPE_FILTERS.length - 1 && dx < 0;
+
+    let dPct;
     if (atStart || atEnd) {
-      newPct = restPct + (dPct * 0.15);
+      const sign = dx < 0 ? -1 : 1;
+      const rubber = sign * Math.log(1 + Math.abs(dx) / w) * w * 0.05;
+      dPct = (rubber / (w * 3)) * 100;
+    } else {
+      dPct = (dx / (w * 3)) * 100;
     }
+    const newPct = restPct + dPct;
 
     strip.style.transition = 'none';
     strip.style.transform = `translateX(${newPct}%)`;
-  }
 
+    // live ink bar + tab + dot tracking
+    const t = idx - (dx / w);
+    const inkBar = document.querySelector('.tab-ink');
+    if (inkBar) inkBar.style.transform = `translateX(${t * 100}%)`;
+    document.querySelectorAll('.filter-tabs .tab-btn').forEach((el, i) => {
+      const d = Math.max(0, 1 - Math.abs(t - i));
+      el.style.setProperty('--live-active', d);
+    });
+    document.querySelectorAll('.swipe-dot').forEach((el, i) => {
+      const d = Math.max(0, 1 - Math.abs(t - i));
+      el.classList.toggle('active', d > 0.5);
+    });
+  }
   container.addEventListener('touchstart', e => {
     if (isDesktop() || _animating) return;
     const anyOverlay = document.querySelector(
@@ -4331,17 +4348,13 @@ function _swipePreRenderAll() {
     if (shouldCommit) {
       const newFilter = _SWIPE_FILTERS[idx + dir];
       _animating = true;
+      const targetPct = -((idx + dir) * 33.3333);
+      const elapsed = Math.max(1, Date.now() - _startTime);
+      const initVel = (_tx / (window.innerWidth * 3)) * 100 / elapsed * 16;
 
-      // 1. Animate strip to new position — pure CSS on compositor, no JS work
-      _swipeStripSnapTo(newFilter, true);
-
-      // 2. After animation completes, update JS state (no DOM writes — strip is already there)
-      const onEnd = () => {
-        strip.removeEventListener('transitionend', onEnd);
+      _runSpring(targetPct, initVel, () => {
         strip.style.willChange = '';
         _animating = false;
-
-        // Update currentFilter + tab highlight + dots — NO renderGrid call
         currentFilter = newFilter;
         document.querySelectorAll('.filter-tabs .tab-btn').forEach(b =>
           b.classList.toggle('active', b.dataset.filter === newFilter));
@@ -4351,27 +4364,61 @@ function _swipePreRenderAll() {
           el.classList.toggle('active', el.dataset.filter === newFilter));
         updateHintBar();
         if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
-
-        // Re-render all panes in next idle frame so it never blocks
         if (typeof requestIdleCallback !== 'undefined') {
           requestIdleCallback(() => _swipePreRenderAll(), { timeout: 1000 });
         } else {
           setTimeout(_swipePreRenderAll, 300);
         }
-      };
-      strip.addEventListener('transitionend', onEnd, { once: true });
+      });
 
     } else {
-      // Snap back
-      _swipeStripSnapTo(currentFilter, true);
-      const onBack = () => {
-        strip.removeEventListener('transitionend', onBack);
+      // Snap back with spring
+      const snapPct = -(idx * 33.3333);
+      const elapsed = Math.max(1, Date.now() - _startTime);
+      const initVel = (_tx / (window.innerWidth * 3)) * 100 / elapsed * 16 * 0.25;
+      _runSpring(snapPct, initVel, () => {
         strip.style.willChange = '';
         _animating = false;
-      };
-      strip.addEventListener('transitionend', onBack, { once: true });
+      });
     }
   }, { passive: true });
+
+  // ── Spring engine ─────────────────────────────────────────────────────
+  let _springRaf = null, _springPos = 0, _springVel = 0;
+
+  function _stopSpring() {
+    if (_springRaf) { cancelAnimationFrame(_springRaf); _springRaf = null; }
+  }
+
+  function _runSpring(targetPct, initVel, onSettle) {
+    _stopSpring();
+    const strip = document.getElementById('swipeStrip');
+    if (!strip) return;
+    const cur = parseFloat((strip.style.transform.match(/-?\d+\.?\d*/) || [0])[0]);
+    _springPos = cur;
+    _springVel = initVel || 0;
+    const STIFFNESS = 400, DAMPING = 0.80;
+    function tick() {
+      const force = (targetPct - _springPos) * (STIFFNESS / 100000);
+      _springVel = (_springVel + force) * DAMPING;
+      _springPos += _springVel;
+      strip.style.transition = 'none';
+      strip.style.transform = `translateX(${_springPos}%)`;
+      const t = -_springPos / 33.3333;
+      const inkBar = document.querySelector('.tab-ink');
+      if (inkBar) inkBar.style.transform = `translateX(${t * 100}%)`;
+      if (Math.abs(_springVel) < 0.02 && Math.abs(_springPos - targetPct) < 0.05) {
+        strip.style.transform = `translateX(${targetPct}%)`;
+        if (inkBar) inkBar.style.transform = `translateX(${(-targetPct / 33.3333) * 100}%)`;
+        _springRaf = null;
+        if (onSettle) onSettle();
+        return;
+      }
+      _springRaf = requestAnimationFrame(tick);
+    }
+    _springRaf = requestAnimationFrame(tick);
+  }
+  // ── End spring engine ──────────────────────────────────────────────────
 
   container.addEventListener('touchcancel', () => {
     if (!_dragging) return;
