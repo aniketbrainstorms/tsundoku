@@ -572,16 +572,34 @@ html.standalone-webapp .add-popup {
 
 /* GRID */
 .grid-container {
-  flex: 1; overflow-y: auto;
+  flex: 1;
   min-height: 0;
-  padding: 16px max(var(--safe-right),16px) max(calc(var(--safe-bottom) + 92px), 108px) max(var(--safe-left),16px);
-  scrollbar-width: none;
+  overflow: hidden;
   position: relative;
   transition: padding-bottom 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Three-pane swipe strip */
+.swipe-strip {
+  display: flex;
+  flex-direction: row;
+  width: 300%;
+  height: 100%;
+  will-change: transform;
+}
+.swipe-pane {
+  width: 33.3333%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: 16px max(var(--safe-right),16px) max(calc(var(--safe-bottom) + 92px), 108px) max(var(--safe-left),16px);
+  position: relative;
 }
-.grid-container::-webkit-scrollbar { display: none; }
+.swipe-pane::-webkit-scrollbar { display: none; }
+
 .book-grid { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); }
 .book-grid.reading-mode { display: flex; flex-direction: column; gap: 10px; }
 
@@ -971,12 +989,27 @@ html.standalone-webapp .add-popup {
   }
   .grid-container {
     flex: 1;
-    overflow-y: auto;
-    padding: 14px 14px 16px;
+    overflow: hidden;
+    padding: 0;
     scrollbar-width: none;
   }
   .grid-container::-webkit-scrollbar {
     width: 0;
+  }
+  .swipe-strip {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .swipe-pane {
+    display: none;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 14px 14px 16px;
+  }
+  .swipe-pane.active {
+    display: block;
   }
   .book-grid {
     grid-template-columns: repeat(auto-fill, minmax(82px, 104px)) !important;
