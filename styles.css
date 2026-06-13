@@ -3626,3 +3626,6 @@ html.standalone-webapp .add-popup {
     transition-duration: 0.01ms !important;
   }
 }
+
+.swipe-strip.no-anim .book-card,
+.swipe-strip.no-anim .reading-card { animation: none; }
