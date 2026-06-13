@@ -2234,6 +2234,8 @@ function setFilter(filter) {
   document.getElementById('deskNavShelf')?.classList.add('active');
   document.getElementById('deskNavLists')?.classList.remove('active');
   document.getElementById('deskNavAuthors')?.classList.remove('active');
+  // Sync swipe dots
+  document.querySelectorAll('.swipe-dot').forEach(d => d.classList.toggle('active', d.dataset.filter === filter));
   renderGrid();
   updateHintBar();
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
@@ -4165,6 +4167,151 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
   window.addEventListener('focusout', () => setTimeout(update, 60));
   update();
 })();
+
+// ── SWIPE TAB NAVIGATION ──────────────────────────────────────────────────
+;(function () {
+  const FILTERS = ['reading', 'read', 'unread'];
+  const SWIPE_THRESHOLD = 0.3;   // 30% of screen width to commit
+  const VELOCITY_THRESHOLD = 0.4; // px/ms — fast flick commits regardless of distance
+  const RUBBER_BAND = 0.18;       // resistance factor past first/last pane
+
+  let _touchStartX = 0, _touchStartY = 0;
+  let _touchStartTime = 0;
+  let _isDragging = false;
+  let _isDecided = false;      // have we decided swipe vs scroll?
+  let _isHorizontal = false;   // if decided, which direction?
+  let _startFilter = 'reading';
+  let _currentDeltaX = 0;
+
+  const container = document.getElementById('mainGridContainer');
+  if (!container) return;
+
+  // Only activate on touch devices
+  const isTouch = () => window.matchMedia('(hover:none)').matches;
+  // Disable on desktop layout
+  const isDesktop = () => window.innerWidth >= 1024;
+
+  function getFilterIndex(f) { return FILTERS.indexOf(f); }
+
+  function applyDrag(deltaX) {
+    const idx = getFilterIndex(currentFilter);
+    const w = window.innerWidth;
+    let tx = deltaX;
+
+    // Rubber-band at edges
+    if ((idx === 0 && deltaX > 0) || (idx === FILTERS.length - 1 && deltaX < 0)) {
+      tx = deltaX * RUBBER_BAND;
+    }
+
+    container.style.transition = 'none';
+    container.style.transform = `translateX(${tx}px)`;
+    container.style.willChange = 'transform';
+
+    // Peek opacity on dots to hint next pane
+    const pct = Math.abs(tx) / w;
+    const dir = tx < 0 ? 1 : -1;
+    const nextIdx = idx + dir;
+    document.querySelectorAll('.swipe-dot').forEach((d, i) => {
+      if (i === nextIdx) d.style.opacity = 0.4 + pct * 0.6;
+      else d.style.opacity = '';
+    });
+  }
+
+  function commitSwipe(direction) {
+    // direction: -1 = left (next), +1 = right (prev)
+    const idx = getFilterIndex(currentFilter);
+    const newIdx = Math.max(0, Math.min(FILTERS.length - 1, idx - direction));
+    const w = window.innerWidth;
+    const targetX = direction * w;
+
+    container.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+    container.style.transform = `translateX(${targetX}px)`;
+
+    setTimeout(() => {
+      container.style.transition = 'none';
+      container.style.transform = '';
+      container.style.willChange = '';
+      document.querySelectorAll('.swipe-dot').forEach(d => d.style.opacity = '');
+      if (newIdx !== idx) setFilter(FILTERS[newIdx]);
+    }, 300);
+  }
+
+  function snapBack() {
+    container.style.transition = 'transform 0.28s cubic-bezier(0.34,1.56,0.64,1)';
+    container.style.transform = 'translateX(0)';
+    setTimeout(() => {
+      container.style.transition = 'none';
+      container.style.transform = '';
+      container.style.willChange = '';
+      document.querySelectorAll('.swipe-dot').forEach(d => d.style.opacity = '');
+    }, 280);
+  }
+
+  container.addEventListener('touchstart', e => {
+    if (isDesktop()) return;
+    // Don't hijack if a modal/overlay is open
+    const anyOverlay = document.querySelector('.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open');
+    if (anyOverlay) return;
+
+    _touchStartX = e.touches[0].clientX;
+    _touchStartY = e.touches[0].clientY;
+    _touchStartTime = Date.now();
+    _isDragging = true;
+    _isDecided = false;
+    _isHorizontal = false;
+    _startFilter = currentFilter;
+    _currentDeltaX = 0;
+  }, { passive: true });
+
+  container.addEventListener('touchmove', e => {
+    if (!_isDragging || isDesktop()) return;
+
+    const dx = e.touches[0].clientX - _touchStartX;
+    const dy = e.touches[0].clientY - _touchStartY;
+
+    if (!_isDecided) {
+      // Need at least 5px of movement to decide direction
+      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+      _isDecided = true;
+      _isHorizontal = Math.abs(dx) > Math.abs(dy);
+    }
+
+    if (!_isHorizontal) return; // vertical scroll — don't interfere
+
+    // It's a horizontal swipe — prevent vertical scroll
+    e.preventDefault();
+    _currentDeltaX = dx;
+    applyDrag(dx);
+  }, { passive: false });
+
+  container.addEventListener('touchend', e => {
+    if (!_isDragging || isDesktop()) return;
+    _isDragging = false;
+
+    if (!_isHorizontal) return;
+
+    const elapsed = Date.now() - _touchStartTime;
+    const velocity = Math.abs(_currentDeltaX) / elapsed; // px/ms
+    const w = window.innerWidth;
+    const pct = Math.abs(_currentDeltaX) / w;
+    const direction = _currentDeltaX < 0 ? -1 : 1; // -1 = swipe left = go to next
+
+    const shouldCommit = pct > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD;
+
+    if (shouldCommit) {
+      commitSwipe(direction);
+    } else {
+      snapBack();
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchcancel', () => {
+    if (!_isDragging) return;
+    _isDragging = false;
+    if (_isHorizontal) snapBack();
+  }, { passive: true });
+})();
+// ── END SWIPE TAB NAVIGATION ───────────────────────────────────────────────
 
 // ─── DESKTOP DETAIL PANEL ──────────────────────────────────────────────────
 ;(function () {
