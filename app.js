@@ -638,7 +638,7 @@ function _renderGridIntoEl(grid, filter) {
   } else {
     grid.classList.remove('reading-mode');
     grid.innerHTML = filtered.map((b, i) => `
-      <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${Math.min(i, 12) * 0.035}s">
+      <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
         ${coverHtml(b)}<div class="status-dot ${b.status}"></div>
       </div>`).join('');
     grid.querySelectorAll('.book-card').forEach(card => {
@@ -4255,7 +4255,7 @@ function _swipePreRenderAll() {
   function applyLiveDrag(dx) {
     const strip = document.getElementById('swipeStrip');
     if (!strip) return;
-    const w = window.innerWidth;
+    const w = container.offsetWidth;
     const idx = currentIdx();
     const restPct = -(idx * 33.3333);
 
@@ -4392,14 +4392,14 @@ function _swipePreRenderAll() {
   let _springRaf = null, _springPos = 0, _springVel = 0;
 
   function _stopSpring() {
-    if (_springRaf) { cancelAnimationFrame(_springRaf); _springRaf = null; }
+    if (_springRaf) { cancelAnimationFrame(_springRaf); _springRaf = null; _animating = false; }
   }
 
   function _runSpring(targetPct, initVel, onSettle) {
     _stopSpring();
     const strip = document.getElementById('swipeStrip');
     if (!strip) return;
-    const W = window.innerWidth;
+    const W = container.offsetWidth;
     const pctToPx = p => (p / 100) * W * 3;
     const pxToPct = x => (x / (W * 3)) * 100;
     const curPct = parseFloat((strip.style.transform.match(/-?\d+\.?\d*/) || [0])[0]);
