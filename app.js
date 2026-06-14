@@ -4255,7 +4255,7 @@ function _swipePreRenderAll() {
   function applyLiveDrag(dx) {
     const strip = document.getElementById('swipeStrip');
     if (!strip) return;
-    const w = container.offsetWidth;
+    const w = container.offsetWidth || window.innerWidth;
     const idx = currentIdx();
     const restPct = -(idx * 33.3333);
 
@@ -4355,7 +4355,7 @@ function _swipePreRenderAll() {
       _animating = true;
       const targetPct = -((idx + dir) * 33.3333);
       const elapsed = Math.max(1, Date.now() - _startTime);
-      const initVel = (_tx / elapsed) * 16;
+      const initVel = (_tx / elapsed) * 16; // px/frame — _runSpring converts to pct
 
       _runSpring(targetPct, initVel, () => {
         strip.style.willChange = '';
@@ -4380,7 +4380,7 @@ function _swipePreRenderAll() {
       // Snap back with spring
       const snapPct = -(idx * 33.3333);
       const elapsed = Math.max(1, Date.now() - _startTime);
-      const initVel = (_tx / elapsed) * 16 * 0.25;
+      const initVel = (_tx / elapsed) * 16 * 0.15;
       _runSpring(snapPct, initVel, () => {
         strip.style.willChange = '';
         _animating = false;
@@ -4388,36 +4388,36 @@ function _swipePreRenderAll() {
     }
   }, { passive: true });
 
-  // ── Spring engine ─────────────────────────────────────────────────────
+// ── Spring engine (percentage space — no px conversion) ───────────────
   let _springRaf = null, _springPos = 0, _springVel = 0;
 
   function _stopSpring() {
-    if (_springRaf) { cancelAnimationFrame(_springRaf); _springRaf = null; _animating = false; }
+    if (_springRaf) { cancelAnimationFrame(_springRaf); _springRaf = null; }
   }
 
-  function _runSpring(targetPct, initVel, onSettle) {
+  function _runSpring(targetPct, initVelPx, onSettle) {
     _stopSpring();
     const strip = document.getElementById('swipeStrip');
     if (!strip) return;
-    const W = container.offsetWidth;
-    const pctToPx = p => (p / 100) * W * 3;
-    const pxToPct = x => (x / (W * 3)) * 100;
-    const curPct = parseFloat((strip.style.transform.match(/-?\d+\.?\d*/) || [0])[0]);
-    _springPos = pctToPx(curPct);
-    _springVel = initVel || 0;
-    const targetPx = pctToPx(targetPct);
-    const STIFFNESS = 400, DAMPING = 0.80;
+    // Work entirely in percentage units — avoids px↔% conversion drift
+    const curPct = parseFloat((strip.style.transform.match(/-?\d+\.?\d*/) || [0])[0]) || 0;
+    _springPos = curPct;
+    // Convert px/ms velocity to pct/frame (strip is 3× viewport wide)
+    const W = container.offsetWidth || window.innerWidth;
+    _springVel = initVelPx ? (initVelPx / (W * 3)) * 100 : 0;
+    const STIFFNESS = 0.28, DAMPING = 0.78;
     const inkBar = document.querySelector('.tab-ink');
+    let safetyFrames = 0;
     function tick() {
-      const force = (targetPx - _springPos) * (STIFFNESS / 10000);
+      const force = (targetPct - _springPos) * STIFFNESS;
       _springVel = (_springVel + force) * DAMPING;
       _springPos += _springVel;
-      const pct = pxToPct(_springPos);
       strip.style.transition = 'none';
-      strip.style.transform = `translateX(${pct}%)`;
-      const t = -pct / 33.3333;
+      strip.style.transform = `translateX(${_springPos}%)`;
+      const t = -_springPos / 33.3333;
       if (inkBar) inkBar.style.transform = `translateX(${t * 100}%)`;
-      if (Math.abs(_springVel) < 0.15 && Math.abs(_springPos - targetPx) < 0.2) {
+      safetyFrames++;
+      if ((Math.abs(_springVel) < 0.005 && Math.abs(_springPos - targetPct) < 0.05) || safetyFrames > 120) {
         strip.style.transform = `translateX(${targetPct}%)`;
         if (inkBar) inkBar.style.transform = `translateX(${(-targetPct / 33.3333) * 100}%)`;
         _springRaf = null;
