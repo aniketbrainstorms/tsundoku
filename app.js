@@ -501,7 +501,7 @@ function renderPublicShelf() {
   }
   grid.classList.remove('reading-mode');
   grid.innerHTML = list.map((b, i) => `
-    <div class="pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${Math.min(i, 12) * 0.035}s">
+    <div class="pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
       ${coverHtml(b)}
       <div class="status-dot ${b.status}"></div>
     </div>`).join('');
@@ -587,7 +587,7 @@ function readingCardHtml(book, i) {
         <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:${pct}%"></div></div>
       </div>`
     : `<p class="rc-no-progress">tap ✏️ to track progress</p>`;
-  return `<div class="reading-card" data-id="${book.id}" style="animation-delay:${Math.min(i, 12) * 0.035}s">
+  return `<div class="reading-card" data-id="${book.id}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
     <div class="rc-cover">${coverContent}</div>
     <div class="rc-info">
       <div class="rc-title">${escapeHtml(book.title)}</div>
@@ -4222,6 +4222,7 @@ function _swipeStripSnapTo(filter, animate) {
 // Called once on first touchstart, then again whenever books change.
 function _swipePreRenderAll() {
   if (window.matchMedia('(min-width: 1024px)').matches) return;
+  window._swipeNoStagger = true;        // ← add
   const strip = document.getElementById('swipeStrip');
   if (strip) strip.classList.add('no-anim');
   const savedFilter = currentFilter;
@@ -4233,6 +4234,7 @@ function _swipePreRenderAll() {
   });
   currentFilter = savedFilter;
   _swipeRendered = true;
+  window._swipeNoStagger = false;       // ← add
   if (strip) requestAnimationFrame(() => strip.classList.remove('no-anim'));
 }
 
