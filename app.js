@@ -2160,19 +2160,18 @@ async function fetchAddIsbn() {
   const btn = document.querySelector('#addIsbn + button') || document.querySelector('[onclick="fetchAddIsbn()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Fetching…'; }
   try {
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=1`);
+    const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}&format=json&jscmd=data`);
     const data = await res.json();
-    const item = data.items?.[0];
-    if (!item) { showToast('No book found for that ISBN'); return; }
-    const v = item.volumeInfo || {};
-    if (v.title) document.getElementById('addTitle').value = v.title;
-    if (v.authors?.[0]) document.getElementById('addAuthor').value = v.authors[0];
-    if (v.publishedDate) document.getElementById('addYear').value = v.publishedDate.slice(0, 4);
-    if (v.categories?.[0]) document.getElementById('addGenre').value = v.categories[0];
-    if (v.pageCount) document.getElementById('addPageCount').value = v.pageCount;
-    let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
+    const v = data[`ISBN:${isbn}`] || data[Object.keys(data)[0]];
+    if (!v) { showToast('No book found for that ISBN'); return; }
+    if (v.title) document.getElementById('editTitle').value = v.title;
+    if (v.authors?.[0]?.name) document.getElementById('editAuthor').value = v.authors[0].name;
+    if (v.publish_date) document.getElementById('editYear').value = v.publish_date.slice(-4);
+    if (v.subjects?.[0]?.name) document.getElementById('editGenre').value = v.subjects[0].name;
+    if (v.number_of_pages) document.getElementById('editPageCount').value = v.number_of_pages;
+    let cover = v.cover?.large || v.cover?.medium || '';
     if (cover) {
-      cover = cover.replace(/^http:/, 'https:').replace('zoom=1', 'zoom=2').replace('&edge=curl', '');
+      cover = cover.replace(/^http:/, 'https:');
       addCoverUrl = cover;
       const thumb = document.getElementById('addCoverThumb');
       if (thumb) thumb.innerHTML = `<img src="${escapeAttr(cover)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" onerror="this.remove()"/>`;
@@ -2190,19 +2189,18 @@ async function fetchEditIsbn() {
   const btn = document.querySelector('[onclick="fetchEditIsbn()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Fetching…'; }
   try {
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=1`);
+    const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}&format=json&jscmd=data`);
     const data = await res.json();
-    const item = data.items?.[0];
-    if (!item) { showToast('No book found for that ISBN'); return; }
-    const v = item.volumeInfo || {};
-    if (v.title) document.getElementById('editTitle').value = v.title;
-    if (v.authors?.[0]) document.getElementById('editAuthor').value = v.authors[0];
-    if (v.publishedDate) document.getElementById('editYear').value = v.publishedDate.slice(0, 4);
-    if (v.categories?.[0]) document.getElementById('editGenre').value = v.categories[0];
-    if (v.pageCount) document.getElementById('editPageCount').value = v.pageCount;
-    let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
+    const v = data[`ISBN:${isbn}`] || data[Object.keys(data)[0]];
+    if (!v) { showToast('No book found for that ISBN'); return; }
+    if (v.title) document.getElementById('addTitle').value = v.title;
+    if (v.authors?.[0]?.name) document.getElementById('addAuthor').value = v.authors[0].name;
+    if (v.publish_date) document.getElementById('addYear').value = v.publish_date.slice(-4);
+    if (v.subjects?.[0]?.name) document.getElementById('addGenre').value = v.subjects[0].name;
+    if (v.number_of_pages) document.getElementById('addPageCount').value = v.number_of_pages;
+    let cover = v.cover?.large || v.cover?.medium || '';
     if (cover) {
-      cover = cover.replace(/^http:/, 'https:').replace('zoom=1', 'zoom=2').replace('&edge=curl', '');
+      cover = cover.replace(/^http:/, 'https:');
       editCoverUrl = cover;
       const thumb = document.getElementById('editCoverThumbWrap');
       if (thumb) thumb.innerHTML = `<img src="${escapeAttr(cover)}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
