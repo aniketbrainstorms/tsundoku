@@ -657,6 +657,7 @@ function _renderGridIntoEl(grid, filter) {
 
 function renderGrid() {
   updateTabCounts();
+  _swipeDirty = true;
   const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
 
   if (isDesktop) {
@@ -4201,7 +4202,7 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
 // ── SWIPE TAB NAVIGATION ──────────────────────────────────────────────────
 const _SWIPE_FILTERS = ['reading', 'read', 'unread'];
 let _swipeRendered = false;
-
+let _swipeDirty = false; // set true whenever book data changes; cleared after pre-render
 function _swipeStripSnapTo(filter, animate) {
   const strip = document.getElementById('swipeStrip');
   if (!strip) return;
@@ -4215,8 +4216,9 @@ function _swipeStripSnapTo(filter, animate) {
   strip.style.transform = `translateX(${x}px)`;
 }
 
-function _swipePreRenderAll() {
+function _swipePreRenderAll(force) {
   if (window.matchMedia('(min-width: 1024px)').matches) return;
+  if (_swipeRendered && !_swipeDirty && !force) return; // nothing changed — skip, no blink
   window._swipeNoStagger = true;
   const strip = document.getElementById('swipeStrip');
   if (strip) strip.classList.add('no-anim');
@@ -4227,6 +4229,7 @@ function _swipePreRenderAll() {
     if (grid) _renderGridIntoEl(grid, f);
   });
   _swipeRendered = true;
+  _swipeDirty = false;
   window._swipeNoStagger = false;
   if (strip) requestAnimationFrame(() => strip.classList.remove('no-anim'));
 }
@@ -4379,12 +4382,8 @@ function _swipePreRenderAll() {
     else if (vel >  FLICK_VEL || pct >  DRAG_PCT) target = Math.max(target - 1, 0);
 
     snapTo(target);
-
-    if (typeof requestIdleCallback !== 'undefined') {
-      requestIdleCallback(() => _swipePreRenderAll(), { timeout: 1000 });
-    } else {
-      setTimeout(_swipePreRenderAll, 300);
-    }
+    // Panes already hold correct data from the last renderGrid()/_swipePreRenderAll() pass —
+    // do NOT force a re-render here, that's what caused the post-swipe blink.
   }
 
   container.addEventListener('pointerup',     onRelease);
