@@ -47,6 +47,47 @@
 }
 </script>
 
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Tsundoku free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, Tsundoku is completely free to use. There are no subscriptions, no ads, and no paywalls."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Tsundoku work on mobile?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, Tsundoku is a Progressive Web App (PWA) that works on iPhone, Android, and desktop browsers. You can add it to your home screen for an app-like experience."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need an account to use Tsundoku?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "You need a free account to save your library and sync across devices. Sign up takes under a minute."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the meaning of tsundoku?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Tsundoku is a Japanese word that describes the habit of buying books and letting them pile up unread. It combines the words for stacking things and reading. Rather than a flaw, tsundoku is a celebration of curiosity and the love of books."
+      }
+    }
+  ]
+}
+</script>
+
   <style>
     @font-face {
       font-family: 'Bristol';
@@ -374,7 +415,7 @@
 
   <!-- ① Title — z-index:1, above image -->
   <div class="title-block">
-    <span class="wordmark">Tsundoku</span>
+    <h1 class="wordmark">Tsundoku</h1>
     <span class="byline">by aniket</span>
   </div>
 
@@ -469,6 +510,43 @@
   </div><!-- /bottom -->
 
 </main>
+
+<!-- SEO content — visually hidden but crawlable -->
+<section aria-label="About Tsundoku" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">
+  <h2>What is Tsundoku?</h2>
+  <p>Tsundoku is a free personal book tracking app inspired by the Japanese word for buying books and letting them pile up unread. It is a calm, no-guilt reading tracker designed for ADHD readers and anyone whose to-read pile keeps growing. Organize the books you own, track your reading progress, and discover what you want to read next — all without streaks, goals, or pressure.</p>
+  <h2>Who is Tsundoku for?</h2>
+  <p>Tsundoku is built for readers who own more books than they can read, people who abandon books guilt-free, ADHD readers who juggle multiple books at once, and anyone who wants a simple personal bookshelf tracker without social features or gamification.</p>
+</section>
+
+<!-- FAQ schema content -->
+<section aria-label="Frequently asked questions" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">
+  <h2>Frequently Asked Questions</h2>
+  <div itemscope itemtype="https://schema.org/Question">
+    <h3 itemprop="name">Is Tsundoku free?</h3>
+    <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+      <p itemprop="text">Yes, Tsundoku is completely free to use. There are no subscriptions, no ads, and no paywalls.</p>
+    </div>
+  </div>
+  <div itemscope itemtype="https://schema.org/Question">
+    <h3 itemprop="name">Does Tsundoku work on mobile?</h3>
+    <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+      <p itemprop="text">Yes, Tsundoku is a Progressive Web App (PWA) that works on iPhone, Android, and desktop browsers. You can add it to your home screen for an app-like experience.</p>
+    </div>
+  </div>
+  <div itemscope itemtype="https://schema.org/Question">
+    <h3 itemprop="name">Do I need an account to use Tsundoku?</h3>
+    <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+      <p itemprop="text">You need a free account to save your library and sync across devices. Sign up takes under a minute.</p>
+    </div>
+  </div>
+  <div itemscope itemtype="https://schema.org/Question">
+    <h3 itemprop="name">What is the meaning of tsundoku?</h3>
+    <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+      <p itemprop="text">Tsundoku is a Japanese word that describes the habit of buying books and letting them pile up unread. It combines the words for stacking things and reading. Rather than a flaw, tsundoku is a celebration of curiosity and the love of books.</p>
+    </div>
+  </div>
+</section>
 
 <script>
   document.getElementById('ctaBtn').addEventListener('click', () => {
