@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://aniketbrainstorms.github.io/tsundoku/sitemap.xml
