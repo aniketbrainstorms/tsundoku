@@ -4254,6 +4254,16 @@ function _swipePreRenderAll(force) {
   let dirDecided    = false;
   let isHoriz       = false;
   let velHistory    = [];
+  let _rafPending   = false;
+  let _tabBtnsCache    = null;
+  let _swipeDotsCache  = null;
+  let _sbSubItemsCache = null;
+
+  function _refreshSwipeNodeCache() {
+    _tabBtnsCache    = document.querySelectorAll('.filter-tabs .tab-btn');
+    _swipeDotsCache  = document.querySelectorAll('.swipe-dot');
+    _sbSubItemsCache = document.querySelectorAll('#deskShelfSub .sb-sub-item');
+  }
 
   function getW() { W = container.offsetWidth || window.innerWidth; }
 
@@ -4268,6 +4278,29 @@ function _swipePreRenderAll(force) {
 
   function currentIdx() { return _SWIPE_FILTERS.indexOf(currentFilter); }
 
+  function _flushSwipeVisuals() {
+    _rafPending = false;
+    const inkBar = document.querySelector('.tab-ink');
+    if (!inkBar) return;
+    const t = W > 0 ? (-currentX / W) : 0;
+    inkBar.style.transform = `translateX(${t * 100}%)`;
+
+    if (!_tabBtnsCache) _refreshSwipeNodeCache();
+
+    _tabBtnsCache.forEach((el, i) => {
+      const d = clamp(1 - Math.abs(t - i), 0, 1);
+      el.classList.toggle('active', d > 0.5);
+    });
+
+    const near = Math.round(clamp(W > 0 ? -currentX / W : 0, 0, N - 1));
+    _swipeDotsCache.forEach((el, i) => {
+      el.classList.toggle('active', i === near);
+    });
+    _sbSubItemsCache.forEach(el => {
+      el.classList.toggle('active', el.dataset.filter === _SWIPE_FILTERS[near]);
+    });
+  }
+
   function applyTranslate(x, animate) {
     const strip  = document.getElementById('swipeStrip');
     const inkBar = document.querySelector('.tab-ink');
@@ -4279,23 +4312,10 @@ function _swipePreRenderAll(force) {
 
     if (inkBar) {
       inkBar.style.transition = animate ? `transform ${SETTLE_MS}ms ${SETTLE_EASE}` : 'none';
-      const t = W > 0 ? (-x / W) : 0;
-      inkBar.style.transform  = `translateX(${t * 100}%)`;
-
-      // live-colour tabs
-      document.querySelectorAll('.filter-tabs .tab-btn').forEach((el, i) => {
-        const d = clamp(1 - Math.abs(t - i), 0, 1);
-        el.classList.toggle('active', d > 0.5);
-      });
-
-      // dots
-      const near = Math.round(clamp(W > 0 ? -x / W : 0, 0, N - 1));
-      document.querySelectorAll('.swipe-dot').forEach((el, i) => {
-        el.classList.toggle('active', i === near);
-      });
-      document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach((el, i) => {
-        el.classList.toggle('active', el.dataset.filter === _SWIPE_FILTERS[near]);
-      });
+      if (!_rafPending) {
+        _rafPending = true;
+        requestAnimationFrame(_flushSwipeVisuals);
+      }
     }
   }
 
@@ -4304,14 +4324,17 @@ function _swipePreRenderAll(force) {
     currentFilter = _SWIPE_FILTERS[idx];
     getW();
     applyTranslate(-idx * W, true);
-    document.querySelectorAll('.filter-tabs .tab-btn').forEach(b =>
+    if (!_tabBtnsCache) _refreshSwipeNodeCache();
+    _tabBtnsCache.forEach(b =>
       b.classList.toggle('active', b.dataset.filter === currentFilter));
-    document.querySelectorAll('.swipe-dot').forEach(d =>
+    _swipeDotsCache.forEach(d =>
       d.classList.toggle('active', d.dataset.filter === currentFilter));
-    document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach(el =>
+    _sbSubItemsCache.forEach(el =>
       el.classList.toggle('active', el.dataset.filter === currentFilter));
     updateHintBar();
     if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
+    const ib = document.querySelector('.tab-ink');
+    if (ib) setTimeout(() => { ib.style.willChange = ''; }, SETTLE_MS + 30);
   }
 
   // ── Pointer events (mouse + touch + stylus) ──
@@ -4329,9 +4352,10 @@ function _swipePreRenderAll(force) {
     if (!_swipeRendered) _swipePreRenderAll();
 
     getW();
+    _refreshSwipeNodeCache();
     strip_el().style.transition  = 'none';
     const ib = document.querySelector('.tab-ink');
-    if (ib) ib.style.transition = 'none';
+    if (ib) { ib.style.transition = 'none'; ib.style.willChange = 'transform'; }
 
     down         = true;
     dirDecided   = false;
@@ -4372,7 +4396,12 @@ function _swipePreRenderAll(force) {
 
     let vel = 0;
     if (velHistory.length >= 2) {
-      const a = velHistory[0], b = velHistory[velHistory.length - 1];
+      // Use only the most recent ~80ms of samples so a slow-then-flick
+      // gesture isn't diluted by stale early-drag samples.
+      const now = velHistory[velHistory.length - 1].t;
+      const recent = velHistory.filter(s => now - s.t <= 80);
+      const sample = recent.length >= 2 ? recent : velHistory;
+      const a = sample[0], b = sample[sample.length - 1];
       const dt = b.t - a.t;
       if (dt > 4) vel = (b.x - a.x) / dt;
     }
