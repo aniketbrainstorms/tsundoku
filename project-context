@@ -1,0 +1,679 @@
+Based on the codebase and the embedded design philosophy (impeccable.md), the app is much more than a CRUD bookshelf. It has a very clear product philosophy: **an ADHD-first, guilt-free personal reading shelf**.
+
+I would create a single living document (call it CONTEXT.md or PROJECT\_CONTEXT.md) that any new developer, designer, investor, contributor, or LLM can read to immediately understand the product.
+
+PROJECT\_CONTEXT.md
+===================
+
+Tsundoku
+========
+
+_A calm home for unread books._
+
+1\. What is Tsundoku?
+=====================
+
+Tsundoku is a minimalist personal bookshelf designed around one simple idea:
+
+> People love buying books.People don't always finish reading them.That shouldn't feel like failure.
+
+The name comes from the Japanese word **積ん読 (Tsundoku)**:
+
+> buying books and letting them pile up unread.
+
+Instead of treating unread books as a backlog to conquer, Tsundoku celebrates ownership, curiosity and future reading.
+
+It is intentionally the opposite of Goodreads.
+
+No ratings.
+
+No reviews.
+
+No social feed.
+
+No reading challenges.
+
+No streaks.
+
+Just **your shelf.**
+
+2\. Vision
+==========
+
+Reading apps often become productivity tools.
+
+Tsundoku is designed to become a place.
+
+It should feel like:
+
+*   walking into your own library
+    
+*   seeing books you love
+    
+*   remembering why you bought them
+    
+*   feeling excited to read
+    
+
+—not guilty.
+
+The emotional goal is:
+
+> Calm.
+> 
+> Personal.
+> 
+> Cozy.
+> 
+> Intentional.
+
+3\. Mission
+===========
+
+Reduce friction between
+
+"I should remember this book"
+
+and
+
+"I'll read it someday."
+
+The app should become the fastest possible place to capture and organize a personal library.
+
+4\. Problem
+===========
+
+Modern readers usually have:
+
+*   bookshelves
+    
+*   Kindle libraries
+    
+*   PDFs
+    
+*   Audible
+    
+*   wishlists
+    
+*   screenshots
+    
+*   Amazon saves
+    
+*   recommendations
+    
+
+Everything is fragmented.
+
+Most readers also:
+
+*   buy faster than they read
+    
+*   forget what they own
+    
+*   lose recommendations
+    
+*   never know what to read next
+    
+
+Traditional reading trackers solve the wrong problem.
+
+They optimize:
+
+*   pages
+    
+*   goals
+    
+*   streaks
+    
+
+Tsundoku optimizes:
+
+ownership.
+
+5\. Core Philosophy
+===================
+
+Books are possessions before they are achievements.
+---------------------------------------------------
+
+Owning books is valuable.
+
+Unread books are valuable.
+
+Reading should never feel like homework.
+
+ADHD-first
+----------
+
+The primary user is the ADHD reader.
+
+This affects every design decision.
+
+The app assumes users:
+
+*   forget things
+    
+*   act impulsively
+    
+*   open the app for seconds
+    
+*   hate friction
+    
+*   dislike clutter
+    
+
+Every interaction should finish in as few taps as possible.
+
+No guilt UI
+-----------
+
+Never shame readers.
+
+Never compare them.
+
+Avoid:
+
+*   streaks
+    
+*   goals
+    
+*   reading velocity
+    
+*   yearly pressure
+    
+*   "books left"
+    
+
+The shelf should always feel welcoming.
+
+Covers are the interface
+------------------------
+
+Books are visual.
+
+Book covers should dominate the experience.
+
+Everything else should disappear into the background.
+
+6\. Branding
+============
+
+Personality
+-----------
+
+Focused.
+
+Minimal.
+
+Personal.
+
+Warm.
+
+Quiet.
+
+Literary.
+
+Human.
+
+Tone of voice
+-------------
+
+Always lowercase where possible.
+
+Short sentences.
+
+Never corporate.
+
+Never hype.
+
+Never productivity-bro.
+
+Examples:
+
+✓ add book
+
+✓ your shelf
+
+✓ unread
+
+✓ reading
+
+✓ read
+
+instead of
+
+✗ Optimize your reading workflow
+
+✗ Crush your yearly goal
+
+Visual identity
+---------------
+
+Warm dark palette
+
+Terracotta accents
+
+Muted paper colors
+
+Minimal borders
+
+Soft motion
+
+Book covers as heroes
+
+The UI should feel closer to:
+
+a dimly lit bookstore
+
+than
+
+a dashboard.
+
+7\. Target Audience
+===================
+
+Primary
+-------
+
+ADHD readers
+
+People who:
+
+*   impulse buy books
+    
+*   own hundreds of unread books
+    
+*   forget recommendations
+    
+*   jump between books
+    
+*   read in bursts
+    
+
+Secondary
+---------
+
+Book collectors
+
+People who simply enjoy owning books.
+
+Third
+-----
+
+Casual readers
+
+People wanting a cleaner alternative to Goodreads.
+
+Fourth
+------
+
+Bookstagram creators
+
+People who want beautiful shelves without social pressure.
+
+Fifth
+-----
+
+Minimalists
+
+Readers who dislike feature-heavy apps.
+
+8\. Current Features
+====================
+
+Authentication
+--------------
+
+*   email login
+    
+*   signup
+    
+*   Supabase authentication
+    
+
+Personal Shelf
+--------------
+
+Users can
+
+*   add books
+    
+*   edit books
+    
+*   remove books
+    
+
+Status tracking
+---------------
+
+Three intentionally simple states:
+
+Unread
+
+Reading
+
+Read
+
+Nothing else.
+
+Book details
+------------
+
+Each book stores:
+
+*   title
+    
+*   author
+    
+*   cover image
+    
+*   reading status
+    
+
+Search
+------
+
+Search by:
+
+*   title
+    
+*   author
+    
+
+Filters
+-------
+
+All
+
+Unread
+
+Reading
+
+Read
+
+Cover uploads
+-------------
+
+Users can upload their own covers.
+
+Quick actions
+-------------
+
+Desktop:
+
+*   click
+    
+
+Mobile:
+
+*   long press
+    
+
+Quickly change status.
+
+Detail sheet
+------------
+
+Edit
+
+Delete
+
+Change status
+
+Replace cover
+
+Responsive layout
+-----------------
+
+Optimized for
+
+*   mobile PWA
+    
+*   tablets
+    
+*   desktop
+    
+
+9\. Design Principles
+=====================
+
+The shelf is the product
+------------------------
+
+Every feature should protect the visual bookshelf.
+
+Speed over features
+-------------------
+
+Adding a book should feel instant.
+
+Minimalism
+----------
+
+If something doesn't improve reading,
+
+remove it.
+
+Performance
+-----------
+
+Animations are subtle.
+
+Everything should feel immediate.
+
+Dark mode only
+--------------
+
+The atmosphere matters.
+
+Warm darkness is part of the identity.
+
+10\. What Tsundoku is NOT
+=========================
+
+It is NOT Goodreads.
+
+It is NOT StoryGraph.
+
+It is NOT Notion.
+
+It is NOT Obsidian.
+
+It is NOT a reading productivity app.
+
+It is NOT social media.
+
+11\. Product Pillars
+====================
+
+1\. Collect
+-----------
+
+Capture books effortlessly.
+
+2\. Organize
+------------
+
+Keep the shelf beautiful.
+
+3\. Remember
+------------
+
+Never forget a recommendation.
+
+4\. Read
+--------
+
+Read when inspiration arrives.
+
+Not because the app pressures you.
+
+12\. Future Direction
+=====================
+
+Features should strengthen one of the product pillars.
+
+Potential directions:
+
+### Better Organization
+
+*   collections
+    
+*   shelves
+    
+*   tags
+    
+*   genres
+    
+*   favorites
+    
+
+### Reading Memory
+
+*   notes
+    
+*   highlights
+    
+*   favorite quotes
+    
+*   thoughts
+    
+
+### Discovery
+
+*   recommendation inbox
+    
+*   save from web
+    
+*   ISBN scanner
+    
+*   wishlist
+    
+
+### Intelligence
+
+AI should answer:
+
+"What should I read next?"
+
+"What books do I own about psychology?"
+
+"Recommend something short."
+
+"Which books have similar themes?"
+
+without replacing the simplicity of the shelf.
+
+### Statistics
+
+Only positive statistics.
+
+Examples:
+
+*   books owned
+    
+*   authors explored
+    
+*   genres collected
+    
+
+Avoid guilt metrics.
+
+13\. Monetization Ideas
+=======================
+
+Premium:
+
+*   unlimited shelves
+    
+*   AI recommendations
+    
+*   reading insights
+    
+*   cloud backup
+    
+*   widgets
+    
+*   custom themes
+    
+*   book collections
+    
+*   export library
+    
+
+Never ads.
+
+Never sponsored books.
+
+Never affiliate spam.
+
+14\. Competitive Positioning
+============================
+
+ProductFocusGoodreadsSocial readingStoryGraphReading analyticsLiteralSocial + trackingBookmoryReading logsObsidianPersonal knowledge**Tsundoku**Personal bookshelf
+
+15\. Elevator Pitch
+===================
+
+> **Tsundoku is a beautifully minimal bookshelf for people who buy more books than they finish. Instead of turning reading into productivity, it celebrates the joy of collecting, remembering, and reading at your own pace.**
+
+16\. One-Line Pitch
+===================
+
+> **Your personal reading shelf, without the guilt.**
+
+17\. Investor Pitch (30 seconds)
+================================
+
+Millions of readers own far more books than they can read. Existing reading apps focus on tracking progress, social features, and productivity. Tsundoku serves a different emotional need: helping readers remember, organize, and enjoy their personal library in a calm, beautiful environment. Built with an ADHD-first philosophy and an obsession with simplicity, Tsundoku transforms the unread pile from a source of guilt into a source of inspiration.
+
+18\. LLM Context
+================
+
+When suggesting features or improvements:
+
+Prioritize:
+
+*   fewer taps
+    
+*   calm UX
+    
+*   bookshelf-first design
+    
+*   visual simplicity
+    
+*   fast interactions
+    
+*   book ownership
+    
+*   reader delight
+    
+
+Avoid recommending:
+
+*   streaks
+    
+*   gamification
+    
+*   achievements
+    
+*   badges
+    
+*   social feeds
+    
+*   follower systems
+    
+*   competitive metrics
+    
+*   productivity pressure
+    
+*   feature bloat
+    
+
+Every new feature should answer:
+
+> Does this make someone's personal bookshelf feel more useful, more beautiful, or more personal?
+
+If the answer is no, it probably doesn't belong.
+
+This captures both the current implementation (authentication, shelf management, search, filtering, cover uploads, quick actions, responsive design) visible in the codebase and the intended product philosophy documented in the project's design context.
