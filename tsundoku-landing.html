@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tsundoku — A shelf for everything you own, on every page you're on</title>
+<meta name="description" content="Tsundoku is a no-guilt bookshelf app for people who buy faster than they read. Track what you own, what you're reading, and what's still waiting — beautifully.">
+<meta property="og:title" content="Tsundoku">
+<meta property="og:description" content="Your library deserves better than a list.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F0E8;--surface:#EDE8DC;--surface2:#E4DDD0;
+  --accent:#c9714a;--accent-light:#d98b6a;--accent-dark:#a05535;
+  --green:#5a8a6a;--text:#1C1915;--text-muted:#7a6f65;--text-dim:#5c5249;
+  --border:rgba(28,25,21,0.1);--border-strong:rgba(28,25,21,0.18);
+  --fd:'Playfair Display',Georgia,serif;--fb:'DM Sans',sans-serif;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-spring:cubic-bezier(0.25,1,0.5,1);
+}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);overflow-x:hidden;font-size:16px;line-height:1.6}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+/* ══ FLOATING BOOK PARTICLES ══ */
+.book-particle{position:fixed;pointer-events:none;z-index:0;animation:floatBook linear infinite;opacity:0}
+@keyframes floatBook{
+  0%{transform:translateY(110vh) rotate(var(--rot-start)) scale(0.7);opacity:0}
+  5%{opacity:var(--max-op)}
+  85%{opacity:var(--max-op)}
+  100%{transform:translateY(-20vh) rotate(var(--rot-end)) scale(0.9);opacity:0}
+}
+.bp-inner{border-radius:2px 5px 5px 2px;box-shadow:inset -3px 0 6px rgba(0,0,0,0.3),2px 2px 8px rgba(0,0,0,0.2);position:relative;overflow:hidden}
+.bp-inner::before{content:'';position:absolute;left:10%;top:0;bottom:0;width:6%;background:rgba(0,0,0,0.25)}
+.bp-inner::after{content:'';position:absolute;right:0;top:0;bottom:0;width:3px;background:rgba(255,255,255,0.12)}
+
+/* ══ PAGE TURN ══ */
+.page-turn-leaf{
+  position:absolute;top:0;right:0;width:50%;height:100%;
+  background:linear-gradient(135deg,var(--surface2),var(--bg));
+  transform-origin:left center;
+  animation:pageTurn 3s var(--ease-out) infinite;
+  animation-delay:var(--leaf-delay,0s);
+  border-left:1px solid var(--border-strong);border-radius:0 3px 3px 0;opacity:0;
+}
+@keyframes pageTurn{
+  0%,15%{transform:rotateY(0deg);opacity:0}
+  20%{opacity:1}
+  50%{transform:rotateY(-160deg);opacity:.7}
+  80%{transform:rotateY(-160deg);opacity:0}
+  100%{transform:rotateY(0deg);opacity:0}
+}
+
+/* ══ SHELF BOOK SLIDE ══ */
+@keyframes shelfSlide{
+  from{transform:translateX(50px);opacity:0}
+  to{transform:translateX(0);opacity:1}
+}
+.shelf-book{animation:shelfSlide var(--ease-out) both;animation-duration:0.5s;animation-delay:var(--shelf-delay,0s)}
+
+/* ══ KANJI REVEAL ══ */
+@keyframes kanjiReveal{
+  from{opacity:0;transform:scale(0.85) translateY(20px)}
+  to{opacity:1;transform:scale(1) translateY(0)}
+}
+
+/* ══ FLOAT PULSE ══ */
+@keyframes tooltipFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.float-label{animation:tooltipFloat ease-in-out infinite;animation-duration:var(--fl-dur,3s);animation-delay:var(--fl-delay,0s)}
+
+/* ══ DOT PULSE ══ */
+@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.7)}}
+
+/* ══ PROGRESS FILL ══ */
+@keyframes fillBar{from{width:0%}to{width:var(--target-w)}}
+.animated-bar{animation:fillBar 1.2s var(--ease-out) both;animation-play-state:paused;animation-delay:var(--bar-delay,.3s)}
+.animated-bar.running{animation-play-state:running}
+
+/* ══ COUNT UP ══ */
+@keyframes fadeRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══ NAV ══ */
+nav{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);
+  z-index:200;display:flex;align-items:center;
+  background:rgba(245,240,232,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border-strong);border-radius:100px;
+  padding:8px 8px 8px 20px;
+  box-shadow:0 2px 24px rgba(28,25,21,0.1);
+  transition:background 0.3s var(--ease-out),box-shadow 0.3s;
+  max-width:calc(100vw - 24px);
+}
+.nav-logo{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text);letter-spacing:-0.01em;white-space:nowrap}
+.nav-logo span{color:var(--accent)}
+.nav-links{display:flex;align-items:center;gap:2px;margin:0 12px}
+.nav-links a{font-size:13px;color:var(--text-muted);text-decoration:none;padding:6px 10px;border-radius:100px;transition:all 0.2s;white-space:nowrap}
+.nav-links a:hover{color:var(--text);background:rgba(28,25,21,0.05)}
+.nav-cta{background:var(--accent);color:#fff;border:none;padding:9px 16px;border-radius:100px;font-family:var(--fb);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background 0.2s,transform 0.2s var(--ease-spring);-webkit-tap-highlight-color:transparent;min-height:44px}
+.nav-cta:hover,.nav-cta:active{background:var(--accent-dark);transform:scale(0.98)}
+.nav-cta-icon{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+
+/* ══ HERO ══ */
+.hero{min-height:100dvh;display:flex;align-items:center;padding:clamp(90px,15vw,140px) clamp(20px,5vw,60px) clamp(60px,10vw,100px);position:relative;overflow:hidden}
+.hero-bg-1{position:absolute;border-radius:50%;pointer-events:none;width:min(600px,120vw);height:min(600px,120vw);background:radial-gradient(circle,rgba(201,113,74,0.1) 0%,transparent 70%);right:-80px;top:50%;transform:translateY(-50%)}
+.hero-bg-2{position:absolute;border-radius:50%;pointer-events:none;width:min(400px,80vw);height:min(400px,80vw);background:radial-gradient(circle,rgba(90,138,106,0.07) 0%,transparent 70%);left:-80px;bottom:0}
+.hero-inner{max-width:1200px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:clamp(32px,5vw,80px);align-items:center}
+.hero-label{display:inline-flex;align-items:center;gap:8px;background:rgba(201,113,74,0.1);border:1px solid rgba(201,113,74,0.25);border-radius:100px;padding:5px 14px 5px 8px;font-size:11px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:20px}
+.hero-label-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:dotPulse 2s ease-in-out infinite}
+.hero-h1{font-family:var(--fd);font-size:clamp(38px,6vw,68px);font-weight:700;line-height:1.05;letter-spacing:-0.025em;margin-bottom:18px;text-wrap:balance}
+.hero-h1 em{font-style:italic;color:var(--accent)}
+.hero-sub{font-size:clamp(15px,2vw,18px);line-height:1.65;color:var(--text-muted);max-width:480px;margin-bottom:14px;font-weight:300}
+.hero-sub strong{font-weight:500;color:var(--text-dim)}
+.hero-tag{font-size:13px;color:var(--text-dim);font-weight:500;margin-bottom:32px;display:inline-flex;align-items:center;gap:8px}
+.hero-tag-rule{width:18px;height:1px;background:var(--accent)}
+.hero-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--text);color:var(--bg);border:none;padding:15px 26px;border-radius:100px;font-family:var(--fb);font-size:15px;font-weight:500;cursor:pointer;text-decoration:none;transition:transform 0.25s var(--ease-spring),background 0.2s;-webkit-tap-highlight-color:transparent;min-height:52px;touch-action:manipulation}
+.btn-primary:hover,.btn-primary:active{background:var(--accent);transform:scale(1.02)}
+.btn-primary-icon{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:13px;transition:transform 0.2s var(--ease-out);flex-shrink:0}
+.btn-primary:hover .btn-primary-icon{transform:translateX(2px) translateY(-2px)}
+.btn-ghost{font-size:14px;color:var(--text-muted);text-decoration:none;font-weight:400;display:flex;align-items:center;gap:4px;transition:color 0.2s;padding:12px 0;min-height:44px}
+.btn-ghost:hover{color:var(--text)}
+.hero-trust{display:flex;align-items:center;gap:10px;margin-top:30px}
+.hero-trust-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.hero-trust-text{font-size:12px;color:var(--text-muted);line-height:1.4}
+
+/* ══ PHONE MOCKUP (shared double-bezel shell) ══ */
+.phone-outer{position:relative;z-index:2}
+.phone-device{background:#1a1814;border-radius:42px;border:1px solid rgba(255,255,255,0.12);box-shadow:0 0 0 1px rgba(0,0,0,0.8),0 40px 80px rgba(28,25,21,0.35),inset 0 0 0 1px rgba(255,255,255,0.06);position:relative;overflow:hidden}
+.phone-screen{width:100%;height:100%;border-radius:inherit;overflow:hidden;background:#1a1814;position:relative}
+.phone-btn-v{position:absolute;left:-3px;width:3px;background:#2a2a2a;border-radius:2px 0 0 2px}
+.phone-btn-p{position:absolute;right:-3px;top:100px;width:3px;height:46px;background:#2a2a2a;border-radius:0 2px 2px 0}
+.app-sim{width:100%;height:100%;background:#1a1814;font-family:var(--fb);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.app-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100px;height:28px;background:#1a1814;border-radius:0 0 16px 16px;z-index:10}
+.app-inner{padding:44px 12px 14px;display:flex;flex-direction:column;gap:9px;flex:1;overflow:hidden}
+.app-hdr{font-family:var(--fd);font-size:13px;color:#e8e0d5;display:flex;justify-content:space-between;align-items:center}
+.app-ava{width:22px;height:22px;border-radius:50%;background:#2c2823;border:1px solid #3a3530;display:flex;align-items:center;justify-content:center;font-size:8px;color:#b0a89e}
+.app-search{background:#221f1b;border-radius:8px;height:27px;display:flex;align-items:center;gap:6px;padding:0 10px;border:1px solid #2c2823}
+.app-search-ico{width:10px;height:10px;border:1.5px solid #7a7068;border-radius:50%;position:relative;flex-shrink:0}
+.app-search-ico::after{content:'';position:absolute;right:-3px;bottom:-3px;width:4px;height:1.5px;background:#7a7068;transform:rotate(45deg);border-radius:1px}
+.app-tabs{display:flex;gap:5px}
+.app-tab{padding:4px 9px;border-radius:100px;font-size:7.5px;font-weight:500;border:1px solid #3a3530;color:#7a7068;background:transparent}
+.app-tab.active{background:#c9714a;border-color:#c9714a;color:#fff}
+.app-books{display:flex;flex-direction:column;gap:7px;flex:1;overflow:hidden}
+.app-book{background:#221f1b;border-radius:9px;display:flex;gap:8px;padding:9px;border:1px solid #2c2823;align-items:stretch}
+.app-cover-w{width:34px;flex-shrink:0;border-radius:4px;overflow:hidden}
+.app-cover-i{width:100%;height:52px;border-radius:4px;display:flex;align-items:center;justify-content:center}
+.app-info{flex:1;min-width:0}
+.app-title{font-size:8.5px;font-weight:600;color:#e8e0d5;line-height:1.3;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.app-author{font-size:7px;color:#7a7068;margin-bottom:6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.app-prog-row{display:flex;justify-content:space-between;margin-bottom:3px}
+.app-prog-l{font-size:7px;color:#7a7068}
+.app-prog-p{font-size:7px;color:#c9714a}
+.app-bar-bg{height:2.5px;background:#3a3530;border-radius:2px;overflow:hidden}
+.app-bar-fill{height:100%;background:linear-gradient(90deg,#c9714a,#e08060);border-radius:2px}
+
+/* Float labels */
+.fl{position:absolute;border-radius:10px;padding:8px 14px;font-size:11px;font-weight:500;white-space:nowrap;z-index:3}
+.fl-dark{background:var(--text);color:var(--bg);box-shadow:0 6px 20px rgba(28,25,21,0.25)}
+.fl-warm{background:rgba(201,113,74,0.15);border:1px solid rgba(201,113,74,0.3);color:var(--accent)}
+.fl-green{background:rgba(90,138,106,0.15);border:1px solid rgba(90,138,106,0.3);color:var(--green)}
+
+/* ══ SECTIONS ══ */
+section{padding:clamp(72px,12vw,140px) clamp(20px,5vw,60px)}
+.section-inner{max-width:1200px;margin:0 auto}
+.eyebrow{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:0.18em;font-weight:500;color:var(--accent);margin-bottom:14px}
+.section-h2{font-family:var(--fd);font-size:clamp(30px,5vw,54px);font-weight:700;line-height:1.12;letter-spacing:-0.02em;color:var(--text);margin-bottom:16px;text-wrap:balance}
+.section-h2 em{font-style:italic;color:var(--accent)}
+.section-sub{font-size:clamp(15px,2vw,18px);color:var(--text-muted);line-height:1.65;max-width:560px;font-weight:300}
+
+/* ══ THE PROBLEM (new) ══ */
+.problem-section{background:var(--text);color:rgba(245,240,232,0.85);position:relative;overflow:hidden}
+.problem-section .eyebrow{color:var(--accent-light)}
+.problem-grain{position:absolute;inset:0;opacity:0.04;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.problem-inner{max-width:760px;margin:0 auto;position:relative;z-index:1}
+.problem-lines{font-family:var(--fd);font-size:clamp(20px,3.4vw,32px);line-height:1.55;font-style:italic;color:rgba(245,240,232,0.55);margin:36px 0 0}
+.problem-lines .strong{color:rgba(245,240,232,0.95);font-style:normal;font-weight:500}
+.problem-punch{margin-top:40px;font-family:var(--fb);font-size:clamp(17px,2.4vw,21px);font-weight:500;color:var(--accent-light);font-style:normal}
+
+/* ══ PROOF STRIP (image section) ══ */
+.proof-section{background:var(--surface);text-align:center}
+.proof-inner{max-width:880px;margin:0 auto}
+.proof-frame{margin-top:56px;border-radius:28px;background:#15130f;padding:14px;box-shadow:0 50px 100px -20px rgba(28,25,21,0.4),0 1px 0 rgba(255,255,255,0.05) inset;position:relative}
+.proof-frame-inner{border-radius:18px;overflow:hidden;background:#1a1814;border:1px solid rgba(255,255,255,0.06)}
+.proof-bar{display:flex;align-items:center;gap:6px;padding:14px 18px;border-bottom:1px solid #2c2823}
+.proof-dot{width:8px;height:8px;border-radius:50%}
+.proof-grid-shelf{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;padding:24px;background:#1a1814}
+.proof-grid-shelf .pcov{aspect-ratio:2/3;border-radius:6px;position:relative;animation:shelfSlide var(--ease-out) both;animation-duration:.5s}
+
+/* ══ BOOKSHELF STRIP ══ */
+.shelf-strip{background:var(--text);padding:40px clamp(20px,5vw,60px) 0;overflow:hidden}
+.shelf-scene{position:relative;padding:24px 0 0}
+.shelf-rail{display:flex;gap:8px;align-items:flex-end;padding-bottom:10px;position:relative}
+.shelf-rail::after{content:'';position:absolute;bottom:0;left:-60px;right:-60px;height:6px;background:#111;border-radius:2px;box-shadow:0 4px 12px rgba(0,0,0,0.5)}
+.sbi{flex-shrink:0;position:relative;overflow:hidden;border-radius:2px 4px 4px 2px;box-shadow:inset -3px 0 6px rgba(0,0,0,0.3),2px 0 4px rgba(0,0,0,0.15);animation:shelfSlide var(--ease-out) both;animation-duration:.5s;animation-delay:var(--shelf-delay,0s);cursor:default;transition:transform 0.25s var(--ease-out)}
+.sbi:hover{transform:translateY(-8px)}
+.sbi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:rgba(0,0,0,0.3)}
+
+/* ══ WORD SECTION ══ */
+.word-section{background:var(--text);color:var(--bg)}
+.word-section .eyebrow{color:var(--accent-light)}
+.word-section .section-h2{color:var(--bg)}
+.word-section .section-h2 em{color:var(--accent-light)}
+.word-section .section-sub{color:rgba(245,240,232,0.65)}
+.word-inner{display:grid;grid-template-columns:1fr 1fr;gap:clamp(40px,8vw,100px);align-items:center}
+.word-kanji-main{font-family:serif;font-size:clamp(80px,14vw,140px);color:var(--accent);line-height:1;display:block;margin-bottom:14px;opacity:0.9;animation:kanjiReveal 1s var(--ease-out) both}
+.word-kanji-reading{font-size:clamp(16px,2.5vw,22px);letter-spacing:0.2em;color:rgba(245,240,232,0.45);font-weight:300}
+.word-breakdown{display:flex;flex-direction:column;gap:16px;margin-top:36px}
+.word-part{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:14px;transition:background 0.2s}
+.word-part:hover{background:rgba(255,255,255,0.07)}
+.word-part-kanji{font-family:serif;font-size:34px;color:var(--accent);line-height:1}
+.word-part-reading{font-size:11px;letter-spacing:0.1em;color:rgba(245,240,232,0.4);margin-bottom:3px}
+.word-part-meaning{font-size:14px;color:rgba(245,240,232,0.8)}
+
+/* ══ FEATURE ROWS (editorial split, alternating) ══ */
+.feat-row{padding:clamp(56px,10vw,110px) clamp(20px,5vw,60px)}
+.feat-row:nth-of-type(odd){background:var(--bg)}
+.feat-row:nth-of-type(even){background:var(--surface)}
+.feat-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:clamp(40px,7vw,100px);align-items:center}
+.feat-row.flip .feat-inner{direction:rtl}
+.feat-row.flip .feat-inner > *{direction:ltr}
+.feat-num{font-family:var(--fd);font-size:13px;font-weight:700;color:var(--accent);letter-spacing:0.1em;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.feat-num-line{width:28px;height:1px;background:var(--accent)}
+.feat-list{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.feat-list-item{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--text-dim)}
+.feat-list-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:7px;flex-shrink:0}
+.feat-visual{display:flex;justify-content:center;position:relative}
+
+/* ══ MOCKUP: shared card chrome for non-phone visuals ══ */
+.mock-card{background:#1a1814;border-radius:24px;padding:6px;box-shadow:0 40px 80px -16px rgba(28,25,21,0.35),0 1px 0 rgba(255,255,255,0.05) inset;width:100%;max-width:420px}
+.mock-card-inner{background:#1a1814;border-radius:19px;overflow:hidden;border:1px solid rgba(255,255,255,0.06)}
+.mock-topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid #2c2823}
+.mock-topbar-title{font-family:var(--fd);font-size:13px;color:#e8e0d5}
+.mock-topbar-sub{font-size:9px;color:#7a7068;letter-spacing:0.06em}
+
+/* Search mockup */
+.search-mock-bar{margin:14px 16px 10px;background:#221f1b;border:1.5px solid #c9714a;border-radius:10px;height:36px;display:flex;align-items:center;gap:8px;padding:0 12px}
+.search-mock-bar input{background:none;border:none;outline:none;color:#e8e0d5;font-family:var(--fb);font-size:11px;flex:1}
+.search-mock-results{padding:0 16px 16px;display:flex;flex-direction:column;gap:6px}
+.search-mock-row{display:flex;align-items:center;gap:9px;padding:7px;border-radius:8px}
+.search-mock-row.hit{background:rgba(201,113,74,0.12)}
+.search-mock-cover{width:24px;height:34px;border-radius:3px;flex-shrink:0}
+.search-mock-title{font-size:9px;color:#e8e0d5;font-weight:500}
+.search-mock-title mark{background:rgba(201,113,74,0.35);color:#e8a072;border-radius:2px;padding:0 1px}
+.search-mock-author{font-size:7.5px;color:#7a7068;margin-top:1px}
+
+/* Status pills mockup */
+.status-mock-pill-row{display:flex;gap:6px;padding:14px 16px 4px;flex-wrap:wrap}
+.status-mock-pill{font-size:8.5px;padding:5px 11px;border-radius:100px;font-weight:500;display:flex;align-items:center;gap:5px}
+.status-mock-pill-dot{width:5px;height:5px;border-radius:50%}
+.status-mock-rows{padding:8px 16px 16px;display:flex;flex-direction:column;gap:7px}
+.status-mock-row{display:flex;align-items:center;gap:9px;background:#221f1b;border:1px solid #2c2823;border-radius:9px;padding:8px}
+.status-mock-cover{width:24px;height:34px;border-radius:3px;flex-shrink:0}
+.status-mock-badge{margin-left:auto;font-size:7px;padding:2px 7px;border-radius:100px;flex-shrink:0}
+
+/* Stats dashboard mockup */
+.stats-mock-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 16px}
+.stats-mock-card{background:#221f1b;border:1px solid #2c2823;border-radius:10px;padding:11px}
+.stats-mock-num{font-family:var(--fd);font-size:20px;color:#e8e0d5;line-height:1}
+.stats-mock-label{font-size:7.5px;color:#7a7068;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
+.stats-mock-bars{display:flex;align-items:flex-end;gap:4px;height:40px;margin-top:8px}
+.stats-mock-bar{flex:1;border-radius:2px 2px 0 0;background:linear-gradient(180deg,#e08060,#c9714a)}
+.stats-mock-heat{display:grid;grid-template-columns:repeat(12,1fr);gap:2.5px;padding:0 16px 16px}
+.stats-mock-heat div{aspect-ratio:1;border-radius:2px}
+
+/* Share / public profile mockup */
+.share-mock-hero{padding:18px 16px 12px;text-align:center;border-bottom:1px solid #2c2823}
+.share-mock-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(160deg,#4a2818,#c9714a);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:16px;color:#fff}
+.share-mock-name{font-family:var(--fd);font-size:14px;color:#e8e0d5}
+.share-mock-meta{font-size:8px;color:#7a7068;margin-top:2px}
+.share-mock-link{margin:10px auto 0;display:inline-flex;align-items:center;gap:6px;background:rgba(201,113,74,0.12);border:1px solid rgba(201,113,74,0.3);border-radius:100px;padding:5px 11px;font-size:8px;color:#e0935f;font-family:monospace}
+.share-mock-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:14px 16px 16px}
+.share-mock-grid .pcov{aspect-ratio:2/3;border-radius:5px}
+
+/* Shelves / collections mockup */
+.shelves-mock-list{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px}
+.shelves-mock-row{display:flex;align-items:center;gap:10px;background:#221f1b;border:1px solid #2c2823;border-radius:10px;padding:9px 11px}
+.shelves-mock-emoji{font-size:15px;width:26px;height:26px;border-radius:8px;background:#2c2823;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.shelves-mock-name{font-size:10px;color:#e8e0d5;font-weight:500}
+.shelves-mock-count{font-size:7.5px;color:#7a7068;margin-top:1px}
+.shelves-mock-stack{display:flex;margin-left:auto}
+.shelves-mock-mini{width:14px;height:20px;border-radius:2px;margin-left:-7px;border:1.5px solid #1a1814}
+.shelves-mock-mini:first-child{margin-left:0}
+
+/* Barcode / add mockup chip */
+.add-mock-options{padding:14px 16px 16px;display:flex;flex-direction:column;gap:7px}
+.add-mock-opt{display:flex;align-items:center;gap:10px;background:#221f1b;border:1px solid #2c2823;border-radius:10px;padding:10px 12px}
+.add-mock-opt-ico{width:28px;height:28px;border-radius:50%;background:rgba(201,113,74,0.14);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#c9714a}
+.add-mock-opt-title{font-size:9.5px;color:#e8e0d5;font-weight:500}
+.add-mock-opt-sub{font-size:7.5px;color:#7a7068;margin-top:1px}
+.add-mock-scan-frame{margin:0 16px;border:2px dashed rgba(201,113,74,0.4);border-radius:10px;height:54px;display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(201,113,74,0.05)}
+
+/* ══ READER TYPES ══ */
+.readers-section{background:var(--text);color:rgba(245,240,232,0.9)}
+.readers-section .eyebrow{color:var(--accent-light)}
+.readers-section .section-h2{color:var(--bg)}
+.readers-section .section-h2 em{color:var(--accent-light)}
+.readers-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;margin-top:56px;border:1px solid rgba(255,255,255,0.08)}
+.reader-card{background:#23201b;padding:clamp(24px,3vw,32px) clamp(18px,2.4vw,26px);transition:background 0.25s}
+.reader-card:hover{background:#2a2620}
+.reader-mark{font-family:var(--fd);font-size:34px;color:var(--accent-light);opacity:0.7;line-height:1;margin-bottom:16px}
+.reader-title{font-family:var(--fd);font-size:18px;font-weight:600;color:var(--bg);margin-bottom:8px}
+.reader-desc{font-size:13px;color:rgba(245,240,232,0.55);line-height:1.65;font-weight:300}
+
+/* ══ PHILOSOPHY (minimal whitespace section) ══ */
+.philosophy-section{background:var(--bg);text-align:center;padding-top:clamp(90px,14vw,160px);padding-bottom:clamp(90px,14vw,160px)}
+.philosophy-inner{max-width:640px;margin:0 auto}
+.philosophy-kanji{font-family:serif;font-size:clamp(48px,8vw,72px);color:var(--accent);opacity:0.85;line-height:1;margin-bottom:28px}
+.philosophy-lines{font-family:var(--fd);font-size:clamp(20px,3vw,28px);line-height:1.6;color:var(--text-dim);font-style:italic}
+.philosophy-lines .accent-word{color:var(--accent);font-style:normal;font-weight:600}
+.philosophy-fine{margin-top:32px;font-size:14px;color:var(--text-muted);font-weight:300;line-height:1.7}
+
+/* ══ CTA ══ */
+.cta-section{padding:clamp(72px,12vw,140px) clamp(20px,5vw,60px);text-align:center;background:var(--surface);position:relative;overflow:hidden}
+.cta-inner{max-width:700px;margin:0 auto;position:relative;z-index:1}
+.cta-h2{font-family:var(--fd);font-size:clamp(34px,6vw,60px);font-weight:700;line-height:1.1;letter-spacing:-0.025em;margin-bottom:18px;text-wrap:balance}
+.cta-h2 em{font-style:italic;color:var(--accent)}
+.cta-sub{font-size:clamp(15px,2vw,18px);color:var(--text-muted);margin-bottom:44px;font-weight:300;line-height:1.65}
+.cta-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+
+/* ══ FAQ ══ */
+.faq-section{background:var(--bg)}
+.faq-inner{max-width:760px;margin:0 auto}
+.faq-list{margin-top:48px;display:flex;flex-direction:column}
+.faq-item{padding:26px 0;border-bottom:1px solid var(--border)}
+.faq-item:first-child{padding-top:0}
+.faq-q{font-family:var(--fd);font-size:clamp(17px,2.2vw,20px);font-weight:600;color:var(--text);margin-bottom:10px;letter-spacing:-0.01em}
+.faq-a{font-size:14.5px;color:var(--text-muted);line-height:1.75;font-weight:300;max-width:600px}
+
+/* ══ FOOTER ══ */
+footer{background:var(--text);padding:40px clamp(20px,5vw,60px);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px}
+.footer-logo{font-family:var(--fd);font-size:17px;font-weight:700;color:var(--bg)}
+.footer-logo span{color:var(--accent-light)}
+.footer-text{font-size:12px;color:rgba(245,240,232,0.4);line-height:1.5;margin-top:5px}
+.footer-links{display:flex;gap:18px;flex-wrap:wrap}
+.footer-links a{font-size:13px;color:rgba(245,240,232,0.4);text-decoration:none;transition:color 0.2s;min-height:44px;display:flex;align-items:center}
+.footer-links a:hover{color:rgba(245,240,232,0.8)}
+
+/* ══ REVEAL ══ */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity 0.7s var(--ease-out),transform 0.7s var(--ease-out)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.08s}
+.reveal-delay-2{transition-delay:.16s}
+.reveal-delay-3{transition-delay:.24s}
+.reveal-delay-4{transition-delay:.32s}
+
+/* ══ MOBILE ══ */
+@media(max-width:600px){
+  .nav-links{display:none}
+  nav{padding-left:16px}
+}
+@media(max-width:768px){
+  .hero-inner{grid-template-columns:1fr;gap:36px}
+  .hero-phone-wrap{order:-1}
+  .phone-device{width:200px!important;height:408px!important;border-radius:34px!important}
+  .fl{font-size:10px!important;padding:6px 10px!important}
+  .fl-hero-r{right:-30px!important}
+  .fl-hero-l{left:-30px!important}
+  .word-inner{grid-template-columns:1fr;gap:32px}
+  .word-kanji-display{order:-1;text-align:center}
+  .feat-inner{grid-template-columns:1fr!important;direction:ltr!important}
+  .feat-row.flip .feat-inner{direction:ltr}
+  .feat-visual{order:-1}
+  .readers-grid{grid-template-columns:1fr 1fr}
+  .proof-grid-shelf{grid-template-columns:repeat(4,1fr)}
+  .share-mock-grid{grid-template-columns:repeat(4,1fr)}
+  footer{flex-direction:column;align-items:flex-start}
+}
+@media(min-width:769px) and (max-width:1024px){
+  .readers-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(hover:none){
+  .sbi:hover{transform:none}
+  .reader-card:hover{background:#23201b}
+  .btn-primary:active{transform:scale(0.97)}
+}
+</style>
+</head>
+<body>
+
+<!-- FLOATING BOOK PARTICLES -->
+<div id="particles" aria-hidden="true" style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden"></div>
+
+<!-- NAV -->
+<nav id="mainNav">
+  <div class="nav-logo">tsu<span>.</span>ndoku</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#word">Philosophy</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <a href="https://aniketbrainstorms.github.io/tsundoku/" class="nav-cta" target="_blank">
+    Open App <div class="nav-cta-icon">↗</div>
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg-1"></div>
+  <div class="hero-bg-2"></div>
+  <div class="hero-inner section-inner" style="position:relative;z-index:1">
+    <div class="hero-content">
+      <div class="reveal">
+        <div class="hero-label">
+          <div class="hero-label-dot"></div>
+          Free forever · no credit card
+        </div>
+      </div>
+      <h1 class="hero-h1 reveal reveal-delay-1">
+        Your library deserves<br>better than a <em>list.</em>
+      </h1>
+      <p class="hero-sub reveal reveal-delay-2">
+        Collect every book you own. Organize beautiful shelves. Track your reading. Rediscover forgotten favorites — <strong>without a single spreadsheet.</strong>
+      </p>
+      <div class="hero-tag reveal reveal-delay-2">
+        <span class="hero-tag-rule"></span>
+        Built for people who love books — not just reading them.
+      </div>
+      <div class="hero-actions reveal reveal-delay-3">
+        <a href="https://aniketbrainstorms.github.io/tsundoku/" class="btn-primary" target="_blank">
+          Start your library <div class="btn-primary-icon">→</div>
+        </a>
+        <a href="#features" class="btn-ghost">See how it works ↓</a>
+      </div>
+      <div class="hero-trust reveal reveal-delay-4">
+        <div class="hero-trust-dot"></div>
+        <div class="hero-trust-text">No ads. No algorithms. Just your shelf.</div>
+      </div>
+    </div>
+
+    <!-- PHONE: live shelf -->
+    <div class="hero-phone-wrap reveal reveal-delay-2" style="display:flex;justify-content:center;position:relative">
+      <div class="phone-outer">
+        <div class="phone-device" style="width:240px;height:490px">
+          <div class="phone-btn-v" style="top:80px;height:26px"></div>
+          <div class="phone-btn-v" style="top:114px;height:26px"></div>
+          <div class="phone-btn-p"></div>
+          <div class="phone-screen">
+            <div class="app-sim">
+              <div class="app-notch"></div>
+              <div class="app-inner">
+                <div class="app-hdr">
+                  <span style="font-family:'Playfair Display',serif;font-size:14px">tsundoku</span>
+                  <div class="app-ava">A</div>
+                </div>
+                <div class="app-search">
+                  <div class="app-search-ico"></div>
+                  <span style="font-size:9px;color:#7a7068">Search your library…</span>
+                </div>
+                <div class="app-tabs">
+                  <div class="app-tab active">reading 3</div>
+                  <div class="app-tab">read 24</div>
+                  <div class="app-tab">unread 41</div>
+                </div>
+                <div class="app-books">
+                  <div class="app-book shelf-book" style="--shelf-delay:0.1s">
+                    <div class="app-cover-w"><div class="app-cover-i" style="background:linear-gradient(160deg,#4a2818,#c9714a)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div></div>
+                    <div class="app-info">
+                      <div class="app-title">The Midnight Library</div>
+                      <div class="app-author">Matt Haig</div>
+                      <div class="app-prog-row"><span class="app-prog-l">187 / 304 pages</span><span class="app-prog-p">61%</span></div>
+                      <div class="app-bar-bg"><div class="app-bar-fill animated-bar" style="--target-w:61%;--bar-delay:.5s;width:0%"></div></div>
+                    </div>
+                  </div>
+                  <div class="app-book shelf-book" style="--shelf-delay:0.2s">
+                    <div class="app-cover-w"><div class="app-cover-i" style="background:linear-gradient(160deg,#1e2d3d,#5a8fa8)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div></div>
+                    <div class="app-info">
+                      <div class="app-title">Babel</div>
+                      <div class="app-author">R.F. Kuang</div>
+                      <div class="app-prog-row"><span class="app-prog-l">112 / 560 pages</span><span class="app-prog-p">20%</span></div>
+                      <div class="app-bar-bg"><div class="app-bar-fill animated-bar" style="--target-w:20%;--bar-delay:.65s;width:0%"></div></div>
+                    </div>
+                  </div>
+                  <div class="app-book shelf-book" style="--shelf-delay:0.3s">
+                    <div class="app-cover-w"><div class="app-cover-i" style="background:linear-gradient(160deg,#2d3a2e,#6a9a72)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div></div>
+                    <div class="app-info">
+                      <div class="app-title">Tomorrow, and Tomorrow…</div>
+                      <div class="app-author">Gabrielle Zevin</div>
+                      <div style="margin-top:6px"><span style="font-size:7px;color:#7a7068;font-style:italic">tap ✏️ to track progress</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="fl fl-dark float-label fl-hero-r" style="bottom:64px;right:-70px;--fl-dur:3s;--fl-delay:0s">
+          Finished today ✓
+          <div style="position:absolute;top:50%;left:-5px;transform:translateY(-50%) rotate(45deg);width:9px;height:9px;background:var(--text)"></div>
+        </div>
+        <div class="fl fl-warm float-label fl-hero-l" style="top:80px;left:-72px;--fl-dur:3.5s;--fl-delay:1s">
+          68 books on shelf
+          <div style="position:absolute;top:50%;right:-5px;transform:translateY(-50%) rotate(45deg);width:9px;height:9px;background:rgba(201,113,74,0.15);border-right:1px solid rgba(201,113,74,0.3);border-top:1px solid rgba(201,113,74,0.3)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE PROBLEM -->
+<section class="problem-section">
+  <div class="problem-grain"></div>
+  <div class="problem-inner">
+    <span class="eyebrow reveal">The problem</span>
+    <h2 class="section-h2 reveal reveal-delay-1" style="color:var(--bg)">Every book tells a story.<br><em style="color:var(--accent-light)">Your library should too.</em></h2>
+    <p class="problem-lines reveal reveal-delay-2">
+      But right now your collection lives everywhere.<br>
+      A bookshelf in your room. A Kindle.<br>
+      An Amazon wishlist you forgot about.<br>
+      Screenshots you'll never revisit. Notes you'll forget.<br>
+      Tabs you'll never close.
+    </p>
+    <p class="problem-punch reveal reveal-delay-3">And somehow — you still buy books you already own.</p>
+  </div>
+</section>
+
+<!-- PROOF / SCREENSHOT STRIP -->
+<section class="proof-section">
+  <div class="proof-inner">
+    <span class="eyebrow reveal">Your whole shelf, at a glance</span>
+    <h2 class="section-h2 reveal reveal-delay-1">Open your library.<br>Find exactly what you're <em>looking for.</em></h2>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto">Not another spreadsheet. Not another endless list. A library that's as enjoyable to browse as the shelves in your home.</p>
+    <div class="proof-frame reveal reveal-delay-2">
+      <div class="proof-frame-inner">
+        <div class="proof-bar">
+          <div class="proof-dot" style="background:#c9714a"></div>
+          <div class="proof-dot" style="background:#3a3530"></div>
+          <div class="proof-dot" style="background:#3a3530"></div>
+          <span style="margin-left:10px;font-size:11px;color:#7a7068;font-family:'DM Sans',sans-serif">aniketbrainstorms.github.io/tsundoku</span>
+        </div>
+        <div class="proof-grid-shelf" id="proofGrid"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BOOKSHELF STRIP -->
+<div class="shelf-strip">
+  <div class="shelf-scene">
+    <div class="shelf-rail" id="shelfRail"></div>
+  </div>
+</div>
+
+<!-- WORD SECTION -->
+<section class="word-section" id="word">
+  <div class="section-inner">
+    <div class="word-inner">
+      <div>
+        <span class="eyebrow reveal">Buying books is part of reading</span>
+        <h2 class="section-h2 reveal reveal-delay-1">A Japanese word<br>worth <em>celebrating.</em></h2>
+        <p class="section-sub reveal reveal-delay-2">
+          Tsundoku (積ん読) means buying books and letting them pile up before reading them. Most people think that's a guilty habit. We think it's something worth celebrating.
+        </p>
+        <div class="word-breakdown reveal reveal-delay-2">
+          <div class="word-part">
+            <div class="word-part-kanji">積</div>
+            <div>
+              <div class="word-part-reading">tsun-</div>
+              <div class="word-part-meaning">to stack, to pile up — the tower growing on your nightstand</div>
+            </div>
+          </div>
+          <div class="word-part">
+            <div class="word-part-kanji">ん読</div>
+            <div>
+              <div class="word-part-reading">-doku</div>
+              <div class="word-part-meaning">to read — the intention that never goes away</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="word-kanji-display reveal reveal-delay-1" style="text-align:center">
+        <span class="word-kanji-main">積ん読</span>
+        <div class="word-kanji-reading">tsu · n · do · ku</div>
+        <div style="margin-top:28px;display:inline-flex;align-items:center;gap:10px;opacity:0.5">
+          <div style="width:38px;height:50px;background:rgba(255,255,255,0.06);border-radius:2px 5px 5px 2px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.08)">
+            <div class="page-turn-leaf" style="--leaf-delay:0s"></div>
+            <div class="page-turn-leaf" style="--leaf-delay:1.5s"></div>
+          </div>
+          <span style="font-size:12px;color:rgba(245,240,232,0.5)">still reading…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE 1 — ADD BOOKS -->
+<section class="feat-row" id="features">
+  <div class="feat-inner">
+    <div class="reveal">
+      <div class="feat-num"><span class="feat-num-line"></span>01 — Adding books</div>
+      <h2 class="section-h2">Build your library<br>in <em>seconds.</em></h2>
+      <p class="section-sub">Whether it's a brand-new purchase or an old favorite pulled off the shelf, adding a book should never feel like work.</p>
+      <div class="feat-list">
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Search millions of titles via Google Books and Open Library</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Point your camera at the barcode — it's on your shelf in seconds</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Or type it in by hand. Covers, authors, and pages fill in automatically</div>
+      </div>
+    </div>
+    <div class="feat-visual reveal reveal-delay-1">
+      <div class="mock-card">
+        <div class="mock-card-inner">
+          <div class="mock-topbar">
+            <span class="mock-topbar-title">Add a book</span>
+            <span class="mock-topbar-sub">3 ways</span>
+          </div>
+          <div class="add-mock-scan-frame" style="margin:14px 16px 0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9714a" stroke-width="2"><rect x="2" y="3" width="6" height="18"/><rect x="10" y="3" width="6" height="18"/><rect x="18" y="3" width="4" height="18"/></svg>
+            <span style="font-size:9px;color:#e0935f;font-family:'DM Sans',sans-serif">scan barcode to add instantly</span>
+          </div>
+          <div class="add-mock-options">
+            <div class="add-mock-opt">
+              <div class="add-mock-opt-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+              <div><div class="add-mock-opt-title">Add from Google</div><div class="add-mock-opt-sub">Search millions of books</div></div>
+            </div>
+            <div class="add-mock-opt">
+              <div class="add-mock-opt-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+              <div><div class="add-mock-opt-title">Add manually</div><div class="add-mock-opt-sub">Enter the details yourself</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE 2 — SHELVES -->
+<section class="feat-row flip">
+  <div class="feat-inner">
+    <div class="reveal">
+      <div class="feat-num"><span class="feat-num-line"></span>02 — Organizing</div>
+      <h2 class="section-h2">Shelves made<br>for <em>collectors.</em></h2>
+      <p class="section-sub">Organize your books however your brain works. Reading status is just the start — build the shelves that make sense to you.</p>
+      <div class="feat-list">
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Fantasy. History. Dark academia. Signed editions. Comfort reads.</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Track which books in a shelf you actually own vs. still want</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Your shelves evolve with your collection — add a book to as many as you like</div>
+      </div>
+    </div>
+    <div class="feat-visual reveal reveal-delay-1">
+      <div class="mock-card">
+        <div class="mock-card-inner">
+          <div class="mock-topbar">
+            <span class="mock-topbar-title">My Lists</span>
+            <span class="mock-topbar-sub">6 lists</span>
+          </div>
+          <div class="shelves-mock-list">
+            <div class="shelves-mock-row">
+              <div class="shelves-mock-emoji">🌙</div>
+              <div><div class="shelves-mock-name">Dark Academia</div><div class="shelves-mock-count">9 of 12 owned</div></div>
+              <div class="shelves-mock-stack">
+                <div class="shelves-mock-mini" style="background:linear-gradient(160deg,#3a2040,#9a6ac0)"></div>
+                <div class="shelves-mock-mini" style="background:linear-gradient(160deg,#1e1e2d,#6a72c0)"></div>
+                <div class="shelves-mock-mini" style="background:linear-gradient(160deg,#2d1e1e,#c06a6a)"></div>
+              </div>
+            </div>
+            <div class="shelves-mock-row">
+              <div class="shelves-mock-emoji">🔥</div>
+              <div><div class="shelves-mock-name">Unread Gems</div><div class="shelves-mock-count">14 of 14 owned</div></div>
+              <div class="shelves-mock-stack">
+                <div class="shelves-mock-mini" style="background:linear-gradient(160deg,#3d2a1e,#c0814a)"></div>
+                <div class="shelves-mock-mini" style="background:linear-gradient(160deg,#2d3a2e,#6a9a72)"></div>
+                <div class="shelves-mock-mini" style="background:linear-gradient(160deg,#4a2818,#c9714a)"></div>
+              </div>
+            </div>
+            <div class="shelves-mock-row">
+              <div class="shelves-mock-emoji">🕯️</div>
+              <div><div class="shelves-mock-name">Comfort Reads</div><div class="shelves-mock-count">5 of 8 owned</div></div>
+              <div class="shelves-mock-stack">
+                <div class="shelves-mock-mini" style="background:linear-gradient(160deg,#1e2d3d,#5a8fa8)"></div>
+                <div class="shelves-mock-mini" style="background:linear-gradient(160deg,#3a3020,#b0963c)"></div>
+                <div class="shelves-mock-mini" style="background:linear-gradient(160deg,#2a1e2d,#a06ab8)"></div>
+              </div>
+            </div>
+            <div class="shelves-mock-row" style="opacity:0.55">
+              <div class="shelves-mock-emoji">⭐</div>
+              <div><div class="shelves-mock-name">Signed Editions</div><div class="shelves-mock-count">3 of 3 owned</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE 3 — READING STATUS -->
+<section class="feat-row" id="status">
+  <div class="feat-inner">
+    <div class="reveal">
+      <div class="feat-num"><span class="feat-num-line"></span>03 — Reading status</div>
+      <h2 class="section-h2">Reading is just<br>one <em>chapter.</em></h2>
+      <p class="section-sub">Track every book through your actual reading journey — not just whether you've finished it.</p>
+      <div class="feat-list">
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Want to Read · Currently Reading · Finished</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Read but Don't Own — for the borrowed books and library copies</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Because your reading life is bigger than what's on your nightstand today</div>
+      </div>
+    </div>
+    <div class="feat-visual reveal reveal-delay-1">
+      <div class="mock-card">
+        <div class="mock-card-inner">
+          <div class="mock-topbar">
+            <span class="mock-topbar-title">Status</span>
+            <span class="mock-topbar-sub">68 books</span>
+          </div>
+          <div class="status-mock-pill-row">
+            <div class="status-mock-pill" style="background:rgba(201,113,74,0.16);color:#e0935f"><span class="status-mock-pill-dot" style="background:#c9714a"></span>reading 3</div>
+            <div class="status-mock-pill" style="background:rgba(90,138,106,0.16);color:#7eb38e"><span class="status-mock-pill-dot" style="background:#5a8a6a"></span>read 24</div>
+            <div class="status-mock-pill" style="background:rgba(122,112,104,0.16);color:#a89e94"><span class="status-mock-pill-dot" style="background:#7a7068"></span>unread 41</div>
+          </div>
+          <div class="status-mock-rows">
+            <div class="status-mock-row">
+              <div class="status-mock-cover" style="background:linear-gradient(160deg,#4a2818,#c9714a)"></div>
+              <div><div style="font-size:9px;color:#e8e0d5;font-weight:500">The Midnight Library</div><div style="font-size:7.5px;color:#7a7068">Matt Haig</div></div>
+              <div class="status-mock-badge" style="background:rgba(201,113,74,0.18);color:#e0935f">reading</div>
+            </div>
+            <div class="status-mock-row">
+              <div class="status-mock-cover" style="background:linear-gradient(160deg,#1e2d3d,#5a8fa8)"></div>
+              <div><div style="font-size:9px;color:#e8e0d5;font-weight:500">Piranesi</div><div style="font-size:7.5px;color:#7a7068">Susanna Clarke</div></div>
+              <div class="status-mock-badge" style="background:rgba(90,138,106,0.18);color:#7eb38e">read</div>
+            </div>
+            <div class="status-mock-row">
+              <div class="status-mock-cover" style="background:linear-gradient(160deg,#2d1e1e,#c06a6a)"></div>
+              <div><div style="font-size:9px;color:#e8e0d5;font-weight:500">Pachinko</div><div style="font-size:7.5px;color:#7a7068">Min Jin Lee</div></div>
+              <div class="status-mock-badge" style="background:rgba(122,112,104,0.18);color:#a89e94">unread</div>
+            </div>
+            <div class="status-mock-row" style="border-style:dashed;opacity:0.8">
+              <div class="status-mock-cover" style="background:linear-gradient(160deg,#3a3020,#b0963c)"></div>
+              <div><div style="font-size:9px;color:#e8e0d5;font-weight:500">Project Hail Mary</div><div style="font-size:7.5px;color:#7a7068">↩ borrowed from Priya</div></div>
+              <div class="status-mock-badge" style="background:rgba(90,138,106,0.18);color:#7eb38e">read</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE 4 — SEARCH -->
+<section class="feat-row flip">
+  <div class="feat-inner">
+    <div class="reveal">
+      <div class="feat-num"><span class="feat-num-line"></span>04 — Finding books</div>
+      <h2 class="section-h2">Find any book<br><em>instantly.</em></h2>
+      <p class="section-sub">Search by title, author, shelf, or reading status. Even collections with thousands of books stay effortless to navigate.</p>
+      <div class="feat-list">
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Results appear as you type — no submit button, no waiting</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Search surfaces the author too, with their full catalog in your shelf</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>An A–Z scrollbar for jumping straight to the letter you need</div>
+      </div>
+    </div>
+    <div class="feat-visual reveal reveal-delay-1">
+      <div class="mock-card">
+        <div class="mock-card-inner">
+          <div class="mock-topbar">
+            <span class="mock-topbar-title">Search your library</span>
+            <span class="mock-topbar-sub">4 results</span>
+          </div>
+          <div class="search-mock-bar">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9714a" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span style="color:#e8e0d5;font-size:11px">kuang</span>
+          </div>
+          <div class="search-mock-results">
+            <div class="search-mock-row hit">
+              <div class="search-mock-cover" style="background:linear-gradient(160deg,#1e2d3d,#5a8fa8)"></div>
+              <div><div class="search-mock-title">Babel</div><div class="search-mock-author">R.F. <mark>Kuang</mark></div></div>
+            </div>
+            <div class="search-mock-row hit">
+              <div class="search-mock-cover" style="background:linear-gradient(160deg,#2d1e1e,#c06a6a)"></div>
+              <div><div class="search-mock-title">Yellowface</div><div class="search-mock-author">R.F. <mark>Kuang</mark></div></div>
+            </div>
+            <div class="search-mock-row" style="background:rgba(255,255,255,0.03)">
+              <div style="width:24px;height:34px;border-radius:50%;background:#2c2823;display:flex;align-items:center;justify-content:center;font-size:9px;color:#7a7068;flex-shrink:0">RK</div>
+              <div><div class="search-mock-title">R.F. <mark>Kuang</mark></div><div class="search-mock-author">Author · 2 books in your library</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE 5 — STATS -->
+<section class="feat-row" id="stats">
+  <div class="feat-inner">
+    <div class="reveal">
+      <div class="feat-num"><span class="feat-num-line"></span>05 — Insight</div>
+      <h2 class="section-h2">See your library<br>in a <em>new way.</em></h2>
+      <p class="section-sub">Your collection isn't just growing. It's becoming a reflection of who you are — and your shelf can show you that.</p>
+      <div class="feat-list">
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Discover books you've forgotten and authors you keep returning to</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>A reading heatmap of every day you picked up a book this year</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Pages read over time, with zero pressure to keep a streak</div>
+      </div>
+    </div>
+    <div class="feat-visual reveal reveal-delay-1">
+      <div class="mock-card">
+        <div class="mock-card-inner">
+          <div class="mock-topbar">
+            <span class="mock-topbar-title">Yearly progress</span>
+            <span class="mock-topbar-sub">2026</span>
+          </div>
+          <div class="stats-mock-grid">
+            <div class="stats-mock-card">
+              <div class="stats-mock-num">24</div>
+              <div class="stats-mock-label">books finished</div>
+            </div>
+            <div class="stats-mock-card">
+              <div class="stats-mock-num">7,940</div>
+              <div class="stats-mock-label">pages read</div>
+            </div>
+          </div>
+          <div class="stats-mock-card" style="margin:0 16px 10px">
+            <div class="stats-mock-label" style="margin-bottom:8px">pages by month</div>
+            <div class="stats-mock-bars">
+              <div class="stats-mock-bar" style="height:35%"></div>
+              <div class="stats-mock-bar" style="height:55%"></div>
+              <div class="stats-mock-bar" style="height:40%"></div>
+              <div class="stats-mock-bar" style="height:70%"></div>
+              <div class="stats-mock-bar" style="height:50%"></div>
+              <div class="stats-mock-bar" style="height:85%"></div>
+              <div class="stats-mock-bar" style="height:60%"></div>
+            </div>
+          </div>
+          <div class="stats-mock-label" style="padding:0 16px;margin-bottom:6px">reading log</div>
+          <div class="stats-mock-heat" id="statsHeat"></div>
+          <div style="height:14px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE 6 — SHARE -->
+<section class="feat-row flip" id="share">
+  <div class="feat-inner">
+    <div class="reveal">
+      <div class="feat-num"><span class="feat-num-line"></span>06 — Sharing</div>
+      <h2 class="section-h2">Share the bookshelf<br>you're <em>proud of.</em></h2>
+      <p class="section-sub">Create a public profile. Share your shelves. Let friends browse your collection — because every reader's library is unique.</p>
+      <div class="feat-list">
+        <div class="feat-list-item"><span class="feat-list-dot"></span>One custom link — no account needed for friends to view it</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Visitors can search and sort, just like your own shelf</div>
+        <div class="feat-list-item"><span class="feat-list-dot"></span>Toggle public or private anytime, with one tap</div>
+      </div>
+    </div>
+    <div class="feat-visual reveal reveal-delay-1">
+      <div class="mock-card">
+        <div class="mock-card-inner">
+          <div class="share-mock-hero">
+            <div class="share-mock-avatar">A</div>
+            <div class="share-mock-name">aniket's shelf</div>
+            <div class="share-mock-meta">68 books · public</div>
+            <div class="share-mock-link">tsundoku.app/?shelf=aniket</div>
+          </div>
+          <div class="share-mock-grid" id="shareGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PHILOSOPHY -->
+<section class="philosophy-section">
+  <div class="philosophy-inner">
+    <div class="philosophy-kanji reveal" style="animation:kanjiReveal 1s var(--ease-out) both">積ん読</div>
+    <p class="eyebrow reveal reveal-delay-1">A note on buying books</p>
+    <p class="philosophy-lines reveal reveal-delay-2">
+      Books aren't just things we consume.<br>
+      They're <span class="accent-word">memories.</span> <span class="accent-word">Ideas.</span> <span class="accent-word">Goals.</span><br>
+      Future versions of ourselves, waiting on a shelf.
+    </p>
+    <p class="philosophy-fine reveal reveal-delay-3">Tsundoku was built for that feeling — not to fix it.</p>
+  </div>
+</section>
+
+<!-- READER TYPES -->
+<section class="readers-section">
+  <div class="section-inner" style="text-align:center">
+    <span class="eyebrow reveal">Who it's for</span>
+    <h2 class="section-h2 reveal reveal-delay-1">Made for every kind<br>of <em>book lover.</em></h2>
+    <div class="readers-grid reveal reveal-delay-2">
+      <div class="reader-card">
+        <div class="reader-mark">01</div>
+        <div class="reader-title">The Collector</div>
+        <div class="reader-desc">You love owning books as much as reading them. Every cover earns its place on the shelf.</div>
+      </div>
+      <div class="reader-card">
+        <div class="reader-mark">02</div>
+        <div class="reader-title">The Organizer</div>
+        <div class="reader-desc">Your bookshelf deserves the same care as your workspace. Everything has a place.</div>
+      </div>
+      <div class="reader-card">
+        <div class="reader-mark">03</div>
+        <div class="reader-title">The Explorer</div>
+        <div class="reader-desc">You constantly discover forgotten books hiding in your own collection.</div>
+      </div>
+      <div class="reader-card">
+        <div class="reader-mark">04</div>
+        <div class="reader-title">The Reader</div>
+        <div class="reader-desc">No guilt, no streaks to keep. You always know exactly what's next.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLOSING CTA -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <div class="reveal"><div style="font-family:serif;font-size:clamp(50px,12vw,84px);line-height:1;color:var(--accent);opacity:0.18;margin-bottom:8px">積ん読</div></div>
+    <h2 class="cta-h2 reveal reveal-delay-1">Build a library<br>you'll love <em>coming back to.</em></h2>
+    <p class="cta-sub reveal reveal-delay-2">Not because you have to. Because it feels like home.</p>
+    <div class="cta-actions reveal reveal-delay-3">
+      <a href="https://aniketbrainstorms.github.io/tsundoku/" class="btn-primary" target="_blank">
+        Start your library — it's free <div class="btn-primary-icon">→</div>
+      </a>
+    </div>
+    <div style="margin-top:20px;font-size:13px;color:var(--text-muted)" class="reveal reveal-delay-4">Works on any browser · No download needed</div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section" id="faq">
+  <div class="faq-inner">
+    <span class="eyebrow reveal">Questions</span>
+    <h2 class="section-h2 reveal reveal-delay-1">Before you start.</h2>
+    <div class="faq-list reveal reveal-delay-2">
+      <div class="faq-item">
+        <div class="faq-q">Is Tsundoku only for physical books?</div>
+        <div class="faq-a">No. Organize physical books, ebooks, audiobooks, and even books you've read but don't own.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I organize books however I want?</div>
+        <div class="faq-a">Absolutely. Create custom shelves, browse by author, filter by reading status, and organize your collection the way your mind naturally works.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I share my library?</div>
+        <div class="faq-a">Yes. Create a public profile and share your bookshelf with anyone — no account required to view it.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Why is it called Tsundoku?</div>
+        <div class="faq-a">Tsundoku is a Japanese word describing the habit of buying books and letting them pile up before reading them. We think that's part of being a reader — not something to feel guilty about.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is it free?</div>
+        <div class="faq-a">Yes. You can start building your personal library for free, with no credit card required.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">tsu<span>.</span>ndoku</div>
+    <div class="footer-text">A no-guilt bookshelf, for people who buy faster than they read.<br>Made with love by <a href="https://aniketbrainstorms.github.io/tsundoku/" style="color:rgba(245,240,232,0.55);text-decoration:none" target="_blank">Aniket</a>.</div>
+  </div>
+  <div class="footer-links">
+    <a href="https://aniketbrainstorms.github.io/tsundoku/" target="_blank">App</a>
+    <a href="#features">Features</a>
+    <a href="#word">Philosophy</a>
+    <a href="#faq">FAQ</a>
+  </div>
+</footer>
+
+<script>
+/* ── SCROLL REVEAL ── */
+const obs = new IntersectionObserver(es => es.forEach(e => {
+  if(e.isIntersecting) e.target.classList.add('visible');
+}), {threshold:0.1, rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+/* ── PROGRESS BARS ── */
+const barObs = new IntersectionObserver(es => es.forEach(e => {
+  if(e.isIntersecting) e.target.classList.add('running');
+}), {threshold:0.5});
+document.querySelectorAll('.animated-bar').forEach(b => barObs.observe(b));
+
+/* ── BOOK PALETTES ── */
+const PALS = [
+  ['#4a2818','#c9714a'],['#1e2d3d','#5a8fa8'],['#2d3a2e','#6a9a72'],
+  ['#3a2040','#9a6ac0'],['#3d2a1e','#c0814a'],['#1e1e2d','#6a72c0'],
+  ['#2d1e1e','#c06a6a'],['#1e2d2a','#6ac0b8'],['#3a3020','#b0963c'],
+  ['#2a1e2d','#a06ab8'],['#1a2d20','#6ac08a'],['#1e1a2d','#8a70c0']
+];
+function pal(i){ return PALS[i % PALS.length]; }
+
+/* ── FLOATING BOOK PARTICLES ── */
+const isMob = window.innerWidth <= 768;
+const COUNT = isMob ? 5 : 10;
+const container = document.getElementById('particles');
+for(let i=0;i<COUNT;i++){
+  const p = pal(i);
+  const w = isMob ? (14+Math.random()*12) : (18+Math.random()*20);
+  const h = w*(1.4+Math.random()*0.6);
+  const dur = 12+Math.random()*18;
+  const delay = -(Math.random()*dur);
+  const left = Math.random()*95;
+  const rs = -20+Math.random()*40;
+  const re = rs+(-15+Math.random()*30);
+  const op = 0.04+Math.random()*0.06;
+  const el = document.createElement('div');
+  el.className = 'book-particle';
+  el.style.cssText = `left:${left}%;--rot-start:${rs}deg;--rot-end:${re}deg;--max-op:${op};animation-duration:${dur}s;animation-delay:${delay}s`;
+  const inn = document.createElement('div');
+  inn.className = 'bp-inner';
+  inn.style.cssText = `width:${w}px;height:${h}px;background:linear-gradient(160deg,${p[0]},${p[1]})`;
+  el.appendChild(inn);
+  container.appendChild(el);
+}
+
+/* ── ANIMATED BOOKSHELF STRIP ── */
+const BOOKS = [
+  {w:22,h:88},{w:16,h:76},{w:28,h:100},{w:18,h:82},{w:24,h:92},
+  {w:14,h:68},{w:30,h:110},{w:20,h:86},{w:16,h:72},{w:26,h:96},
+  {w:18,h:80},{w:22,h:90},{w:14,h:64},{w:28,h:104},{w:20,h:84},
+  {w:16,h:74},{w:24,h:94},{w:18,h:78},{w:22,h:88},{w:26,h:96},
+];
+const scale = isMob ? 0.7 : 1;
+const rail = document.getElementById('shelfRail');
+const reps = isMob ? 1 : 2;
+for(let r=0;r<reps;r++){
+  BOOKS.forEach((b,i)=>{
+    const p = pal(i+r*BOOKS.length);
+    const d = document.createElement('div');
+    d.className='sbi';
+    const w = Math.round(b.w*scale), h = Math.round(b.h*scale);
+    d.style.cssText=`width:${w}px;height:${h}px;background:linear-gradient(180deg,${p[0]},${p[1]});--shelf-delay:${(i+r*BOOKS.length)*0.04}s`;
+    rail.appendChild(d);
+  });
+}
+
+/* ── GENERIC COVER GRID FILL ── */
+function fillCoverGrid(id, count, withDot){
+  const g = document.getElementById(id); if(!g) return;
+  for(let i=0;i<count;i++){
+    const c = pal(i);
+    const d = document.createElement('div');
+    d.className = 'pcov';
+    d.style.cssText = `background:linear-gradient(160deg,${c[0]},${c[1]});animation-delay:${i*0.035}s`;
+    if(withDot){
+      const dotColor = i % 5 === 0 ? '#c9714a' : (i % 3 === 0 ? '#5a8a6a' : '#7a7068');
+      const dot = document.createElement('div');
+      dot.style.cssText = `position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:${dotColor};border:1px solid rgba(0,0,0,0.4)`;
+      d.appendChild(dot);
+    }
+    g.appendChild(d);
+  }
+}
+fillCoverGrid('proofGrid', 16, true);
+fillCoverGrid('shareGrid', 15, false);
+
+/* ── STATS HEATMAP ── */
+const heat = document.getElementById('statsHeat');
+if(heat){
+  for(let i=0;i<60;i++){
+    const intensity = Math.random();
+    const d = document.createElement('div');
+    let bg;
+    if(intensity < 0.35) bg = 'rgba(255,255,255,0.05)';
+    else if(intensity < 0.6) bg = 'rgba(201,113,74,0.3)';
+    else if(intensity < 0.85) bg = 'rgba(201,113,74,0.6)';
+    else bg = '#c9714a';
+    d.style.background = bg;
+    d.style.animation = `fadeRise 0.4s ease ${i*0.008}s both`;
+    heat.appendChild(d);
+  }
+}
+
+/* ── NAV SCROLL ── */
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll', ()=>{
+  if(window.scrollY>60){
+    nav.style.background='rgba(245,240,232,0.97)';
+    nav.style.boxShadow='0 4px 32px rgba(28,25,21,0.12)';
+  } else {
+    nav.style.background='rgba(245,240,232,0.92)';
+    nav.style.boxShadow='0 2px 24px rgba(28,25,21,0.08)';
+  }
+},{passive:true});
+</script>
+</body>
+</html>
