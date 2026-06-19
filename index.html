@@ -208,13 +208,21 @@ section{padding:clamp(72px,12vw,140px) clamp(20px,5vw,60px)}
 .proof-grid-shelf .pcov{aspect-ratio:2/3;border-radius:6px;position:relative;animation:shelfSlide var(--ease-out) both;animation-duration:.5s}
 
 /* ══ BOOKSHELF STRIP ══ */
-.shelf-strip{background:var(--text);padding:40px clamp(20px,5vw,60px) 0;overflow:hidden}
-.shelf-scene{position:relative;padding:24px 0 0}
-.shelf-rail{display:flex;gap:8px;align-items:flex-end;padding-bottom:10px;position:relative}
-.shelf-rail::after{content:'';position:absolute;bottom:0;left:-60px;right:-60px;height:6px;background:#111;border-radius:2px;box-shadow:0 4px 12px rgba(0,0,0,0.5)}
-.sbi{flex-shrink:0;position:relative;overflow:hidden;border-radius:2px 4px 4px 2px;box-shadow:inset -3px 0 6px rgba(0,0,0,0.3),2px 0 4px rgba(0,0,0,0.15);animation:shelfSlide var(--ease-out) both;animation-duration:.5s;animation-delay:var(--shelf-delay,0s);cursor:default;transition:transform 0.25s var(--ease-out)}
-.sbi:hover{transform:translateY(-8px)}
+.shelf-strip{background:var(--text);padding:40px 0 0;overflow:hidden}
+.shelf-scene{position:relative;padding:24px 0 0;display:flex;flex-direction:column;gap:0}
+.shelf-track{display:flex;align-items:flex-end;padding-bottom:10px;position:relative;width:max-content}
+.shelf-track::after{content:'';position:absolute;bottom:0;left:0;right:0;height:6px;background:#111;border-radius:2px;box-shadow:0 4px 12px rgba(0,0,0,0.5)}
+.shelf-row{overflow:hidden;position:relative}
+.shelf-row-inner{display:flex;align-items:flex-end;width:max-content}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes marquee-rev{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+.shelf-row-inner.fwd{animation:marquee var(--marquee-dur,40s) linear infinite}
+.shelf-row-inner.rev{animation:marquee-rev var(--marquee-dur,44s) linear infinite}
+.shelf-row::after{content:'';position:absolute;bottom:0;left:0;right:0;height:6px;background:#111;border-radius:2px;box-shadow:0 4px 12px rgba(0,0,0,0.5)}
+.sbi{flex-shrink:0;position:relative;overflow:hidden;border-radius:2px 4px 4px 2px;box-shadow:inset -3px 0 6px rgba(0,0,0,0.3),2px 0 4px rgba(0,0,0,0.15);cursor:default;transition:transform 0.25s var(--ease-out),filter 0.25s}
+.sbi:hover{transform:translateY(-10px);filter:brightness(1.15)}
 .sbi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:rgba(0,0,0,0.3)}
+@media(prefers-reduced-motion:reduce){.shelf-row-inner{animation:none!important}}
 
 /* ══ WORD SECTION ══ */
 .word-section{background:var(--text);color:var(--bg)}
@@ -557,7 +565,8 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px);display:flex;ali
 <!-- BOOKSHELF STRIP -->
 <div class="shelf-strip">
   <div class="shelf-scene">
-    <div class="shelf-rail" id="shelfRail"></div>
+    <div class="shelf-row" id="shelfRow1" style="padding-bottom:16px"></div>
+    <div class="shelf-row" id="shelfRow2" style="padding-bottom:16px"></div>
   </div>
 </div>
 
@@ -1035,19 +1044,40 @@ const BOOKS = [
   {w:18,h:80},{w:22,h:90},{w:14,h:64},{w:28,h:104},{w:20,h:84},
   {w:16,h:74},{w:24,h:94},{w:18,h:78},{w:22,h:88},{w:26,h:96},
 ];
+const BOOKS2 = [
+  {w:20,h:84},{w:26,h:98},{w:16,h:70},{w:30,h:108},{w:18,h:80},
+  {w:24,h:94},{w:14,h:66},{w:28,h:102},{w:20,h:88},{w:16,h:74},
+  {w:22,h:92},{w:18,h:76},{w:26,h:100},{w:14,h:62},{w:24,h:90},
+  {w:20,h:82},{w:28,h:106},{w:16,h:72},{w:22,h:86},{w:18,h:78},
+];
 const scale = isMob ? 0.7 : 1;
-const rail = document.getElementById('shelfRail');
-const reps = isMob ? 1 : 2;
-for(let r=0;r<reps;r++){
-  BOOKS.forEach((b,i)=>{
-    const p = pal(i+r*BOOKS.length);
-    const d = document.createElement('div');
-    d.className='sbi';
-    const w = Math.round(b.w*scale), h = Math.round(b.h*scale);
-    d.style.cssText=`width:${w}px;height:${h}px;background:linear-gradient(180deg,${p[0]},${p[1]});--shelf-delay:${(i+r*BOOKS.length)*0.04}s`;
-    rail.appendChild(d);
-  });
+const GAP = isMob ? 5 : 8;
+
+function buildMarqueeRow(rowEl, bookSet, palOffset, dirClass) {
+  const inner = document.createElement('div');
+  inner.className = `shelf-row-inner ${dirClass}`;
+  // build two identical sets of books (seamless loop needs 2× content)
+  for(let rep=0;rep<2;rep++){
+    bookSet.forEach((b,i)=>{
+      const p = pal(i + palOffset + rep * bookSet.length);
+      const d = document.createElement('div');
+      d.className = 'sbi';
+      const w = Math.round(b.w*scale), h = Math.round(b.h*scale);
+      d.style.cssText = `width:${w}px;height:${h}px;margin-right:${GAP}px;background:linear-gradient(180deg,${p[0]},${p[1]})`;
+      inner.appendChild(d);
+    });
+  }
+  rowEl.appendChild(inner);
 }
+
+buildMarqueeRow(document.getElementById('shelfRow1'), BOOKS,  0,  'fwd');
+buildMarqueeRow(document.getElementById('shelfRow2'), BOOKS2, 7,  'rev');
+
+// Pause marquee on hover (gives users time to look at books)
+document.querySelectorAll('.shelf-row').forEach(row => {
+  row.addEventListener('mouseenter', () => row.querySelector('.shelf-row-inner').style.animationPlayState='paused');
+  row.addEventListener('mouseleave', () => row.querySelector('.shelf-row-inner').style.animationPlayState='running');
+});
 
 /* ── GENERIC COVER GRID FILL ── */
 function fillCoverGrid(id, count, withDot){
