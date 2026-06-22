@@ -1056,8 +1056,8 @@ const GAP = isMob ? 5 : 8;
 function buildMarqueeRow(rowEl, bookSet, palOffset, dirClass) {
   const inner = document.createElement('div');
   inner.className = `shelf-row-inner ${dirClass}`;
-  // build two identical sets of books (seamless loop needs 2× content)
-  for(let rep=0;rep<2;rep++){
+  // 4 reps so one "half" (~2× book-set width) safely spans any viewport
+  for(let rep=0;rep<4;rep++){
     bookSet.forEach((b,i)=>{
       const p = pal(i + palOffset + rep * bookSet.length);
       const d = document.createElement('div');
