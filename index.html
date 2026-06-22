@@ -196,7 +196,9 @@ section{padding:clamp(72px,12vw,140px) clamp(20px,5vw,60px)}
 .problem-lines{font-family:var(--fd);font-size:clamp(20px,3.4vw,32px);line-height:1.55;font-style:italic;color:rgba(245,240,232,0.55);margin:36px 0 0}
 .problem-lines .strong{color:rgba(245,240,232,0.95);font-style:normal;font-weight:500}
 .problem-punch{margin-top:40px;font-family:var(--fb);font-size:clamp(17px,2.4vw,21px);font-weight:500;color:var(--accent-light);font-style:normal}
-
+.prob-line-wrap{overflow:hidden;display:block}
+.prob-line{display:block;transform:translateY(110%);opacity:0;transition:transform 0.65s var(--ease-out),opacity 0.5s var(--ease-out)}
+.prob-line.visible{transform:translateY(0);opacity:1}
 /* ══ PROOF STRIP (image section) ══ */
 .proof-section{background:var(--surface);text-align:center}
 .proof-inner{max-width:880px;margin:0 auto}
@@ -531,14 +533,14 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px);display:flex;ali
   <div class="problem-inner">
     <span class="eyebrow reveal">The problem</span>
     <h2 class="section-h2 reveal reveal-delay-1" style="color:var(--bg)">Every book tells a story.<br><em style="color:var(--accent-light)">Your library should too.</em></h2>
-    <p class="problem-lines reveal reveal-delay-2">
-      But right now your collection lives everywhere.<br>
-      A bookshelf in your room. A Kindle.<br>
-      An Amazon wishlist you forgot about.<br>
-      Screenshots you'll never revisit. Notes you'll forget.<br>
-      Tabs you'll never close.
-    </p>
-    <p class="problem-punch reveal reveal-delay-3">And somehow — you still buy books you already own.</p>
+    <div class="problem-lines">
+      <div class="prob-line-wrap"><span class="prob-line">But right now your collection lives everywhere.</span></div>
+      <div class="prob-line-wrap"><span class="prob-line">A bookshelf in your room. A Kindle.</span></div>
+      <div class="prob-line-wrap"><span class="prob-line">An Amazon wishlist you forgot about.</span></div>
+      <div class="prob-line-wrap"><span class="prob-line">Screenshots you'll never revisit. Notes you'll forget.</span></div>
+      <div class="prob-line-wrap"><span class="prob-line">Tabs you'll never close.</span></div>
+    </div>
+    <div class="problem-punch prob-line-wrap"><span class="prob-line">And somehow — you still buy books you already own.</span></div>
   </div>
 </section>
 
@@ -997,6 +999,19 @@ const obs = new IntersectionObserver(es => es.forEach(e => {
   if(e.isIntersecting) e.target.classList.add('visible');
 }), {threshold:0.1, rootMargin:'0px 0px -30px 0px'});
 document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+/* ── PROBLEM LINES STAGGER ── */
+const probEl = document.querySelector('.problem-inner');
+if(probEl){
+  const probObs = new IntersectionObserver(([e]) => {
+    if(!e.isIntersecting) return;
+    probEl.querySelectorAll('.prob-line').forEach((l,i) =>
+      setTimeout(() => l.classList.add('visible'), 80 + i * 110)
+    );
+    probObs.disconnect();
+  }, {threshold:0.25});
+  probObs.observe(probEl);
+}
 
 /* ── PROGRESS BARS ── */
 const barObs = new IntersectionObserver(es => es.forEach(e => {
