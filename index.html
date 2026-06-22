@@ -1056,10 +1056,13 @@ const GAP = isMob ? 5 : 8;
 function buildMarqueeRow(rowEl, bookSet, palOffset, dirClass) {
   const inner = document.createElement('div');
   inner.className = `shelf-row-inner ${dirClass}`;
-  // 4 reps so one "half" (~2× book-set width) safely spans any viewport
-  for(let rep=0;rep<4;rep++){
+  // Compute reps so each "half" is always wider than the viewport → no gap visible
+  const oneRepPx = bookSet.reduce((s,b) => s + Math.round(b.w*scale) + GAP, 0);
+  const repsPerHalf = Math.ceil(window.innerWidth / oneRepPx) + 1;
+  const totalReps = repsPerHalf * 2; // two identical halves for seamless -50% loop
+  for(let rep=0;rep<totalReps;rep++){
     bookSet.forEach((b,i)=>{
-      const p = pal(i + palOffset + rep * bookSet.length);
+      const p = pal((i + palOffset + rep * bookSet.length) % PALS.length);
       const d = document.createElement('div');
       d.className = 'sbi';
       const w = Math.round(b.w*scale), h = Math.round(b.h*scale);
