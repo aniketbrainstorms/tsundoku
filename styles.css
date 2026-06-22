@@ -1718,7 +1718,7 @@ html.standalone-webapp .add-popup {
 
 /* ── MY LISTS OVERLAY ── */
 #listsOverlay {
-  position: absolute; inset: 0; background: var(--bg); z-index: 86;
+  position: fixed; inset: 0; background: var(--bg); z-index: 86;
   display: flex; flex-direction: column; overflow: hidden;
   pointer-events: none;
 }
@@ -1791,7 +1791,7 @@ html.standalone-webapp .add-popup {
 #loDim.on { opacity: 1; pointer-events: all; }
 
 /* ── LIST DETAIL OVERLAY ── */
-#listDetailOverlay { display: flex; pointer-events: none; }
+#listDetailOverlay { position: fixed; inset: 0; display: flex; pointer-events: none; }
 #listDetailOverlay.open { pointer-events: all; }
 .ld-header {
   display: flex; align-items: center; justify-content: space-between; position: relative; gap: 10px;
