@@ -262,6 +262,27 @@ section{padding:clamp(72px,12vw,140px) clamp(20px,5vw,60px)}
 .feat-list-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:7px;flex-shrink:0}
 .feat-visual{display:flex;justify-content:center;position:relative}
 
+/* ══ TABBED FEATURES ══ */
+.feat-tabs-section{padding:clamp(56px,10vw,110px) clamp(20px,5vw,60px);background:var(--surface)}
+.feat-tabs-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:clamp(40px,7vw,100px);align-items:start}
+.feat-tab-nav{display:flex;gap:6px;margin:24px 0 32px;flex-wrap:wrap}
+.feat-tab-btn{font-family:var(--fb);font-size:13px;font-weight:500;padding:8px 16px;border-radius:100px;border:1px solid var(--border-strong);background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.2s var(--ease-out);-webkit-tap-highlight-color:transparent;min-height:40px}
+.feat-tab-btn:hover{color:var(--text);border-color:var(--text)}
+.feat-tab-btn.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.feat-tab-panels{display:grid;grid-template-rows:1fr}
+.feat-tab-panel{grid-area:1/1;opacity:0;pointer-events:none;transition:opacity 0.35s var(--ease-out),transform 0.35s var(--ease-out);transform:translateY(10px)}
+.feat-tab-panel.active{opacity:1;pointer-events:auto;transform:translateY(0)}
+.feat-tab-mocks{position:relative;min-height:320px}
+.feat-tab-mock{position:absolute;top:0;left:0;width:100%;opacity:0;pointer-events:none;transition:opacity 0.35s var(--ease-out),transform 0.35s var(--ease-out);transform:translateY(10px);display:flex;justify-content:center}
+.feat-tab-mock.active{position:relative;opacity:1;pointer-events:auto;transform:translateY(0)}
+@media(max-width:768px){
+  .feat-tabs-inner{grid-template-columns:1fr}
+  .feat-tabs-visual{order:-1}
+  .feat-tab-mocks{min-height:0}
+  .feat-tab-mock{position:relative}
+  .feat-tab-mock:not(.active){display:none}
+}
+
 /* ══ MOCKUP: shared card chrome for non-phone visuals ══ */
 .mock-card{background:#1a1814;border-radius:24px;padding:6px;box-shadow:0 40px 80px -16px rgba(28,25,21,0.35),0 1px 0 rgba(255,255,255,0.05) inset;width:100%;max-width:420px}
 .mock-card-inner{background:#1a1814;border-radius:19px;overflow:hidden;border:1px solid rgba(255,255,255,0.06)}
@@ -774,124 +795,126 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px);display:flex;ali
   </div>
 </section>
 
-<!-- FEATURE 4 — SEARCH -->
-<section class="feat-row flip">
-  <div class="feat-inner">
-    <div class="reveal">
-      <div class="feat-num"><span class="feat-num-line"></span>04 — Finding books</div>
-      <h2 class="section-h2">Find any book<br><em>instantly.</em></h2>
-      <p class="section-sub">Search by title, author, shelf, or reading status. Even collections with thousands of books stay effortless to navigate.</p>
-      <div class="feat-list">
-        <div class="feat-list-item"><span class="feat-list-dot"></span>Results appear as you type — no submit button, no waiting</div>
-        <div class="feat-list-item"><span class="feat-list-dot"></span>Search surfaces the author too, with their full catalog in your shelf</div>
-        <div class="feat-list-item"><span class="feat-list-dot"></span>An A–Z scrollbar for jumping straight to the letter you need</div>
+<!-- FEATURES 04–06 TABBED -->
+<section class="feat-tabs-section">
+  <div class="feat-tabs-inner">
+    <div class="feat-tabs-content reveal">
+      <span class="eyebrow">More features</span>
+      <div class="feat-tab-nav">
+        <button class="feat-tab-btn active" data-tab="search">Finding books</button>
+        <button class="feat-tab-btn" data-tab="stats">Insight</button>
+        <button class="feat-tab-btn" data-tab="share">Sharing</button>
       </div>
-    </div>
-    <div class="feat-visual reveal reveal-delay-1">
-      <div class="mock-card">
-        <div class="mock-card-inner">
-          <div class="mock-topbar">
-            <span class="mock-topbar-title">Search your library</span>
-            <span class="mock-topbar-sub">4 results</span>
+      <div class="feat-tab-panels">
+        <div class="feat-tab-panel active" data-panel="search">
+          <div class="feat-num"><span class="feat-num-line"></span>04 — Finding books</div>
+          <h2 class="section-h2">Find any book<br><em>instantly.</em></h2>
+          <p class="section-sub">Search by title, author, shelf, or reading status. Even collections with thousands of books stay effortless to navigate.</p>
+          <div class="feat-list">
+            <div class="feat-list-item"><span class="feat-list-dot"></span>Results appear as you type — no submit button, no waiting</div>
+            <div class="feat-list-item"><span class="feat-list-dot"></span>Search surfaces the author too, with their full catalog in your shelf</div>
+            <div class="feat-list-item"><span class="feat-list-dot"></span>An A–Z scrollbar for jumping straight to the letter you need</div>
           </div>
-          <div class="search-mock-bar">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9714a" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <span style="color:#e8e0d5;font-size:11px">kuang</span>
+        </div>
+        <div class="feat-tab-panel" data-panel="stats">
+          <div class="feat-num"><span class="feat-num-line"></span>05 — Insight</div>
+          <h2 class="section-h2">See your library<br>in a <em>new way.</em></h2>
+          <p class="section-sub">Your collection isn't just growing. It's becoming a reflection of who you are — and your shelf can show you that.</p>
+          <div class="feat-list">
+            <div class="feat-list-item"><span class="feat-list-dot"></span>Discover books you've forgotten and authors you keep returning to</div>
+            <div class="feat-list-item"><span class="feat-list-dot"></span>A reading heatmap of every day you picked up a book this year</div>
+            <div class="feat-list-item"><span class="feat-list-dot"></span>Pages read over time, with zero pressure to keep a streak</div>
           </div>
-          <div class="search-mock-results">
-            <div class="search-mock-row hit">
-              <div class="search-mock-cover" style="background:linear-gradient(160deg,#1e2d3d,#5a8fa8)"></div>
-              <div><div class="search-mock-title">Babel</div><div class="search-mock-author">R.F. <mark>Kuang</mark></div></div>
-            </div>
-            <div class="search-mock-row hit">
-              <div class="search-mock-cover" style="background:linear-gradient(160deg,#2d1e1e,#c06a6a)"></div>
-              <div><div class="search-mock-title">Yellowface</div><div class="search-mock-author">R.F. <mark>Kuang</mark></div></div>
-            </div>
-            <div class="search-mock-row" style="background:rgba(255,255,255,0.03)">
-              <div style="width:24px;height:34px;border-radius:50%;background:#2c2823;display:flex;align-items:center;justify-content:center;font-size:9px;color:#7a7068;flex-shrink:0">RK</div>
-              <div><div class="search-mock-title">R.F. <mark>Kuang</mark></div><div class="search-mock-author">Author · 2 books in your library</div></div>
-            </div>
+        </div>
+        <div class="feat-tab-panel" data-panel="share">
+          <div class="feat-num"><span class="feat-num-line"></span>06 — Sharing</div>
+          <h2 class="section-h2">Share the bookshelf<br>you're <em>proud of.</em></h2>
+          <p class="section-sub">Create a public profile. Share your shelves. Let friends browse your collection — because every reader's library is unique.</p>
+          <div class="feat-list">
+            <div class="feat-list-item"><span class="feat-list-dot"></span>One custom link — no account needed for friends to view it</div>
+            <div class="feat-list-item"><span class="feat-list-dot"></span>Visitors can search and sort, just like your own shelf</div>
+            <div class="feat-list-item"><span class="feat-list-dot"></span>Toggle public or private anytime, with one tap</div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- FEATURE 5 — STATS -->
-<section class="feat-row" id="stats">
-  <div class="feat-inner">
-    <div class="reveal">
-      <div class="feat-num"><span class="feat-num-line"></span>05 — Insight</div>
-      <h2 class="section-h2">See your library<br>in a <em>new way.</em></h2>
-      <p class="section-sub">Your collection isn't just growing. It's becoming a reflection of who you are — and your shelf can show you that.</p>
-      <div class="feat-list">
-        <div class="feat-list-item"><span class="feat-list-dot"></span>Discover books you've forgotten and authors you keep returning to</div>
-        <div class="feat-list-item"><span class="feat-list-dot"></span>A reading heatmap of every day you picked up a book this year</div>
-        <div class="feat-list-item"><span class="feat-list-dot"></span>Pages read over time, with zero pressure to keep a streak</div>
-      </div>
-    </div>
-    <div class="feat-visual reveal reveal-delay-1">
-      <div class="mock-card">
-        <div class="mock-card-inner">
-          <div class="mock-topbar">
-            <span class="mock-topbar-title">Yearly progress</span>
-            <span class="mock-topbar-sub">2026</span>
-          </div>
-          <div class="stats-mock-grid">
-            <div class="stats-mock-card">
-              <div class="stats-mock-num">24</div>
-              <div class="stats-mock-label">books finished</div>
-            </div>
-            <div class="stats-mock-card">
-              <div class="stats-mock-num">7,940</div>
-              <div class="stats-mock-label">pages read</div>
+    <div class="feat-tabs-visual reveal reveal-delay-1">
+      <div class="feat-tab-mocks">
+        <div class="feat-tab-mock active" data-mock="search">
+          <div class="mock-card">
+            <div class="mock-card-inner">
+              <div class="mock-topbar">
+                <span class="mock-topbar-title">Search your library</span>
+                <span class="mock-topbar-sub">4 results</span>
+              </div>
+              <div class="search-mock-bar">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9714a" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span style="color:#e8e0d5;font-size:11px">kuang</span>
+              </div>
+              <div class="search-mock-results">
+                <div class="search-mock-row hit">
+                  <div class="search-mock-cover" style="background:linear-gradient(160deg,#1e2d3d,#5a8fa8)"></div>
+                  <div><div class="search-mock-title">Babel</div><div class="search-mock-author">R.F. <mark>Kuang</mark></div></div>
+                </div>
+                <div class="search-mock-row hit">
+                  <div class="search-mock-cover" style="background:linear-gradient(160deg,#2d1e1e,#c06a6a)"></div>
+                  <div><div class="search-mock-title">Yellowface</div><div class="search-mock-author">R.F. <mark>Kuang</mark></div></div>
+                </div>
+                <div class="search-mock-row" style="background:rgba(255,255,255,0.03)">
+                  <div style="width:24px;height:34px;border-radius:50%;background:#2c2823;display:flex;align-items:center;justify-content:center;font-size:9px;color:#7a7068;flex-shrink:0">RK</div>
+                  <div><div class="search-mock-title">R.F. <mark>Kuang</mark></div><div class="search-mock-author">Author · 2 books in your library</div></div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="stats-mock-card" style="margin:0 16px 10px">
-            <div class="stats-mock-label" style="margin-bottom:8px">pages by month</div>
-            <div class="stats-mock-bars">
-              <div class="stats-mock-bar" style="height:35%"></div>
-              <div class="stats-mock-bar" style="height:55%"></div>
-              <div class="stats-mock-bar" style="height:40%"></div>
-              <div class="stats-mock-bar" style="height:70%"></div>
-              <div class="stats-mock-bar" style="height:50%"></div>
-              <div class="stats-mock-bar" style="height:85%"></div>
-              <div class="stats-mock-bar" style="height:60%"></div>
-            </div>
-          </div>
-          <div class="stats-mock-label" style="padding:0 16px;margin-bottom:6px">reading log</div>
-          <div class="stats-mock-heat" id="statsHeat"></div>
-          <div style="height:14px"></div>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FEATURE 6 — SHARE -->
-<section class="feat-row flip" id="share">
-  <div class="feat-inner">
-    <div class="reveal">
-      <div class="feat-num"><span class="feat-num-line"></span>06 — Sharing</div>
-      <h2 class="section-h2">Share the bookshelf<br>you're <em>proud of.</em></h2>
-      <p class="section-sub">Create a public profile. Share your shelves. Let friends browse your collection — because every reader's library is unique.</p>
-      <div class="feat-list">
-        <div class="feat-list-item"><span class="feat-list-dot"></span>One custom link — no account needed for friends to view it</div>
-        <div class="feat-list-item"><span class="feat-list-dot"></span>Visitors can search and sort, just like your own shelf</div>
-        <div class="feat-list-item"><span class="feat-list-dot"></span>Toggle public or private anytime, with one tap</div>
-      </div>
-    </div>
-    <div class="feat-visual reveal reveal-delay-1">
-      <div class="mock-card">
-        <div class="mock-card-inner">
-          <div class="share-mock-hero">
-            <div class="share-mock-avatar">A</div>
-            <div class="share-mock-name">aniket's shelf</div>
-            <div class="share-mock-meta">68 books · public</div>
-            <div class="share-mock-link">tsundoku.app/?shelf=aniket</div>
+        <div class="feat-tab-mock" data-mock="stats">
+          <div class="mock-card">
+            <div class="mock-card-inner">
+              <div class="mock-topbar">
+                <span class="mock-topbar-title">Yearly progress</span>
+                <span class="mock-topbar-sub">2026</span>
+              </div>
+              <div class="stats-mock-grid">
+                <div class="stats-mock-card">
+                  <div class="stats-mock-num">24</div>
+                  <div class="stats-mock-label">books finished</div>
+                </div>
+                <div class="stats-mock-card">
+                  <div class="stats-mock-num">7,940</div>
+                  <div class="stats-mock-label">pages read</div>
+                </div>
+              </div>
+              <div class="stats-mock-card" style="margin:0 16px 10px">
+                <div class="stats-mock-label" style="margin-bottom:8px">pages by month</div>
+                <div class="stats-mock-bars">
+                  <div class="stats-mock-bar" style="height:35%"></div>
+                  <div class="stats-mock-bar" style="height:55%"></div>
+                  <div class="stats-mock-bar" style="height:40%"></div>
+                  <div class="stats-mock-bar" style="height:70%"></div>
+                  <div class="stats-mock-bar" style="height:50%"></div>
+                  <div class="stats-mock-bar" style="height:85%"></div>
+                  <div class="stats-mock-bar" style="height:60%"></div>
+                </div>
+              </div>
+              <div class="stats-mock-label" style="padding:0 16px;margin-bottom:6px">reading log</div>
+              <div class="stats-mock-heat" id="statsHeat"></div>
+              <div style="height:14px"></div>
+            </div>
           </div>
-          <div class="share-mock-grid" id="shareGrid"></div>
+        </div>
+        <div class="feat-tab-mock" data-mock="share">
+          <div class="mock-card">
+            <div class="mock-card-inner">
+              <div class="share-mock-hero">
+                <div class="share-mock-avatar">A</div>
+                <div class="share-mock-name">aniket's shelf</div>
+                <div class="share-mock-meta">68 books · public</div>
+                <div class="share-mock-link">tsundoku.app/?shelf=aniket</div>
+              </div>
+              <div class="share-mock-grid" id="shareGrid"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1124,6 +1147,16 @@ function fillCoverGrid(id, count, withDot){
 }
 fillCoverGrid('proofGrid', 16, true);
 fillCoverGrid('shareGrid', 15, false);
+
+/* ── FEATURE TABS ── */
+document.querySelectorAll('.feat-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.feat-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.feat-tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
+    document.querySelectorAll('.feat-tab-mock').forEach(m => m.classList.toggle('active', m.dataset.mock === tab));
+  });
+});
 
 /* ── STATS HEATMAP ── */
 const heat = document.getElementById('statsHeat');
