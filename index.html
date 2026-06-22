@@ -120,6 +120,10 @@ nav{
 .nav-cta:hover,.nav-cta:active{background:var(--accent-dark);transform:scale(0.98)}
 .nav-cta-icon{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
 
+/* ══ SCROLL PROGRESS ══ */
+#readProgress{position:fixed;top:0;left:0;width:0%;height:2px;background:var(--accent);z-index:300;transition:width 0.1s linear;transform-origin:left}
+@media(prefers-reduced-motion:reduce){#readProgress{transition:none}}
+
 /* ══ HERO ══ */
 .hero{min-height:100dvh;display:flex;align-items:center;padding:clamp(90px,15vw,140px) clamp(20px,5vw,60px) clamp(60px,10vw,100px);position:relative;overflow:hidden}
 .hero-bg-1{position:absolute;border-radius:50%;pointer-events:none;width:min(600px,120vw);height:min(600px,120vw);background:radial-gradient(circle,rgba(201,113,74,0.1) 0%,transparent 70%);right:-80px;top:50%;transform:translateY(-50%)}
@@ -409,6 +413,8 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px);display:flex;ali
 </style>
 </head>
 <body>
+
+<div id="readProgress" role="progressbar" aria-hidden="true"></div>
 
 <!-- FLOATING BOOK PARTICLES -->
 <div id="particles" aria-hidden="true" style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden"></div>
@@ -1138,6 +1144,7 @@ if(heat){
 
 /* ── NAV SCROLL ── */
 const nav = document.getElementById('mainNav');
+const readProgress = document.getElementById('readProgress');
 window.addEventListener('scroll', ()=>{
   if(window.scrollY>60){
     nav.style.background='rgba(245,240,232,0.97)';
@@ -1146,6 +1153,9 @@ window.addEventListener('scroll', ()=>{
     nav.style.background='rgba(245,240,232,0.92)';
     nav.style.boxShadow='0 2px 24px rgba(28,25,21,0.08)';
   }
+  const doc = document.documentElement;
+  const pct = (window.scrollY / (doc.scrollHeight - doc.clientHeight)) * 100;
+  readProgress.style.width = Math.min(pct, 100) + '%';
 },{passive:true});
 
 /* ── HERO PHONE TAB LOOP ── */
