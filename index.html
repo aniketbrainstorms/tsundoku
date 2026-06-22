@@ -173,6 +173,8 @@ nav{
 .app-prog-p{font-size:7px;color:#c9714a}
 .app-bar-bg{height:2.5px;background:#3a3530;border-radius:2px;overflow:hidden}
 .app-bar-fill{height:100%;background:linear-gradient(90deg,#c9714a,#e08060);border-radius:2px}
+.app-books{transition:opacity 0.35s var(--ease-out),transform 0.35s var(--ease-out)}
+.app-books.fading{opacity:0;transform:translateY(5px)}
 
 /* Float labels */
 .fl{position:absolute;border-radius:10px;padding:8px 14px;font-size:11px;font-weight:500;white-space:nowrap;z-index:3}
@@ -477,19 +479,19 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px);display:flex;ali
                   <div class="app-search-ico"></div>
                   <span style="font-size:9px;color:#7a7068">Search your library…</span>
                 </div>
-                <div class="app-tabs">
+                <div class="app-tabs" id="heroTabs">
                   <div class="app-tab active">reading 3</div>
                   <div class="app-tab">read 24</div>
                   <div class="app-tab">unread 41</div>
                 </div>
-                <div class="app-books">
+                <div class="app-books" id="heroBooks">
                   <div class="app-book shelf-book" style="--shelf-delay:0.1s">
                     <div class="app-cover-w"><div class="app-cover-i" style="background:linear-gradient(160deg,#4a2818,#c9714a)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div></div>
                     <div class="app-info">
                       <div class="app-title">The Midnight Library</div>
                       <div class="app-author">Matt Haig</div>
                       <div class="app-prog-row"><span class="app-prog-l">187 / 304 pages</span><span class="app-prog-p">61%</span></div>
-                      <div class="app-bar-bg"><div class="app-bar-fill animated-bar" style="--target-w:61%;--bar-delay:.5s;width:0%"></div></div>
+                      <div class="app-bar-bg"><div class="app-bar-fill" style="width:61%"></div></div>
                     </div>
                   </div>
                   <div class="app-book shelf-book" style="--shelf-delay:0.2s">
@@ -498,7 +500,7 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px);display:flex;ali
                       <div class="app-title">Babel</div>
                       <div class="app-author">R.F. Kuang</div>
                       <div class="app-prog-row"><span class="app-prog-l">112 / 560 pages</span><span class="app-prog-p">20%</span></div>
-                      <div class="app-bar-bg"><div class="app-bar-fill animated-bar" style="--target-w:20%;--bar-delay:.65s;width:0%"></div></div>
+                      <div class="app-bar-bg"><div class="app-bar-fill" style="width:20%"></div></div>
                     </div>
                   </div>
                   <div class="app-book shelf-book" style="--shelf-delay:0.3s">
@@ -1145,6 +1147,59 @@ window.addEventListener('scroll', ()=>{
     nav.style.boxShadow='0 2px 24px rgba(28,25,21,0.08)';
   }
 },{passive:true});
+
+/* ── HERO PHONE TAB LOOP ── */
+(function(){
+  const tabsEl = document.getElementById('heroTabs');
+  const booksEl = document.getElementById('heroBooks');
+  if(!tabsEl || !booksEl) return;
+
+  const ICO = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
+
+  const TABS = [
+    { label:'reading 3', books:[
+      { title:'The Midnight Library', author:'Matt Haig',        g:['#4a2818','#c9714a'], prog:61 },
+      { title:'Babel',                author:'R.F. Kuang',       g:['#1e2d3d','#5a8fa8'], prog:20 },
+      { title:'Tomorrow, and Tomorrow…', author:'Gabrielle Zevin', g:['#2d3a2e','#6a9a72'], prog:null },
+    ]},
+    { label:'read 24', books:[
+      { title:'Piranesi',        author:'Susanna Clarke',  g:['#1e2d3d','#5a8fa8'], done:true },
+      { title:'Normal People',   author:'Sally Rooney',    g:['#2d1e1e','#c06a6a'], done:true },
+      { title:'The Secret History', author:'Donna Tartt',  g:['#3a3020','#b0963c'], done:true },
+    ]},
+    { label:'unread 41', books:[
+      { title:'Pachinko',         author:'Min Jin Lee',          g:['#2d1e1e','#c06a6a'] },
+      { title:'Demon Copperhead', author:'Barbara Kingsolver',   g:['#1a2d20','#6ac08a'] },
+      { title:'A Little Life',    author:'Hanya Yanagihara',     g:['#1e1a2d','#8a70c0'] },
+    ]},
+  ];
+
+  function bookHtml(b){
+    const cs = `background:linear-gradient(160deg,${b.g[0]},${b.g[1]})`;
+    const detail = b.prog != null
+      ? `<div class="app-prog-row"><span class="app-prog-l">${b.prog}% read</span><span class="app-prog-p">${b.prog}%</span></div><div class="app-bar-bg"><div class="app-bar-fill" style="width:${b.prog}%"></div></div>`
+      : b.done
+        ? `<div style="margin-top:6px;display:flex;align-items:center;gap:4px"><span style="font-size:7px;color:#5a8a6a">✓</span><span style="font-size:7px;color:#7a7068">finished</span></div>`
+        : `<div style="margin-top:6px"><span style="font-size:7px;color:#7a7068;font-style:italic">want to read</span></div>`;
+    return `<div class="app-book"><div class="app-cover-w"><div class="app-cover-i" style="${cs}">${ICO}</div></div><div class="app-info"><div class="app-title">${b.title}</div><div class="app-author">${b.author}</div>${detail}</div></div>`;
+  }
+
+  const tabEls = tabsEl.querySelectorAll('.app-tab');
+  let cur = 0;
+
+  function switchTo(next){
+    booksEl.classList.add('fading');
+    tabEls[cur].classList.remove('active');
+    setTimeout(()=>{
+      cur = next;
+      tabEls[cur].classList.add('active');
+      booksEl.innerHTML = TABS[cur].books.map(bookHtml).join('');
+      booksEl.classList.remove('fading');
+    }, 350);
+  }
+
+  setInterval(()=>{ switchTo((cur+1) % TABS.length); }, 4000);
+})();
 </script>
 </body>
 </html>
