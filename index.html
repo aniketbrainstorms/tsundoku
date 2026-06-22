@@ -269,12 +269,12 @@ section{padding:clamp(72px,12vw,140px) clamp(20px,5vw,60px)}
 .feat-tab-btn{font-family:var(--fb);font-size:13px;font-weight:500;padding:8px 16px;border-radius:100px;border:1px solid var(--border-strong);background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.2s var(--ease-out);-webkit-tap-highlight-color:transparent;min-height:40px}
 .feat-tab-btn:hover{color:var(--text);border-color:var(--text)}
 .feat-tab-btn.active{background:var(--text);color:var(--bg);border-color:var(--text)}
-.feat-tab-panels{display:grid;grid-template-rows:1fr}
-.feat-tab-panel{grid-area:1/1;opacity:0;pointer-events:none;transition:opacity 0.35s var(--ease-out),transform 0.35s var(--ease-out);transform:translateY(10px)}
+.feat-tab-panels{position:relative;min-height:300px}
+.feat-tab-panel{position:absolute;top:0;left:0;width:100%;opacity:0;pointer-events:none;transition:opacity 0.3s var(--ease-out),transform 0.3s var(--ease-out);transform:translateY(8px)}
 .feat-tab-panel.active{opacity:1;pointer-events:auto;transform:translateY(0)}
-.feat-tab-mocks{position:relative;min-height:320px}
-.feat-tab-mock{position:absolute;top:0;left:0;width:100%;opacity:0;pointer-events:none;transition:opacity 0.35s var(--ease-out),transform 0.35s var(--ease-out);transform:translateY(10px);display:flex;justify-content:center}
-.feat-tab-mock.active{position:relative;opacity:1;pointer-events:auto;transform:translateY(0)}
+.feat-tab-mocks{position:relative;min-height:440px}
+.feat-tab-mock{position:absolute;top:0;left:0;width:100%;opacity:0;pointer-events:none;transition:opacity 0.3s var(--ease-out),transform 0.3s var(--ease-out);transform:translateY(8px);display:flex;justify-content:center}
+.feat-tab-mock.active{opacity:1;pointer-events:auto;transform:translateY(0)}
 @media(max-width:768px){
   .feat-tabs-inner{grid-template-columns:1fr}
   .feat-tabs-visual{order:-1}
@@ -1152,9 +1152,18 @@ fillCoverGrid('shareGrid', 15, false);
 document.querySelectorAll('.feat-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const tab = btn.dataset.tab;
+    const curPanel = document.querySelector('.feat-tab-panel.active');
+    const curMock  = document.querySelector('.feat-tab-mock.active');
+    const nxtPanel = document.querySelector(`.feat-tab-panel[data-panel="${tab}"]`);
+    const nxtMock  = document.querySelector(`.feat-tab-mock[data-mock="${tab}"]`);
+    if(!nxtPanel || nxtPanel === curPanel) return;
     document.querySelectorAll('.feat-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
-    document.querySelectorAll('.feat-tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
-    document.querySelectorAll('.feat-tab-mock').forEach(m => m.classList.toggle('active', m.dataset.mock === tab));
+    curPanel.classList.remove('active');
+    curMock.classList.remove('active');
+    setTimeout(() => {
+      nxtPanel.classList.add('active');
+      nxtMock.classList.add('active');
+    }, 180);
   });
 });
 
