@@ -288,12 +288,19 @@ function getVisibleAuthorRows() {
   let rows = [..._authorRows];
   if (_authorFilter === 'wishlist') {
     rows = rows.filter(row => row.status === 'not-owned');
+    // Wikipedia rows first (unowned/undiscovered), then manually added not-owned
+    rows.sort((a, b) => {
+      if (a.source === 'wikipedia' && b.source !== 'wikipedia') return 1;
+      if (a.source !== 'wikipedia' && b.source === 'wikipedia') return -1;
+      return (a.year || '9999').localeCompare(b.year || '9999');
+    });
   } else if (_authorFilter === 'all') {
     rows = rows.filter(row => row.status !== 'not-owned');
+    rows.sort((a, b) => (a.year || '9999').localeCompare(b.year || '9999'));
   } else {
     rows = rows.filter(row => row.status === _authorFilter);
+    rows.sort((a, b) => (a.year || '9999').localeCompare(b.year || '9999'));
   }
-  rows.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   return rows;
 }
 
@@ -313,33 +320,46 @@ function renderAuthorRows(rows) {
   const state = document.getElementById('authorState');
   if (!timeline || !state) return;
 
-  if (!rows.length) {
-    state.textContent = 'No books found yet.';
+  // Deduplicate by normalized title before rendering
+  const seen = new Set();
+  const dedupedRows = rows.filter(row => {
+    const key = normalizeBookTitle(row.title);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  if (!dedupedRows.length) {
+    state.textContent = _authorFilter === 'wishlist' ? 'No wishlist books yet.' : 'No books found yet.';
     timeline.innerHTML = '';
     return;
   }
 
   state.textContent = '';
-  timeline.innerHTML = rows.map((row, i) => {
-    const statusClass = row.status === 'not-owned' ? 'not-owned' : (row.status || 'unread');
+  const isWishlistView = _authorFilter === 'wishlist';
+
+  timeline.innerHTML = dedupedRows.map((row, i) => {
     const isWikiEntry = row.source === 'wikipedia';
-    const statusText = isWikiEntry ? 'Wishlist' : (row.status === 'not-owned' ? 'Not Owned' : (STATUS_LABELS[row.status] || 'Unread'));
+    const statusClass = row.status === 'not-owned' ? 'not-owned' : (row.status || 'unread');
+    // In wishlist view the pill is redundant — only show it in 'all' view
+    const showPill = !isWishlistView;
+    const statusText = isWikiEntry ? 'wishlist' : (row.status === 'not-owned' ? 'not owned' : (STATUS_LABELS[row.status] || 'unread'));
     const cover = row.cover
       ? `<img src="${escapeAttr(row.cover)}" alt="" onerror="this.parentElement.innerHTML=''">`
       : makePlaceholder({ id: row.title }, 16);
-    const desc = row.description || (isWikiEntry ? 'From the author\'s bibliography on Wikipedia.' : (row.status === 'not-owned' ? 'On your wishlist.' : 'Saved in your library.'));
+    // Only show description if it's genuinely meaningful (user-added, not filler)
+    const desc = (!isWikiEntry && row.description) ? `<p class="author-book-desc">${escapeHtml(row.description)}</p>` : '';
+    const meta = [row.year, row.genre || 'Novel'].filter(Boolean).join(' · ');
+    // Wiki rows get a subtle tap hint
+    const wikiHint = isWikiEntry ? `<span class="author-wiki-hint">tap to add</span>` : '';
     return `<div class="author-book-row${isWikiEntry ? ' author-book-row--wiki' : ''}" data-author-book="${escapeAttr(row.bookId || '')}" data-wiki-title="${isWikiEntry ? escapeAttr(row.title) : ''}" style="animation-delay:${Math.min(i,12)*0.025}s">
       <div class="author-book-cover">${cover}</div>
       <div class="author-book-info">
         <div class="author-book-title">${escapeHtml(row.title)}</div>
-        <div class="author-book-meta">
-          <span>${escapeHtml(row.year || 'Year unknown')}</span>
-          <span class="author-book-dot"></span>
-          <span>${escapeHtml(row.genre || 'Novel')}</span>
-        </div>
-        <p class="author-book-desc">${escapeHtml(desc)}</p>
+        <div class="author-book-meta"><span>${escapeHtml(meta)}</span>${wikiHint}</div>
+        ${desc}
       </div>
-      <span class="author-status-pill ${statusClass}">${statusText}</span>
+      ${showPill ? `<span class="author-status-pill ${statusClass}">${statusText}</span>` : ''}
     </div>`;
   }).join('');
 
