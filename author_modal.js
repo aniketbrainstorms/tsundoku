@@ -226,6 +226,64 @@ function buildAuthorRows(authorName) {
   });
 }
 
+async function fetchWikipediaWorks(authorName) {
+  try {
+    const searchRes = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(authorName + ' novelist author')}&srlimit=3&format=json&origin=*`
+    );
+    if (!searchRes.ok) return [];
+    const searchData = await searchRes.json();
+    const pages = searchData?.query?.search || [];
+    if (!pages.length) return [];
+
+    const match = pages.find(p =>
+      p.title.toLowerCase().includes(authorName.toLowerCase().split(' ').pop()) ||
+      authorName.toLowerCase().includes(p.title.toLowerCase())
+    ) || pages[0];
+
+    const parseRes = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(match.title)}&prop=sections&format=json&origin=*`
+    );
+    if (!parseRes.ok) return [];
+    const parseData = await parseRes.json();
+    const sections = parseData?.parse?.sections || [];
+
+    const bibSection = sections.find(s =>
+      /bibliography|works|novels|books|fiction/i.test(s.line)
+    );
+    if (!bibSection) return [];
+
+    const secRes = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(match.title)}&prop=wikitext&section=${bibSection.index}&format=json&origin=*`
+    );
+    if (!secRes.ok) return [];
+    const secData = await secRes.json();
+    const wikitext = secData?.parse?.wikitext?.['*'] || '';
+
+    // Extract titles and years from wikitext patterns like:
+    // * ''[[Title]]'' (1999) or * ''Title'' (1999)
+    const works = [];
+    const lineRe = /^\*[^*].*$/gm;
+    const titleRe = /'{2,3}\[\[([^\]|]+)(?:\|[^\]]*)?\]\]'{2,3}|'{2,3}([^']+)'{2,3}/;
+    const yearRe = /\((\d{4})\)/;
+
+    let m;
+    while ((m = lineRe.exec(wikitext)) !== null) {
+      const line = m[0];
+      const titleMatch = titleRe.exec(line);
+      const yearMatch = yearRe.exec(line);
+      if (!titleMatch) continue;
+      const title = (titleMatch[1] || titleMatch[2] || '').replace(/^.*:/, '').trim();
+      if (!title || title.length < 2) continue;
+      works.push({ title, year: yearMatch ? yearMatch[1] : '' });
+    }
+
+    return works;
+  } catch {
+    return [];
+  }
+}
+
 function getVisibleAuthorRows() {
   let rows = [..._authorRows];
   if (_authorFilter === 'wishlist') {
@@ -264,11 +322,13 @@ function renderAuthorRows(rows) {
   state.textContent = '';
   timeline.innerHTML = rows.map((row, i) => {
     const statusClass = row.status === 'not-owned' ? 'not-owned' : (row.status || 'unread');
-    const statusText = row.status === 'not-owned' ? 'Not Owned' : (STATUS_LABELS[row.status] || 'Unread');
+    const isWikiEntry = row.source === 'wikipedia';
+    const statusText = isWikiEntry ? 'Wishlist' : (row.status === 'not-owned' ? 'Not Owned' : (STATUS_LABELS[row.status] || 'Unread'));
     const cover = row.cover
       ? `<img src="${escapeAttr(row.cover)}" alt="" onerror="this.parentElement.innerHTML=''">`
       : makePlaceholder({ id: row.title }, 16);
-    return `<div class="author-book-row" data-author-book="${escapeAttr(row.bookId || '')}" style="animation-delay:${Math.min(i,12)*0.025}s">
+    const desc = row.description || (isWikiEntry ? 'From the author\'s bibliography on Wikipedia.' : (row.status === 'not-owned' ? 'On your wishlist.' : 'Saved in your library.'));
+    return `<div class="author-book-row${isWikiEntry ? ' author-book-row--wiki' : ''}" data-author-book="${escapeAttr(row.bookId || '')}" data-wiki-title="${isWikiEntry ? escapeAttr(row.title) : ''}" style="animation-delay:${Math.min(i,12)*0.025}s">
       <div class="author-book-cover">${cover}</div>
       <div class="author-book-info">
         <div class="author-book-title">${escapeHtml(row.title)}</div>
@@ -277,7 +337,7 @@ function renderAuthorRows(rows) {
           <span class="author-book-dot"></span>
           <span>${escapeHtml(row.genre || 'Novel')}</span>
         </div>
-        <p class="author-book-desc">${escapeHtml(row.description || (row.status === 'not-owned' ? 'On your wishlist.' : 'Saved in your library.'))}</p>
+        <p class="author-book-desc">${escapeHtml(desc)}</p>
       </div>
       <span class="author-status-pill ${statusClass}">${statusText}</span>
     </div>`;
@@ -286,9 +346,39 @@ function renderAuthorRows(rows) {
   timeline.querySelectorAll('[data-author-book]').forEach(row => {
     row.addEventListener('click', () => {
       const id = row.dataset.authorBook;
+      const wikiTitle = row.dataset.wikiTitle;
+
+      // Wikipedia-sourced wishlist entry — offer to add to shelf
+      if (!id && wikiTitle) {
+        const authorName = _activeAuthorName;
+        showToast(`Adding "${wikiTitle}" to wishlist…`);
+        dbAdd({
+          title: wikiTitle,
+          author: authorName,
+          status: 'not-owned',
+          cover_url: null,
+          pages_read: 0,
+          total_pages: null,
+        }).then(newBook => {
+          if (!newBook) { showToast('Could not add book'); return; }
+          books.unshift(newBook);
+          // Refresh row to reflect it's now in local books
+          const updatedRows = buildAuthorRows(authorName);
+          // Keep remaining wiki-only rows that aren't yet saved
+          const existingTitles = updatedRows.map(r => r.title);
+          _authorRows.forEach(r => {
+            if (r.source === 'wikipedia' && !existingTitles.some(t => titlesLikelySame(t, r.title))) {
+              updatedRows.push(r);
+            }
+          });
+          _authorRows = updatedRows;
+          renderAuthorRows(getVisibleAuthorRows());
+          showToast(`"${wikiTitle}" added to wishlist ✓`);
+        });
+        return;
+      }
+
       if (!id) return;
-      const book = books.find(b => String(b.id) === String(id));
-      const isNotOwned = book && book.status === 'not-owned';
       DS._callerRestore = () => openAuthorPage(_activeAuthorName);
       closeAuthorPage();
       setTimeout(() => {
@@ -336,9 +426,36 @@ async function openAuthorPage(authorName, callerEl) {
   renderAuthorRows(getVisibleAuthorRows());
   document.getElementById('authorState').textContent = '';
 
-  const profile = await fetchAuthorProfile(authorName);
+  // Fetch profile and Wikipedia works in parallel
+  const [profile, wikiWorks] = await Promise.all([
+    fetchAuthorProfile(authorName),
+    fetchWikipediaWorks(authorName)
+  ]);
   if (normalizeAuthorText(_activeAuthorName) !== normalizeAuthorText(authorName)) return;
+
   const freshRows = buildAuthorRows(authorName);
+
+  // Merge Wikipedia works as wishlist entries for titles not already on shelf
+  if (wikiWorks.length) {
+    const existingTitles = freshRows.map(r => r.title);
+    wikiWorks.forEach(work => {
+      const alreadyOwned = existingTitles.some(t => titlesLikelySame(t, work.title));
+      if (!alreadyOwned) {
+        freshRows.push({
+          title: work.title,
+          year: work.year || '',
+          cover: '',
+          description: '',
+          genre: 'Novel',
+          owned: false,
+          status: 'not-owned',
+          bookId: null,
+          source: 'wikipedia'
+        });
+      }
+    });
+  }
+
   _authorRows = freshRows;
   hydrateAuthorHeader(profile, freshRows);
   renderAuthorRows(getVisibleAuthorRows());
