@@ -419,6 +419,26 @@ function _canonicalTitle(raw) {
   return CANONICAL_TITLES[key] || raw;
 }
 
+// In-memory cover cache: authorKey → { normalizedTitle → coverUrl }
+const _wikiCoverCache = {};
+
+async function _loadWikiCoversFromDB(authorKey) {
+  if (_wikiCoverCache[authorKey]) return;
+  try {
+    const { data } = await sb.from('authors').select('wiki_covers').eq('name_key', authorKey).maybeSingle();
+    _wikiCoverCache[authorKey] = data?.wiki_covers || {};
+  } catch {
+    _wikiCoverCache[authorKey] = {};
+  }
+}
+
+async function _saveWikiCoverToDB(authorKey, titleKey, coverUrl) {
+  try {
+    _wikiCoverCache[authorKey][titleKey] = coverUrl;
+    await sb.from('authors').update({ wiki_covers: _wikiCoverCache[authorKey] }).eq('name_key', authorKey);
+  } catch {}
+}
+
 async function _fetchCoverForWork(title, authorName) {
   // 1. Try Google Books — best cover quality
   try {
@@ -822,19 +842,44 @@ async function openAuthorPage(authorName, callerEl) {
   // Enrich wishlist (wikipedia-sourced) rows with covers progressively
   const wikiRows = freshRows.filter(r => r.source === 'wikipedia' && !r.cover);
   if (wikiRows.length) {
-    const BATCH = 4;
-    for (let i = 0; i < wikiRows.length; i += BATCH) {
-      if (normalizeAuthorText(_activeAuthorName) !== normalizeAuthorText(authorName)) break;
-      const batch = wikiRows.slice(i, i + BATCH);
-      await Promise.all(batch.map(async (row) => {
-        const cover = await _fetchCoverForWork(row.title, authorName);
-        if (cover) {
-          row.cover = cover;
-          // Patch the DOM directly — avoid full re-render flicker
-          const rowEl = document.querySelector(`[data-wiki-title="${CSS.escape(row.title)}"] .author-book-cover`);
-          if (rowEl) rowEl.innerHTML = `<img src="${escapeAttr(cover)}" alt="" onerror="this.parentElement.innerHTML=''">`;
-        }
-      }));
+    const authorKey = normalizeAuthorText(authorName);
+
+    // Load saved covers from DB first — avoids redundant API calls
+    await _loadWikiCoversFromDB(authorKey);
+    const savedCovers = _wikiCoverCache[authorKey] || {};
+
+    // Apply cached covers immediately — no API call
+    const needsFetch = [];
+    for (const row of wikiRows) {
+      const titleKey = row.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (savedCovers[titleKey]) {
+        row.cover = savedCovers[titleKey];
+        const rowEl = document.querySelector(`[data-wiki-title="${CSS.escape(row.title)}"] .author-book-cover`);
+        if (rowEl) rowEl.innerHTML = `<img src="${escapeAttr(row.cover)}" alt="" onerror="this.parentElement.innerHTML=''">`;
+      } else {
+        needsFetch.push(row);
+      }
+    }
+
+    // Only hit APIs for titles not yet cached
+    if (needsFetch.length) {
+      const BATCH = 3;
+      const _delay = ms => new Promise(r => setTimeout(r, ms));
+      for (let i = 0; i < needsFetch.length; i += BATCH) {
+        if (normalizeAuthorText(_activeAuthorName) !== normalizeAuthorText(authorName)) break;
+        if (i > 0) await _delay(600);
+        const batch = needsFetch.slice(i, i + BATCH);
+        await Promise.all(batch.map(async (row) => {
+          const cover = await _fetchCoverForWork(row.title, authorName);
+          if (cover) {
+            row.cover = cover;
+            const titleKey = row.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+            await _saveWikiCoverToDB(authorKey, titleKey, cover);
+            const rowEl = document.querySelector(`[data-wiki-title="${CSS.escape(row.title)}"] .author-book-cover`);
+            if (rowEl) rowEl.innerHTML = `<img src="${escapeAttr(cover)}" alt="" onerror="this.parentElement.innerHTML=''">`;
+          }
+        }));
+      }
     }
   }
 }
