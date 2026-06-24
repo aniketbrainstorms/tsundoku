@@ -228,60 +228,106 @@ function buildAuthorRows(authorName) {
 
 async function fetchWikipediaWorks(authorName) {
   try {
-    const searchRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(authorName + ' novelist author')}&srlimit=3&format=json&origin=*`
+    // Step 1: resolve exact Wikipedia page title via opensearch
+    const osRes = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(authorName)}&limit=5&format=json&origin=*`
     );
-    if (!searchRes.ok) return [];
-    const searchData = await searchRes.json();
-    const pages = searchData?.query?.search || [];
-    if (!pages.length) return [];
+    if (!osRes.ok) return [];
+    const osData = await osRes.json();
+    const titles = osData[1] || [];
+    const lastName = authorName.toLowerCase().split(' ').pop();
+    const pageTitle = titles.find(t => t.toLowerCase().includes(lastName)) || titles[0];
+    if (!pageTitle) return [];
 
-    const match = pages.find(p =>
-      p.title.toLowerCase().includes(authorName.toLowerCase().split(' ').pop()) ||
-      authorName.toLowerCase().includes(p.title.toLowerCase())
-    ) || pages[0];
-
+    // Step 2: get section list
     const parseRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(match.title)}&prop=sections&format=json&origin=*`
+      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=sections&format=json&origin=*`
     );
     if (!parseRes.ok) return [];
     const parseData = await parseRes.json();
     const sections = parseData?.parse?.sections || [];
 
+    // Find bibliography/works section — check all levels, prefer top-level
     const bibSection = sections.find(s =>
-      /bibliography|works|novels|books|fiction/i.test(s.line)
+      /^(bibliography|works|novels|selected works|list of works|books|fiction|publications)$/i.test(s.line.trim())
+    ) || sections.find(s =>
+      /bibliography|works|novels|books|fiction|publications/i.test(s.line)
     );
-    if (!bibSection) return [];
+    if (!bibSection) {
+      // Fallback: parse full page wikitext
+      const fullRes = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=wikitext&format=json&origin=*`
+      );
+      if (!fullRes.ok) return [];
+      const fullData = await fullRes.json();
+      return _parseWikitextForWorks(fullData?.parse?.wikitext?.['*'] || '');
+    }
 
+    // Step 3: fetch just the bibliography section wikitext
     const secRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(match.title)}&prop=wikitext&section=${bibSection.index}&format=json&origin=*`
+      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=wikitext&section=${bibSection.index}&format=json&origin=*`
     );
     if (!secRes.ok) return [];
     const secData = await secRes.json();
-    const wikitext = secData?.parse?.wikitext?.['*'] || '';
-
-    // Extract titles and years from wikitext patterns like:
-    // * ''[[Title]]'' (1999) or * ''Title'' (1999)
-    const works = [];
-    const lineRe = /^\*[^*].*$/gm;
-    const titleRe = /'{2,3}\[\[([^\]|]+)(?:\|[^\]]*)?\]\]'{2,3}|'{2,3}([^']+)'{2,3}/;
-    const yearRe = /\((\d{4})\)/;
-
-    let m;
-    while ((m = lineRe.exec(wikitext)) !== null) {
-      const line = m[0];
-      const titleMatch = titleRe.exec(line);
-      const yearMatch = yearRe.exec(line);
-      if (!titleMatch) continue;
-      const title = (titleMatch[1] || titleMatch[2] || '').replace(/^.*:/, '').trim();
-      if (!title || title.length < 2) continue;
-      works.push({ title, year: yearMatch ? yearMatch[1] : '' });
-    }
-
-    return works;
+    return _parseWikitextForWorks(secData?.parse?.wikitext?.['*'] || '');
   } catch {
     return [];
   }
+}
+
+function _parseWikitextForWorks(wikitext) {
+  if (!wikitext) return [];
+  const works = [];
+  const seen = new Set();
+  const yearRe = /\b(1[89]\d{2}|20[012]\d)\b/;
+
+  // Pattern 1: bullet lines  * ''[[Title|Display]]'' (year)
+  const lineRe = /^\*[^*\n].*/gm;
+  // Matches [[Link|Label]] or [[Link]] or ''text'' or '''text'''
+  const titleRe = /\[\[([^\]|#]+)(?:\|[^\]]*)?\]\]|'{2,3}([^']{2,80})'{2,3}/g;
+
+  let m;
+  while ((m = lineRe.exec(wikitext)) !== null) {
+    const line = m[0];
+    // Skip lines that are clearly notes/footnotes/refs
+    if (/\{\{cite|ref>|isbn|<ref|rowspan|colspan/i.test(line)) continue;
+    const yearMatch = yearRe.exec(line);
+    const year = yearMatch ? yearMatch[1] : '';
+    // Collect all title candidates from this line
+    const candidates = [];
+    let tm;
+    titleRe.lastIndex = 0;
+    while ((tm = titleRe.exec(line)) !== null) {
+      const raw = (tm[1] || tm[2] || '').trim();
+      // Strip namespace prefix e.g. "s:The Stranger"
+      const clean = raw.replace(/^[A-Za-z]+:/, '').trim();
+      if (clean.length >= 2 && clean.length <= 120 && !/^\d+$/.test(clean)) {
+        candidates.push(clean);
+      }
+    }
+    // Prefer the shortest meaningful candidate (usually the book title not the link target)
+    const title = candidates.sort((a, b) => a.length - b.length)[0];
+    if (!title) continue;
+    const key = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    works.push({ title, year });
+  }
+
+  // Pattern 2: plain prose with years in parens — catches tables/prose sections
+  if (works.length < 3) {
+    const proseRe = /\[\[([^\]|#]{2,80})(?:\|[^\]]*)?\]\]\s*[,()\s]*\((\d{4})\)/g;
+    while ((m = proseRe.exec(wikitext)) !== null) {
+      const title = m[1].replace(/^[A-Za-z]+:/, '').trim();
+      const year = m[2];
+      const key = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (seen.has(key) || title.length < 2) continue;
+      seen.add(key);
+      works.push({ title, year });
+    }
+  }
+
+  return works.sort((a, b) => (a.year || '9999').localeCompare(b.year || '9999'));
 }
 
 function getVisibleAuthorRows() {
@@ -290,8 +336,8 @@ function getVisibleAuthorRows() {
     rows = rows.filter(row => row.status === 'not-owned');
     // Wikipedia rows first (unowned/undiscovered), then manually added not-owned
     rows.sort((a, b) => {
-      if (a.source === 'wikipedia' && b.source !== 'wikipedia') return 1;
-      if (a.source !== 'wikipedia' && b.source === 'wikipedia') return -1;
+      if (a.source === 'wikipedia' && b.source !== 'wikipedia') return -1;
+      if (a.source !== 'wikipedia' && b.source === 'wikipedia') return 1;
       return (a.year || '9999').localeCompare(b.year || '9999');
     });
   } else if (_authorFilter === 'all') {
