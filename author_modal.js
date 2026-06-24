@@ -840,26 +840,22 @@ async function openAuthorPage(authorName, callerEl) {
   renderAuthorRows(getVisibleAuthorRows());
 
   // Enrich wishlist (wikipedia-sourced) rows with covers progressively
-  const wikiRows = freshRows.filter(r => r.source === 'wikipedia' && !r.cover);
+  const authorKey = normalizeAuthorText(authorName);
+await _loadWikiCoversFromDB(authorKey);
+const savedCovers = _wikiCoverCache[authorKey] || {};
+
+// Pre-populate covers from cache before deciding what to fetch
+for (const row of freshRows.filter(r => r.source === 'wikipedia')) {
+  if (!row.cover) {
+    const titleKey = row.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (savedCovers[titleKey]) row.cover = savedCovers[titleKey];
+  }
+}
+
+const wikiRows = freshRows.filter(r => r.source === 'wikipedia' && !r.cover);
   if (wikiRows.length) {
-    const authorKey = normalizeAuthorText(authorName);
-
-    // Load saved covers from DB first — avoids redundant API calls
-    await _loadWikiCoversFromDB(authorKey);
-    const savedCovers = _wikiCoverCache[authorKey] || {};
-
-    // Apply cached covers immediately — no API call
-    const needsFetch = [];
-    for (const row of wikiRows) {
-      const titleKey = row.title.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (savedCovers[titleKey]) {
-        row.cover = savedCovers[titleKey];
-        const rowEl = document.querySelector(`[data-wiki-title="${CSS.escape(row.title)}"] .author-book-cover`);
-        if (rowEl) rowEl.innerHTML = `<img src="${escapeAttr(row.cover)}" alt="" onerror="this.parentElement.innerHTML=''">`;
-      } else {
-        needsFetch.push(row);
-      }
-    }
+    // All cached covers already applied above — only fetch what's truly missing
+const needsFetch = [...wikiRows];
 
     // Only hit APIs for titles not yet cached
     if (needsFetch.length) {
