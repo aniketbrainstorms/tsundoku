@@ -226,108 +226,229 @@ function buildAuthorRows(authorName) {
   });
 }
 
+// ── WORK-TYPE CONFIG ────────────────────────────────────────────────────
+const WORK_TYPE_SHOW = new Set([
+  'Q7725634',  // literary work / novel
+  'Q8261',     // novel
+  'Q49084',    // short story
+  'Q5185279',  // prose
+  'Q25379',    // play
+  'Q46248',    // philosophical work
+  'Q11410',    // game (plays)
+  'Q571',      // book
+  'Q7366',     // song (catch-all fallback)
+  'Q2831984',  // drama
+  'Q660518',   // short story collection
+  'Q1424460',  // novella
+]);
+
+const WORK_TYPE_HIDE = new Set([
+  'Q5707594',  // newspaper article
+  'Q191067',   // article
+  'Q17329259', // encyclopaedic article
+  'Q13433827', // journal article
+  'Q1261026',  // collection of letters
+  'Q149537',   // letter
+  'Q179461',   // correspondence
+  'Q11826511', // collection
+  'Q1980247',  // omnibus
+  'Q101433',   // biography
+  'Q277759',   // book series
+  'Q24017414', // book chapter
+  'Q573202',   // foreword
+  'Q1194235',  // preface
+  'Q1376369',  // introduction
+  'Q107402516',// anthology
+  'Q108',      // interview
+  'Q15621286', // intellectual work (too broad fallback)
+]);
+
+const OMNIBUS_WORDS = /\b(collected|complete|selected|anthology|omnibus|volume|vol\.|reader|box set|classics collection|works of|the essential)\b/i;
+const SECONDARY_WORDS = /\b(biography|companion|study guide|critical essays|reader.s guide|introduction to|about|life of|letters|correspondence|notebooks|travel journal|journal)\b/i;
+const JOURNALISM_WORDS = /\b(combat|editorials|newspaper|chronicles|articles|journalism)\b/i;
+
+// Canonical English title overrides for well-known foreign-language works
+const CANONICAL_TITLES = {
+  'létranger': 'The Stranger',
+  'letranger': 'The Stranger',
+  'la peste': 'The Plague',
+  'lapeste': 'The Plague',
+  'la chute': 'The Fall',
+  'lachute': 'The Fall',
+  'le mythe de sisyphe': 'The Myth of Sisyphus',
+  'lemythede sisyphe': 'The Myth of Sisyphus',
+  'lemythede sisyphus': 'The Myth of Sisyphus',
+  'le premier homme': 'The First Man',
+  'lepremierhomme': 'The First Man',
+  'la mort heureuse': 'A Happy Death',
+  'lamort heureuse': 'A Happy Death',
+  'le mythe de sisyphus': 'The Myth of Sisyphus',
+  'lhomme revolte': 'The Rebel',
+  'lhomme révolté': 'The Rebel',
+  'lexil et le royaume': 'Exile and the Kingdom',
+  'lexilet le royaume': 'Exile and the Kingdom',
+  'caligula': 'Caligula',
+  'le malentendu': 'The Misunderstanding',
+  'letat de siege': 'State of Siege',
+  'létat de siège': 'State of Siege',
+  'les justes': 'The Just Assassins',
+  'noces': 'Nuptials',
+  'le mythe de sisyphe': 'The Myth of Sisyphus',
+};
+
+function _canonicalTitle(raw) {
+  if (!raw) return raw;
+  const key = raw.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+  return CANONICAL_TITLES[key] || raw;
+}
+
 async function fetchWikipediaWorks(authorName) {
+  // Primary: Wikidata SPARQL — one entity per work, genre classified
+  const wikidataWorks = await _fetchWikidataWorks(authorName);
+  if (wikidataWorks.length >= 3) return wikidataWorks;
+
+  // Fallback: Open Library works endpoint
+  const olWorks = await _fetchOpenLibraryWorks(authorName);
+  if (olWorks.length >= 3) return olWorks;
+
+  return [];
+}
+
+async function _fetchWikidataWorks(authorName) {
   try {
-    // Step 1: resolve exact Wikipedia page title via opensearch
-    const osRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(authorName)}&limit=5&format=json&origin=*`
+    // Step 1: resolve Wikidata QID for this author
+    const searchRes = await fetch(
+      `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(authorName)}&language=en&type=item&limit=5&format=json&origin=*`
     );
-    if (!osRes.ok) return [];
-    const osData = await osRes.json();
-    const titles = osData[1] || [];
-    const lastName = authorName.toLowerCase().split(' ').pop();
-    const pageTitle = titles.find(t => t.toLowerCase().includes(lastName)) || titles[0];
-    if (!pageTitle) return [];
+    if (!searchRes.ok) return [];
+    const searchData = await searchRes.json();
+    const candidates = (searchData.search || []).filter(e =>
+      /author|writer|novelist|poet|playwright|philosopher/i.test(e.description || '')
+    );
+    const entity = candidates[0] || searchData.search?.[0];
+    if (!entity?.id) return [];
 
-    // Step 2: get section list
-    const parseRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=sections&format=json&origin=*`
-    );
-    if (!parseRes.ok) return [];
-    const parseData = await parseRes.json();
-    const sections = parseData?.parse?.sections || [];
+    const qid = entity.id; // e.g. Q34670
 
-    // Find bibliography/works section — check all levels, prefer top-level
-    const bibSection = sections.find(s =>
-      /^(bibliography|works|novels|selected works|list of works|books|fiction|publications)$/i.test(s.line.trim())
-    ) || sections.find(s =>
-      /bibliography|works|novels|books|fiction|publications/i.test(s.line)
+    // Step 2: SPARQL — get all works where author = this QID
+    const sparql = `
+      SELECT ?work ?workLabel ?typeLabel ?pubDate ?type WHERE {
+        ?work wdt:P50 wd:${qid} .
+        OPTIONAL { ?work wdt:P31 ?type . }
+        OPTIONAL { ?work wdt:P577 ?pubDate . }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en,fr,de,es". }
+      }
+      ORDER BY ?pubDate
+      LIMIT 120
+    `.trim();
+
+    const sparqlRes = await fetch(
+      `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparql)}&format=json`,
+      { headers: { 'Accept': 'application/sparql-results+json' } }
     );
-    if (!bibSection) {
-      // Fallback: parse full page wikitext
-      const fullRes = await fetch(
-        `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=wikitext&format=json&origin=*`
-      );
-      if (!fullRes.ok) return [];
-      const fullData = await fullRes.json();
-      return _parseWikitextForWorks(fullData?.parse?.wikitext?.['*'] || '');
+    if (!sparqlRes.ok) return [];
+    const sparqlData = await sparqlRes.json();
+    const bindings = sparqlData?.results?.bindings || [];
+
+    // Aggregate: one entry per work QID, collect all type QIDs
+    const workMap = new Map();
+    for (const b of bindings) {
+      const workId = b.work?.value?.split('/').pop();
+      if (!workId) continue;
+      const typeId = b.type?.value?.split('/').pop() || '';
+      const label = b.workLabel?.value || '';
+      const year = b.pubDate?.value ? b.pubDate.value.substring(0, 4) : '';
+      if (!workMap.has(workId)) {
+        workMap.set(workId, { label, year, types: new Set() });
+      }
+      const entry = workMap.get(workId);
+      if (typeId) entry.types.add(typeId);
+      // Prefer earliest year
+      if (year && (!entry.year || year < entry.year)) entry.year = year;
     }
 
-    // Step 3: fetch just the bibliography section wikitext
-    const secRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=wikitext&section=${bibSection.index}&format=json&origin=*`
-    );
-    if (!secRes.ok) return [];
-    const secData = await secRes.json();
-    return _parseWikitextForWorks(secData?.parse?.wikitext?.['*'] || '');
-  } catch {
+    const works = [];
+    const seenTitles = new Set();
+
+    for (const [, entry] of workMap) {
+      const { label, year, types } = entry;
+      if (!label || label.startsWith('Q')) continue; // no label resolved
+
+      // Type filtering
+      const hasHiddenType = [...types].some(t => WORK_TYPE_HIDE.has(t));
+      if (hasHiddenType) continue;
+
+      // Apply title-level noise filters
+      if (OMNIBUS_WORDS.test(label)) continue;
+      if (SECONDARY_WORDS.test(label)) continue;
+      if (JOURNALISM_WORDS.test(label)) continue;
+
+      // Canonical English title
+      const title = _canonicalTitle(label);
+
+      // Deduplicate by normalised title
+      const key = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (seenTitles.has(key)) continue;
+      seenTitles.add(key);
+
+      works.push({ title, year });
+    }
+
+    return works.sort((a, b) => (a.year || '9999').localeCompare(b.year || '9999'));
+  } catch (e) {
+    console.warn('[wikidata]', e.message);
     return [];
   }
 }
 
-function _parseWikitextForWorks(wikitext) {
-  if (!wikitext) return [];
-  const works = [];
-  const seen = new Set();
-  const yearRe = /\b(1[89]\d{2}|20[012]\d)\b/;
+async function _fetchOpenLibraryWorks(authorName) {
+  try {
+    // Resolve OL author key
+    const authRes = await fetch(
+      `https://openlibrary.org/search/authors.json?q=${encodeURIComponent(authorName)}&limit=3`
+    );
+    if (!authRes.ok) return [];
+    const authData = await authRes.json();
+    const normalKey = normalizeAuthorText(authorName);
+    const doc = (authData.docs || []).find(d =>
+      normalizeAuthorText(d.name) === normalKey
+    ) || authData.docs?.[0];
+    if (!doc?.key) return [];
 
-  // Pattern 1: bullet lines  * ''[[Title|Display]]'' (year)
-  const lineRe = /^\*[^*\n].*/gm;
-  // Matches [[Link|Label]] or [[Link]] or ''text'' or '''text'''
-  const titleRe = /\[\[([^\]|#]+)(?:\|[^\]]*)?\]\]|'{2,3}([^']{2,80})'{2,3}/g;
+    const olid = doc.key.replace('/authors/', '');
+    const worksRes = await fetch(
+      `https://openlibrary.org/authors/${olid}/works.json?limit=100`
+    );
+    if (!worksRes.ok) return [];
+    const worksData = await worksRes.json();
+    const entries = worksData.entries || [];
 
-  let m;
-  while ((m = lineRe.exec(wikitext)) !== null) {
-    const line = m[0];
-    // Skip lines that are clearly notes/footnotes/refs
-    if (/\{\{cite|ref>|isbn|<ref|rowspan|colspan/i.test(line)) continue;
-    const yearMatch = yearRe.exec(line);
-    const year = yearMatch ? yearMatch[1] : '';
-    // Collect all title candidates from this line
-    const candidates = [];
-    let tm;
-    titleRe.lastIndex = 0;
-    while ((tm = titleRe.exec(line)) !== null) {
-      const raw = (tm[1] || tm[2] || '').trim();
-      // Strip namespace prefix e.g. "s:The Stranger"
-      const clean = raw.replace(/^[A-Za-z]+:/, '').trim();
-      if (clean.length >= 2 && clean.length <= 120 && !/^\d+$/.test(clean)) {
-        candidates.push(clean);
-      }
-    }
-    // Prefer the shortest meaningful candidate (usually the book title not the link target)
-    const title = candidates.sort((a, b) => a.length - b.length)[0];
-    if (!title) continue;
-    const key = title.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (seen.has(key)) continue;
-    seen.add(key);
-    works.push({ title, year });
-  }
+    const works = [];
+    const seenTitles = new Set();
 
-  // Pattern 2: plain prose with years in parens — catches tables/prose sections
-  if (works.length < 3) {
-    const proseRe = /\[\[([^\]|#]{2,80})(?:\|[^\]]*)?\]\]\s*[,()\s]*\((\d{4})\)/g;
-    while ((m = proseRe.exec(wikitext)) !== null) {
-      const title = m[1].replace(/^[A-Za-z]+:/, '').trim();
-      const year = m[2];
+    for (const w of entries) {
+      const rawTitle = w.title || '';
+      if (!rawTitle) continue;
+      if (OMNIBUS_WORDS.test(rawTitle)) continue;
+      if (SECONDARY_WORDS.test(rawTitle)) continue;
+      if (JOURNALISM_WORDS.test(rawTitle)) continue;
+
+      const title = _canonicalTitle(rawTitle);
       const key = title.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (seen.has(key) || title.length < 2) continue;
-      seen.add(key);
+      if (seenTitles.has(key)) continue;
+      seenTitles.add(key);
+
+      const year = w.first_publish_date
+        ? String(w.first_publish_date).match(/\d{4}/)?.[0] || ''
+        : '';
       works.push({ title, year });
     }
-  }
 
-  return works.sort((a, b) => (a.year || '9999').localeCompare(b.year || '9999'));
+    return works.sort((a, b) => (a.year || '9999').localeCompare(b.year || '9999'));
+  } catch (e) {
+    console.warn('[openlibrary works]', e.message);
+    return [];
+  }
 }
 
 function getVisibleAuthorRows() {
