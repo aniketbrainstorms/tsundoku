@@ -419,22 +419,71 @@ function _canonicalTitle(raw) {
   return CANONICAL_TITLES[key] || raw;
 }
 
+async function _fetchCoverForWork(title, authorName) {
+  // 1. Try Google Books — best cover quality
+  try {
+    const q = encodeURIComponent(`intitle:"${title}" inauthor:"${authorName}"`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1&fields=items(volumeInfo(imageLinks))`);
+    if (res.ok) {
+      const data = await res.json();
+      const links = data?.items?.[0]?.volumeInfo?.imageLinks;
+      const url = links?.thumbnail || links?.smallThumbnail;
+      if (url) return url.replace('http://', 'https://').replace('&edge=curl', '').replace('zoom=1', 'zoom=2');
+    }
+  } catch {}
+
+  // 2. Fallback: Open Library cover search
+  try {
+    const q = encodeURIComponent(`${title} ${authorName}`);
+    const res = await fetch(`https://openlibrary.org/search.json?q=${q}&limit=1&fields=cover_i`);
+    if (res.ok) {
+      const data = await res.json();
+      const coverId = data?.docs?.[0]?.cover_i;
+      if (coverId) return `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`;
+    }
+  } catch {}
+
+  return '';
+}
+
+async function _enrichWorksWithCovers(works, authorName) {
+  // Fetch covers in parallel, max 6 concurrent to avoid rate limits
+  const BATCH = 6;
+  const enriched = [...works];
+  for (let i = 0; i < enriched.length; i += BATCH) {
+    const batch = enriched.slice(i, i + BATCH);
+    await Promise.all(batch.map(async (work) => {
+      if (!work.cover) {
+        work.cover = await _fetchCoverForWork(work.title, authorName);
+      }
+    }));
+  }
+  return enriched;
+}
+
 async function fetchWikipediaWorks(authorName) {
   // Primary: curated list for well-known authors — zero noise
   const curatedKey = normalizeAuthorText(authorName);
-  if (CURATED_BIBLIOGRAPHIES[curatedKey]) {
-    return CURATED_BIBLIOGRAPHIES[curatedKey];
+  let works = CURATED_BIBLIOGRAPHIES[curatedKey] 
+    ? [...CURATED_BIBLIOGRAPHIES[curatedKey]]
+    : null;
+
+  if (!works) {
+    // Secondary: Wikidata SPARQL
+    const wikidataWorks = await _fetchWikidataWorks(authorName);
+    if (wikidataWorks.length >= 3) {
+      works = wikidataWorks;
+    } else {
+      // Fallback: Open Library works endpoint
+      const olWorks = await _fetchOpenLibraryWorks(authorName);
+      works = olWorks;
+    }
   }
 
-  // Secondary: Wikidata SPARQL — one entity per work, genre classified
-  const wikidataWorks = await _fetchWikidataWorks(authorName);
-  if (wikidataWorks.length >= 3) return wikidataWorks;
+  if (!works.length) return [];
 
-  // Fallback: Open Library works endpoint
-  const olWorks = await _fetchOpenLibraryWorks(authorName);
-  if (olWorks.length >= 3) return olWorks;
-
-  return [];
+  // Enrich with covers in background — render rows first, then update
+  return works;
 }
 
 async function _fetchWikidataWorks(authorName) {
@@ -769,6 +818,25 @@ async function openAuthorPage(authorName, callerEl) {
   _authorRows = freshRows;
   hydrateAuthorHeader(profile, freshRows);
   renderAuthorRows(getVisibleAuthorRows());
+
+  // Enrich wishlist (wikipedia-sourced) rows with covers progressively
+  const wikiRows = freshRows.filter(r => r.source === 'wikipedia' && !r.cover);
+  if (wikiRows.length) {
+    const BATCH = 4;
+    for (let i = 0; i < wikiRows.length; i += BATCH) {
+      if (normalizeAuthorText(_activeAuthorName) !== normalizeAuthorText(authorName)) break;
+      const batch = wikiRows.slice(i, i + BATCH);
+      await Promise.all(batch.map(async (row) => {
+        const cover = await _fetchCoverForWork(row.title, authorName);
+        if (cover) {
+          row.cover = cover;
+          // Patch the DOM directly — avoid full re-render flicker
+          const rowEl = document.querySelector(`[data-wiki-title="${CSS.escape(row.title)}"] .author-book-cover`);
+          if (rowEl) rowEl.innerHTML = `<img src="${escapeAttr(cover)}" alt="" onerror="this.parentElement.innerHTML=''">`;
+        }
+      }));
+    }
+  }
 }
 
 function openAuthorPageFromDetail() {
