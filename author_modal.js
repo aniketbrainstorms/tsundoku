@@ -801,7 +801,8 @@ async function openAuthorPage(authorName, callerEl) {
 
   if (scroll) scroll.scrollTop = 0;
   navPush(_authorCallerEl, overlay);
-  hydrateAuthorHeader(fallback, initialRows);
+  const cachedProfile = _authorCache[normalizeAuthorText(authorName)];
+  hydrateAuthorHeader(cachedProfile || fallback, initialRows);
   renderAuthorRows(getVisibleAuthorRows());
   document.getElementById('authorState').textContent = '';
 
@@ -845,10 +846,12 @@ await _loadWikiCoversFromDB(authorKey);
 const savedCovers = _wikiCoverCache[authorKey] || {};
 
 // Pre-populate covers from cache before deciding what to fetch
-for (const row of freshRows.filter(r => r.source === 'wikipedia')) {
-  if (!row.cover) {
-    const titleKey = row.title.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (savedCovers[titleKey]) row.cover = savedCovers[titleKey];
+for (const row of freshRows.filter(r => r.source === 'wikipedia' && !r.cover)) {
+  const titleKey = row.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (savedCovers[titleKey]) {
+    row.cover = savedCovers[titleKey];
+    const rowEl = document.querySelector(`[data-wiki-title="${CSS.escape(row.title)}"] .author-book-cover`);
+    if (rowEl) rowEl.innerHTML = `<img src="${escapeAttr(row.cover)}" alt="" onerror="this.parentElement.innerHTML=''">`;
   }
 }
 
