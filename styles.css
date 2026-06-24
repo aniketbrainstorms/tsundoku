@@ -2920,7 +2920,10 @@ html.standalone-webapp .add-popup {
 /* State message */
 .author-state {
   font-size: 13px; color: var(--text-muted); text-align: center;
-  padding: 32px 0 16px; display: block; line-height: 1.6;
+  padding: 0; display: block; line-height: 1.6;
+}
+.author-state:not(:empty) {
+  padding: 32px 0 16px;
 }
 
 /* Quote card */
