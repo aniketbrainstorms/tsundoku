@@ -222,7 +222,7 @@ async function _fetchAuthorQuote(authorName) {
 async function fetchAuthorProfile(authorName) {
   const cacheKey = normalizeAuthorText(authorName);
   // Only use cache if it has a quote — otherwise re-fetch from Supabase
-  if (_authorCache[cacheKey]?.quote) return _authorCache[cacheKey];
+  if (_authorCache[cacheKey]?.image || _authorCache[cacheKey]?.quote) return _authorCache[cacheKey];
 
   // 1. Try Supabase first (wait for auth session to restore)
   try {
@@ -237,7 +237,7 @@ async function fetchAuthorProfile(authorName) {
           sb.from('authors').upsert({ name_key: cacheKey, name: profile.name, image: profile.image, quote: profile.quote, user_id: currentUser.id }, { onConflict: 'name_key' }).then(() => {});
         }
       }
-      if (profile.quote) _authorCache[cacheKey] = profile;
+      if (profile.image || profile.quote) _authorCache[cacheKey] = profile;
       return profile;
     }
   } catch (e) { console.warn('[author] supabase exception:', e.message); }
