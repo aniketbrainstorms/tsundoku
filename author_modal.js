@@ -1,3 +1,120 @@
+// Curated canonical bibliographies for well-known authors
+// Used as authoritative override when APIs return noise
+const CURATED_BIBLIOGRAPHIES = {
+  'albert camus': [
+    { title: 'The Stranger', year: '1942' },
+    { title: 'The Myth of Sisyphus', year: '1942' },
+    { title: 'Caligula', year: '1944' },
+    { title: 'The Misunderstanding', year: '1944' },
+    { title: 'The Plague', year: '1947' },
+    { title: 'State of Siege', year: '1948' },
+    { title: 'The Just Assassins', year: '1949' },
+    { title: 'The Rebel', year: '1951' },
+    { title: 'Summer', year: '1954' },
+    { title: 'The Fall', year: '1956' },
+    { title: 'Exile and the Kingdom', year: '1957' },
+    { title: 'Resistance, Rebellion, and Death', year: '1960' },
+    { title: 'A Happy Death', year: '1971' },
+    { title: 'The First Man', year: '1994' },
+  ],
+  'fyodor dostoevsky': [
+    { title: 'Poor Folk', year: '1846' },
+    { title: 'The Double', year: '1846' },
+    { title: 'White Nights', year: '1848' },
+    { title: 'Notes from Underground', year: '1864' },
+    { title: 'Crime and Punishment', year: '1866' },
+    { title: 'The Idiot', year: '1869' },
+    { title: 'Demons', year: '1872' },
+    { title: 'The Adolescent', year: '1875' },
+    { title: 'The Brothers Karamazov', year: '1880' },
+  ],
+  'leo tolstoy': [
+    { title: 'Childhood', year: '1852' },
+    { title: 'The Cossacks', year: '1863' },
+    { title: 'War and Peace', year: '1869' },
+    { title: 'Anna Karenina', year: '1878' },
+    { title: 'The Death of Ivan Ilyich', year: '1886' },
+    { title: 'The Kreutzer Sonata', year: '1889' },
+    { title: 'Resurrection', year: '1899' },
+    { title: 'Hadji Murat', year: '1912' },
+  ],
+  'franz kafka': [
+    { title: 'The Metamorphosis', year: '1915' },
+    { title: 'In the Penal Colony', year: '1919' },
+    { title: 'The Trial', year: '1925' },
+    { title: 'The Castle', year: '1926' },
+    { title: 'Amerika', year: '1927' },
+    { title: 'A Hunger Artist', year: '1922' },
+  ],
+  'gabriel garcia marquez': [
+    { title: 'Leaf Storm', year: '1955' },
+    { title: 'No One Writes to the Colonel', year: '1961' },
+    { title: 'In Evil Hour', year: '1962' },
+    { title: 'One Hundred Years of Solitude', year: '1967' },
+    { title: 'The Autumn of the Patriarch', year: '1975' },
+    { title: 'Chronicle of a Death Foretold', year: '1981' },
+    { title: 'Love in the Time of Cholera', year: '1985' },
+    { title: 'The General in His Labyrinth', year: '1989' },
+    { title: 'Of Love and Other Demons', year: '1994' },
+  ],
+  'virginia woolf': [
+    { title: 'The Voyage Out', year: '1915' },
+    { title: 'Night and Day', year: '1919' },
+    { title: 'Jacob\'s Room', year: '1922' },
+    { title: 'Mrs Dalloway', year: '1925' },
+    { title: 'To the Lighthouse', year: '1927' },
+    { title: 'Orlando', year: '1928' },
+    { title: 'The Waves', year: '1931' },
+    { title: 'The Years', year: '1937' },
+    { title: 'Between the Acts', year: '1941' },
+  ],
+  'james joyce': [
+    { title: 'Dubliners', year: '1914' },
+    { title: 'A Portrait of the Artist as a Young Man', year: '1916' },
+    { title: 'Ulysses', year: '1922' },
+    { title: 'Finnegans Wake', year: '1939' },
+  ],
+  'george orwell': [
+    { title: 'Burmese Days', year: '1934' },
+    { title: 'A Clergyman\'s Daughter', year: '1935' },
+    { title: 'Keep the Aspidistra Flying', year: '1936' },
+    { title: 'Coming Up for Air', year: '1939' },
+    { title: 'Animal Farm', year: '1945' },
+    { title: 'Nineteen Eighty-Four', year: '1949' },
+  ],
+  'ernest hemingway': [
+    { title: 'The Sun Also Rises', year: '1926' },
+    { title: 'A Farewell to Arms', year: '1929' },
+    { title: 'To Have and Have Not', year: '1937' },
+    { title: 'For Whom the Bell Tolls', year: '1940' },
+    { title: 'Across the River and Into the Trees', year: '1950' },
+    { title: 'The Old Man and the Sea', year: '1952' },
+    { title: 'A Moveable Feast', year: '1964' },
+    { title: 'Islands in the Stream', year: '1970' },
+  ],
+  'jane austen': [
+    { title: 'Sense and Sensibility', year: '1811' },
+    { title: 'Pride and Prejudice', year: '1813' },
+    { title: 'Mansfield Park', year: '1814' },
+    { title: 'Emma', year: '1815' },
+    { title: 'Northanger Abbey', year: '1817' },
+    { title: 'Persuasion', year: '1817' },
+  ],
+  'toni morrison': [
+    { title: 'The Bluest Eye', year: '1970' },
+    { title: 'Sula', year: '1973' },
+    { title: 'Song of Solomon', year: '1977' },
+    { title: 'Tar Baby', year: '1981' },
+    { title: 'Beloved', year: '1987' },
+    { title: 'Jazz', year: '1992' },
+    { title: 'Paradise', year: '1997' },
+    { title: 'Love', year: '2003' },
+    { title: 'A Mercy', year: '2008' },
+    { title: 'Home', year: '2012' },
+    { title: 'God Help the Child', year: '2015' },
+  ],
+};
+
 const AUTHOR_EXAMPLES = {
   'haruki murakami': {
     name: 'Haruki Murakami',
@@ -303,7 +420,13 @@ function _canonicalTitle(raw) {
 }
 
 async function fetchWikipediaWorks(authorName) {
-  // Primary: Wikidata SPARQL — one entity per work, genre classified
+  // Primary: curated list for well-known authors — zero noise
+  const curatedKey = normalizeAuthorText(authorName);
+  if (CURATED_BIBLIOGRAPHIES[curatedKey]) {
+    return CURATED_BIBLIOGRAPHIES[curatedKey];
+  }
+
+  // Secondary: Wikidata SPARQL — one entity per work, genre classified
   const wikidataWorks = await _fetchWikidataWorks(authorName);
   if (wikidataWorks.length >= 3) return wikidataWorks;
 
