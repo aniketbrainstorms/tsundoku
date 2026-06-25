@@ -855,10 +855,8 @@ for (const row of freshRows.filter(r => r.source === 'wikipedia' && !r.cover)) {
   }
 }
 
-const wikiRows = freshRows.filter(r => r.source === 'wikipedia' && !r.cover);
-  if (wikiRows.length) {
-    // All cached covers already applied above — only fetch what's truly missing
-const needsFetch = [...wikiRows];
+const needsFetch = freshRows.filter(r => r.source === 'wikipedia' && !r.cover);
+  if (needsFetch.length) {
 
     // Only hit APIs for titles not yet cached
     if (needsFetch.length) {
