@@ -649,8 +649,8 @@ function getVisibleAuthorRows() {
     rows = rows.filter(row => row.status === 'not-owned');
     // Wikipedia rows first (unowned/undiscovered), then manually added not-owned
     rows.sort((a, b) => {
-      if (a.source === 'wikipedia' && b.source !== 'wikipedia') return -1;
-      if (a.source !== 'wikipedia' && b.source === 'wikipedia') return 1;
+      if (a.source === 'wikipedia' && b.source !== 'wikipedia') return 1;
+      if (a.source !== 'wikipedia' && b.source === 'wikipedia') return -1;
       return (a.year || '9999').localeCompare(b.year || '9999');
     });
   } else if (_authorFilter === 'all') {
