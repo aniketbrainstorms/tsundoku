@@ -321,7 +321,7 @@ async function fetchAuthorProfile(authorName) {
     }, { onConflict: 'name_key' }).then(() => {});
   }
 
-  if (profile.quote) _authorCache[cacheKey] = profile;
+  _authorCache[cacheKey] = profile;
   return profile;
 }
 
@@ -837,6 +837,8 @@ async function openAuthorPage(authorName, callerEl) {
   }
 
   _authorRows = freshRows;
+  // Mark works as fetched so re-opening doesn't re-query APIs
+  if (!_authorCache[normalizeAuthorText(authorName)]) _authorCache[normalizeAuthorText(authorName)] = profile;
   hydrateAuthorHeader(profile, freshRows);
   renderAuthorRows(getVisibleAuthorRows());
 
