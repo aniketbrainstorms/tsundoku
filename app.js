@@ -5,7 +5,7 @@ const sb = createClient(
 );
 
 // ── NAV STACK ──
-const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay', 'readNotOwnedOverlay'];
+const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay', 'readNotOwnedOverlay', 'listsOverlay', 'authorsListOverlay', 'authorOverlay', 'listDetailOverlay'];
 
 function navPush(prevEl, nextEl) {
   if (prevEl) prevEl.classList.add('nav-behind');
@@ -305,7 +305,6 @@ async function backfillOwnedForShelfBooks() {
         try { localStorage.removeItem('tsundoku_books_' + currentUser.id); } catch {}
       }
       localStorage.setItem(migKeyV2, '1');
-      renderGrid();
     } catch (e) { /* silent */ }
   }
 }
@@ -1113,8 +1112,10 @@ async function quickSetStatus(status) {
     openFinishBorrowedSheet(id);
     return;
   }
+  const prevStatus = book.status;
   book.status = status; renderGrid();
-  await dbUpdate(id, { status });
+  const ok = await dbUpdate(id, { status });
+  if (!ok) { book.status = prevStatus; renderGrid(); showToast('Could not update status'); }
 }
 function editFromMenu() { const id = qmBookId; closeQuickMenu(); openDetailModal(id); }
 async function deleteFromMenu() {
@@ -1300,7 +1301,7 @@ async function removeOrHideBook(id) {
     for (const l of lists) {
       if ((l._books || []).some(b => String(b.id) === String(id))) {
         await sb.from('list_books').update({ owned: false }).eq('list_id', l.id).eq('book_id', id);
-        try { if (_ownedCache[l.id]) _ownedCache[l.id].delete(String(id)); } catch (e) { }
+        try { if (window._ownedCache && window._ownedCache[l.id]) window._ownedCache[l.id].delete(String(id)); } catch (e) { }
         try {
           const stored = JSON.parse(localStorage.getItem('tsundoku_owned_' + l.id) || '[]');
           const updated = stored.filter(bid => String(bid) !== String(id));
@@ -1360,8 +1361,8 @@ function updateProgressPreview() {
   btn.textContent = isComplete ? 'finish book' : 'Save Progress';
 }
 async function confirmProgress() {
-  let pagesRead = parseInt(document.getElementById('progressPagesRead').value) || 0;
-  const totalPages = parseInt(document.getElementById('progressTotalPages').value) || 0;
+  let pagesRead = Math.max(0, parseInt(document.getElementById('progressPagesRead').value) || 0);
+  const totalPages = Math.max(0, parseInt(document.getElementById('progressTotalPages').value) || 0);
   if (totalPages > 0) pagesRead = Math.min(pagesRead, totalPages);
   const isComplete = totalPages > 0 && pagesRead >= totalPages;
 
@@ -1802,7 +1803,7 @@ function renderReadNotOwnedList() {
     row.addEventListener('click', () => openDetailModal(row.dataset.id));
   });
 }
-function clearShelfSearch() {
+function clearShelfViewSearch() {
   const si = document.getElementById('shelfSearchInput');
   si.value = ''; document.getElementById('shelfSearchClear').classList.remove('visible');
   renderShelfGrid(); si.focus();
@@ -2143,6 +2144,11 @@ async function confirmAdd() {
     else if (addCoverUrl) finalUrl = addCoverUrl;
     if (finalUrl) { await dbUpdate(newBook.id, { cover_url: finalUrl }); newBook.cover_url = finalUrl; }
     books.unshift(newBook);
+    try {
+      const _ck = 'tsundoku_books_' + currentUser.id;
+      const _cc = localStorage.getItem(_ck);
+      if (_cc) { const _cp = JSON.parse(_cc); _cp.unshift(newBook); localStorage.setItem(_ck, JSON.stringify(_cp)); }
+    } catch {}
     if (isListAdd && window.ldAddBookToCurrentList) {
       const ok = await window.ldAddBookToCurrentList(newBook, false);
       if (!ok) {
@@ -2762,8 +2768,11 @@ Description: ${description || 'No description available.'}`;
     });
   }
 
+  const _alphaBarTimers = {};
   window.alphaBarRefresh = function (ctx) {
-    setTimeout(() => {
+    const key = ctx || 'all';
+    clearTimeout(_alphaBarTimers[key]);
+    _alphaBarTimers[key] = setTimeout(() => {
       if (ctx === 'main' || !ctx) buildBar('main');
       if (ctx === 'shelf' || !ctx) buildBar('shelf');
       if (ctx === 'public' || !ctx) buildBar('public');
@@ -2952,6 +2961,7 @@ Description: ${description || 'No description available.'}`;
   // owned state — stored in list_books as owned boolean column
   // Falls back to localStorage if DB not yet migrated
   let _ownedCache = {}; // { [listId]: Set of bookId strings }
+  window._ownedCache = _ownedCache;
 
   async function ldLoadOwned(listId) {
     const { data } = await sb.from('list_books').select('book_id').eq('list_id', listId).eq('owned', true);
