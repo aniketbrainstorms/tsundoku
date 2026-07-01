@@ -505,12 +505,6 @@
   }
 
   async function fetchAuthorImage(name){
-    for(const v of [encodeURIComponent(name+' (author)'), encodeURIComponent(name)]){
-      try{
-        const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${v}`);
-        if(r.ok){ const d=await r.json(); const u=d.thumbnail&&d.thumbnail.source; if(u && await validateImage(u)) return u; }
-      }catch(e){}
-    }
     try{
       const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(name)}&limit=1`);
       if(r.ok){
@@ -521,6 +515,12 @@
         }
       }
     }catch(e){}
+    for(const v of [encodeURIComponent(name+' (author)'), encodeURIComponent(name)]){
+      try{
+        const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${v}`);
+        if(r.ok){ const d=await r.json(); const u=d.thumbnail&&d.thumbnail.source; if(u && await validateImage(u)) return u; }
+      }catch(e){}
+    }
     return '';
   }
 
