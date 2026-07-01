@@ -136,8 +136,7 @@
     cursor:pointer;
     z-index:5;
   }
-  .author-node.dimmed{opacity:.16;filter:saturate(.5);}
-  .author-node.focused{z-index:30;}
+
 
   .polaroid{
     background:var(--paper);
@@ -272,19 +271,12 @@
     position:absolute;
     width:54px;
     will-change:transform;
-    opacity:0;
-    transform:scale(.4);
-    transition:opacity .4s cubic-bezier(.2,.9,.3,1), transform .4s cubic-bezier(.2,.9,.3,1.4), filter .3s ease;
-    cursor:pointer;
-    z-index:4;
-    pointer-events:none;
-  }
-  .book-node.visible{
     opacity:1;
     transform:scale(1);
+    cursor:pointer;
+    z-index:4;
     pointer-events:auto;
   }
-  .book-node.dimmed{opacity:.14 !important;filter:saturate(.4);}
   .book-cover{
     width:100%;height:80px;
     border-radius:2px;
@@ -412,7 +404,6 @@
     <input class="search-input" id="searchInput" placeholder="find an author…" autocomplete="off">
   </div>
   <div class="topbar-right">
-    <button class="chip-btn" id="collapseBtn"><span class="label">collapse all</span></button>
     <button class="chip-btn" id="gridToggleBtn"><span class="label">grid view</span></button>
   </div>
 </div>
@@ -438,6 +429,7 @@
   <div class="dc-close" id="dcClose">✕</div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* =========================================================================
    TSUNDOKU — EVIDENCE WALL
@@ -453,186 +445,6 @@
   // 1. DATA
   // ---------------------------------------------------------------------
 
-  const REAL_DATA = [
-    { name: 'Adrian Tchaikovsky', books: ['Children of Time'] },
-    { name: 'Akshat Gupta', books: ['The Hidden Hindu', 'The Hidden Hindu 2', 'The Hidden Hindu 3', 'The Naga Warriors: Battle of Gokul'] },
-    { name: 'Albert Camus', books: ['Great Ideas Myth of Sisyphus', 'The Stranger'] },
-    { name: 'Alex Michaelides', books: ['The Silent Patient'] },
-    { name: 'Ali Abdaal', books: ['Feel-Good Productivity'] },
-    { name: 'Alice Winn', books: ['In Memoriam'] },
-    { name: 'Allan Pease', books: ['Questions are the Answers (English)'] },
-    { name: 'Amal El-Mohtar', books: ['This is How You Lose the Time War'] },
-    { name: 'Ami Ganatra', books: ['Ramayana Unravelled'] },
-    { name: 'Amish Tripathi', books: ['Dharma', 'Idols', 'Ram Chandra Series Book 1: Ram - Scion Of Ikshvaku', 'Ram Chandra Series Book 2: Sita', 'Ram Chandra Series Book 3: Raavan', 'Ram Chandra Series Book 4: War Of Lanka', 'Shiva Trilogy 1 The Immortals of Meluha', 'Shiva Trilogy 2: The Secret of the Nagas', 'Shiva Trilogy 3 Oath of the Vayuputras'] },
-    { name: 'André Aciman', books: ['Call Me by Your Name'] },
-    { name: 'Andy Weir', books: ['Project Hail Mary'] },
-    { name: 'Ankur Warikoo', books: ['Do Epic Shit', 'Get Epic Shit Done'] },
-    { name: 'Anne Frank', books: ['The Diary of a Young Girl'] },
-    { name: 'Anton Chekhov', books: ['PLBC 111: A Nervous Breakdown'] },
-    { name: 'Aravind Adiga', books: ['The White Tiger'] },
-    { name: 'Art Spiegelman', books: ['Complete Maus'] },
-    { name: 'Arthur C. Clarke', books: ['2001: a Space Odyssey', 'Rendezvous with Rama'] },
-    { name: 'Arundhati Roy', books: ['Mother Mary Comes to Me', 'The God of Small Things'] },
-    { name: 'Austin Kleon', books: ['Show Your Work!', 'Steal Like An Artist'] },
-    { name: 'Baek Sehee', books: ['I Want to Die But I Still Want to Eat Tteokbokki', 'I Want to Die But I Want to Eat Tteokbokki'] },
-    { name: 'Banu Mushtaq', books: ['Heart Lamp'] },
-    { name: 'Bella Mackie', books: ['How to Kill Your Family'] },
-    { name: 'Benjamin Graham', books: ['The Intelligent Investor'] },
-    { name: 'Bibek Debroy', books: ['Shiva Purana Volume 1', 'Shiva Purana Volume 2', 'Shiva Purana Volume 3', 'The Mahabharata: Volume 1', 'The Mahabharata: Volume 2', 'The Mahabharata: Volume 3', 'The Mahabharata: Volume 4', 'The Mahabharata: Volume 5', 'The Mahabharata: Volume 6', 'The Mahabharata: Volume 7', 'The Mahabharata: Volume 8', 'The Mahabharata: Volume 9', 'The Mahabharata: Volume 10', 'The Valmiki Ramayana: Vol. 1', 'The Valmiki Ramayana: Vol. 2', 'The Valmiki Ramayana: Vol. 3', 'Vishnu Purana'] },
-    { name: 'Blake Crouch', books: ['Dark Matter'] },
-    { name: 'Blake Masters', books: ['Zero to One'] },
-    { name: 'Bram Stoker', books: ['Dracula'] },
-    { name: 'Brianna Wiest', books: ['101 Essays That Will Change the Way You Think'] },
-    { name: 'Casey McQuiston', books: ['One Last Stop', 'Red, White & Royal Blue'] },
-    { name: 'Charles Dickens', books: ['Oliver Twist'] },
-    { name: 'Charlotte Brontë', books: ['Jane Eyre'] },
-    { name: 'Cho Nam-Joo', books: ['Kim Jiyoung, Born 1982', 'Miss Kim Knows and Other Stories'] },
-    { name: 'Cixin Liu', books: ['The Three-Body Problem', 'The Dark Forest', "Death's End"] },
-    { name: 'Dante Alighieri', books: ['PLBC 109: Love That Moves the Sun and Other Stars'] },
-    { name: 'David Diop', books: ['At Night All Blood is Black', 'Beyond the Door of No Return'] },
-    { name: 'Devdutt Pattanaik', books: ['7 Secrets From Hindu Calendar Art', '7 Secrets Of Shiva', '7 Secrets Of Vishnu', 'Eden', 'Garuda Purana And Other Hindu Ideas Of Death, Rebirth And Immortality', 'Jaya', 'My Gita', 'My Hanuman Chalisa', 'Myth = Mithya', 'Olympus', 'Ramayana Versus Mahabharata', 'Sati Savitri', 'Shikhandi', 'Shiva to Shankara', 'Shyam', 'Sita'] },
-    { name: 'Dinesh Veera', books: ['Shiva Origins'] },
-    { name: 'Donald Miller', books: ['Building a StoryBrand'] },
-    { name: 'Douglas Adams', books: ['Life, the Universe and Everything', 'Mostly Harmless', 'So Long, and Thanks for All the Fish', "The Hitchhiker's Guide to the Galaxy", 'The Restaurant at the End of the Universe'] },
-    { name: 'Douglas Stuart', books: ['Shuggie Bain'] },
-    { name: 'Edgar Allan Poe', books: ['PLBC 93: A Modern Detective'] },
-    { name: 'Emi Yagi', books: ['Diary of a Void', 'When the Museum Is Closed'] },
-    { name: 'Eric Jorgenson', books: ['The Almanack of Naval Ravikant'] },
-    { name: 'Eva Baltasar', books: ['Boulder'] },
-    { name: 'F. Scott Fitzgerald', books: ['The Great Gatsby'] },
-    { name: 'Frank Herbert', books: ['The Great Dune Trilogy'] },
-    { name: 'Franz Kafka', books: ['Investigations of a Dog', 'The Metamorphosis'] },
-    { name: 'Fredrik Backman', books: ['A Man Called Ove', 'Anxious People'] },
-    { name: 'Friedrich Nietzsche', books: ['PLBC 102: Why I Am So Clever', 'Thus Spoke Zarathustra'] },
-    { name: 'Fyodor Dostoyevsky', books: ['Notes from the Underground', 'PLBC 118: White Nights'] },
-    { name: 'Gary Keller', books: ['The One Thing'] },
-    { name: 'Gaston Leroux', books: ['Phantom of the Opera (Collins Classics)'] },
-    { name: 'Genzaburō Yoshino', books: ['How Do You Live?'] },
-    { name: 'George Orwell', books: ['1984', 'Animal Farm'] },
-    { name: 'George R. R. Martin', books: ["Texas Hold'em"] },
-    { name: 'George S. Clason', books: ['The Richest Man in Babylon'] },
-    { name: 'H.G. Wells', books: ['The Time Machine'] },
-    { name: 'Han Kang', books: ['Greek Lessons', 'Human Acts', 'The Vegetarian', 'The White Book', 'We Do Not Part'] },
-    { name: 'Hanya Yanagihara', books: ['A Little Life'] },
-    { name: 'Haruki Murakami', books: ['1Q84', 'A Wild Sheep Chase', 'After Dark', 'Birthday Girl', 'Blind Willow, Sleeping Woman', 'Colorless Tsukuru Tazaki and His Years of Pilgrimage', 'Dance Dance Dance', 'Desire', 'Hard-Boiled Wonderland and the End of the World', 'Hear The Wind Sing', 'Kafka on the Shore', 'Norwegian Wood', 'Novelist As a Vocation', 'Pinball', 'Sputnik Sweetheart', 'The City and Its Uncertain Walls', 'The Wind-Up Bird Chronicle'] },
-    { name: 'Herman Hesse', books: ['Siddhartha'] },
-    { name: 'Hiro Arikawa', books: ['The Goodbye Cat', 'The Travelling Cat Chronicles'] },
-    { name: 'Hisashi Kashiwai', books: ['The Kamogawa Food Detectives', 'The Restaurant of Lost Recipes'] },
-    { name: 'Hwang Bo-Reum', books: ['Welcome to the Hyunam-Dong Bookshop'] },
-    { name: 'Héctor García', books: ['Ikigai'] },
-    { name: 'Ichirō Kishimi', books: ['The Courage to Be Disliked'] },
-    { name: 'Iskon', books: ['Beyond Birth and Death', 'Easy Journey to Other Planets', 'Perfect Questions Perfect Answers', 'Raja-Vidya', 'Transcendental Teachings of Narada Muni'] },
-    { name: 'J. D. Salinger', books: ['The Catcher in the Rye'] },
-    { name: 'Jalal al-Din Rumi', books: ['The Essential Rumi'] },
-    { name: 'James Clear', books: ['Atomic Habits'] },
-    { name: 'James McBride', books: ['The Heaven & Earth Grocery Store'] },
-    { name: 'Jane Austen', books: ['Emma', 'PLBC 81: Lady Susan', 'Pride and Prejudice'] },
-    { name: 'Jay Shetty', books: ['Think Like a Monk'] },
-    { name: 'Jeff Goins', books: ["Real Artists Don't Starve"] },
-    { name: 'Jeff Keller', books: ['Attitude Is Everything'] },
-    { name: 'Jeff VanderMeer', books: ['Acceptance', 'Annihilation', 'Authority'] },
-    { name: 'Jente Posthuma', books: ["What I'd Rather Not Think About"] },
-    { name: 'John Boyne', books: ['The Boy in the Striped Pyjamas'] },
-    { name: 'Joseph Murphy', books: ['The Power of Your Subconscious Mind'] },
-    { name: 'Kahlil Gibran', books: ['The Prophet'] },
-    { name: 'Kanan Gill', books: ['Acts of God'] },
-    { name: 'Karan Bajaj', books: ['The Freedom Manifesto'] },
-    { name: 'Kazuo Ishiguro', books: ['Klara and the Sun', 'Never Let Me Go'] },
-    { name: 'Kevin Missal', books: ['Dharmayoddha Kalki', 'Satyayoddha Kalki', 'Mahayoddha Kalki', 'Krishna'] },
-    { name: 'Khaled Hosseini', books: ['A Thousand Splendid Suns', 'The Kite Runner'] },
-    { name: 'Kiyoko Murata', books: ['A Woman of Pleasure'] },
-    { name: 'Lakshminath Bezbaroa', books: ['Burhi Aair Sadhu'] },
-    { name: 'Leo Tolstoy', books: ['PLBC 87: The Death of Ivan Ilyich'] },
-    { name: 'Lois Lowry', books: ['The Giver'] },
-    { name: 'Madeline Miller', books: ['The Song of Achilles'] },
-    { name: 'Maggie O\'Farrell', books: ['Hamnet'] },
-    { name: 'Makoto Shinkai', books: ['She and Her Cat'] },
-    { name: 'Marcus Aurelius', books: ['Meditations'] },
-    { name: 'Marcus Sedgwick', books: ['The Ghosts of Heaven'] },
-    { name: 'Mark Douglas', books: ['Trading in the Zone'] },
-    { name: 'Mark Manson', books: ['Everything Is F*cked', 'The Subtle Art of Not Giving a F*ck'] },
-    { name: 'Markus Zusak', books: ['The Book Thief'] },
-    { name: 'Martin MacInnes', books: ['In Ascension'] },
-    { name: 'Mary Oliver', books: ['Upstream'] },
-    { name: 'Mary Wollstonecraft Shelley', books: ['Frankenstein'] },
-    { name: 'Matt Haig', books: ['The Midnight Library'] },
-    { name: 'Matthew McConaughey', books: ['Greenlights'] },
-    { name: 'Maxwell Maltz', books: ['Psycho-Cybernetics (Updated and Expanded)'] },
-    { name: 'Mayur Kalbag', books: ['Aghori'] },
-    { name: 'Megha Majumdar', books: ["A Guardian and a Thief"] },
-    { name: 'Michelle Zauner', books: ['Crying in H Mart'] },
-    { name: 'Michiko Aoyama', books: ['What You Are Looking for Is in the Library'] },
-    { name: 'Mieko Kawakami', books: ['All the Lovers in the Night', 'Ms Ice Sandwich'] },
-    { name: 'Miyamoto Musashi', books: ['The Book of Five Rings'] },
-    { name: 'Mona Awad', books: ['Bunny'] },
-    { name: 'Morgan Housel', books: ['The Psychology of Money'] },
-    { name: 'Napoleon Hill', books: ['Think and Grow Rich'] },
-    { name: 'Ocean Vuong', books: ['On Earth We\'re Briefly Gorgeous', 'Time Is a Mother'] },
-    { name: 'Osamu Dazai', books: ['No Longer Human'] },
-    { name: 'Oscar Wilde', books: ['PLBC 119: Only Dull People are Brilliant at Breakfast', 'The Picture of Dorian Gray'] },
-    { name: 'Osho', books: ['Krishna: The Man and his Philosophy'] },
-    { name: 'Parakh Bhatt', books: ['Mrityunjay'] },
-    { name: 'Paul Kalanithi', books: ['When Breath Becomes Air'] },
-    { name: 'Paulo Coelho', books: ['The Alchemist'] },
-    { name: 'Phil Knight', books: ['Shoe Dog'] },
-    { name: 'Philip K. Dick', books: ['Do Androids Dream of Electric Sheep?'] },
-    { name: 'Philip Pullman', books: ['Northern Lights'] },
-    { name: 'Rainer Maria Rilke', books: ['Letters to a Young Poet'] },
-    { name: 'Raja Rajamannar', books: ['Quantum Marketing'] },
-    { name: 'Raymond Carver', books: ['What We Talk about when We Talk about Love'] },
-    { name: 'Richard Brautigan', books: ['In Watermelon Sugar'] },
-    { name: 'Richard Matheson', books: ['I Am Legend'] },
-    { name: 'Rick Rubin', books: ['The Creative Act'] },
-    { name: 'Robert B. Cialdini', books: ['Influence'] },
-    { name: 'Robert Louis Stevenson', books: ['The Strange Case of Dr Jekyll and Mr Hyde'] },
-    { name: 'Romesh Gunesekera', books: ['Reef'] },
-    { name: 'Roopa Swaminathan', books: ['Bollywood Boom'] },
-    { name: 'Russell Brunson', books: ['Dotcom Secrets', 'Expert Secrets', 'Traffic Secrets'] },
-    { name: 'Ryan Holiday', books: ['Ego Is the Enemy', 'Stillness Is the Key', 'The Obstacle is the Way'] },
-    { name: 'Rónán Hession', books: ['Panenka'] },
-    { name: 'Sadhguru', books: ['Inner Engineering'] },
-    { name: 'Saksham Garg', books: ['Samsara'] },
-    { name: 'Sally Rooney', books: ['Beautiful World, Where Are You', 'Conversations with Friends', 'Intermezzo', 'Normal People'] },
-    { name: 'Samantha Harvey', books: ['Orbital'] },
-    { name: 'Satoshi Yagisawa', books: ['Days at the Morisaki Bookshop', 'Days at the Torunka Cafe', 'More Days at the Morisaki Bookshop'] },
-    { name: 'Sayaka Murata', books: ['Convenience Store Woman', 'Earthlings', 'Life Ceremony', 'Vanishing World'] },
-    { name: 'Seishi Yokomizo', books: ['The Inugami Curse'] },
-    { name: 'Seth Godin', books: ['The Dip', 'This Is Marketing'] },
-    { name: 'Shaun Bythell', books: ['Confessions of a Bookseller'] },
-    { name: 'Shehan Karunatilaka', books: ['The Seven Moons of Maali Almeida'] },
-    { name: 'Shwetabh Gangwar', books: ['The Rudest Book Ever'] },
-    { name: 'Sigmund Freud', books: ['Dreams'] },
-    { name: 'SJ Sindu', books: ['Blue-Skinned Gods'] },
-    { name: 'Sonoko Machida', books: ['Meet Me at the Convenience Store by the Sea'] },
-    { name: 'Stephen Hawking', books: ['A Brief History of Time', 'The Theory of Everything'] },
-    { name: 'Steven Bartlett', books: ['The Diary of a CEO'] },
-    { name: 'Steven Pressfield', books: ['Do the Work', 'The War of Art', 'Turning Pro'] },
-    { name: 'Susanna Clarke', books: ['Piranesi'] },
-    { name: 'Swami Divyananda', books: ['Shiv Purana'] },
-    { name: 'Sylvia Plath', books: ['The Bell Jar'] },
-    { name: 'Toni Morrison', books: ['The Bluest Eye'] },
-    { name: 'Toshikazu Kawaguchi', books: ['Before I Knew I Loved You', 'Before the Coffee Gets Cold', 'Before We Forget Kindness', 'Before We Say Goodbye', 'Before Your Memory Fades', 'Tales from the Cafe'] },
-    { name: 'Trevor Noah', books: ['Born A Crime'] },
-    { name: 'Ursula K. Le Guin', books: ['The Left Hand of Darkness'] },
-    { name: 'Ved Vyas', books: ['Bhagavad Gita'] },
-    { name: 'Vijayendra Prasad & Kulpreet Yadav', books: ['Brahmaputra'] },
-    { name: 'Viktor E. Frankl', books: ["Man's Search for Meaning"] },
-    { name: 'Vincent Delecroix', books: ['Small Boat'] },
-    { name: 'Vir Das', books: ['The Outsider'] },
-    { name: 'Virginia Woolf', books: ['A Room of One\'s Own'] },
-    { name: 'Vivek Shanbhag', books: ['Ghachar Ghochar'] },
-    { name: 'Vladimir Nabokov', books: ['Lolita'] },
-    { name: 'Walter Isaacson', books: ['Steve Jobs'] },
-    { name: 'Will Smith', books: ['Will'] },
-    { name: 'William Faulkner', books: ['As I Lay Dying'] },
-    { name: 'Won-Pyung Sohn', books: ['Almond', 'Counterattacks at Thirty'] },
-    { name: 'Yann Martel', books: ['Life of Pi'] },
-    { name: 'Yogananda Paramahansa', books: ['Autobiography of a Yogi'] },
-    { name: 'Yoko Ogawa', books: ['The Housekeeper and the Professor'] },
-    { name: 'Yukio Mishima', books: ['The Sailor who Fell from Grace with the Sea'] },
-    { name: 'Yuval Noah Harari', books: ['Sapiens'] },
-  ];
-
   function seededRandom(seed){
     let s = seed % 2147483647;
     if (s<=0) s += 2147483646;
@@ -641,35 +453,45 @@
   const rnd = seededRandom(1337);
   function randRange(a,b){ return a + rnd()*(b-a); }
 
-  function generateMockData(){
-    const authors = [];
-    const books = [];
-    let bookId = 0;
+  const SUPABASE_URL = 'https://rrnryszgvctxainqyuyr.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJybnJ5c3pndmN0eGFpbnF5dXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODg3NTcsImV4cCI6MjA5MDQ2NDc1N30.GkGvfR_ZlGIupbwOOl1BL5gb58M-E2LD5sD7pVl4tso';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    REAL_DATA.forEach((entry, i)=>{
-      const id = 'a'+i;
-      const bookIds = [];
-      entry.books.forEach(title=>{
-        const bid = 'b'+(bookId++);
-        const statusRoll = rnd();
-        const status = statusRoll < 0.45 ? 'read' : statusRoll < 0.62 ? 'reading' : 'unread';
-        books.push({
-          id:bid,
-          title,
-          authorId:id,
-          status,
-          favorite: rnd() < 0.08,
-          cover:`https://picsum.photos/seed/${bid}/200/300`
+  function normalizeKey(name){ return (name||'').toLowerCase().replace(/[^a-z0-9]/g,' ').trim().replace(/\s+/g,'_'); }
+
+  async function loadRealData(){
+    const [{ data: rawBooks, error: bErr }, { data: rawAuthors, error: aErr }] = await Promise.all([
+      sb.from('books').select('id,title,author,status,cover_url'),
+      sb.from('authors').select('name_key,name,image')
+    ]);
+    if(bErr || aErr){ console.error('Supabase fetch error', bErr||aErr); return { authors:[], books:[] }; }
+    const authorMap = new Map((rawAuthors||[]).map(a=>[a.name_key, a]));
+    const seenAuthors = new Map();
+    const bookList = [];
+
+    (rawBooks||[]).forEach(b=>{
+      const key = normalizeKey(b.author);
+      if(!seenAuthors.has(key)){
+        const aData = authorMap.get(key);
+        seenAuthors.set(key, {
+          id: key,
+          name: (aData && aData.name) || b.author || key,
+          portrait: (aData && aData.image) || `https://i.pravatar.cc/300?img=${(seenAuthors.size%70)+1}`,
+          bookIds: []
         });
-        bookIds.push(bid);
-      });
-      authors.push({
-        id, name: entry.name,
-        portrait:`https://i.pravatar.cc/300?img=${(i%70)+1}`,
-        bookIds
+      }
+      seenAuthors.get(key).bookIds.push(b.id);
+      bookList.push({
+        id: b.id,
+        title: b.title,
+        authorId: key,
+        status: b.status || 'unread',
+        favorite: false,
+        cover: b.cover_url || `https://picsum.photos/seed/${b.id}/200/300`
       });
     });
-    return {authors, books};
+
+    return { authors: Array.from(seenAuthors.values()), books: bookList };
   }
 
   // ---------------------------------------------------------------------
@@ -721,24 +543,16 @@
   const state = {
     scale: 0.42,
     tx: 0, ty: 0,
-    expanded: new Set(),
     dragging: false,
     lastX:0, lastY:0,
     pointers: new Map(),
     pinchStartDist: 0,
     pinchStartScale: 1,
-    focusedAuthorId: null,
-    focusedBookId: null,
   };
 
-  let DATA = generateMockData();
-  layoutAuthors(DATA.authors);
-
-  const authorById = new Map(DATA.authors.map(a=>[a.id,a]));
-  const booksByAuthor = new Map();
-  DATA.authors.forEach(a=>{
-    booksByAuthor.set(a.id, DATA.books.filter(b=>b.authorId===a.id));
-  });
+  let DATA = { authors:[], books:[] };
+  let authorById = new Map();
+  let booksByAuthor = new Map();
 
   // ---------------------------------------------------------------------
   // 4. DOM REFS
@@ -749,7 +563,6 @@
   const canvas = document.getElementById('threadCanvas');
   const ctx = canvas.getContext('2d');
   const searchInput = document.getElementById('searchInput');
-  const collapseBtn = document.getElementById('collapseBtn');
   const hint = document.getElementById('hint');
   const detailCard = document.getElementById('detailCard');
   const dcImg = document.getElementById('dcImg');
@@ -844,7 +657,6 @@
 
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
-      toggleExpand(a.id);
     });
 
     world.appendChild(el);
@@ -872,10 +684,8 @@
     }
   }
 
-  DATA.authors.forEach(buildAuthorNode);
-
   // ---------------------------------------------------------------------
-  // 6. EXPAND / COLLAPSE BOOKS
+  // 6. BOOK LAYOUT (orbit positions, always visible)
   // ---------------------------------------------------------------------
 
   function orbitPositions(n, radius){
@@ -909,53 +719,31 @@
     });
     world.appendChild(el);
     bookNodeEls.set(b.id, el);
-    requestAnimationFrame(()=> el.classList.add('visible'));
   }
 
-  function expandAuthor(id){
-    if(state.expanded.has(id)) return;
-    const a = authorById.get(id);
-    const abooks = booksByAuthor.get(id);
-    const radius = 110 + Math.min(abooks.length*9, 90);
-    const pts = orbitPositions(abooks.length, radius);
-    abooks.forEach((b,i)=>{
-      const px = a.x + 74 + pts[i].x; // offset to author center (node width ~148)
-      const py = a.y + 90 + pts[i].y;
-      buildBookNode(b, px, py, randRange(-10,10));
+  async function init(){
+    DATA = await loadRealData();
+    layoutAuthors(DATA.authors);
+    authorById = new Map(DATA.authors.map(a=>[a.id,a]));
+    booksByAuthor = new Map();
+    DATA.authors.forEach(a=>{
+      booksByAuthor.set(a.id, DATA.books.filter(b=>b.authorId===a.id));
     });
-    state.expanded.add(id);
+    DATA.authors.forEach(a=>{
+      buildAuthorNode(a);
+      const abooks = booksByAuthor.get(a.id);
+      const radius = 110 + Math.min(abooks.length*9, 90);
+      const pts = orbitPositions(abooks.length, radius);
+      abooks.forEach((b,i)=>{
+        buildBookNode(b, a.x+74+pts[i].x, a.y+90+pts[i].y, randRange(-10,10));
+      });
+    });
     drawThreads();
+    centerOn(WORLD.w/2, WORLD.h/2, 0.42);
+    loadingVeil.style.opacity = '0';
+    setTimeout(()=> loadingVeil.style.display='none', 650);
   }
-
-  function collapseAuthor(id){
-    const abooks = booksByAuthor.get(id);
-    abooks.forEach(b=>{
-      const el = bookNodeEls.get(b.id);
-      if(el){
-        el.classList.remove('visible');
-        setTimeout(()=>{ el.remove(); bookNodeEls.delete(b.id); }, 350);
-      }
-    });
-    state.expanded.delete(id);
-    requestAnimationFrame(drawThreads);
-  }
-
-  function toggleExpand(id){
-    if(state.expanded.has(id)){
-      collapseAuthor(id);
-    } else {
-      // keep at most 2 expanded for readability
-      if(state.expanded.size >= 2){
-        const oldest = state.expanded.values().next().value;
-        collapseAuthor(oldest);
-      }
-      expandAuthor(id);
-    }
-  }
-
-  collapseBtn.addEventListener('click', ()=>{
-    Array.from(state.expanded).forEach(collapseAuthor);
-  });
+  init();
 
   // ---------------------------------------------------------------------
   // 7. THREADS (canvas overlay, world-space -> screen-space)
@@ -992,18 +780,16 @@
     ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
     ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
 
-    state.expanded.forEach(id=>{
-      const a = authorById.get(id);
+    DATA.authors.forEach(a=>{
       const anchor = worldToScreen(a.x+74, a.y+58);
-      const abooks = booksByAuthor.get(id);
-      const highlight = id === state.focusedAuthorId;
+      const abooks = booksByAuthor.get(a.id) || [];
       abooks.forEach(b=>{
         const el = bookNodeEls.get(b.id);
         if(!el) return;
         const bx = parseFloat(el.style.left) + 27;
         const by = parseFloat(el.style.top) + 6;
         const p2 = worldToScreen(bx,by);
-        drawThread(anchor, p2, highlight);
+        drawThread(anchor, p2, false);
       });
     });
   }
@@ -1105,60 +891,8 @@
     zoomAt(window.innerWidth/2, window.innerHeight/2, Math.max(0.12, state.scale*0.8));
   });
 
-  stage.addEventListener('click', ()=>{
-    // clicked empty board — clear focus
-    setFocus(null,null);
-  });
-
   // ---------------------------------------------------------------------
-  // 9. HOVER / FOCUS DIMMING
-  // ---------------------------------------------------------------------
-
-  function setFocus(authorId, bookId){
-    state.focusedAuthorId = authorId;
-    state.focusedBookId = bookId;
-
-    authorNodeEls.forEach((el,id)=>{
-      const related = !authorId || id===authorId || (bookId && el.dataset.id === (authorById.get(id)? bookId:null));
-      if(!authorId && !bookId){
-        el.classList.remove('dimmed','focused');
-        return;
-      }
-      const isMatch = id === authorId || (bookId && bookNodeEls.has(bookId) && bookNodeEls.get(bookId).dataset.author===id);
-      el.classList.toggle('dimmed', !isMatch);
-      el.classList.toggle('focused', isMatch);
-    });
-
-    bookNodeEls.forEach((el,id)=>{
-      if(!authorId && !bookId){
-        el.classList.remove('dimmed','focused');
-        return;
-      }
-      const isMatch = (bookId && id===bookId) || (authorId && el.dataset.author===authorId && !bookId);
-      el.classList.toggle('dimmed', !isMatch);
-      el.classList.toggle('focused', bookId===id);
-    });
-
-    drawThreads();
-  }
-
-  world.addEventListener('mouseover', (e)=>{
-    const aNode = e.target.closest('.author-node');
-    const bNode = e.target.closest('.book-node');
-    if(bNode){
-      setFocus(bNode.dataset.author, bNode.dataset.id);
-    } else if(aNode){
-      setFocus(aNode.dataset.id, null);
-    }
-  });
-  world.addEventListener('mouseout', (e)=>{
-    if(!e.relatedTarget || !world.contains(e.relatedTarget)){
-      setFocus(null,null);
-    }
-  });
-
-  // ---------------------------------------------------------------------
-  // 10. SEARCH — cinematic pan/zoom to match
+  // 9. SEARCH — cinematic pan/zoom to match
   // ---------------------------------------------------------------------
 
   let searchDebounce;
@@ -1169,12 +903,9 @@
 
   function runSearch(){
     const q = searchInput.value.trim().toLowerCase();
-    if(!q){ setFocus(null,null); return; }
+    if(!q) return;
     const match = DATA.authors.find(a=> a.name.toLowerCase().includes(q));
     if(!match) return;
-
-    setFocus(match.id, null);
-    expandAuthor(match.id);
     centerOn(match.x+74, match.y+90, 0.85);
   }
 
@@ -1196,10 +927,6 @@
   // ---------------------------------------------------------------------
 
   applyTransform();
-  setTimeout(()=>{
-    loadingVeil.style.opacity = '0';
-    setTimeout(()=> loadingVeil.style.display='none', 650);
-  }, 500);
   setTimeout(()=>{ hint.style.opacity = '0'; }, 5000);
 
 })();
