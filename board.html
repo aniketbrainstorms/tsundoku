@@ -494,6 +494,52 @@
     return { authors: Array.from(seenAuthors.values()), books: bookList };
   }
 
+  function validateImage(url){
+    return new Promise(resolve=>{
+      const img = new Image();
+      img.onload = ()=> resolve(img.width > 10 && img.height > 10);
+      img.onerror = ()=> resolve(false);
+      img.src = url;
+      setTimeout(()=> resolve(false), 5000);
+    });
+  }
+
+  async function fetchAuthorImage(name){
+    for(const v of [encodeURIComponent(name+' (author)'), encodeURIComponent(name)]){
+      try{
+        const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${v}`);
+        if(r.ok){ const d=await r.json(); const u=d.thumbnail&&d.thumbnail.source; if(u && await validateImage(u)) return u; }
+      }catch(e){}
+    }
+    try{
+      const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(name)}&limit=1`);
+      if(r.ok){
+        const d=await r.json();
+        if(d.docs&&d.docs[0]&&d.docs[0].key){
+          const u=`https://covers.openlibrary.org/a/olid/${d.docs[0].key.replace('/authors/','')}-M.jpg`;
+          if(await validateImage(u)) return u;
+        }
+      }
+    }catch(e){}
+    return '';
+  }
+
+  async function hydrateAuthorImages(){
+    const { data:{ user } } = await sb.auth.getUser();
+    if(!user) return;
+    const toFetch = DATA.authors.filter(a=> a.portrait.startsWith('https://i.pravatar'));
+    for(let i=0; i<toFetch.length; i+=5){
+      await Promise.all(toFetch.slice(i,i+5).map(async a=>{
+        const url = await fetchAuthorImage(a.name);
+        if(!url) return;
+        a.portrait = url;
+        const el = authorNodeEls.get(a.id);
+        if(el){ const img=el.querySelector('.portrait-wrap img'); if(img) img.src=url; }
+        sb.from('authors').upsert({name_key:a.id, name:a.name, image:url, user_id:user.id},{onConflict:'name_key'}).then(()=>{});
+      }));
+    }
+  }
+
   // ---------------------------------------------------------------------
   // 2. LAYOUT — cluster authors using simple force-ish relaxation,
   //    books orbit their author when expanded.
@@ -742,6 +788,7 @@
     centerOn(WORLD.w/2, WORLD.h/2, 0.42);
     loadingVeil.style.opacity = '0';
     setTimeout(()=> loadingVeil.style.display='none', 650);
+    hydrateAuthorImages();
   }
   init();
 
