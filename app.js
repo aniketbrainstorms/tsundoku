@@ -3269,7 +3269,7 @@ Description: ${description || 'No description available.'}`;
     ldBuildAlphaBar();
 
     const ld = document.getElementById('listDetailOverlay');
-    requestAnimationFrame(() => navPush(document.getElementById('listsOverlay'), ld));
+    requestAnimationFrame(() => navPush(null, ld));
 
     // 2. Background Sync
     await Promise.allSettled([
@@ -3293,7 +3293,7 @@ Description: ${description || 'No description available.'}`;
   };
 
   window.closeListDetail = function () {
-    navPop(document.getElementById('listDetailOverlay'), document.getElementById('listsOverlay'));
+    navPop(document.getElementById('listDetailOverlay'), null);
     ldCloseAddSheet();
     const floatingBar = document.getElementById('floatingBar');
     if (floatingBar) floatingBar.style.display = '';
