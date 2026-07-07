@@ -656,6 +656,7 @@ function _renderGridIntoEl(grid, filter) {
 
 function renderGrid() {
   updateTabCounts();
+  updateDeskHeader();
   _swipeDirty = true;
   const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
 
@@ -2264,6 +2265,16 @@ function handleCoverUpload(e, ctx) {
   };
   reader.readAsDataURL(file);
 }
+function updateDeskHeader() {
+  const titleEl = document.getElementById('viewTitle');
+  const countEl = document.getElementById('viewCount');
+  if (!titleEl || !countEl) return;
+  const visible = books.filter(b => !isHiddenFromShelf(b));
+  const n = visible.filter(b => b.status === currentFilter).length;
+  titleEl.textContent = currentFilter;
+  countEl.textContent = `${n} ${n === 1 ? 'book' : 'books'}`;
+}
+
 function setFilter(filter) {
   currentFilter = filter;
   document.querySelectorAll('.filter-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
@@ -2273,6 +2284,7 @@ function setFilter(filter) {
   document.getElementById('deskNavAuthors')?.classList.remove('active');
   // Sync swipe dots
   document.querySelectorAll('.swipe-dot').forEach(d => d.classList.toggle('active', d.dataset.filter === filter));
+  updateDeskHeader();
   renderGrid();
   updateHintBar();
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
@@ -2290,6 +2302,9 @@ function setDesktopNavActive(activeId) {
   ['deskNavShelf', 'deskNavLists', 'deskNavAuthors'].forEach(id => {
     document.getElementById(id)?.classList.toggle('active', id === activeId);
   });
+  if (activeId !== 'deskNavShelf') {
+    document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach(el => el.classList.remove('active'));
+  }
 }
 
 function initDesktopNav() {
@@ -2352,6 +2367,37 @@ if (document.readyState === 'loading') {
 } else {
   initDesktopNav();
 }
+
+// ── DESKTOP KEYBOARD SHORTCUTS (additive only — no existing functions modified) ──
+(function () {
+  const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+  const isTypingTarget = el => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+  const anyOverlayOpen = () => document.querySelector('.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open');
+
+  document.addEventListener('keydown', e => {
+    if (!isDesktop()) return;
+
+    // "/" or ⌘K / Ctrl+K → open shelf search
+    const wantsSearch = e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k');
+    if (wantsSearch) {
+      if (isTypingTarget(document.activeElement)) return;
+      if (anyOverlayOpen()) return;
+      e.preventDefault();
+      if (typeof openShelfSearch === 'function') openShelfSearch();
+      return;
+    }
+
+    // Esc → close whatever desktop-only popup is open
+    if (e.key === 'Escape') {
+      const addPopup = document.getElementById('addPopup');
+      const quickMenu = document.getElementById('quickMenu');
+      const sortMenu = document.getElementById('sortMenu');
+      if (addPopup && addPopup.classList.contains('open') && typeof closeAddPopup === 'function') closeAddPopup();
+      if (quickMenu && quickMenu.classList.contains('visible') && typeof closeQuickMenu === 'function') closeQuickMenu();
+      if (sortMenu && sortMenu.classList.contains('visible') && typeof closeSortMenu === 'function') closeSortMenu();
+    }
+  });
+})();
 function resetAddModal() {
   document.getElementById('addTitle').value = '';
   document.getElementById('addAuthor').value = '';
