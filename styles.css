@@ -1050,6 +1050,90 @@ html.standalone-webapp .add-popup {
   #profileModal .modal-sheet {
     box-shadow: 8px 0 32px rgba(0,0,0,0.45);
     border-right: 1px solid #2e2a25;
+    background: #1e1b17;
+    border-radius: 0;
+    padding: 20px 18px max(calc(var(--safe-bottom) + 20px), 28px);
+    max-height: 100%;
+  }
+
+  /* Flatten profile header — no card, just sits on sidebar bg */
+  #profileModal .profile-header-row {
+    padding-bottom: 16px;
+    border-bottom: 1px solid #2e2a25;
+    margin-bottom: 16px;
+  }
+  #profileModal .profile-email-text { font-size: 13px; word-break: break-all; }
+
+  /* Tsundoku brand card — shrink to fit, keep as the one intentional accent block */
+  #profileModal div[style*="text-align:center"] {
+    padding: 14px 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Theme toggle — flatten to a row, no separate card */
+  #profileModal .theme-toggle-row {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #2e2a25;
+    border-radius: 0;
+    padding: 10px 0 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Section labels match sidebar's .sb-label styling */
+  #profileModal .profile-section-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    color: #3a3530;
+    margin-bottom: 6px;
+  }
+
+  /* Library links — flat rows like .sb-item, not boxed buttons */
+  #profileModal .profile-shelf-btn {
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 8px;
+    margin-bottom: 1px;
+    font-size: 13px;
+    color: #b0a89e;
+    transition: background 0.15s, color 0.15s;
+  }
+  #profileModal .profile-shelf-btn:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: transparent;
+    color: #e8e0d5;
+  }
+  #profileModal .profile-shelf-icon { color: #c9714a; }
+  #profileModal .profile-shelf-count {
+    font-size: 10px;
+    background: #252119;
+    border-radius: 100px;
+    padding: 1px 7px;
+    color: #4a4540;
+  }
+
+  /* Share section — flatten to match sidebar share-pop styling */
+  #profileModal .share-slug-input,
+  #profileModal .share-shelf-row {
+    background: #252119;
+    border-color: #2e2a25;
+  }
+  #profileModal .share-shelf-row { border-radius: 8px; padding: 10px 12px; }
+
+  /* Coming soon block — quieter, less card-like */
+  #profileModal .profile-coming-soon {
+    background: transparent;
+    border: 1px dashed #2e2a25;
+    font-size: 11px;
+    padding: 12px;
+  }
+
+  /* Log out — align with sidebar's .sb-logout treatment */
+  #profileModal .modal-btn.secondary {
+    border-color: #2e2a25;
+    color: #8a5a5a;
+    margin-top: 12px;
   }
 
   /* Desktop Dropdown positioning for Add Popup */
