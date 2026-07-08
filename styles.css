@@ -1027,17 +1027,17 @@ html.standalone-webapp .add-popup {
     z-index: 88;
   }
 
-  /* Profile panel — docked flyout attached to the sidebar, not a full-screen slide-in */
+  /* Profile panel — replaces the sidebar in place, seamless, no second column */
   #profileModal {
-    left: 210px !important;
+    left: 0 !important;
     right: auto !important;
-    width: 320px !important;
+    width: 210px !important;
     top: 0 !important;
     bottom: 0 !important;
     position: absolute !important;
     background: transparent !important;
     backdrop-filter: none !important;
-    z-index: 65;
+    z-index: 29; /* sits directly above .sidebar (z-index: 28), covering it exactly */
     transform: translateX(-100%);
     transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
   }
@@ -1048,12 +1048,13 @@ html.standalone-webapp .add-popup {
     transform: translateX(-100%);
   }
   #profileModal .modal-sheet {
-    box-shadow: 8px 0 32px rgba(0,0,0,0.45);
-    border-right: 1px solid #2e2a25;
+    box-shadow: none;
+    border-right: 1px solid #2e2a25; /* matches sidebar's own right border exactly */
     background: #1e1b17;
     border-radius: 0;
-    padding: 20px 18px max(calc(var(--safe-bottom) + 20px), 28px);
+    padding: 20px 14px max(calc(var(--safe-bottom) + 20px), 28px);
     max-height: 100%;
+    width: 100%;
   }
 
   /* Flatten profile header — no card, just sits on sidebar bg */
