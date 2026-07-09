@@ -2307,6 +2307,15 @@ function setDesktopNavActive(activeId) {
   }
 }
 
+function toggleDeskAccountPanel() {
+  const panel = document.getElementById('deskAccountPanel');
+  const pill = document.getElementById('deskProfilePill');
+  if (!panel) return;
+  const nowOpen = !panel.classList.contains('open');
+  panel.classList.toggle('open', nowOpen);
+  pill?.classList.toggle('active', nowOpen);
+}
+
 function initDesktopNav() {
   const bind = (id, handler) => {
     const node = document.getElementById(id);
@@ -2344,8 +2353,21 @@ function initDesktopNav() {
   });
   bind('deskSearchBar', openShelfSearch);
   bind('deskAddBtn', () => openBookSearch('shelf'));
-  bind('deskProfilePill', openProfileModal);
+  bind('deskProfilePill', toggleDeskAccountPanel);
   bind('deskLogoutBtn', signOut);
+  bind('deskShareShelfRow', e => {
+    e.stopPropagation();
+    const pop = document.getElementById('deskSharePop');
+    if (pop) pop.style.display = pop.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.addEventListener('click', e => {
+    const panel = document.getElementById('deskAccountPanel');
+    if (!panel || !panel.classList.contains('open')) return;
+    if (e.target.closest('#deskAccountPanel') || e.target.closest('#deskProfilePill')) return;
+    panel.classList.remove('open');
+    document.getElementById('deskProfilePill')?.classList.remove('active');
+  });
 
   bind('deskShareBtn', e => {
     e.stopPropagation();
