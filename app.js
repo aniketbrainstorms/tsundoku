@@ -1441,7 +1441,7 @@ function openProfileModal() {
   const profileModal = document.getElementById('profileModal');
   profileModal.classList.add('visible');
   navPush(null, profileModal);
-  _updateAppRecede();
+  if (!window.matchMedia('(min-width: 1024px)').matches) _updateAppRecede();
 }
 
 // ── AUTHORS LIST OVERLAY ──
@@ -2226,7 +2226,7 @@ function closeModal(id) {
   el.classList.remove('visible');
   if (id === 'profileModal') {
     navPop(el, null);
-    _updateAppRecede();
+    if (!window.matchMedia('(min-width: 1024px)').matches) _updateAppRecede();
   }
   if (id === 'addModal') {
     const wasListAdd = addContext === 'list';
@@ -2300,7 +2300,7 @@ function closeDesktopNavPanels() {
 
 function setDesktopNavActive(activeId) {
   ['deskNavShelf', 'deskNavLists', 'deskNavAuthors'].forEach(id => {
-    document.getElementById(id)?.classList.toggle('active', id === activeId);
+    document.getElementById(id)?.classList.toggle('active', activeId && id === activeId);
   });
   if (activeId !== 'deskNavShelf') {
     document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach(el => el.classList.remove('active'));
@@ -2353,7 +2353,11 @@ function initDesktopNav() {
   });
   bind('deskSearchBar', openShelfSearch);
   bind('deskAddBtn', () => openBookSearch('shelf'));
-  bind('deskProfilePill', toggleDeskAccountPanel);
+  bind('deskProfilePill', () => {
+    closeDesktopNavPanels();
+    setDesktopNavActive(null);
+    openProfileModal();
+  });
   bind('deskLogoutBtn', signOut);
   bind('deskShareShelfRow', e => {
     e.stopPropagation();
