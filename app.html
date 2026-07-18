@@ -540,6 +540,9 @@
     
     <!-- FLOATING SEARCH + ADD BAR -->
     <div class="floating-bar" id="floatingBar">
+      <button class="envelope-trigger-btn" id="envelopeTriggerBtn" style="display:none" onclick="openLuckyEnvelope()" aria-label="Pick a random unread book">
+        <span style="font-size:16px">✉️</span>
+      </button>
       <div class="floating-search-field" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14" y2="14"/></svg>
         <input type="text" class="floating-search-input" id="searchInput" placeholder="Search library…" readonly onclick="openShelfSearch()" autocomplete="off" style="font-size:16px;cursor:pointer" />
@@ -793,6 +796,31 @@
         add to read but not owned
       </button>
       <button class="modal-btn ghost" onclick="skipToReadNotOwned()">skip — just mark as read</button>
+    </div>
+  </div>
+
+  <!-- LUCKY ENVELOPE MODAL — random unread book picker -->
+  <div class="modal-overlay le-modal-overlay" id="luckyEnvelopeModal" onclick="if(event.target===this)closeModal('luckyEnvelopeModal')">
+    <div class="le-stage">
+      <div class="le-envelope-wrap" id="leEnvelopeWrap">
+        <div class="le-env-body"></div>
+        <div class="le-env-flap" id="leFlap"></div>
+        <div class="le-env-seal">✉️</div>
+        <div class="le-peek-cover" id="lePeekCover"></div>
+      </div>
+      <div class="le-reveal-card" id="leRevealCard">
+        <div class="le-reveal-top">
+          <div class="le-reveal-cover" id="leRevealCoverBtn"><div id="leRevealCoverImg"></div></div>
+          <div class="le-reveal-info">
+            <div class="le-reveal-title" id="leRevealTitle"></div>
+            <div class="le-reveal-author" id="leRevealAuthor"></div>
+          </div>
+        </div>
+        <div class="le-reveal-actions">
+          <div class="le-shuffle-link" onclick="leShuffleAgain()">🔀 shuffle again</div>
+          <button class="le-start-btn" onclick="leStartReading()">start reading</button>
+        </div>
+      </div>
     </div>
   </div>
 
