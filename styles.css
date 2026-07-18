@@ -3791,3 +3791,110 @@ html.standalone-webapp .add-popup {
 
 .swipe-strip.no-anim .book-card,
 .swipe-strip.no-anim .reading-card { animation: none; }
+
+/* ── LUCKY ENVELOPE — random unread book picker ── */
+.le-modal-overlay { align-items: center; justify-content: center; }
+.le-stage { width: 300px; height: 260px; position: relative; }
+
+.le-envelope-wrap {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 220px; height: 150px;
+  transition: opacity 0.3s ease;
+}
+.le-envelope-wrap.fade-out { opacity: 0; pointer-events: none; }
+
+.le-env-body {
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, var(--surface2), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.le-env-flap {
+  position: absolute; top: 0; left: 0; right: 0; height: 75px;
+  background: linear-gradient(160deg, var(--surface2), var(--surface));
+  clip-path: polygon(0 0, 100% 0, 50% 68%);
+  border-radius: 10px 10px 0 0;
+  transform-origin: top center;
+  transition: transform 0.85s cubic-bezier(.65,0,.35,1);
+}
+.le-env-flap.open { transform: rotateX(150deg) scaleY(0.98); }
+.le-env-seal {
+  position: absolute; top: 34px; left: 50%; translate: -50% 0;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; opacity: 1; transition: opacity 0.2s ease;
+}
+.le-env-flap.open + .le-env-seal { opacity: 0; }
+
+.le-peek-cover {
+  position: absolute; left: 50%; bottom: 8px;
+  width: 96px; aspect-ratio: 2/3;
+  border-radius: 8px;
+  transform: translate(-50%, 30%) scale(0.55);
+  opacity: 0;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  transition: transform 0.8s cubic-bezier(.2,.8,.2,1) 0.5s, opacity 0.5s ease 0.5s;
+  overflow: hidden;
+  background: var(--surface2);
+}
+.le-peek-cover.rise { transform: translate(-50%, -78%) scale(1.55); opacity: 1; }
+.le-peek-cover img,
+.le-peek-cover .book-placeholder { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.le-reveal-card {
+  width: 280px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px;
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+.le-reveal-card.show { opacity: 1; pointer-events: auto; }
+
+.le-reveal-top { display: flex; gap: 14px; align-items: flex-start; }
+.le-reveal-cover {
+  width: 84px; aspect-ratio: 2/3; border-radius: 8px; overflow: hidden;
+  flex-shrink: 0; box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  opacity: 0; transition: opacity 0.15s ease;
+}
+.le-reveal-cover.landed { opacity: 1; }
+.le-reveal-cover img,
+.le-reveal-cover .book-placeholder { width: 100%; height: 100%; object-fit: cover; display: block; }
+.le-reveal-info { padding-top: 2px; opacity: 0; transition: opacity 0.25s ease 0.1s; }
+.le-reveal-card.textin .le-reveal-info { opacity: 1; }
+.le-reveal-title { font-size: 16px; font-weight: 700; line-height: 1.25; color: var(--text); margin-bottom: 4px; }
+.le-reveal-author { font-size: 13px; color: var(--text-muted); }
+
+.le-reveal-actions {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 16px; opacity: 0; transition: opacity 0.25s ease 0.15s;
+}
+.le-reveal-card.textin .le-reveal-actions { opacity: 1; }
+.le-shuffle-link { font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; cursor: pointer; padding: 6px 4px; }
+.le-shuffle-link:active { opacity: 0.6; }
+.le-start-btn {
+  background: var(--accent); color: #fff; border: none;
+  padding: 10px 20px; border-radius: 14px; font-size: 13px; font-weight: 700;
+  font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+.le-start-btn:active { transform: scale(0.96); }
+
+.envelope-trigger-btn {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 0.5px solid rgba(255,255,255,0.14);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+  box-shadow: 0 2px 20px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: transform 0.15s ease;
+}
+.envelope-trigger-btn:active { transform: scale(0.92); }
