@@ -4701,9 +4701,169 @@ function _swipePreRenderAll(force) {
     };
   });
 
-  // ── Resize: clean up if viewport drops below 768px ──
+// ── Resize: clean up if viewport drops below 768px ──
   window.addEventListener('resize', () => {
     if (!isDesktopLayout()) { closeDDP(); closeSidebar(); }
     if (currentFilter === 'reading') renderGrid();
+  });
+})();
+
+// ── LUCKY ENVELOPE — random unread book picker ──────────────────────────
+;(function () {
+  let currentPick = null;
+
+  function getUnreadBooks() {
+    return books.filter(b => b.status === 'unread' && !isHiddenFromShelf(b));
+  }
+
+  window.updateEnvelopeVisibility = function updateEnvelopeVisibility() {
+    const btn = document.getElementById('envelopeTriggerBtn');
+    if (!btn) return;
+    const show = currentFilter === 'unread' && getUnreadBooks().length > 0;
+    btn.style.display = show ? 'flex' : 'none';
+  };
+
+  function pickRandomUnread() {
+    const pool = getUnreadBooks();
+    if (!pool.length) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function leCoverHtml(book) {
+    return book.cover_url
+      ? `<img src="${escapeAttr(book.cover_url)}" style="width:100%;height:100%;object-fit:cover;display:block"/>`
+      : makePlaceholder(book, 22);
+  }
+
+  window.openLuckyEnvelope = function openLuckyEnvelope() {
+    currentPick = pickRandomUnread();
+    if (!currentPick) { showToast('No unread books to pick from'); return; }
+
+    const modal = document.getElementById('luckyEnvelopeModal');
+    const envWrap = document.getElementById('leEnvelopeWrap');
+    const flap = document.getElementById('leFlap');
+    const peek = document.getElementById('lePeekCover');
+    const revealCard = document.getElementById('leRevealCard');
+    const revealCoverBtn = document.getElementById('leRevealCoverBtn');
+
+    envWrap.style.display = 'block';
+    envWrap.classList.remove('fade-out');
+    flap.classList.remove('open');
+    peek.classList.remove('rise');
+    peek.style.position = ''; peek.style.left = ''; peek.style.top = '';
+    peek.style.width = ''; peek.style.height = ''; peek.style.transform = '';
+    peek.style.opacity = ''; peek.style.transition = ''; peek.style.zIndex = '';
+    peek.style.display = ''; peek.style.margin = ''; peek.style.borderRadius = '';
+    revealCard.classList.remove('show', 'textin');
+    revealCoverBtn.classList.remove('landed');
+    if (peek.parentElement !== envWrap) envWrap.appendChild(peek);
+
+    modal.classList.add('visible');
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        flap.classList.add('open');
+        peek.innerHTML = leCoverHtml(currentPick);
+        setTimeout(() => { peek.classList.add('rise'); }, 150);
+        setTimeout(() => { leFlyToRevealSlot(); }, 1550);
+      }, 100);
+    });
+  };
+
+  function leFlyToRevealSlot() {
+    const envWrap = document.getElementById('leEnvelopeWrap');
+    const peek = document.getElementById('lePeekCover');
+    const revealCard = document.getElementById('leRevealCard');
+    const revealCoverBtn = document.getElementById('leRevealCoverBtn');
+    const revealImg = document.getElementById('leRevealCoverImg');
+    const revealTitle = document.getElementById('leRevealTitle');
+    const revealAuthor = document.getElementById('leRevealAuthor');
+
+    revealTitle.textContent = currentPick.title;
+    revealAuthor.textContent = currentPick.author || '';
+    revealCard.classList.add('show');
+
+    const startRect = peek.getBoundingClientRect();
+    const targetRect = revealCoverBtn.getBoundingClientRect();
+
+    document.body.appendChild(peek);
+    peek.style.position = 'fixed';
+    peek.style.margin = '0';
+    peek.style.transform = 'none';
+    peek.style.opacity = '1';
+    peek.style.left = startRect.left + 'px';
+    peek.style.top = startRect.top + 'px';
+    peek.style.width = startRect.width + 'px';
+    peek.style.height = startRect.height + 'px';
+    peek.style.zIndex = '999';
+    peek.style.transition = 'none';
+    peek.offsetHeight;
+
+    envWrap.classList.add('fade-out');
+
+    requestAnimationFrame(() => {
+      peek.style.transition =
+        'left .55s cubic-bezier(.3,.9,.3,1), top .55s cubic-bezier(.3,.9,.3,1), ' +
+        'width .55s cubic-bezier(.3,.9,.3,1), height .55s cubic-bezier(.3,.9,.3,1), ' +
+        'border-radius .55s ease';
+      peek.style.left = targetRect.left + 'px';
+      peek.style.top = targetRect.top + 'px';
+      peek.style.width = targetRect.width + 'px';
+      peek.style.height = targetRect.height + 'px';
+      peek.style.borderRadius = '8px';
+
+      setTimeout(() => {
+        revealImg.innerHTML = leCoverHtml(currentPick);
+        revealCoverBtn.classList.add('landed');
+        peek.style.display = 'none';
+        revealCard.classList.add('textin');
+        envWrap.style.display = 'none';
+      }, 570);
+    });
+  }
+
+  window.leShuffleAgain = function leShuffleAgain() {
+    const next = pickRandomUnread();
+    if (!next) { showToast('No unread books to pick from'); return; }
+    currentPick = next;
+    const revealCoverBtn = document.getElementById('leRevealCoverBtn');
+    const revealImg = document.getElementById('leRevealCoverImg');
+    const revealTitle = document.getElementById('leRevealTitle');
+    const revealAuthor = document.getElementById('leRevealAuthor');
+    const revealCard = document.getElementById('leRevealCard');
+
+    revealCoverBtn.classList.remove('landed');
+    revealCard.classList.remove('textin');
+    setTimeout(() => {
+      revealImg.innerHTML = leCoverHtml(currentPick);
+      revealTitle.textContent = currentPick.title;
+      revealAuthor.textContent = currentPick.author || '';
+      revealCoverBtn.classList.add('landed');
+      revealCard.classList.add('textin');
+    }, 160);
+  };
+
+  window.leStartReading = async function leStartReading() {
+    if (!currentPick) return;
+    const id = currentPick.id;
+    closeModal('luckyEnvelopeModal');
+    const book = books.find(b => String(b.id) === String(id));
+    if (!book) return;
+    book.status = 'reading';
+    renderGrid();
+    await dbUpdate(id, { status: 'reading' });
+    showToast(`moved "${book.title}" to reading ✓`);
+  };
+
+  // Wrap renderGrid additively — keeps envelope visibility synced with
+  // unread count / active tab without touching the original function body.
+  window.addEventListener('load', () => {
+    const _origRenderGrid = window.renderGrid;
+    if (typeof _origRenderGrid === 'function') {
+      window.renderGrid = function () {
+        _origRenderGrid.apply(this, arguments);
+        updateEnvelopeVisibility();
+      };
+    }
   });
 })();
