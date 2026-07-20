@@ -754,6 +754,14 @@ function dsInitStarInput(book) {
 }
 function cleanGenre(raw) {
   if (!raw || raw === '—') return raw || '—';
+  if (typeof raw === 'string' && /^\s*\[.*\]\s*$/.test(raw)) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) raw = parsed;
+    } catch {
+      raw = raw.replace(/^\s*\[|\]\s*$/g, '').replace(/["']/g, '');
+    }
+  }
   if (Array.isArray(raw)) raw = raw.join(', ');
   if (typeof raw !== 'string') raw = String(raw);
   return raw
