@@ -1240,12 +1240,17 @@ async function confirmEdit() {
   saveBtn.disabled = true;
   saveBtn.textContent = 'saving…';
 
+  const _editGenresArr = document.getElementById('editGenres').value.split(',').map(s => s.trim()).filter(Boolean);
+  const _editThemesArr = document.getElementById('editThemes').value.split(',').map(s => s.trim()).filter(Boolean);
   const updates = {
     title,
     author: document.getElementById('editAuthor').value.trim() || '',
     status: editStatus,
     year: document.getElementById('editYear').value.trim() || null,
-    genre: document.getElementById('editGenre').value.trim() || null,
+    genres: _editGenresArr,
+    themes: _editThemesArr,
+    primary_genre: _editGenresArr.length ? _editGenresArr[0] : null,
+    genre: _editGenresArr.length ? _editGenresArr.join(', ') : null,
     page_count: parseInt(document.getElementById('editPageCount').value) || null,
     rating: editStatus === 'read' ? (_userRating || null) : null,
   };
@@ -2184,7 +2189,7 @@ async function fetchAddIsbn() {
     if (v.title) document.getElementById('editTitle').value = v.title;
     if (v.authors?.[0]?.name) document.getElementById('editAuthor').value = v.authors[0].name;
     if (v.publish_date) document.getElementById('editYear').value = v.publish_date.slice(-4);
-    if (v.subjects?.[0]?.name) document.getElementById('editGenre').value = v.subjects[0].name;
+    if (v.subjects?.[0]?.name) document.getElementById('editGenres').value = v.subjects[0].name;
     if (v.number_of_pages) document.getElementById('editPageCount').value = v.number_of_pages;
     let cover = v.cover?.large || v.cover?.medium || '';
     if (cover) {
@@ -3801,15 +3806,27 @@ Description: ${description || 'No description available.'}`;
     if (yearPub) yearPub.textContent = book.year || '';
 
     // Meta grid
-    const genreEl = document.getElementById('lbdGenreEl');
     const pagesEl = document.getElementById('lbdPagesEl');
     const summaryEl = document.getElementById('lbdSummaryEl');
-    if (genreEl) genreEl.textContent = book.genre || '—';
     if (pagesEl) pagesEl.textContent = book.page_count ? `${book.page_count} pages` : '—';
     if (summaryEl) summaryEl.textContent = book.description || '';
+    const lbdGenresRow = document.getElementById('lbdGenresRow');
+    const lbdGenresPills = document.getElementById('lbdGenresPills');
+    const lbdGenresArr = Array.isArray(book.genres) && book.genres.length ? book.genres : (book.genre ? [book.genre] : []);
+    if (lbdGenresRow && lbdGenresPills) {
+      if (lbdGenresArr.length) { lbdGenresPills.innerHTML = lbdGenresArr.map(dsPillHtml).join(''); lbdGenresRow.style.display = 'block'; }
+      else lbdGenresRow.style.display = 'none';
+    }
+    const lbdThemesRow = document.getElementById('lbdThemesRow');
+    const lbdThemesPills = document.getElementById('lbdThemesPills');
+    const lbdThemesArr = Array.isArray(book.themes) ? book.themes : [];
+    if (lbdThemesRow && lbdThemesPills) {
+      if (lbdThemesArr.length) { lbdThemesPills.innerHTML = lbdThemesArr.map(dsPillHtml).join(''); lbdThemesRow.style.display = 'block'; }
+      else lbdThemesRow.style.display = 'none';
+    }
     // Hide summary section if no content
     const sumSection = document.getElementById('lbdSummaryContent')?.parentElement;
-    if (sumSection) sumSection.style.display = (book.description || book.genre) ? '' : 'none';
+    if (sumSection) sumSection.style.display = (book.description || lbdGenresArr.length) ? '' : 'none';
 
     lbdRefreshOwnedState();
     document.getElementById('listBookDetailModal').classList.add('visible');
@@ -3887,7 +3904,8 @@ Description: ${description || 'No description available.'}`;
     document.getElementById('editAuthor').value = book.author || '';
     const yr = document.getElementById('editYear'); if (yr) yr.value = book.year || '';
     const pc = document.getElementById('editPageCount'); if (pc) pc.value = book.page_count || '';
-    const gn = document.getElementById('editGenre'); if (gn) gn.value = book.genre || '';
+    const gn = document.getElementById('editGenres'); if (gn) gn.value = Array.isArray(book.genres) && book.genres.length ? book.genres.join(', ') : (book.genre || '');
+    const th = document.getElementById('editThemes'); if (th) th.value = Array.isArray(book.themes) ? book.themes.join(', ') : '';
     const isn = document.getElementById('editIsbn'); if (isn) isn.value = '';
 
     const ratingSection = document.getElementById('editRatingSection');
@@ -4618,8 +4636,21 @@ function _swipePreRenderAll(force) {
     document.getElementById('ddpBadgeLabel').textContent = badgeMap[book.status] || book.status;
 
     // Meta
-    document.getElementById('ddpGenre').textContent = book.genre || '—';
     document.getElementById('ddpPages').textContent = book.page_count ? book.page_count + ' pg' : '—';
+    const ddpGenresRow = document.getElementById('ddpGenresRow');
+    const ddpGenresPills = document.getElementById('ddpGenresPills');
+    const ddpGenresArr = Array.isArray(book.genres) && book.genres.length ? book.genres : (book.genre ? [book.genre] : []);
+    if (ddpGenresRow && ddpGenresPills) {
+      if (ddpGenresArr.length) { ddpGenresPills.innerHTML = ddpGenresArr.map(dsPillHtml).join(''); ddpGenresRow.style.display = 'block'; }
+      else ddpGenresRow.style.display = 'none';
+    }
+    const ddpThemesRow = document.getElementById('ddpThemesRow');
+    const ddpThemesPills = document.getElementById('ddpThemesPills');
+    const ddpThemesArr = Array.isArray(book.themes) ? book.themes : [];
+    if (ddpThemesRow && ddpThemesPills) {
+      if (ddpThemesArr.length) { ddpThemesPills.innerHTML = ddpThemesArr.map(dsPillHtml).join(''); ddpThemesRow.style.display = 'block'; }
+      else ddpThemesRow.style.display = 'none';
+    }
 
     // Progress
     const pw = document.getElementById('ddpProgressWrap');
