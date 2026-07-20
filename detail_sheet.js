@@ -470,7 +470,8 @@ function openEditSheet() {
   document.getElementById('editTitle').value = book.title;
   document.getElementById('editAuthor').value = book.author || '';
   document.getElementById('editYear').value = book.year || '';
-  document.getElementById('editGenre').value = book.genre || '';
+  document.getElementById('editGenres').value = Array.isArray(book.genres) && book.genres.length ? book.genres.join(', ') : (book.genre || '');
+  document.getElementById('editThemes').value = Array.isArray(book.themes) ? book.themes.join(', ') : '';
   document.getElementById('editPageCount').value = book.page_count || '';
   document.getElementById('editCoverUrlInput').value = book.cover_url || '';
   editCoverUrl = book.cover_url || null;
@@ -773,6 +774,9 @@ function cleanGenre(raw) {
     .map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase())
     .join(', ');
 }
+function dsPillHtml(text) {
+  return `<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:500;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);margin:0 6px 6px 0">${escapeHtml(text)}</span>`;
+}
 function dsRenderMetaGrid(book) {
   const yearPub = document.getElementById('detailYearPub');
   const metaGrid = document.getElementById('detailMetaGrid');
@@ -781,12 +785,23 @@ function dsRenderMetaGrid(book) {
   }
   if (metaGrid) {
     const pages = book.page_count ? `${book.page_count} pages` : '—';
-    const genre = book.genre || '—';
     metaGrid.style.display = 'grid';
-    const genreEl = document.getElementById('detailMetaGenre');
     const pagesEl = document.getElementById('detailMetaPages');
-    if (genreEl) genreEl.textContent = cleanGenre(genre);
     if (pagesEl) pagesEl.textContent = pages;
+  }
+  const genresRow = document.getElementById('detailGenresRow');
+  const genresPills = document.getElementById('detailGenresPills');
+  const genres = Array.isArray(book.genres) && book.genres.length ? book.genres : (book.genre ? cleanGenre(book.genre).split(', ').filter(Boolean) : []);
+  if (genresRow && genresPills) {
+    if (genres.length) { genresPills.innerHTML = genres.map(dsPillHtml).join(''); genresRow.style.display = 'block'; }
+    else genresRow.style.display = 'none';
+  }
+  const themesRow = document.getElementById('detailThemesRow');
+  const themesPills = document.getElementById('detailThemesPills');
+  const themes = Array.isArray(book.themes) ? book.themes : [];
+  if (themesRow && themesPills) {
+    if (themes.length) { themesPills.innerHTML = themes.map(dsPillHtml).join(''); themesRow.style.display = 'block'; }
+    else themesRow.style.display = 'none';
   }
 }
 
@@ -838,8 +853,10 @@ window.openDetailModal = async function openDetailModal(id) {
     dsRenderRating(book);
 
     // Edit form new fields
+    // Edit form new fields
     document.getElementById('editYear').value = book.year || '';
-    document.getElementById('editGenre').value = book.genre || '';
+    document.getElementById('editGenres').value = Array.isArray(book.genres) && book.genres.length ? book.genres.join(', ') : (book.genre || '');
+    document.getElementById('editThemes').value = Array.isArray(book.themes) ? book.themes.join(', ') : '';
     document.getElementById('editPageCount').value = book.page_count || '';
     if (isNotOwned) {
       const badge = document.getElementById('detailBadge');
@@ -913,10 +930,10 @@ window.openDetailModal = async function openDetailModal(id) {
         if (Object.keys(apiUpdates).length) await dbUpdate(id, apiUpdates);
 
         // Sync edit form fields
-        const editGenre = document.getElementById('editGenre');
+        const editGenres = document.getElementById('editGenres');
         const editPageCount = document.getElementById('editPageCount');
         const editYear = document.getElementById('editYear');
-        if (editGenre && !editGenre.value) editGenre.value = book.genre || '';
+        if (editGenres && !editGenres.value) editGenres.value = Array.isArray(book.genres) && book.genres.length ? book.genres.join(', ') : (book.genre || '');
         if (editPageCount && !editPageCount.value) editPageCount.value = book.page_count || '';
         if (editYear && !editYear.value) editYear.value = book.year || '';
 
@@ -983,6 +1000,7 @@ window.dsRefreshDetailSheet = function () {
   document.getElementById('editTitle').value = book.title;
   document.getElementById('editAuthor').value = book.author || '';
   document.getElementById('editYear').value = book.year || '';
-  document.getElementById('editGenre').value = book.genre || '';
+  document.getElementById('editGenres').value = Array.isArray(book.genres) && book.genres.length ? book.genres.join(', ') : (book.genre || '');
+  document.getElementById('editThemes').value = Array.isArray(book.themes) ? book.themes.join(', ') : '';
   document.getElementById('editPageCount').value = book.page_count || '';
 };
