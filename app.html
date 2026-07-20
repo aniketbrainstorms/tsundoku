@@ -66,13 +66,17 @@
     <!-- Meta grid -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:16px">
       <div>
-        <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:3px">Genre</div>
-        <div id="lbdGenreEl" style="font-size:14px;font-weight:600;color:var(--text)">—</div>
-      </div>
-      <div>
         <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:3px">Pages</div>
         <div id="lbdPagesEl" style="font-size:14px;font-weight:600;color:var(--text)">—</div>
       </div>
+    </div>
+    <div id="lbdGenresRow" style="display:none;margin-bottom:12px">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:5px">Genres</div>
+      <div id="lbdGenresPills"></div>
+    </div>
+    <div id="lbdThemesRow" style="display:none;margin-bottom:12px">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:5px">Themes</div>
+      <div id="lbdThemesPills"></div>
     </div>
     <!-- Summary -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden">
@@ -523,8 +527,15 @@
           <div class="ddp-year" id="ddpYear"></div>
           <div class="ddp-badge" id="ddpBadge"><span class="ddp-badge-dot"></span><span id="ddpBadgeLabel"></span></div>
           <div class="ddp-meta" id="ddpMeta">
-            <div><div class="ddp-meta-label">Genre</div><div class="ddp-meta-val" id="ddpGenre">—</div></div>
             <div><div class="ddp-meta-label">Pages</div><div class="ddp-meta-val" id="ddpPages">—</div></div>
+          </div>
+          <div id="ddpGenresRow" style="display:none;margin-bottom:14px">
+            <div class="ddp-meta-label">Genres</div>
+            <div id="ddpGenresPills" style="margin-top:4px"></div>
+          </div>
+          <div id="ddpThemesRow" style="display:none;margin-bottom:14px">
+            <div class="ddp-meta-label">Themes</div>
+            <div id="ddpThemesPills" style="margin-top:4px"></div>
           </div>
           <div class="ddp-progress-wrap" id="ddpProgressWrap" style="display:none">
             <div class="ddp-progress-meta"><span id="ddpProgressPages"></span><span id="ddpProgressPct"></span></div>
@@ -1039,13 +1050,17 @@
         </div>
         <div class="ds-meta-grid" id="detailMetaGrid">
           <div class="ds-meta-col">
-            <div class="ds-meta-label">Genre</div>
-            <div class="ds-meta-val" id="detailMetaGenre">—</div>
-          </div>
-          <div class="ds-meta-col">
             <div class="ds-meta-label">Pages</div>
             <div class="ds-meta-val" id="detailMetaPages">—</div>
           </div>
+        </div>
+        <div id="detailGenresRow" style="display:none;margin:0 20px 10px">
+          <div class="ds-meta-label">Genres</div>
+          <div id="detailGenresPills" style="margin-top:4px"></div>
+        </div>
+        <div id="detailThemesRow" style="display:none;margin:0 20px 10px">
+          <div class="ds-meta-label">Themes</div>
+          <div id="detailThemesPills" style="margin-top:4px"></div>
         </div>
       </div>
       
@@ -1161,8 +1176,14 @@
         </div>
         <div class="es-field-row">
           <div class="es-field-full">
-            <span class="es-field-label">Genre</span>
-            <input type="text" class="es-input" id="editGenre" placeholder="e.g. Magical Realism" />
+            <span class="es-field-label">Genres <span style="color:var(--text-muted);font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">— comma separated</span></span>
+            <input type="text" class="es-input" id="editGenres" placeholder="e.g. Fantasy, Adventure" />
+          </div>
+        </div>
+        <div class="es-field-row">
+          <div class="es-field-full">
+            <span class="es-field-label">Themes <span style="color:var(--text-muted);font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">— comma separated</span></span>
+            <input type="text" class="es-input" id="editThemes" placeholder="e.g. Coming of age, Found family" />
           </div>
         </div>
 
