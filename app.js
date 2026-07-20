@@ -548,6 +548,11 @@ function getSortedFiltered() {
       if (authorCmp !== 0) return authorCmp;
       return (a.title || '').localeCompare(b.title || '');
     }
+    if (currentSort === 'genre') {
+      const genreCmp = (a.genre || 'zzz').trim().toLowerCase().localeCompare((b.genre || 'zzz').trim().toLowerCase());
+      if (genreCmp !== 0) return genreCmp;
+      return (a.title || '').localeCompare(b.title || '');
+    }
     return new Date(b.created_at) - new Date(a.created_at);
   });
   return list;
@@ -995,7 +1000,7 @@ function setSort(sortType) {
   document.querySelectorAll('#sortMenu .qm-item').forEach(btn => btn.classList.toggle('current-status', btn.dataset.sort === sortType));
   
   // Desktop sidebar sort label sync
-  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)' };
+  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)' };
   const dSortVal = document.getElementById('deskSortVal');
   if (dSortVal) dSortVal.textContent = sortMap[sortType] || sortType;
 
@@ -1842,6 +1847,10 @@ function renderShelfGrid() {
     if (shelfSort === 'title') return (a.title || '').localeCompare(b.title || '');
     if (shelfSort === 'author') {
       const cmp = (a.author || '').localeCompare(b.author || '');
+      return cmp !== 0 ? cmp : (a.title || '').localeCompare(b.title || '');
+    }
+    if (shelfSort === 'genre') {
+      const cmp = (a.genre || 'zzz').trim().toLowerCase().localeCompare((b.genre || 'zzz').trim().toLowerCase());
       return cmp !== 0 ? cmp : (a.title || '').localeCompare(b.title || '');
     }
     return new Date(b.created_at) - new Date(a.created_at);
