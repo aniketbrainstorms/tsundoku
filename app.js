@@ -549,7 +549,7 @@ function getSortedFiltered() {
       return (a.title || '').localeCompare(b.title || '');
     }
     if (currentSort === 'genre') {
-      const genreCmp = (a.genre || 'zzz').trim().toLowerCase().localeCompare((b.genre || 'zzz').trim().toLowerCase());
+      const genreCmp = (a.primary_genre || 'zzz').trim().toLowerCase().localeCompare((b.primary_genre || 'zzz').trim().toLowerCase());
       if (genreCmp !== 0) return genreCmp;
       return (a.title || '').localeCompare(b.title || '');
     }
@@ -1855,7 +1855,7 @@ function renderShelfGrid() {
       return cmp !== 0 ? cmp : (a.title || '').localeCompare(b.title || '');
     }
     if (shelfSort === 'genre') {
-      const cmp = (a.genre || 'zzz').trim().toLowerCase().localeCompare((b.genre || 'zzz').trim().toLowerCase());
+      const cmp = (a.primary_genre || 'zzz').trim().toLowerCase().localeCompare((b.primary_genre || 'zzz').trim().toLowerCase());
       return cmp !== 0 ? cmp : (a.title || '').localeCompare(b.title || '');
     }
     return new Date(b.created_at) - new Date(a.created_at);
