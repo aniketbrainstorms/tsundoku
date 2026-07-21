@@ -2111,10 +2111,10 @@ function selectBsResult(title, author, coverUrl, meta) {
   document.getElementById('addAuthor').value = author || '';
   document.getElementById('addCoverUrlInput').value = coverUrl || '';
   const addYear = document.getElementById('addYear');
-  const addGenre = document.getElementById('addGenre');
+  const addGenres = document.getElementById('addGenres');
   const addPageCount = document.getElementById('addPageCount');
   if (addYear && meta?.year) addYear.value = meta.year;
-  if (addGenre && meta?.genre) addGenre.value = meta.genre;
+  if (addGenres && meta?.genre) addGenres.value = meta.genre;
   if (addPageCount && meta?.pageCount) addPageCount.value = meta.pageCount;
   if (coverUrl) {
     const thumb = document.getElementById('addCoverThumb');
@@ -2140,6 +2140,8 @@ async function confirmAdd() {
   const isListAdd = addContext === 'list';
   const isBorrowed = !isListAdd && addOwnership === 'borrowed';
   const borrowedFrom = isBorrowed ? (document.getElementById('borrowedFromInput')?.value.trim() || '') : null;
+  const _addGenresArr = (document.getElementById('addGenres')?.value || '').split(',').map(s => s.trim()).filter(Boolean);
+  const _addThemesArr = (document.getElementById('addThemes')?.value || '').split(',').map(s => s.trim()).filter(Boolean);
   const newBook = await dbAdd({
     title,
     author: document.getElementById('addAuthor').value.trim() || '',
@@ -2148,7 +2150,10 @@ async function confirmAdd() {
     pages_read: 0,
     total_pages: isListAdd ? null : 0,
     year: document.getElementById('addYear')?.value.trim() || null,
-    genre: document.getElementById('addGenre')?.value.trim() || null,
+    genres: _addGenresArr,
+    themes: _addThemesArr,
+    primary_genre: _addGenresArr.length ? _addGenresArr[0] : null,
+    genre: _addGenresArr.length ? _addGenresArr.join(', ') : null,
     page_count: parseInt(document.getElementById('addPageCount')?.value) || null,
     description: window._pendingDescription || null,
     borrowed_from: borrowedFrom,
@@ -2441,7 +2446,8 @@ function resetAddModal() {
   document.getElementById('addTitle').style.borderColor = '';
   const addIsbn = document.getElementById('addIsbn'); if (addIsbn) addIsbn.value = '';
   const addYear = document.getElementById('addYear'); if (addYear) addYear.value = '';
-  const addGenre = document.getElementById('addGenre'); if (addGenre) addGenre.value = '';
+  const addGenres = document.getElementById('addGenres'); if (addGenres) addGenres.value = '';
+  const addThemes = document.getElementById('addThemes'); if (addThemes) addThemes.value = '';
   const addPageCount = document.getElementById('addPageCount'); if (addPageCount) addPageCount.value = '';
   addCoverFile = null; addCoverUrl = null;
   window._pendingDescription = null;
