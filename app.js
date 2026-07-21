@@ -2186,11 +2186,11 @@ async function fetchAddIsbn() {
     const data = await res.json();
     const v = data[`ISBN:${isbn}`] || data[Object.keys(data)[0]];
     if (!v) { showToast('No book found for that ISBN'); return; }
-    if (v.title) document.getElementById('editTitle').value = v.title;
-    if (v.authors?.[0]?.name) document.getElementById('editAuthor').value = v.authors[0].name;
-    if (v.publish_date) document.getElementById('editYear').value = v.publish_date.slice(-4);
-    if (v.subjects?.[0]?.name) document.getElementById('editGenres').value = v.subjects[0].name;
-    if (v.number_of_pages) document.getElementById('editPageCount').value = v.number_of_pages;
+    if (v.title) document.getElementById('addTitle').value = v.title;
+    if (v.authors?.[0]?.name) document.getElementById('addAuthor').value = v.authors[0].name;
+    if (v.publish_date) document.getElementById('addYear').value = v.publish_date.slice(-4);
+    if (v.subjects?.[0]?.name) document.getElementById('addGenres').value = v.subjects[0].name;
+    if (v.number_of_pages) document.getElementById('addPageCount').value = v.number_of_pages;
     let cover = v.cover?.large || v.cover?.medium || '';
     if (cover) {
       cover = cover.replace(/^http:/, 'https:');
@@ -2215,11 +2215,11 @@ async function fetchEditIsbn() {
     const data = await res.json();
     const v = data[`ISBN:${isbn}`] || data[Object.keys(data)[0]];
     if (!v) { showToast('No book found for that ISBN'); return; }
-    if (v.title) document.getElementById('addTitle').value = v.title;
-    if (v.authors?.[0]?.name) document.getElementById('addAuthor').value = v.authors[0].name;
-    if (v.publish_date) document.getElementById('addYear').value = v.publish_date.slice(-4);
-    if (v.subjects?.[0]?.name) document.getElementById('addGenre').value = v.subjects[0].name;
-    if (v.number_of_pages) document.getElementById('addPageCount').value = v.number_of_pages;
+    if (v.title) document.getElementById('editTitle').value = v.title;
+    if (v.authors?.[0]?.name) document.getElementById('editAuthor').value = v.authors[0].name;
+    if (v.publish_date) document.getElementById('editYear').value = v.publish_date.slice(-4);
+    if (v.subjects?.[0]?.name) document.getElementById('editGenres').value = v.subjects[0].name;
+    if (v.number_of_pages) document.getElementById('editPageCount').value = v.number_of_pages;
     let cover = v.cover?.large || v.cover?.medium || '';
     if (cover) {
       cover = cover.replace(/^http:/, 'https:');
