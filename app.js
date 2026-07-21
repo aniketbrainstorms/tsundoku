@@ -5,7 +5,7 @@ const sb = createClient(
 );
 
 // ── NAV STACK ──
-const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay', 'readNotOwnedOverlay', 'listsOverlay', 'authorsListOverlay', 'authorOverlay', 'listDetailOverlay'];
+const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay', 'readNotOwnedOverlay', 'listsOverlay', 'authorsListOverlay', 'authorOverlay', 'listDetailOverlay', 'genresListOverlay', 'genreDetailOverlay'];
 
 function navPush(prevEl, nextEl) {
   if (prevEl) prevEl.classList.add('nav-behind');
@@ -1706,8 +1706,130 @@ function renderAuthorsList() {
   }
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('authors');
 }
+
+// ── GENRES ──
+function getBookGenres(book) {
+  if (Array.isArray(book.genres) && book.genres.length) return book.genres.map(g => (g || '').trim()).filter(Boolean);
+  if (book.genre) return book.genre.split(',').map(g => g.trim()).filter(Boolean);
+  if (book.primary_genre) return [book.primary_genre.trim()];
+  return [];
+}
+function buildGenreMap() {
+  const map = new Map();
+  books.filter(b => !isHiddenFromShelf(b)).forEach(b => {
+    getBookGenres(b).forEach(g => {
+      if (!map.has(g)) map.set(g, []);
+      map.get(g).push(b);
+    });
+  });
+  return map;
+}
+let genSort = 'az';
+let genreDetailName = null;
+function openGenresOverlay() {
+  renderGenresList();
+  navPush(document.getElementById('profileModal'), document.getElementById('genresListOverlay'));
+}
+function closeGenresOverlay() {
+  navPop(document.getElementById('genresListOverlay'), document.getElementById('profileModal'));
+}
+function toggleGenSort() {
+  genSort = genSort === 'az' ? 'count' : 'az';
+  document.getElementById('genSortLabel').textContent = genSort === 'az' ? 'Sort A–Z' : 'Sort by count';
+  renderGenresList();
+}
+function renderGenresList() {
+  const q = (document.getElementById('genSearchInput')?.value || '').toLowerCase().trim();
+  const map = buildGenreMap();
+  let entries = Array.from(map.entries());
+  if (q) entries = entries.filter(([name]) => name.toLowerCase().includes(q));
+  if (genSort === 'az') entries.sort((a, b) => a[0].localeCompare(b[0]));
+  else entries.sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+
+  const sub = document.getElementById('genShelfSub');
+  if (sub) sub.textContent = 'All genres in your shelf.';
+  const genresProfileCountEl = document.getElementById('genresProfileCount');
+  if (genresProfileCountEl) genresProfileCountEl.textContent = map.size ? `${map.size} genres` : '';
+
+  const scroll = document.getElementById('genScroll');
+  if (!scroll) return;
+  if (!entries.length) {
+    scroll.innerHTML = `<div class="al-empty">📭<br>${q ? 'No genres match your search.' : 'No genres yet.'}</div>`;
+    return;
+  }
+  scroll.innerHTML = entries.map(([name, arr], i) => {
+    const bookWord = arr.length === 1 ? 'book' : 'books';
+    return `<div class="al-author-row" data-genre="${escapeAttr(name)}" style="animation-delay:${Math.min(i, 14) * 0.028}s">
+      <div class="al-author-avatar" style="font-size:16px">📚</div>
+      <div class="al-author-info">
+        <div class="al-author-name">${escapeHtml(name)}</div>
+        <div class="al-author-count">${arr.length} ${bookWord}</div>
+      </div>
+      <svg class="al-author-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
+  scroll.querySelectorAll('.al-author-row[data-genre]').forEach(row => {
+    row.addEventListener('click', () => openGenreDetail(row.dataset.genre));
+  });
+}
+function openGenreDetail(genreName) {
+  genreDetailName = genreName;
+  document.getElementById('genreDetailTitle').textContent = genreName;
+  renderGenreDetailGrid();
+  navPush(document.getElementById('genresListOverlay'), document.getElementById('genreDetailOverlay'));
+}
+function closeGenreDetail() {
+  navPop(document.getElementById('genreDetailOverlay'), document.getElementById('genresListOverlay'));
+}
+function renderGenreDetailGrid() {
+  const grid = document.getElementById('genreDetailGrid');
+  const countEl = document.getElementById('genreDetailCount');
+  const map = buildGenreMap();
+  const list = (map.get(genreDetailName) || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  if (countEl) countEl.textContent = list.length === 1 ? '1 book' : `${list.length} books`;
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>No books in this genre.</p></div>`;
+    return;
+  }
+  grid.classList.remove('reading-mode');
+  grid.innerHTML = list.map((b, i) => `
+    <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${Math.min(i, 12) * 0.035}s">
+      ${coverHtml(b)}<div class="status-dot ${b.status}"></div>
+    </div>`).join('');
+  grid.querySelectorAll('.book-card').forEach(card => {
+    const id = card.dataset.id;
+    card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
+    card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
+    card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
+    card.addEventListener('click', e => {
+      if (isTouch()) { openDetailModal(id); return; }
+      if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
+      else openQuickMenu(id, card);
+    });
+  });
+}
+
 // ── MY SHELF VIEW ──
 let shelfSort = 'recent';
+let shelfGenreFilter = null;
+function renderShelfGenreChips() {
+  const row = document.getElementById('shelfGenreChipRow');
+  if (!row) return;
+  const map = buildGenreMap();
+  if (!map.size) { row.style.display = 'none'; return; }
+  row.style.display = 'flex';
+  const sorted = Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+  const chips = [`<button class="ld-chip${shelfGenreFilter === null ? ' active' : ''}" data-genre="">All</button>`]
+    .concat(sorted.map(([name, arr]) => `<button class="ld-chip${shelfGenreFilter === name ? ' active' : ''}" data-genre="${escapeAttr(name)}">${escapeHtml(name)} <span style="opacity:0.65">${arr.length}</span></button>`));
+  row.innerHTML = chips.join('');
+  row.querySelectorAll('.ld-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      shelfGenreFilter = chip.dataset.genre || null;
+      renderShelfGenreChips();
+      renderShelfGrid();
+    });
+  });
+}
 function updateShelfStats() {
   const visible = books.filter(b => !isHiddenFromShelf(b));
   ['reading', 'read', 'unread'].forEach(s => {
@@ -1842,11 +1964,13 @@ function setShelfSort(s) {
   renderShelfGrid();
 }
 function renderShelfGrid() {
+  renderShelfGenreChips();
   const grid = document.getElementById('shelfGrid');
   const countEl = document.getElementById('shelfOverlayCount');
   const q = (document.getElementById('shelfSearchInput')?.value || '').toLowerCase().trim();
   let all = books.filter(b => !isHiddenFromShelf(b));
   if (q) all = all.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
+  if (shelfGenreFilter) all = all.filter(b => getBookGenres(b).includes(shelfGenreFilter));
   document.getElementById('shelfSearchClear')?.classList.toggle('visible', q.length > 0);
   all.sort((a, b) => {
     if (shelfSort === 'title') return (a.title || '').localeCompare(b.title || '');
@@ -2310,7 +2434,7 @@ function setFilter(filter) {
 }
 
 function closeDesktopNavPanels() {
-  ['listsOverlay', 'authorsListOverlay', 'profileModal'].forEach(id => {
+  ['listsOverlay', 'authorsListOverlay', 'genresListOverlay', 'profileModal'].forEach(id => {
     const panel = document.getElementById(id);
     if (panel) panel.classList.remove('open', 'nav-behind');
   });
@@ -2318,7 +2442,7 @@ function closeDesktopNavPanels() {
 }
 
 function setDesktopNavActive(activeId) {
-  ['deskNavShelf', 'deskNavLists', 'deskNavAuthors'].forEach(id => {
+  ['deskNavShelf', 'deskNavLists', 'deskNavAuthors', 'deskNavGenres'].forEach(id => {
     document.getElementById(id)?.classList.toggle('active', id === activeId);
   });
   if (activeId !== 'deskNavShelf') {
@@ -2369,6 +2493,11 @@ function initDesktopNav() {
     closeDesktopNavPanels();
     setDesktopNavActive('deskNavAuthors');
     if (typeof openAuthorsOverlay === 'function') openAuthorsOverlay();
+  });
+  bind('deskNavGenres', () => {
+    closeDesktopNavPanels();
+    setDesktopNavActive('deskNavGenres');
+    if (typeof openGenresOverlay === 'function') openGenresOverlay();
   });
   bind('deskSearchBar', openShelfSearch);
   bind('deskAddBtn', () => openBookSearch('shelf'));
