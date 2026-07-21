@@ -3329,6 +3329,8 @@ html.standalone-webapp .add-popup {
 #authorsListOverlay.open {
   pointer-events: all;
 }
+#genresListOverlay { z-index: 87; }
+#genreDetailOverlay { z-index: 88; }
 .al-shelf-sub {
   font-size: 12px; color: var(--text-muted);
   padding: 0 16px 12px; flex-shrink: 0; letter-spacing: 0.02em;
