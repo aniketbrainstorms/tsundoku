@@ -379,7 +379,10 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           authors
         </div>
-      </div>
+        <div class="sb-item" id="deskNavGenres">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor" stroke="none"/></svg>
+          genres
+        </div>
 
       <div class="sb-bottom">
         <div class="sb-divider" style="margin:0 8px 8px"></div>
@@ -1328,6 +1331,14 @@
         <span class="profile-shelf-count" id="authorsCount"></span>
         <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
+      <button class="profile-shelf-btn" onclick="openGenresOverlay()">
+        <span class="profile-shelf-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor" stroke="none"/></svg>
+        </span>
+        Genres
+        <span class="profile-shelf-count" id="genresProfileCount"></span>
+        <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
       <button class="profile-shelf-btn" onclick="openListsOverlay()">
         <span class="profile-shelf-icon">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -1415,6 +1426,7 @@
         <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;font-weight:500">unread</div>
       </div>
     </div>
+    <div id="shelfGenreChipRow" style="display:none;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 16px 12px;"></div>
     <div style="display:flex;align-items:center;gap:8px;padding:0 16px 12px;">
       <div class="search-row-input-wrap" style="flex:1">
         <span class="search-row-icon">
@@ -1666,6 +1678,46 @@
   </div>
   <div class="divider"></div>
   <div class="al-scroll" id="alScroll"></div>
+</div>
+
+<!-- GENRES LIST OVERLAY -->
+<div class="shelf-overlay nav-panel" id="genresListOverlay">
+  <div class="shelf-header">
+    <button class="shelf-back-btn" onclick="closeGenresOverlay()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back
+    </button>
+    <span class="shelf-header-title">Genres</span>
+    <button class="al-sort-btn" id="genSortBtn" onclick="toggleGenSort()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+      <span id="genSortLabel">Sort A–Z</span>
+    </button>
+  </div>
+  <p class="al-shelf-sub" id="genShelfSub"></p>
+  <div style="padding:0 16px 10px;">
+    <div class="al-search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="al-search-input" id="genSearchInput" placeholder="Search genres…" oninput="renderGenresList()" autocomplete="off" autocorrect="off" spellcheck="false" />
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="al-scroll" id="genScroll"></div>
+</div>
+
+<!-- GENRE DETAIL OVERLAY -->
+<div class="shelf-overlay nav-panel" id="genreDetailOverlay">
+  <div class="shelf-header">
+    <button class="shelf-back-btn" onclick="closeGenreDetail()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back
+    </button>
+    <span class="shelf-header-title" id="genreDetailTitle"></span>
+    <span class="shelf-header-count" id="genreDetailCount"></span>
+  </div>
+  <div class="divider"></div>
+  <div class="grid-container" id="genreDetailGridContainer">
+    <div class="book-grid" id="genreDetailGrid"></div>
+  </div>
 </div>
 
 <!-- AUTHOR PAGE OVERLAY -->
