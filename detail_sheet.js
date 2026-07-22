@@ -924,16 +924,35 @@ window.openDetailModal = async function openDetailModal(id) {
 
         // Fill missing meta fields while we have the data
         if (meta?.year && !book.year) { book.year = meta.year; apiUpdates.year = meta.year; }
-        if (meta?.genre && !book.genre) { book.genre = meta.genre; apiUpdates.genre = meta.genre; }
         if (meta?.pageCount && !book.page_count) { book.page_count = parseInt(meta.pageCount) || 0; apiUpdates.page_count = book.page_count; }
+
+        const needsGenres = !(Array.isArray(book.genres) && book.genres.length);
+        const needsThemes = !(Array.isArray(book.themes) && book.themes.length);
+        if (needsGenres || needsThemes) {
+          const ai = await fetchAiGenreThemes(book.title, book.author, desc || book.description);
+          if (ai?.genres?.length && needsGenres) {
+            book.genres = ai.genres;
+            book.genre = ai.genres.join(', ');
+            book.primary_genre = ai.genres[0];
+            apiUpdates.genres = ai.genres;
+            apiUpdates.genre = book.genre;
+            apiUpdates.primary_genre = book.primary_genre;
+          }
+          if (ai?.themes?.length && needsThemes) {
+            book.themes = ai.themes;
+            apiUpdates.themes = ai.themes;
+          }
+        }
 
         if (Object.keys(apiUpdates).length) await dbUpdate(id, apiUpdates);
 
         // Sync edit form fields
         const editGenres = document.getElementById('editGenres');
+        const editThemes = document.getElementById('editThemes');
         const editPageCount = document.getElementById('editPageCount');
         const editYear = document.getElementById('editYear');
         if (editGenres && !editGenres.value) editGenres.value = Array.isArray(book.genres) && book.genres.length ? book.genres.join(', ') : (book.genre || '');
+        if (editThemes && !editThemes.value) editThemes.value = Array.isArray(book.themes) ? book.themes.join(', ') : '';
         if (editPageCount && !editPageCount.value) editPageCount.value = book.page_count || '';
         if (editYear && !editYear.value) editYear.value = book.year || '';
 
