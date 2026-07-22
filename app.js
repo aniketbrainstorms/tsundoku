@@ -2710,39 +2710,17 @@ function closePeek() {
   if (portal) portal.classList.remove('peek-visible');
 }
 
-// ── AI LIBRARIAN ──
+// ── AI LIBRARIAN — genre + theme tagging only ──
 const aiCache = new Map();
 
-async function fetchAiLibrarian(title, author, storedDescription) {
+async function fetchAiGenreThemes(title, author, description) {
   if (!title) return null;
   const cacheKey = `${title}-${author || ''}`;
   if (aiCache.has(cacheKey)) return aiCache.get(cacheKey);
 
-  // Step 1: get description from Google Books if not already stored
-  let description = storedDescription || '';
-  if (!description) {
-    try {
-      const q = encodeURIComponent(`${title} ${author || ''}`.trim());
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=8&langRestrict=en`);
-      if (res.ok) {
-        const data = await res.json();
-        for (const item of (data.items || [])) {
-          const v = item.volumeInfo || {};
-          const lang = v.language || '';
-          const desc = v.description || '';
-          const isEn = lang === 'en' || (lang === '' && isEnglishText(desc));
-          if (desc.length >= 40 && isEn) { description = desc; break; }
-        }
-      }
-    } catch { }
-  }
-
-  // Step 2: call Gemini with title + author + description
   const prompt = `You are an AI librarian. Given this book's information, respond ONLY with a valid JSON object (no markdown, no backticks) with exactly these keys:
-- "ai_summary": a full, engaging 2-3 sentence summary of the book that makes someone want to read it
-- "genre": the primary specific sub-genre or two (e.g. "Magical Realism", "Cyberpunk", "Historical Thriller"). NEVER use the words "Fiction" or "Novel" alone.
-- "page_count": an estimated or known integer for the number of pages
-- "mood": a single evocative word for the vibe (e.g. "melancholic", "electric", "propulsive")
+- "genres": an array of 1-2 specific sub-genres (e.g. "Magical Realism", "Cyberpunk", "Historical Thriller"). NEVER use "Fiction" or "Novel" alone.
+- "themes": an array of 2-4 short thematic keywords (e.g. "War", "Identity", "Betrayal")
 
 Title: ${title}
 Author: ${author || 'Unknown'}
@@ -2765,7 +2743,7 @@ Description: ${description || 'No description available.'}`;
     if (!res.ok) {
       if (res.status === 429) {
         await new Promise(r => setTimeout(r, 15000));
-        return fetchAiLibrarian(title, author, storedDescription);
+        return fetchAiGenreThemes(title, author, description);
       }
       return null;
     }
