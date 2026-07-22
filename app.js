@@ -1,7 +1,8 @@
 const { createClient } = supabase;
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJybnJ5c3pndmN0eGFpbnF5dXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODg3NTcsImV4cCI6MjA5MDQ2NDc1N30.GkGvfR_ZlGIupbwOOl1BL5gb58M-E2LD5sD7pVl4tso';
 const sb = createClient(
   'https://rrnryszgvctxainqyuyr.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJybnJ5c3pndmN0eGFpbnF5dXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODg3NTcsImV4cCI6MjA5MDQ2NDc1N30.GkGvfR_ZlGIupbwOOl1BL5gb58M-E2LD5sD7pVl4tso'
+  SUPABASE_ANON_KEY
 );
 
 // ── NAV STACK ──
@@ -2713,7 +2714,7 @@ function closePeek() {
 const aiCache = new Map();
 
 async function fetchAiLibrarian(title, author, storedDescription) {
-  if (!window.GEMINI_API_KEY || !title) return null;
+  if (!title) return null;
   const cacheKey = `${title}-${author || ''}`;
   if (aiCache.has(cacheKey)) return aiCache.get(cacheKey);
 
@@ -2748,18 +2749,22 @@ Author: ${author || 'Unknown'}
 Description: ${description || 'No description available.'}`;
 
   try {
+    const session = (await sb.auth.getSession()).data.session;
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${window.GEMINI_API_KEY}`,
+      'https://rrnryszgvctxainqyuyr.supabase.co/functions/v1/gemini-proxy',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ prompt })
       }
     );
     if (!res.ok) {
       if (res.status === 429) {
-        const retry = parseInt(res.headers.get('Retry-After') || '0') * 1000 || 15000;
-        await new Promise(r => setTimeout(r, retry));
+        await new Promise(r => setTimeout(r, 15000));
         return fetchAiLibrarian(title, author, storedDescription);
       }
       return null;
