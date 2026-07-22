@@ -1700,6 +1700,12 @@ html.standalone-webapp .add-popup {
 /* ── MY SHELF OVERLAY */
 .shelf-overlay { position: absolute; inset: 0; background: var(--bg); z-index: 85; display: flex; flex-direction: column; overflow: hidden; pointer-events: none; }
 .shelf-overlay.open { pointer-events: all; }
+#shelfGridContainer, #genreDetailGridContainer {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#shelfGridContainer::-webkit-scrollbar, #genreDetailGridContainer::-webkit-scrollbar { display: none; }
 .shelf-header { display: flex; align-items: center; justify-content: space-between; position: relative; gap: 10px; padding: max(var(--safe-top),16px) max(var(--safe-right),16px) 14px max(var(--safe-left),16px); flex-shrink: 0; }
 .shelf-back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; padding: 6px 0; color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; flex-shrink: 0; }
 .shelf-back-btn:active { opacity: 0.65; }
