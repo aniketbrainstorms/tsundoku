@@ -3456,6 +3456,20 @@ html.standalone-webapp .add-popup {
 }
 .al-card-view .al-empty { grid-column: 1 / -1; }
 
+/* ── GENRE/THEME PIE CHART ── */
+.pie-legend { display: flex; flex-direction: column; gap: 2px; padding: 4px 4px 8px; }
+.pie-legend-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+.pie-legend-row:hover, .pie-legend-row:active { background: var(--surface2); }
+.pie-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.pie-legend-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pie-legend-count { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+.pie-slice { transition: opacity 0.15s ease; cursor: pointer; }
+.pie-slice:hover { opacity: 0.85; }
+.pie-panel { max-height: 0; overflow: hidden; transition: max-height 0.32s cubic-bezier(0.32,0.72,0,1); margin: 0 4px; }
+.pie-strip { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 10px 4px 14px; }
+.pie-strip::-webkit-scrollbar { display: none; }
+.pie-strip-cover { width: 56px; aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; flex-shrink: 0; background: var(--surface2); cursor: pointer; }
+.pie-strip-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 @media (max-width: 430px) {
   .al-search-row { gap: 6px; }
   .al-view-btn { min-width: 34px; width: 34px; padding: 0; }
