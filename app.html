@@ -383,7 +383,10 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor" stroke="none"/></svg>
           genres
         </div>
-      </div>
+        <div class="sb-item" id="deskNavThemes">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/></svg>
+          themes
+        </div>
 
       <div class="sb-bottom">
         <div class="sb-divider" style="margin:0 8px 8px"></div>
@@ -1340,6 +1343,14 @@
         <span class="profile-shelf-count" id="genresProfileCount"></span>
         <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
+      <button class="profile-shelf-btn" onclick="openThemesOverlay()">
+        <span class="profile-shelf-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/></svg>
+        </span>
+        Themes
+        <span class="profile-shelf-count" id="themesProfileCount"></span>
+        <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
       <button class="profile-shelf-btn" onclick="openListsOverlay()">
         <span class="profile-shelf-icon">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -1678,10 +1689,15 @@
     </div>
   </div>
   <div class="divider"></div>
-  <div class="al-scroll" id="alScroll"></div>
+  <div class="al-scroll" id="genPieWrap" style="display:block">
+    <div id="genPieSvg" style="padding:20px 0 8px"></div>
+    <div id="genPieLegend" class="pie-legend"></div>
+    <div id="genPiePanel" class="pie-panel"></div>
+  </div>
+  <div class="al-scroll" id="genScroll" style="display:none"></div>
 </div>
 
-<!-- GENRES LIST OVERLAY -->
+<!-- GENRE DETAIL OVERLAY -->
 <div class="shelf-overlay nav-panel" id="genresListOverlay">
   <div class="shelf-header">
     <button class="shelf-back-btn" onclick="closeGenresOverlay()">
@@ -1689,10 +1705,15 @@
       Back
     </button>
     <span class="shelf-header-title">Genres</span>
-    <button class="al-sort-btn" id="genSortBtn" onclick="toggleGenSort()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
-      <span id="genSortLabel">Sort A–Z</span>
-    </button>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button class="al-sort-btn" id="genViewToggleBtn" onclick="toggleGenView()" title="Toggle view" style="padding:6px 9px">
+        <svg id="genViewIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+      <button class="al-sort-btn" id="genSortBtn" onclick="toggleGenSort()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+        <span id="genSortLabel">Sort A–Z</span>
+      </button>
+    </div>
   </div>
   <p class="al-shelf-sub" id="genShelfSub"></p>
   <div style="padding:0 16px 10px;">
@@ -1718,6 +1739,56 @@
   <div class="divider"></div>
   <div class="grid-container" id="genreDetailGridContainer">
     <div class="book-grid" id="genreDetailGrid"></div>
+  </div>
+</div>
+
+<!-- THEMES LIST OVERLAY -->
+<div class="shelf-overlay nav-panel" id="themesListOverlay">
+  <div class="shelf-header">
+    <button class="shelf-back-btn" onclick="closeThemesOverlay()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back
+    </button>
+    <span class="shelf-header-title">Themes</span>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button class="al-sort-btn" id="themeViewToggleBtn" onclick="toggleThemeView()" title="Toggle view" style="padding:6px 9px">
+        <svg id="themeViewIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+      <button class="al-sort-btn" id="themeSortBtn" onclick="toggleThemeSort()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+        <span id="themeSortLabel">Sort A–Z</span>
+      </button>
+    </div>
+  </div>
+  <p class="al-shelf-sub" id="themeShelfSub"></p>
+  <div style="padding:0 16px 10px;">
+    <div class="al-search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="al-search-input" id="themeSearchInput" placeholder="Search themes…" oninput="renderThemesList()" autocomplete="off" autocorrect="off" spellcheck="false" />
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="al-scroll" id="themePieWrap" style="display:block">
+    <div id="themePieSvg" style="padding:20px 0 8px"></div>
+    <div id="themePieLegend" class="pie-legend"></div>
+    <div id="themePiePanel" class="pie-panel"></div>
+  </div>
+  <div class="al-scroll" id="themeScroll" style="display:none"></div>
+</div>
+
+<!-- THEME DETAIL OVERLAY -->
+<div class="shelf-overlay nav-panel" id="themeDetailOverlay">
+  <div class="shelf-header">
+    <button class="shelf-back-btn" onclick="closeThemeDetail()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back
+    </button>
+    <span class="shelf-header-title" id="themeDetailTitle"></span>
+    <span class="shelf-header-count" id="themeDetailCount"></span>
+  </div>
+  <div class="divider"></div>
+  <div class="grid-container" id="themeDetailGridContainer">
+    <div class="book-grid" id="themeDetailGrid"></div>
   </div>
 </div>
 
