@@ -2086,7 +2086,7 @@ function updateShelfStats() {
   });
 }
 function openShelfView() {
-  const si = document.getElementById('shelfSearchInput');
+  const si = document.getElementById('shelfViewSearchInput');
   if (si) { si.value = ''; document.getElementById('shelfSearchClear').classList.remove('visible'); }
   updateShelfStats();
   renderShelfGrid();
@@ -2185,7 +2185,7 @@ function renderReadNotOwnedList() {
   });
 }
 function clearShelfViewSearch() {
-  const si = document.getElementById('shelfSearchInput');
+  const si = document.getElementById('shelfViewSearchInput');
   si.value = ''; document.getElementById('shelfSearchClear').classList.remove('visible');
   renderShelfGrid(); si.focus();
 }
@@ -2215,7 +2215,7 @@ function renderShelfGrid() {
   renderShelfGenreChips();
   const grid = document.getElementById('shelfGrid');
   const countEl = document.getElementById('shelfOverlayCount');
-  const q = (document.getElementById('shelfSearchInput')?.value || '').toLowerCase().trim();
+  const q = (document.getElementById('shelfViewSearchInput')?.value || '').toLowerCase().trim();
   let all = books.filter(b => !isHiddenFromShelf(b));
   if (q) all = all.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
   if (shelfGenreFilter) all = all.filter(b => getBookGenres(b).includes(shelfGenreFilter));
@@ -4522,7 +4522,7 @@ Description: ${description || 'No description available.'}`;
         if (!item) return;
         btn.disabled = true; btn.textContent = '…';
         // Add book to main books list via dbAdd
-        const newBook = await dbAdd({ title, author, status: 'not-owned', cover_url: null, pages_read: 0, total_pages: null });
+        const newBook = await dbAdd({ title: item.title, author: item.author, status: 'not-owned', cover_url: null, pages_read: 0, total_pages: null });
         if (!newBook) { btn.disabled = false; btn.textContent = '+'; return; }
         books.unshift(newBook);
         // Link to list
