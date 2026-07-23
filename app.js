@@ -6,7 +6,7 @@ const sb = createClient(
 );
 
 // ── NAV STACK ──
-const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay', 'readNotOwnedOverlay', 'listsOverlay', 'authorsListOverlay', 'authorOverlay', 'listDetailOverlay', 'genresListOverlay', 'genreDetailOverlay'];
+const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay', 'readNotOwnedOverlay', 'listsOverlay', 'authorsListOverlay', 'authorOverlay', 'listDetailOverlay', 'genresListOverlay', 'genreDetailOverlay', 'themesListOverlay', 'themeDetailOverlay'];
 
 function navPush(prevEl, nextEl) {
   if (prevEl) prevEl.classList.add('nav-behind');
@@ -1725,10 +1725,91 @@ function buildGenreMap() {
   });
   return map;
 }
+function getBookThemes(book) {
+  if (Array.isArray(book.themes) && book.themes.length) return book.themes.map(t => (t || '').trim()).filter(Boolean);
+  return [];
+}
+function buildThemeMap() {
+  const map = new Map();
+  books.filter(b => !isHiddenFromShelf(b)).forEach(b => {
+    getBookThemes(b).forEach(t => {
+      if (!map.has(t)) map.set(t, []);
+      map.get(t).push(b);
+    });
+  });
+  return map;
+}
+
+// ── SHARED PIE CHART HELPERS (genres + themes) ──
+const PIE_PALETTE = ['#c9714a','#b0965a','#8a9a6a','#5a8a6a','#5a8a9a','#6a72a0','#9a6ac0','#c06a8a','#c0814a','#8a6a4a'];
+function hashPieColor(name) {
+  let h = 0;
+  for (const c of (name || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return PIE_PALETTE[h % PIE_PALETTE.length];
+}
+function _pieArcPath(cx, cy, r, startAngle, endAngle) {
+  const large = (endAngle - startAngle) > Math.PI ? 1 : 0;
+  const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle);
+  const x2 = cx + r * Math.cos(endAngle), y2 = cy + r * Math.sin(endAngle);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+}
+function buildPieSvgAndLegend(entries) {
+  const total = entries.reduce((s, [, arr]) => s + arr.length, 0);
+  if (!total) return { svg: '', legend: '' };
+  const r = 88, cx = 100, cy = 100;
+  let angle = -Math.PI / 2;
+  let paths = '';
+  entries.forEach(([name, arr]) => {
+    const frac = arr.length / total;
+    const sweep = Math.max(frac * Math.PI * 2, 0.001);
+    const color = hashPieColor(name);
+    paths += `<path d="${_pieArcPath(cx, cy, r, angle, angle + sweep)}" fill="${color}" data-pie-name="${escapeAttr(name)}" class="pie-slice"></path>`;
+    angle += sweep;
+  });
+  const svg = `<svg viewBox="0 0 200 200" width="188" height="188" style="display:block;margin:0 auto">${paths}</svg>`;
+  const legend = entries.map(([name, arr]) => {
+    const color = hashPieColor(name);
+    const bookWord = arr.length === 1 ? 'book' : 'books';
+    return `<div class="pie-legend-row" data-pie-name="${escapeAttr(name)}">
+      <span class="pie-legend-dot" style="background:${color}"></span>
+      <span class="pie-legend-name">${escapeHtml(name)}</span>
+      <span class="pie-legend-count">${arr.length} ${bookWord}</span>
+    </div>`;
+  }).join('');
+  return { svg, legend };
+}
+function _pieClosePanel(panelId) {
+  const panel = document.getElementById(panelId);
+  if (panel) { panel.style.maxHeight = '0px'; panel.innerHTML = ''; }
+}
+function _pieOpenPanel(panelId, map, name) {
+  const arr = (map.get(name) || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  panel.innerHTML = `<div class="pie-strip">${arr.map(b => `<div class="pie-strip-cover" data-id="${b.id}">${coverHtml(b, 14)}</div>`).join('')}</div>`;
+  panel.style.maxHeight = '160px';
+  panel.querySelectorAll('.pie-strip-cover').forEach(el => {
+    el.addEventListener('click', () => openDetailModal(el.dataset.id));
+  });
+}
+let _pieOpenName = { gen: null, theme: null };
+function _pieAttachInteractions(rootEl, map, panelId, stateKey) {
+  rootEl.querySelectorAll('[data-pie-name]').forEach(el => {
+    el.addEventListener('click', () => {
+      const name = el.dataset.pieName;
+      if (_pieOpenName[stateKey] === name) { _pieClosePanel(panelId); _pieOpenName[stateKey] = null; return; }
+      _pieOpenName[stateKey] = name;
+      _pieOpenPanel(panelId, map, name);
+    });
+  });
+}
+
 let genSort = 'az';
+let genView = 'pie';
 let genreDetailName = null;
 function openGenresOverlay() {
-  renderGenresList();
+  updateGenViewIcon();
+  renderGenresView();
   navPush(document.getElementById('profileModal'), document.getElementById('genresListOverlay'));
 }
 function closeGenresOverlay() {
@@ -1737,7 +1818,45 @@ function closeGenresOverlay() {
 function toggleGenSort() {
   genSort = genSort === 'az' ? 'count' : 'az';
   document.getElementById('genSortLabel').textContent = genSort === 'az' ? 'Sort A–Z' : 'Sort by count';
-  renderGenresList();
+  renderGenresView();
+}
+function toggleGenView() {
+  genView = genView === 'pie' ? 'list' : 'pie';
+  updateGenViewIcon();
+  renderGenresView();
+}
+function updateGenViewIcon() {
+  const el = document.getElementById('genViewIcon');
+  if (!el) return;
+  el.innerHTML = genView === 'pie'
+    ? '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'
+    : '<circle cx="12" cy="12" r="9"/><path d="M12 3v9l7 4"/>';
+}
+function renderGenresView() {
+  const pieWrap = document.getElementById('genPieWrap');
+  const listWrap = document.getElementById('genScroll');
+  if (pieWrap) pieWrap.style.display = genView === 'pie' ? 'block' : 'none';
+  if (listWrap) listWrap.style.display = genView === 'pie' ? 'none' : 'block';
+  if (genView === 'pie') renderGenresPie(); else renderGenresList();
+}
+function renderGenresPie() {
+  const map = buildGenreMap();
+  const entries = Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+  const svgWrap = document.getElementById('genPieSvg');
+  const legendWrap = document.getElementById('genPieLegend');
+  _pieClosePanel('genPiePanel'); _pieOpenName.gen = null;
+  const genresProfileCountEl = document.getElementById('genresProfileCount');
+  if (genresProfileCountEl) genresProfileCountEl.textContent = map.size ? `${map.size} genres` : '';
+  if (!entries.length) {
+    svgWrap.innerHTML = '';
+    legendWrap.innerHTML = `<div class="al-empty">📭<br>No genres yet.</div>`;
+    return;
+  }
+  const { svg, legend } = buildPieSvgAndLegend(entries);
+  svgWrap.innerHTML = svg;
+  legendWrap.innerHTML = legend;
+  _pieAttachInteractions(svgWrap, map, 'genPiePanel', 'gen');
+  _pieAttachInteractions(legendWrap, map, 'genPiePanel', 'gen');
 }
 function renderGenresList() {
   const q = (document.getElementById('genSearchInput')?.value || '').toLowerCase().trim();
@@ -1790,6 +1909,134 @@ function renderGenreDetailGrid() {
   if (countEl) countEl.textContent = list.length === 1 ? '1 book' : `${list.length} books`;
   if (!list.length) {
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>No books in this genre.</p></div>`;
+    return;
+  }
+  grid.classList.remove('reading-mode');
+  grid.innerHTML = list.map((b, i) => `
+    <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${Math.min(i, 12) * 0.035}s">
+      ${coverHtml(b)}<div class="status-dot ${b.status}"></div>
+    </div>`).join('');
+  grid.querySelectorAll('.book-card').forEach(card => {
+    const id = card.dataset.id;
+    card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
+    card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
+    card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
+    card.addEventListener('click', e => {
+      if (isTouch()) { openDetailModal(id); return; }
+      if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
+      else openQuickMenu(id, card);
+    });
+  });
+}
+
+// ── THEMES ──
+let themeSort = 'az';
+let themeView = 'pie';
+let themeDetailName = null;
+function openThemesOverlay() {
+  updateThemeViewIcon();
+  renderThemesView();
+  navPush(document.getElementById('profileModal'), document.getElementById('themesListOverlay'));
+}
+function closeThemesOverlay() {
+  navPop(document.getElementById('themesListOverlay'), document.getElementById('profileModal'));
+}
+function toggleThemeSort() {
+  themeSort = themeSort === 'az' ? 'count' : 'az';
+  document.getElementById('themeSortLabel').textContent = themeSort === 'az' ? 'Sort A–Z' : 'Sort by count';
+  renderThemesView();
+}
+function toggleThemeView() {
+  themeView = themeView === 'pie' ? 'list' : 'pie';
+  updateThemeViewIcon();
+  renderThemesView();
+}
+function updateThemeViewIcon() {
+  const el = document.getElementById('themeViewIcon');
+  if (!el) return;
+  el.innerHTML = themeView === 'pie'
+    ? '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'
+    : '<circle cx="12" cy="12" r="9"/><path d="M12 3v9l7 4"/>';
+}
+function renderThemesView() {
+  const pieWrap = document.getElementById('themePieWrap');
+  const listWrap = document.getElementById('themeScroll');
+  if (pieWrap) pieWrap.style.display = themeView === 'pie' ? 'block' : 'none';
+  if (listWrap) listWrap.style.display = themeView === 'pie' ? 'none' : 'block';
+  if (themeView === 'pie') renderThemesPie(); else renderThemesList();
+}
+function renderThemesPie() {
+  const map = buildThemeMap();
+  const entries = Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+  const svgWrap = document.getElementById('themePieSvg');
+  const legendWrap = document.getElementById('themePieLegend');
+  _pieClosePanel('themePiePanel'); _pieOpenName.theme = null;
+  const themesProfileCountEl = document.getElementById('themesProfileCount');
+  if (themesProfileCountEl) themesProfileCountEl.textContent = map.size ? `${map.size} themes` : '';
+  const sub = document.getElementById('themeShelfSub');
+  if (sub) sub.textContent = 'All themes in your shelf.';
+  if (!entries.length) {
+    svgWrap.innerHTML = '';
+    legendWrap.innerHTML = `<div class="al-empty">📭<br>No themes yet.</div>`;
+    return;
+  }
+  const { svg, legend } = buildPieSvgAndLegend(entries);
+  svgWrap.innerHTML = svg;
+  legendWrap.innerHTML = legend;
+  _pieAttachInteractions(svgWrap, map, 'themePiePanel', 'theme');
+  _pieAttachInteractions(legendWrap, map, 'themePiePanel', 'theme');
+}
+function renderThemesList() {
+  const q = (document.getElementById('themeSearchInput')?.value || '').toLowerCase().trim();
+  const map = buildThemeMap();
+  let entries = Array.from(map.entries());
+  if (q) entries = entries.filter(([name]) => name.toLowerCase().includes(q));
+  if (themeSort === 'az') entries.sort((a, b) => a[0].localeCompare(b[0]));
+  else entries.sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+
+  const sub = document.getElementById('themeShelfSub');
+  if (sub) sub.textContent = 'All themes in your shelf.';
+  const themesProfileCountEl = document.getElementById('themesProfileCount');
+  if (themesProfileCountEl) themesProfileCountEl.textContent = map.size ? `${map.size} themes` : '';
+
+  const scroll = document.getElementById('themeScroll');
+  if (!scroll) return;
+  if (!entries.length) {
+    scroll.innerHTML = `<div class="al-empty">📭<br>${q ? 'No themes match your search.' : 'No themes yet.'}</div>`;
+    return;
+  }
+  scroll.innerHTML = entries.map(([name, arr], i) => {
+    const bookWord = arr.length === 1 ? 'book' : 'books';
+    return `<div class="al-author-row" data-theme="${escapeAttr(name)}" style="animation-delay:${Math.min(i, 14) * 0.028}s">
+      <div class="al-author-avatar" style="font-size:16px">💭</div>
+      <div class="al-author-info">
+        <div class="al-author-name">${escapeHtml(name)}</div>
+        <div class="al-author-count">${arr.length} ${bookWord}</div>
+      </div>
+      <svg class="al-author-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
+  scroll.querySelectorAll('.al-author-row[data-theme]').forEach(row => {
+    row.addEventListener('click', () => openThemeDetail(row.dataset.theme));
+  });
+}
+function openThemeDetail(themeName) {
+  themeDetailName = themeName;
+  document.getElementById('themeDetailTitle').textContent = themeName;
+  renderThemeDetailGrid();
+  navPush(document.getElementById('themesListOverlay'), document.getElementById('themeDetailOverlay'));
+}
+function closeThemeDetail() {
+  navPop(document.getElementById('themeDetailOverlay'), document.getElementById('themesListOverlay'));
+}
+function renderThemeDetailGrid() {
+  const grid = document.getElementById('themeDetailGrid');
+  const countEl = document.getElementById('themeDetailCount');
+  const map = buildThemeMap();
+  const list = (map.get(themeDetailName) || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  if (countEl) countEl.textContent = list.length === 1 ? '1 book' : `${list.length} books`;
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>No books with this theme.</p></div>`;
     return;
   }
   grid.classList.remove('reading-mode');
@@ -2435,7 +2682,7 @@ function setFilter(filter) {
 }
 
 function closeDesktopNavPanels() {
-  ['listsOverlay', 'authorsListOverlay', 'genresListOverlay', 'profileModal'].forEach(id => {
+  ['listsOverlay', 'authorsListOverlay', 'genresListOverlay', 'themesListOverlay', 'profileModal'].forEach(id => {
     const panel = document.getElementById(id);
     if (panel) panel.classList.remove('open', 'nav-behind');
   });
@@ -2443,7 +2690,7 @@ function closeDesktopNavPanels() {
 }
 
 function setDesktopNavActive(activeId) {
-  ['deskNavShelf', 'deskNavLists', 'deskNavAuthors', 'deskNavGenres'].forEach(id => {
+  ['deskNavShelf', 'deskNavLists', 'deskNavAuthors', 'deskNavGenres', 'deskNavThemes'].forEach(id => {
     document.getElementById(id)?.classList.toggle('active', id === activeId);
   });
   if (activeId !== 'deskNavShelf') {
@@ -2499,6 +2746,11 @@ function initDesktopNav() {
     closeDesktopNavPanels();
     setDesktopNavActive('deskNavGenres');
     if (typeof openGenresOverlay === 'function') openGenresOverlay();
+  });
+  bind('deskNavThemes', () => {
+    closeDesktopNavPanels();
+    setDesktopNavActive('deskNavThemes');
+    if (typeof openThemesOverlay === 'function') openThemesOverlay();
   });
   bind('deskSearchBar', openShelfSearch);
   bind('deskAddBtn', () => openBookSearch('shelf'));
