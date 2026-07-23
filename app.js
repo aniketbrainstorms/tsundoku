@@ -1739,7 +1739,6 @@ function toggleGenSort() {
   document.getElementById('genSortLabel').textContent = genSort === 'az' ? 'Sort A–Z' : 'Sort by count';
   renderGenresList();
 }
-}
 function renderGenresList() {
   const q = (document.getElementById('genSearchInput')?.value || '').toLowerCase().trim();
   const map = buildGenreMap();
