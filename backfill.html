@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tsundoku · Genre/Theme Backfill</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #12100d;
+    color: #e8ddd0;
+    font-family: -apple-system, BlinkMacSystemFont, 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 60px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #c9714a;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+  .sub { font-size: 13px; color: #7a6f62; margin-bottom: 28px; }
+
+  .card {
+    background: #1e1a16;
+    border: 1px solid #2a2520;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  label { display: block; font-size: 12px; color: #7a6f62; margin-bottom: 6px; }
+  input[type=email], input[type=password] {
+    width: 100%;
+    background: #12100d;
+    border: 1.5px solid #2a2520;
+    border-radius: 9px;
+    padding: 11px 12px;
+    color: #e8ddd0;
+    font-size: 14px;
+    font-family: inherit;
+    margin-bottom: 14px;
+    outline: none;
+  }
+  input:focus { border-color: #c9714a; }
+
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: #c9714a; color: #12100d; width: 100%; }
+  .btn-primary:active:not(:disabled) { opacity: 0.85; }
+  .btn-ghost {
+    background: transparent;
+    border: 1.5px solid #2a2520;
+    color: #7a6f62;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .stat-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .stat { flex: 1; background: #12100d; border-radius: 9px; padding: 10px 12px; }
+  .stat-num { font-size: 18px; font-weight: 700; color: #c9714a; }
+  .stat-label { font-size: 10px; color: #7a6f62; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+
+  .bar-track { height: 6px; background: #2a2520; border-radius: 3px; overflow: hidden; margin-bottom: 16px; }
+  .bar-fill { height: 100%; background: #c9714a; width: 0%; transition: width 0.3s ease; }
+
+  .log {
+    background: #0e0c0a;
+    border: 1px solid #2a2520;
+    border-radius: 9px;
+    padding: 12px;
+    height: 260px;
+    overflow-y: auto;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: #a89a86;
+  }
+  .log-line { white-space: pre-wrap; word-break: break-word; }
+  .log-line.ok { color: #5da05d; }
+  .log-line.warn { color: #c9a04a; }
+  .log-line.err { color: #c96a6a; }
+
+  .footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .hint { font-size: 11px; color: #4a4038; margin-top: 10px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>tsundoku · genre/theme backfill</h1>
+  <p class="sub">Refills genres + themes for every book using Gemini. Runs entirely in this browser tab — nothing installed.</p>
+
+  <div class="card" id="loginCard">
+    <label>Email</label>
+    <input type="email" id="email" autocomplete="username" placeholder="you@example.com">
+    <label>Password</label>
+    <input type="password" id="password" autocomplete="current-password" placeholder="••••••••">
+    <button class="btn-primary" id="startBtn">Sign in & start</button>
+    <p class="hint">Credentials go straight to Supabase's auth API — the same request your app makes. Nothing is stored.</p>
+  </div>
+
+  <div class="card" id="progressCard" style="display:none">
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num" id="statDone">0</div><div class="stat-label">Done</div></div>
+      <div class="stat"><div class="stat-num" id="statRemaining">0</div><div class="stat-label">Remaining</div></div>
+      <div class="stat"><div class="stat-num" id="statFailed">0</div><div class="stat-label">Failed</div></div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+    <div class="log" id="logArea"></div>
+    <div class="footer-row">
+      <button class="btn-ghost" id="resetBtn">Reset progress</button>
+      <span class="hint" id="etaLabel" style="margin:0"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://rrnryszgvctxainqyuyr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJybnJ5c3pndmN0eGFpbnF5dXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4ODg3NTcsImV4cCI6MjA5MDQ2NDc1N30.GkGvfR_ZlGIupbwOOl1BL5gb58M-E2LD5sD7pVl4tso';
+
+const DELAY_MS = 5500;
+const RATE_LIMIT_BACKOFF_MS = 25000;
+const PROGRESS_KEY = 'tsundoku_backfill_progress_v1';
+
+let accessToken = null;
+let refreshToken = null;
+let userId = null;
+
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || { done: [], failed: [] }; }
+  catch { return { done: [], failed: [] }; }
+}
+function saveProgress(p) {
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
+}
+
+const logArea = document.getElementById('logArea');
+function log(msg, cls) {
+  const line = document.createElement('div');
+  line.className = 'log-line' + (cls ? ' ' + cls : '');
+  line.textContent = msg;
+  logArea.appendChild(line);
+  logArea.scrollTop = logArea.scrollHeight;
+}
+
+function updateStats(doneCount, remainingCount, failedCount, total) {
+  document.getElementById('statDone').textContent = doneCount;
+  document.getElementById('statRemaining').textContent = remainingCount;
+  document.getElementById('statFailed').textContent = failedCount;
+  const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+  document.getElementById('barFill').style.width = pct + '%';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function buildPrompt(title, author, description) {
+  return `You are an AI librarian. Given this book's information, respond ONLY with a valid JSON object (no markdown, no backticks) with exactly these keys:
+- "genres": an array of 1-2 specific sub-genres (e.g. "Magical Realism", "Cyberpunk", "Historical Thriller"). NEVER use "Fiction" or "Novel" alone.
+- "themes": an array of 2-4 short thematic keywords (e.g. "War", "Identity", "Betrayal")
+
+Title: ${title}
+Author: ${author || 'Unknown'}
+Description: ${description || 'No description available.'}`;
+}
+
+async function signIn(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (!res.ok || !data.access_token) throw new Error(data.error_description || data.msg || 'Login failed');
+  accessToken = data.access_token;
+  refreshToken = data.refresh_token;
+  userId = data.user.id;
+}
+
+async function refreshSession() {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+    body: JSON.stringify({ refresh_token: refreshToken })
+  });
+  const data = await res.json();
+  if (!res.ok || !data.access_token) throw new Error('Session refresh failed');
+  accessToken = data.access_token;
+  refreshToken = data.refresh_token;
+}
+
+async function fetchBooks() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/books?select=id,title,author,description,genres,themes&user_id=eq.${userId}&order=created_at.desc`,
+    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${accessToken}` } }
+  );
+  if (!res.ok) throw new Error('Could not fetch books (' + res.status + ')');
+  return res.json();
+}
+
+async function updateBook(id, updates) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/books?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(updates)
+  });
+  if (!res.ok) throw new Error('DB update failed (' + res.status + ')');
+}
+
+async function callGeminiProxy(prompt) {
+  return fetch(`${SUPABASE_URL}/functions/v1/gemini-proxy`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: JSON.stringify({ prompt })
+  });
+}
+
+async function processBook(book) {
+  const prompt = buildPrompt(book.title, book.author, book.description);
+  let attempt = 0;
+  while (attempt < 3) {
+    attempt++;
+    let res;
+    try {
+      res = await callGeminiProxy(prompt);
+    } catch (e) {
+      log(`"${book.title}" — network error: ${e.message}`, 'err');
+      return false;
+    }
+
+    if (res.status === 401) {
+      log(`"${book.title}" — session expired, refreshing…`, 'warn');
+      try { await refreshSession(); } catch (e) { log('Could not refresh session — stopping.', 'err'); throw e; }
+      continue;
+    }
+    if (res.status === 429) {
+      log(`"${book.title}" — rate limited, waiting ${RATE_LIMIT_BACKOFF_MS / 1000}s…`, 'warn');
+      await sleep(RATE_LIMIT_BACKOFF_MS);
+      continue;
+    }
+    if (!res.ok) {
+      log(`"${book.title}" — HTTP ${res.status}, skipping.`, 'err');
+      return false;
+    }
+
+    const data = await res.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(cleaned); }
+    catch { log(`"${book.title}" — could not parse response, skipping.`, 'err'); return false; }
+
+    const genres = Array.isArray(parsed.genres) ? parsed.genres.filter(Boolean) : [];
+    const themes = Array.isArray(parsed.themes) ? parsed.themes.filter(Boolean) : [];
+    if (!genres.length && !themes.length) {
+      log(`"${book.title}" — empty result, skipping.`, 'warn');
+      return false;
+    }
+
+    const updates = {};
+    if (genres.length) { updates.genres = genres; updates.genre = genres.join(', '); updates.primary_genre = genres[0]; }
+    if (themes.length) { updates.themes = themes; }
+
+    try { await updateBook(book.id, updates); }
+    catch (e) { log(`"${book.title}" — ${e.message}`, 'err'); return false; }
+
+    log(`"${book.title}" — genres: [${genres.join(', ')}] themes: [${themes.join(', ')}]`, 'ok');
+    return true;
+  }
+  return false;
+}
+
+async function runBackfill() {
+  const books = await fetchBooks();
+  log(`Found ${books.length} books.`);
+
+  const progress = loadProgress();
+  const doneSet = new Set(progress.done);
+  const remaining = books.filter(b => !doneSet.has(b.id));
+  log(`${doneSet.size} already done. ${remaining.length} to process.`);
+
+  const total = books.length;
+  updateStats(doneSet.size, remaining.length, progress.failed.length, total);
+
+  const etaLabel = document.getElementById('etaLabel');
+
+  for (let i = 0; i < remaining.length; i++) {
+    const book = remaining[i];
+    const secondsLeft = (remaining.length - i) * (DELAY_MS / 1000);
+    const mins = Math.round(secondsLeft / 60);
+    etaLabel.textContent = `~${mins} min remaining`;
+
+    const success = await processBook(book);
+    if (success) progress.done.push(book.id);
+    else progress.failed.push(book.id);
+    saveProgress(progress);
+
+    updateStats(progress.done.length, remaining.length - (i + 1), progress.failed.length, total);
+
+    if (i < remaining.length - 1) await sleep(DELAY_MS);
+  }
+
+  etaLabel.textContent = 'Done';
+  log(`\nFinished. ${progress.done.length} succeeded, ${progress.failed.length} failed/skipped.`, 'ok');
+}
+
+document.getElementById('startBtn').addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if (!email || !password) { log('Enter email and password first.', 'err'); return; }
+
+  const btn = document.getElementById('startBtn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  try {
+    await signIn(email, password);
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('progressCard').style.display = 'block';
+    log(`Signed in as ${email}.`, 'ok');
+    await runBackfill();
+  } catch (e) {
+    log('Error: ' + e.message, 'err');
+    btn.disabled = false; btn.textContent = 'Sign in & start';
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('Clear saved progress? This does not undo any tags already written — it just forgets which books were marked done, so the next run will redo everything.')) return;
+  localStorage.removeItem(PROGRESS_KEY);
+  log('Progress reset. Reload the page to start fresh.', 'warn');
+});
+</script>
+</body>
+</html>
