@@ -11,7 +11,7 @@ let gpOpenPanelIndex = null;
 let gpEntriesCache = [];
 let _gpDetailType = 'genres';
 
-const GP_PALETTE = ['#c9714a','#d68c5f','#a85c3a','#e0a276','#8f4a2e','#c4835f','#b06b3f','#e8b78f','#96502f','#d4744e'];
+// Palette generation is done per-tag via gpHashColor() below (wider warm HSL spread).
 
 const GP_ICON_PIE = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>`;
 const GP_ICON_LIST = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
@@ -23,11 +23,19 @@ const GP_ICON_LIST = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none
     #genresListOverlay .gp-tabs { display:flex; gap:8px; padding:0 16px 10px; flex-shrink:0; }
     #genresListOverlay .gp-tab { flex:1; padding:8px 0; border-radius:100px; border:1.5px solid var(--border); background:transparent; color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.18s; text-align:center; }
     #genresListOverlay .gp-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
-    .gp-pie-wrap { display:flex; justify-content:center; padding:12px 0 18px; }
+    #genScroll { position:relative; }
+    .gp-pie-wrap { display:flex; justify-content:center; padding:14px 0 20px; }
     .gp-pie-wrap svg { filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35)); }
     .gp-slice, .gp-legend-row { cursor:pointer; }
-    .gp-slice { transition:opacity 0.15s; }
-    .gp-slice:active { opacity:0.75; }
+    .gp-slice { transition:opacity 0.15s, transform 0.15s; stroke:var(--bg); stroke-width:1.5; stroke-linejoin:round; transform-box:fill-box; transform-origin:center; }
+    .gp-slice:active { opacity:0.8; transform:scale(1.025); }
+    .gp-pie-center-label { pointer-events:none; }
+    .gp-pie-center-count { font-family:'DM Sans',sans-serif; font-weight:700; fill:var(--text); }
+    .gp-pie-center-sub { font-family:'DM Sans',sans-serif; font-weight:500; fill:var(--text-muted); }
+    .gp-fastbar { position:fixed; right:2px; top:0; bottom:0; width:26px; z-index:9; opacity:0; pointer-events:none; transition:opacity 0.2s ease; touch-action:none; }
+    .gp-fastbar.visible { opacity:1; pointer-events:auto; }
+    .gp-fastbar-track { position:absolute; right:9px; top:8px; bottom:8px; width:4px; border-radius:2px; background:rgba(122,112,104,0.2); }
+    .gp-fastbar-thumb { position:absolute; right:6px; width:10px; border-radius:5px; background:var(--accent); box-shadow:0 2px 8px rgba(201,113,74,0.45); }
     .gp-legend { display:flex; flex-direction:column; gap:2px; padding-bottom:8px; }
     .gp-legend-item { border-bottom:1px solid var(--border); }
     .gp-legend-item:last-child { border-bottom:none; }
@@ -64,7 +72,12 @@ function gpHashColor(name) {
   let h = 0;
   const s = String(name || '');
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return GP_PALETTE[h % GP_PALETTE.length];
+  // Wide warm spread — deep rust → brick → terracotta → gold — so adjacent
+  // slices in a long tail rarely land on the same hue/lightness combo.
+  const hue = 6 + (h % 52);              // 6–58°
+  const sat = 46 + ((h >>> 6) % 34);     // 46–80%
+  const light = 32 + ((h >>> 13) % 34);  // 32–66%
+  return `hsl(${hue} ${sat}% ${light}%)`;
 }
 
 // ── PIE MATH ──
@@ -78,13 +91,27 @@ function gpArcPath(cx, cy, r, startAngle, endAngle) {
   const largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
   return `M ${cx} ${cy} L ${p1.x.toFixed(3)} ${p1.y.toFixed(3)} A ${r} ${r} 0 ${largeArc} 1 ${p2.x.toFixed(3)} ${p2.y.toFixed(3)} Z`;
 }
+function gpAnnulusPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
+  const po1 = gpPoint(cx, cy, rOuter, startAngle);
+  const po2 = gpPoint(cx, cy, rOuter, endAngle);
+  const pi1 = gpPoint(cx, cy, rInner, endAngle);
+  const pi2 = gpPoint(cx, cy, rInner, startAngle);
+  const largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
+  return `M ${po1.x.toFixed(3)} ${po1.y.toFixed(3)} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${po2.x.toFixed(3)} ${po2.y.toFixed(3)} L ${pi1.x.toFixed(3)} ${pi1.y.toFixed(3)} A ${rInner} ${rInner} 0 ${largeArc} 0 ${pi2.x.toFixed(3)} ${pi2.y.toFixed(3)} Z`;
+}
 
 // ── MARKUP INJECTION (once) ──
 function gpEnsureMarkup() {
   const overlay = document.getElementById('genresListOverlay');
   if (!overlay || overlay.dataset.gpInit === '1') return;
   overlay.dataset.gpInit = '1';
-  overlay.innerHTML = `
+  const fastscrollHtml = `
+    <div class="gp-fastbar" id="gpFastBar">
+      <div class="gp-fastbar-track"></div>
+      <div class="gp-fastbar-thumb" id="gpFastThumb"></div>
+    </div>
+    <div class="alpha-bubble" id="gpFastBubble"></div>`;
+  overlay.innerHTML = fastscrollHtml + `
     <div class="shelf-header">
       <button class="shelf-back-btn" onclick="closeGenresOverlay()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -113,6 +140,73 @@ function gpEnsureMarkup() {
     <div class="divider"></div>
     <div class="al-scroll" id="genScroll"></div>
   `;
+  gpInitFastScroll();
+}
+
+// ── FAST-SCROLL THUMB ──
+function gpInitFastScroll() {
+  const bar = document.getElementById('gpFastBar');
+  const thumb = document.getElementById('gpFastThumb');
+  const bubble = document.getElementById('gpFastBubble');
+  const scroll = document.getElementById('genScroll');
+  if (!bar || !thumb || !bubble || !scroll || bar.dataset.bound === '1') return;
+  bar.dataset.bound = '1';
+  let dragging = false;
+
+  function trackRect() { return bar.querySelector('.gp-fastbar-track').getBoundingClientRect(); }
+
+  function updateThumbFromScroll() {
+    const { scrollTop, scrollHeight, clientHeight } = scroll;
+    if (scrollHeight <= clientHeight + 4) { bar.classList.remove('visible'); return; }
+    const tRect = trackRect();
+    const barRect = bar.getBoundingClientRect();
+    const trackH = tRect.height;
+    const thumbH = Math.max(28, trackH * (clientHeight / scrollHeight));
+    const maxTravel = trackH - thumbH;
+    const frac = scrollTop / (scrollHeight - clientHeight);
+    thumb.style.height = thumbH + 'px';
+    thumb.style.top = ((tRect.top - barRect.top) + frac * maxTravel) + 'px';
+  }
+
+  function nearestLetter(frac) {
+    if (!gpEntriesCache.length) return '';
+    const idx = Math.min(gpEntriesCache.length - 1, Math.floor(frac * gpEntriesCache.length));
+    const name = gpEntriesCache[idx]?.[0] || '';
+    return name ? name[0].toUpperCase() : '';
+  }
+
+  function scrollToClientY(clientY) {
+    const tRect = trackRect();
+    const frac = Math.max(0, Math.min(1, (clientY - tRect.top) / tRect.height));
+    const { scrollHeight, clientHeight } = scroll;
+    scroll.scrollTop = frac * (scrollHeight - clientHeight);
+    bubble.textContent = nearestLetter(frac);
+    const bH = 52;
+    bubble.style.top = Math.max(60, Math.min(window.innerHeight - bH - 16, clientY - bH / 2)) + 'px';
+  }
+
+  bar.addEventListener('pointerdown', e => {
+    dragging = true;
+    bar.setPointerCapture(e.pointerId);
+    bubble.classList.add('show');
+    scrollToClientY(e.clientY);
+  });
+  bar.addEventListener('pointermove', e => { if (dragging) scrollToClientY(e.clientY); });
+  const endDrag = () => { dragging = false; bubble.classList.remove('show'); };
+  bar.addEventListener('pointerup', endDrag);
+  bar.addEventListener('pointercancel', endDrag);
+  scroll.addEventListener('scroll', () => { if (!dragging) updateThumbFromScroll(); }, { passive: true });
+  window._gpUpdateThumb = updateThumbFromScroll;
+}
+
+function gpRefreshFastScroll() {
+  requestAnimationFrame(() => {
+    const bar = document.getElementById('gpFastBar');
+    const scroll = document.getElementById('genScroll');
+    if (!bar || !scroll) return;
+    bar.classList.toggle('visible', scroll.scrollHeight > scroll.clientHeight + 4);
+    if (window._gpUpdateThumb) window._gpUpdateThumb();
+  });
 }
 
 // ── HEADER STATE ──
@@ -168,19 +262,29 @@ function gpRenderPie(type) {
   }
 
   const total = entries.reduce((s, [, arr]) => s + arr.length, 0);
-  const cx = 100, cy = 100, r = 86;
+  const cx = 100, cy = 100, rOuter = 92, rInner = 38;
+  const MIN_DEG = 5; // guarantees every slice, even a count-of-1 tag, is visible and tappable
+  const raw = entries.map(([, arr]) => (arr.length / total) * 360);
+  const floored = raw.map(d => Math.max(d, MIN_DEG));
+  const flooredTotal = floored.reduce((s, d) => s + d, 0);
+  const degrees = floored.map(d => (d / flooredTotal) * 360);
+
   let pathsHtml;
   if (entries.length === 1) {
-    pathsHtml = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${gpHashColor(entries[0][0])}" data-idx="0" class="gp-slice"/>`;
+    pathsHtml = `<path d="${gpAnnulusPath(cx, cy, rOuter, rInner, 0, 359.99)}" fill="${gpHashColor(entries[0][0])}" data-idx="0" class="gp-slice"/>`;
   } else {
     let cum = 0;
-    pathsHtml = entries.map(([name, arr], i) => {
-      const start = cum * 360;
-      cum += arr.length / total;
-      const end = cum * 360;
-      return `<path d="${gpArcPath(cx, cy, r, start, end)}" fill="${gpHashColor(name)}" data-idx="${i}" class="gp-slice"/>`;
+    pathsHtml = entries.map(([name], i) => {
+      const start = cum;
+      cum += degrees[i];
+      const end = cum;
+      return `<path d="${gpAnnulusPath(cx, cy, rOuter, rInner, start, end)}" fill="${gpHashColor(name)}" data-idx="${i}" class="gp-slice"/>`;
     }).join('');
   }
+  const centerLabel = `<g class="gp-pie-center-label" text-anchor="middle">
+      <text x="${cx}" y="${cy - 3}" font-size="22" class="gp-pie-center-count">${entries.length}</text>
+      <text x="${cx}" y="${cy + 15}" font-size="9" class="gp-pie-center-sub">${type === 'themes' ? 'themes' : 'genres'}</text>
+    </g>`;
 
   const legendHtml = entries.map(([name, arr], i) => `
     <div class="gp-legend-item">
@@ -195,7 +299,7 @@ function gpRenderPie(type) {
     </div>`).join('');
 
   scroll.innerHTML = `
-    <div class="gp-pie-wrap"><svg viewBox="0 0 200 200" width="188" height="188">${pathsHtml}</svg></div>
+    <div class="gp-pie-wrap"><svg viewBox="0 0 200 200" width="196" height="196">${pathsHtml}${centerLabel}</svg></div>
     <div class="gp-legend">${legendHtml}</div>
   `;
 
@@ -212,6 +316,7 @@ function gpRenderPie(type) {
   } else {
     gpOpenPanelIndex = null;
   }
+  gpRefreshFastScroll();
 }
 
 function gpTogglePanel(idx) {
@@ -254,6 +359,8 @@ function gpRenderList(type) {
   const subEl = document.getElementById('genShelfSub');
   if (subEl) subEl.textContent = type === 'themes' ? 'All themes in your shelf.' : 'All genres in your shelf.';
 
+  gpEntriesCache = entries;
+
   if (!entries.length) {
     scroll.innerHTML = `<div class="al-empty">📭<br>${q ? `No ${type} match your search.` : `No ${type} yet.`}</div>`;
     return;
@@ -274,6 +381,7 @@ function gpRenderList(type) {
   scroll.querySelectorAll('.al-author-row').forEach(row => {
     row.addEventListener('click', () => window.openGenreDetail(row.dataset.name, type));
   });
+  gpRefreshFastScroll();
 }
 
 // ── SORT TOGGLE OVERRIDE ──
