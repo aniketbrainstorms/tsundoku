@@ -174,6 +174,7 @@ function gpInitFastScroll() {
     const frac = Math.max(0, Math.min(1, (clientY - tRect.top) / tRect.height));
     const { scrollHeight, clientHeight } = scroll;
     scroll.scrollTop = frac * (scrollHeight - clientHeight);
+    updateThumbFromScroll();
   }
 
   bar.addEventListener('pointerdown', e => {
