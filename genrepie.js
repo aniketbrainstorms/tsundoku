@@ -32,7 +32,9 @@ const GP_ICON_LIST = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none
     .gp-pie-center-label { pointer-events:none; }
     .gp-pie-center-count { font-family:'DM Sans',sans-serif; font-weight:700; fill:var(--text); }
     .gp-pie-center-sub { font-family:'DM Sans',sans-serif; font-weight:500; fill:var(--text-muted); }
-    .gp-fastbar { position:fixed; right:2px; top:0; bottom:0; width:26px; z-index:9; opacity:0; pointer-events:none; transition:opacity 0.2s ease; touch-action:none; }
+    .gp-fastbar { position:fixed; right:2px; bottom:0; width:26px; z-index:9; opacity:0; pointer-events:none; transition:opacity 0.2s ease; touch-action:none; }
+    .gp-pie-sticky { flex-shrink:0; }
+    .gp-pie-sticky:empty { display:none; }
     .gp-fastbar.visible { opacity:1; pointer-events:auto; }
     .gp-fastbar-track { position:absolute; right:9px; top:8px; bottom:8px; width:4px; border-radius:2px; background:rgba(122,112,104,0.2); }
     .gp-fastbar-thumb { position:absolute; right:6px; width:10px; border-radius:5px; background:var(--accent); box-shadow:0 2px 8px rgba(201,113,74,0.45); }
@@ -138,6 +140,7 @@ function gpEnsureMarkup() {
       </div>
     </div>
     <div class="divider"></div>
+    <div class="gp-pie-sticky" id="genPieSticky"></div>
     <div class="al-scroll" id="genScroll"></div>
   `;
   gpInitFastScroll();
@@ -197,6 +200,7 @@ function gpInitFastScroll() {
   bar.addEventListener('pointercancel', endDrag);
   scroll.addEventListener('scroll', () => { if (!dragging) updateThumbFromScroll(); }, { passive: true });
   window._gpUpdateThumb = updateThumbFromScroll;
+  window.addEventListener('resize', () => gpRefreshFastScroll());
 }
 
 function gpRefreshFastScroll() {
@@ -204,6 +208,7 @@ function gpRefreshFastScroll() {
     const bar = document.getElementById('gpFastBar');
     const scroll = document.getElementById('genScroll');
     if (!bar || !scroll) return;
+    bar.style.top = scroll.getBoundingClientRect().top + 'px';
     bar.classList.toggle('visible', scroll.scrollHeight > scroll.clientHeight + 4);
     if (window._gpUpdateThumb) window._gpUpdateThumb();
   });
@@ -256,6 +261,8 @@ function gpRenderPie(type) {
   if (subEl) subEl.textContent = type === 'themes' ? 'All themes in your shelf.' : 'All genres in your shelf.';
 
   if (!entries.length) {
+    const pieStickyEmpty = document.getElementById('genPieSticky');
+    if (pieStickyEmpty) pieStickyEmpty.innerHTML = '';
     scroll.innerHTML = `<div class="al-empty">📭<br>${q ? `No ${type} match your search.` : `No ${type} yet.`}</div>`;
     gpOpenPanelIndex = null;
     return;
@@ -298,14 +305,13 @@ function gpRenderPie(type) {
       </div>
     </div>`).join('');
 
-  scroll.innerHTML = `
-    <div class="gp-pie-wrap"><svg viewBox="0 0 200 200" width="196" height="196">${pathsHtml}${centerLabel}</svg></div>
-    <div class="gp-legend">${legendHtml}</div>
-  `;
+  const pieSticky = document.getElementById('genPieSticky');
+  if (pieSticky) pieSticky.innerHTML = `<div class="gp-pie-wrap"><svg viewBox="0 0 200 200" width="196" height="196">${pathsHtml}${centerLabel}</svg></div>`;
+  scroll.innerHTML = `<div class="gp-legend">${legendHtml}</div>`;
 
   gpEntriesCache = entries;
 
-  scroll.querySelectorAll('.gp-slice, .gp-legend-row').forEach(el => {
+  document.querySelectorAll('#genPieSticky .gp-slice, #genScroll .gp-legend-row').forEach(el => {
     el.addEventListener('click', () => gpTogglePanel(+el.dataset.idx));
   });
 
@@ -349,6 +355,8 @@ function gpRenderPanelContent(idx) {
 function gpRenderList(type) {
   const scroll = document.getElementById('genScroll');
   if (!scroll) return;
+  const pieSticky = document.getElementById('genPieSticky');
+  if (pieSticky) pieSticky.innerHTML = '';
   const q = (document.getElementById('genSearchInput')?.value || '').toLowerCase().trim();
   const map = gpBuildMap(type);
   let entries = Array.from(map.entries());
