@@ -111,8 +111,7 @@ function gpEnsureMarkup() {
     <div class="gp-fastbar" id="gpFastBar">
       <div class="gp-fastbar-track"></div>
       <div class="gp-fastbar-thumb" id="gpFastThumb"></div>
-    </div>
-    <div class="alpha-bubble" id="gpFastBubble"></div>`;
+    </div>`;
   overlay.innerHTML = fastscrollHtml + `
     <div class="shelf-header">
       <button class="shelf-back-btn" onclick="closeGenresOverlay()">
@@ -150,9 +149,8 @@ function gpEnsureMarkup() {
 function gpInitFastScroll() {
   const bar = document.getElementById('gpFastBar');
   const thumb = document.getElementById('gpFastThumb');
-  const bubble = document.getElementById('gpFastBubble');
   const scroll = document.getElementById('genScroll');
-  if (!bar || !thumb || !bubble || !scroll || bar.dataset.bound === '1') return;
+  if (!bar || !thumb || !scroll || bar.dataset.bound === '1') return;
   bar.dataset.bound = '1';
   let dragging = false;
 
@@ -171,31 +169,20 @@ function gpInitFastScroll() {
     thumb.style.top = ((tRect.top - barRect.top) + frac * maxTravel) + 'px';
   }
 
-  function nearestLetter(frac) {
-    if (!gpEntriesCache.length) return '';
-    const idx = Math.min(gpEntriesCache.length - 1, Math.floor(frac * gpEntriesCache.length));
-    const name = gpEntriesCache[idx]?.[0] || '';
-    return name ? name[0].toUpperCase() : '';
-  }
-
   function scrollToClientY(clientY) {
     const tRect = trackRect();
     const frac = Math.max(0, Math.min(1, (clientY - tRect.top) / tRect.height));
     const { scrollHeight, clientHeight } = scroll;
     scroll.scrollTop = frac * (scrollHeight - clientHeight);
-    bubble.textContent = nearestLetter(frac);
-    const bH = 52;
-    bubble.style.top = Math.max(60, Math.min(window.innerHeight - bH - 16, clientY - bH / 2)) + 'px';
   }
 
   bar.addEventListener('pointerdown', e => {
     dragging = true;
     bar.setPointerCapture(e.pointerId);
-    bubble.classList.add('show');
     scrollToClientY(e.clientY);
   });
   bar.addEventListener('pointermove', e => { if (dragging) scrollToClientY(e.clientY); });
-  const endDrag = () => { dragging = false; bubble.classList.remove('show'); };
+  const endDrag = () => { dragging = false; };
   bar.addEventListener('pointerup', endDrag);
   bar.addEventListener('pointercancel', endDrag);
   scroll.addEventListener('scroll', () => { if (!dragging) updateThumbFromScroll(); }, { passive: true });
