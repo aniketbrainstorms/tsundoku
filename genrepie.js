@@ -27,7 +27,7 @@ const GP_ICON_LIST = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none
     .gp-pie-wrap { display:flex; justify-content:center; padding:14px 0 20px; }
     .gp-pie-wrap svg { filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35)); }
     .gp-slice, .gp-legend-row { cursor:pointer; }
-    .gp-slice { transition:opacity 0.15s, transform 0.15s; stroke:var(--bg); stroke-width:1.5; stroke-linejoin:round; transform-box:fill-box; transform-origin:center; }
+    .gp-slice { transition:opacity 0.15s, transform 0.15s; stroke:none; transform-box:fill-box; transform-origin:center; }
     .gp-slice:active { opacity:0.8; transform:scale(1.025); }
     .gp-pie-center-label { pointer-events:none; }
     .gp-pie-center-count { font-family:'DM Sans',sans-serif; font-weight:700; fill:var(--text); }
