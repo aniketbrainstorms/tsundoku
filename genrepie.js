@@ -81,6 +81,15 @@ function gpHashColor(name) {
   const light = 32 + ((h >>> 13) % 34);  // 32–66%
   return `hsl(${hue} ${sat}% ${light}%)`;
 }
+function gpHashColorGradient(name) {
+  let h = 0;
+  const s = String(name || '');
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  const hue = 6 + (h % 52);
+  const sat = 46 + ((h >>> 6) % 34);
+  const light = 32 + ((h >>> 13) % 34);
+  return { from: `hsl(${hue} ${sat}% ${Math.min(light + 16, 78)}%)`, to: `hsl(${hue} ${sat}% ${Math.max(light - 14, 18)}%)` };
+}
 
 // ── PIE MATH ──
 function gpPoint(cx, cy, r, angleDeg) {
@@ -264,17 +273,23 @@ function gpRenderPie(type) {
   const flooredTotal = floored.reduce((s, d) => s + d, 0);
   const degrees = floored.map(d => (d / flooredTotal) * 360);
 
-  let pathsHtml;
+  let pathsHtml, gradientDefs;
   if (entries.length === 1) {
-    pathsHtml = `<path d="${gpAnnulusPath(cx, cy, rOuter, rInner, 0, 359.99)}" fill="${gpHashColor(entries[0][0])}" data-idx="0" class="gp-slice"/>`;
+    const g0 = gpHashColorGradient(entries[0][0]);
+    gradientDefs = `<radialGradient id="gpGrad-0" cx="50%" cy="50%" r="65%"><stop offset="0%" stop-color="${g0.from}"/><stop offset="100%" stop-color="${g0.to}"/></radialGradient>`;
+    pathsHtml = `<path d="${gpArcPath(cx, cy, rOuter, 0, 359.99)}" fill="url(#gpGrad-0)" data-idx="0" class="gp-slice"/>`;
   } else {
     let cum = 0;
+    const grads = [];
     pathsHtml = entries.map(([name], i) => {
       const start = cum;
       cum += degrees[i];
       const end = cum;
-      return `<path d="${gpAnnulusPath(cx, cy, rOuter, rInner, start, end)}" fill="${gpHashColor(name)}" data-idx="${i}" class="gp-slice"/>`;
+      const g = gpHashColorGradient(name);
+      grads.push(`<radialGradient id="gpGrad-${i}" cx="50%" cy="50%" r="65%"><stop offset="0%" stop-color="${g.from}"/><stop offset="100%" stop-color="${g.to}"/></radialGradient>`);
+      return `<path d="${gpArcPath(cx, cy, rOuter, start, end)}" fill="url(#gpGrad-${i})" data-idx="${i}" class="gp-slice"/>`;
     }).join('');
+    gradientDefs = grads.join('');
   }
   const centerLabel = `<g class="gp-pie-center-label" text-anchor="middle">
       <text x="${cx}" y="${cy - 3}" font-size="22" class="gp-pie-center-count">${entries.length}</text>
@@ -294,7 +309,7 @@ function gpRenderPie(type) {
     </div>`).join('');
 
   const pieSticky = document.getElementById('genPieSticky');
-  if (pieSticky) pieSticky.innerHTML = `<div class="gp-pie-wrap"><svg viewBox="0 0 200 200" width="196" height="196">${pathsHtml}${centerLabel}</svg></div>`;
+  if (pieSticky) pieSticky.innerHTML = `<div class="gp-pie-wrap"><svg viewBox="0 0 200 200" width="196" height="196"><defs>${gradientDefs}</defs>${pathsHtml}${centerLabel}</svg></div>`;
   scroll.innerHTML = `<div class="gp-legend">${legendHtml}</div>`;
 
   gpEntriesCache = entries;
