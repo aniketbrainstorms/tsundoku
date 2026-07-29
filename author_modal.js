@@ -195,26 +195,26 @@ function authorFallback(authorName) {
   };
 }
 
-async function _fetchAuthorQuote(authorName) {
+async function _fetchAuthorBio(authorName) {
+  const prompt = `You are a literary reference assistant. Write a short, factual 2-3 sentence description of the author "${authorName}" — their notable style, themes, and place in literature. Do not quote their work. Respond with plain text only, no markdown, no surrounding quotation marks.`;
   try {
-    const searchRes = await fetch(
-      `https://en.wikiquote.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(authorName)}&srlimit=3&format=json&origin=*`
+    const session = (await sb.auth.getSession()).data.session;
+    const res = await fetch(
+      'https://rrnryszgvctxainqyuyr.supabase.co/functions/v1/gemini-proxy',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ prompt })
+      }
     );
-    const searchData = await searchRes.json();
-    const pages = searchData?.query?.search || [];
-    if (!pages.length) return '';
-    const match = pages.find(p => p.title.toLowerCase() === authorName.toLowerCase()) || pages[0];
-    const parseRes = await fetch(
-      `https://en.wikiquote.org/w/api.php?action=parse&page=${encodeURIComponent(match.title)}&prop=text&format=json&origin=*`
-    );
-    const parseData = await parseRes.json();
-    const html = parseData?.parse?.text?.['*'];
-    if (!html) return '';
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    doc.querySelectorAll('li ul, li ol, sup, .reference, .mw-editsection').forEach(el => el.remove());
-    return [...doc.querySelectorAll('li')]
-      .map(li => li.textContent.trim().replace(/\s+/g, ' '))
-      .find(t => t.length >= 50 && t.length <= 280 && !/^\[|\{\{|^[0-9]/.test(t)) || '';
+    if (!res.ok) return '';
+    const data = await res.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return raw.trim().replace(/^["']|["']$/g, '');
   } catch {}
   return '';
 }
@@ -232,7 +232,7 @@ async function fetchAuthorProfile(authorName) {
     if (data) {
       const profile = { name: data.name || authorName, image: data.image || '', intro: '', quote: data.quote || '', works: [] };
       if (!profile.quote) {
-        profile.quote = await _fetchAuthorQuote(authorName);
+        profile.quote = await _fetchAuthorBio(authorName);
         if (profile.quote && currentUser) {
           sb.from('authors').upsert({ name_key: cacheKey, name: profile.name, image: profile.image, quote: profile.quote, user_id: currentUser.id }, { onConflict: 'name_key' }).then(() => {});
         }
@@ -307,8 +307,8 @@ async function fetchAuthorProfile(authorName) {
     } catch {}
   }
 
-  // 3. Fetch quote
-  if (!profile.quote) profile.quote = await _fetchAuthorQuote(authorName);
+  // 3. Fetch bio
+  if (!profile.quote) profile.quote = await _fetchAuthorBio(authorName);
 
   // 4. Save to Supabase (fire and forget)
   if (currentUser) {
@@ -783,11 +783,11 @@ function hydrateAuthorHeader(profile, rows) {
   const quoteCard = document.getElementById('authorQuoteCard');
   const quoteText = document.getElementById('authorQuoteText');
   const quoteByline = document.getElementById('authorQuoteByline');
-  const quote = profile.quote || authorFallback(profile.name).quote || '';
+  const bio = profile.quote || authorFallback(profile.name).quote || '';
   if (quoteCard && quoteText && quoteByline) {
-    quoteCard.style.display = quote ? 'block' : 'none';
-    quoteText.textContent = quote;
-    quoteByline.textContent = quote ? `- ${profile.name}` : '';
+    quoteCard.style.display = bio ? 'block' : 'none';
+    quoteText.textContent = bio;
+    quoteByline.textContent = '';
   }
   renderAuthorPhoto(profile);
 }
