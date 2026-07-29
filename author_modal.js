@@ -439,18 +439,25 @@ async function _saveWikiCoverToDB(authorKey, titleKey, coverUrl) {
   } catch {}
 }
 
+let _gbCooldownUntil = 0;
 async function _fetchCoverForWork(title, authorName) {
-  // 1. Try Google Books — best cover quality
+  // 1. Try Google Books — best cover quality (skip if we recently got rate-limited)
+  if (Date.now() < _gbCooldownUntil) {
+    // fall through to Open Library below
+  } else {
   try {
     const q = encodeURIComponent(`intitle:"${title}" inauthor:"${authorName}"`);
     const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1&fields=items(volumeInfo(imageLinks))`);
-    if (res.ok) {
+    if (res.status === 429) {
+      _gbCooldownUntil = Date.now() + 60000; // back off for 60s
+    } else if (res.ok) {
       const data = await res.json();
       const links = data?.items?.[0]?.volumeInfo?.imageLinks;
       const url = links?.thumbnail || links?.smallThumbnail;
       if (url) return url.replace('http://', 'https://').replace('&edge=curl', '').replace('zoom=1', 'zoom=2');
     }
   } catch {}
+  }
 
   // 2. Fallback: Open Library cover search
   try {
@@ -818,9 +825,12 @@ async function openAuthorPage(authorName, callerEl) {
   // Merge Wikipedia works as wishlist entries for titles not already on shelf
   if (wikiWorks.length) {
     const existingTitles = freshRows.map(r => r.title);
+    const seenWikiKeys = new Set();
     wikiWorks.forEach(work => {
       const alreadyOwned = existingTitles.some(t => titlesLikelySame(t, work.title));
-      if (!alreadyOwned) {
+      const wikiKey = normalizeBookTitle(work.title);
+      if (!alreadyOwned && !seenWikiKeys.has(wikiKey)) {
+        seenWikiKeys.add(wikiKey);
         freshRows.push({
           title: work.title,
           year: work.year || '',
