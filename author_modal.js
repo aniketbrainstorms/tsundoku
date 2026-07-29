@@ -221,8 +221,8 @@ async function _fetchAuthorBio(authorName) {
 
 async function fetchAuthorProfile(authorName) {
   const cacheKey = normalizeAuthorText(authorName);
-  // Only use cache if it has a quote — otherwise re-fetch from Supabase
-  if (_authorCache[cacheKey]?.image || _authorCache[cacheKey]?.quote) return _authorCache[cacheKey];
+  // Only use cache if it has a quote — an image alone shouldn't block a bio retry
+  if (_authorCache[cacheKey]?.quote) return _authorCache[cacheKey];
 
   // 1. Try Supabase first (wait for auth session to restore)
   try {
