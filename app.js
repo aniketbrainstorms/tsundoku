@@ -2741,8 +2741,8 @@ Description: ${description || 'No description available.'}`;
       }
     );
     if (!res.ok) {
-      if (res.status === 429) {
-        await new Promise(r => setTimeout(r, 15000));
+      if (res.status === 429 || res.status === 504) {
+        await new Promise(r => setTimeout(r, res.status === 504 ? 5000 : 15000));
         return fetchAiGenreThemes(title, author, description);
       }
       return null;
