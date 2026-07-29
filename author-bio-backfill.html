@@ -289,6 +289,11 @@ async function processAuthor(author) {
       await sleep(RATE_LIMIT_BACKOFF_MS);
       continue;
     }
+    if (res.status === 504) {
+      log(`"${author.name}" — Gemini timed out, retrying…`, 'warn');
+      await sleep(5000);
+      continue;
+    }
     if (!res.ok) {
       log(`"${author.name}" — HTTP ${res.status}, skipping.`, 'err');
       return false;
