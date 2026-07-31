@@ -213,7 +213,7 @@ async function handleForgotPassword() {
   errEl.style.color = 'var(--green)'; errEl.textContent = 'reset link sent — check your inbox';
 }
 async function handleGoogleAuth() {
-  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: 'https://aniketbrainstorms.github.io/tsundoku/' } });
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: 'https://aniketbrainstorms.github.io/tsundoku/app.html' } });
   if (error) showToast(error.message);
 }
 async function handleResend() {
