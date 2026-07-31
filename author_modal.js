@@ -709,7 +709,7 @@ function renderAuthorRows(rows) {
     const statusClass = row.status === 'not-owned' ? 'not-owned' : (row.status || 'unread');
     // In wishlist view the pill is redundant — only show it in 'all' view
     const showPill = !isWishlistView;
-    const statusText = isWikiEntry ? 'wishlist' : (row.status === 'not-owned' ? 'not owned' : (STATUS_LABELS[row.status] || 'unread'));
+    const statusText = isWikiEntry ? 'Wishlist' : (row.status === 'not-owned' ? 'Wishlist' : (STATUS_LABELS[row.status] || 'unread'));
     const cover = row.cover
       ? `<img src="${escapeAttr(row.cover)}" alt="" onerror="this.parentElement.innerHTML=''">`
       : makePlaceholder({ id: row.title }, 16);
