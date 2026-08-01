@@ -1731,7 +1731,9 @@
       Back
     </button>
     <span class="author-header-label"></span>
-    <div style="width:60px"></div>
+    <button class="author-more-btn" id="authorMoreBtn" onclick="openAuthorPhotoModal()" aria-label="Author photo options">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
+    </button>
   </div>
 
   <!-- Scrollable body -->
@@ -1739,33 +1741,60 @@
 
     <!-- Hero -->
     <div class="author-hero">
-      <div class="author-hero-top">
-        <div class="author-photo-wrap" id="authorPhotoWrap">
-          <div class="author-photo-fallback">?</div>
-        </div>
-        <div class="author-hero-info">
-          <div class="author-eyebrow">Author</div>
-          <div class="author-name" id="authorName"></div>
-          <div class="author-lib-pill" id="authorLibraryCount"></div>
-        </div>
+      <div class="author-hero-branch author-hero-branch--l" aria-hidden="true">
+        <svg width="140" height="90" viewBox="0 0 140 90" fill="none"><path d="M4 30 Q40 20 70 34 Q100 46 136 40" stroke="rgba(201,113,74,0.28)" stroke-width="1.2"/><path d="M20 27 l-10 -8 M30 30 l-9 -9 M42 33 l-8 -10 M56 36 l-7 -10 M70 38 l-6 -10 M84 40 l-6 -9 M98 41 l-5 -9" stroke="rgba(201,113,74,0.22)" stroke-width="1"/></svg>
       </div>
-
-      <!-- Bio -->
-      <div class="author-quote-card" id="authorQuoteCard" style="display:none">
-        <p class="author-quote-text" id="authorQuoteText"></p>
-        <p class="author-quote-byline" id="authorQuoteByline"></p>
+      <div class="author-photo-glow" aria-hidden="true"></div>
+      <div class="author-photo-wrap" id="authorPhotoWrap">
+        <div class="author-photo-fallback">?</div>
+      </div>
+      <div class="author-name" id="authorName"></div>
+      <div class="author-subtitle" id="authorSubtitle" style="display:none"></div>
+      <div class="author-lib-pill" id="authorLibraryCount">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span id="authorLibraryCountText"></span>
       </div>
     </div>
 
-    <!-- Quote card -->
-    <div class="author-quote-card" id="authorQuoteCard" style="display:none">
+    <div class="author-divider"></div>
+
+    <!-- About / bio -->
+    <div class="author-about-card" id="authorQuoteCard" style="display:none">
+      <div class="author-about-heading" id="authorAboutHeading">About</div>
       <p class="author-quote-text" id="authorQuoteText"></p>
-      <p class="author-quote-byline" id="authorQuoteByline"></p>
+      <button class="author-readmore-btn" id="authorReadMoreBtn" onclick="toggleAuthorBio()" style="display:none">
+        <span id="authorReadMoreLabel">Read More</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
     </div>
+
+    <div class="author-divider"></div>
+
+    <!-- Stats -->
+    <div class="author-stats-row" id="authorStatsRow">
+      <div class="author-stat"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="10" y1="6" x2="10" y2="18"/></svg><span class="author-stat-num" id="authorStatBooks">0</span><span class="author-stat-label">Books</span></div>
+      <div class="author-stat-sep"></div>
+      <div class="author-stat"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span class="author-stat-num" id="authorStatReading">0</span><span class="author-stat-label">Reading</span></div>
+      <div class="author-stat-sep"></div>
+      <div class="author-stat"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg><span class="author-stat-num" id="authorStatRead">0</span><span class="author-stat-label">Read</span></div>
+      <div class="author-stat-sep"></div>
+      <div class="author-stat"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg><span class="author-stat-num" id="authorStatUnread">0</span><span class="author-stat-label">Unread</span></div>
+    </div>
+
+    <div class="author-divider" id="authorGenresDivider" style="display:none"></div>
+
+    <!-- Genres -->
+    <div class="author-genres-section" id="authorGenresSection" style="display:none">
+      <div class="author-section-heading">Genres</div>
+      <div class="author-genres-row" id="authorGenresRow"></div>
+    </div>
+
+    <div class="author-divider"></div>
 
     <!-- Books section -->
     <div class="author-books-header">
-      <span class="author-books-title" id="authorBooksTitle">In Your Library</span>
+      <span class="author-books-title" id="authorBooksTitle">Library</span>
+      <span class="author-books-count" id="authorBooksCount"></span>
     </div>
 
     <!-- Filter chips -->
