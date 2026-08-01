@@ -331,10 +331,13 @@
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         </div>
         <p class="auth-confirm-title">check your inbox</p>
-        <p class="auth-confirm-body">we've sent a confirmation link to</p>
+        <p class="auth-confirm-body">we've sent a 6-digit code to</p>
         <div class="auth-confirm-email" id="authConfirmEmailPill"></div>
-        <p class="auth-confirm-body">click the link to activate your account. check spam if you don't see it.</p>
-        <p class="auth-error auth-resend-row" id="authResendMsg">didn't get it? <button class="auth-resend-btn" onclick="handleResend()">resend email</button></p>
+        <p class="auth-field-label">Verification code</p>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="auth-input" id="authOtpInput" placeholder="123456" autocomplete="one-time-code" oninput="onAuthOtpInput()" style="text-align:center;letter-spacing:0.3em;font-size:18px" />
+        <p class="auth-error" id="authOtpError"></p>
+        <button class="auth-btn" id="authOtpVerifyBtn" onclick="handleVerifyOtp()">verify & continue</button>
+        <p class="auth-error auth-resend-row" id="authResendMsg">didn't get it? <button class="auth-resend-btn" onclick="handleResend()">resend code</button></p>
         <button class="auth-btn ghost" onclick="hideForgotPanel(); hideConfirmPanel()">back to sign in</button>
       </div>
     </div>
