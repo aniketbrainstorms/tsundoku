@@ -224,6 +224,22 @@ async function handleResend() {
   if (btn) { btn.disabled = false; btn.textContent = 'resend email'; }
   showToast('confirmation email resent');
 }
+function onAuthOtpInput() {
+  const input = document.getElementById('authOtpInput');
+  input.value = input.value.replace(/\D/g, '').slice(0, 6);
+  if (input.value.length === 6) handleVerifyOtp();
+}
+async function handleVerifyOtp() {
+  const email = document.getElementById('authConfirmEmailPill').textContent;
+  const token = document.getElementById('authOtpInput').value.trim();
+  const errEl = document.getElementById('authOtpError');
+  const btn = document.getElementById('authOtpVerifyBtn');
+  if (!token || token.length !== 6) { errEl.style.color = '#c06060'; errEl.textContent = 'enter the 6-digit code.'; return; }
+  btn.disabled = true; btn.textContent = 'verifying…'; errEl.textContent = '';
+  const { error } = await sb.auth.verifyOtp({ email, token, type: 'signup' });
+  btn.disabled = false; btn.textContent = 'verify & continue';
+  if (error) { errEl.style.color = '#c06060'; errEl.textContent = error.message || 'invalid or expired code.'; return; }
+}
 async function handleAuth() {
   const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value;
@@ -242,8 +258,11 @@ async function handleAuth() {
   if (error) { errEl.style.color = '#c06060'; errEl.textContent = error.message; return; }
   if (authMode === 'signup') {
     document.getElementById('authConfirmEmailPill').textContent = email;
+    document.getElementById('authOtpInput').value = '';
+    document.getElementById('authOtpError').textContent = '';
     document.getElementById('authPanel').style.display = 'none';
     document.getElementById('authConfirmPanel').style.display = 'block';
+    setTimeout(() => document.getElementById('authOtpInput').focus(), 350);
   }
 }
 async function signOut() {
