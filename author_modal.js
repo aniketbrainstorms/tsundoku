@@ -715,14 +715,16 @@ function renderAuthorRows(rows) {
       : makePlaceholder({ id: row.title }, 16);
     // Only show description if it's genuinely meaningful (user-added, not filler)
     const desc = (!isWikiEntry && row.description) ? `<p class="author-book-desc">${escapeHtml(row.description)}</p>` : '';
-    const meta = [row.year, row.genre || 'Novel'].filter(Boolean).join(' · ');
+    const metaYear = row.year ? `<span class="author-meta-year">${escapeHtml(row.year)}</span>` : '';
+    const metaGenre = escapeHtml(row.genre || 'Novel');
+    const metaSep = metaYear ? ' · ' : '';
     // Wiki rows get a subtle tap hint
     const wikiHint = isWikiEntry ? `<span class="author-wiki-hint">tap to add</span>` : '';
     return `<div class="author-book-row${isWikiEntry ? ' author-book-row--wiki' : ''}" data-author-book="${escapeAttr(row.bookId || '')}" data-wiki-title="${isWikiEntry ? escapeAttr(row.title) : ''}" style="animation-delay:${Math.min(i,12)*0.025}s">
       <div class="author-book-cover">${cover}</div>
       <div class="author-book-info">
         <div class="author-book-title">${escapeHtml(row.title)}</div>
-        <div class="author-book-meta"><span>${escapeHtml(meta)}</span>${wikiHint}</div>
+        <div class="author-book-meta">${metaYear}${metaSep}${metaGenre}${wikiHint}</div>
         ${desc}
       </div>
       ${showPill ? `<span class="author-status-pill ${statusClass}">${statusText}</span>` : ''}
@@ -776,20 +778,72 @@ function renderAuthorRows(rows) {
 
 function hydrateAuthorHeader(profile, rows) {
   document.getElementById('authorName').textContent = profile.name;
-  document.getElementById('authorBooksTitle').textContent = `In Your Library`;
+  document.getElementById('authorBooksTitle').textContent = `Library`;
   const ownedRows = rows.filter(r => r.status !== 'not-owned');
   const countText = ownedRows.length === 1 ? `1 book in your library` : `${ownedRows.length} books in your library`;
-  document.getElementById('authorLibraryCount').textContent = countText;
+  const countEl = document.getElementById('authorLibraryCountText');
+  if (countEl) countEl.textContent = countText;
+  const booksCountEl = document.getElementById('authorBooksCount');
+  if (booksCountEl) booksCountEl.textContent = ownedRows.length === 1 ? '1 Book' : `${ownedRows.length} Books`;
+
+  const readingCount = ownedRows.filter(r => r.status === 'reading').length;
+  const readCount = ownedRows.filter(r => r.status === 'read').length;
+  const unreadCount = ownedRows.filter(r => r.status === 'unread').length;
+  const setStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setStat('authorStatBooks', ownedRows.length);
+  setStat('authorStatReading', readingCount);
+  setStat('authorStatRead', readCount);
+  setStat('authorStatUnread', unreadCount);
+
+  const genresRow = document.getElementById('authorGenresRow');
+  const genresSection = document.getElementById('authorGenresSection');
+  const genresDivider = document.getElementById('authorGenresDivider');
+  const genreSet = [];
+  ownedRows.forEach(r => {
+    (r.genre || '').split(',').map(g => g.trim()).filter(Boolean).forEach(g => {
+      if (!genreSet.includes(g)) genreSet.push(g);
+    });
+  });
+  if (genresRow && genresSection && genresDivider) {
+    if (genreSet.length) {
+      genresRow.innerHTML = genreSet.map(g => `<span class="author-genre-pill">${escapeHtml(g)}</span>`).join('');
+      genresSection.style.display = 'block';
+      genresDivider.style.display = 'block';
+    } else {
+      genresSection.style.display = 'none';
+      genresDivider.style.display = 'none';
+    }
+  }
+
   const quoteCard = document.getElementById('authorQuoteCard');
   const quoteText = document.getElementById('authorQuoteText');
-  const quoteByline = document.getElementById('authorQuoteByline');
+  const readMoreBtn = document.getElementById('authorReadMoreBtn');
+  const aboutHeading = document.getElementById('authorAboutHeading');
+  if (aboutHeading) aboutHeading.textContent = `About ${profile.name}`;
   const bio = profile.quote || authorFallback(profile.name).quote || '';
-  if (quoteCard && quoteText && quoteByline) {
+  if (quoteCard && quoteText) {
     quoteCard.style.display = bio ? 'block' : 'none';
     quoteText.textContent = bio;
-    quoteByline.textContent = '';
+    quoteText.classList.remove('expanded');
+    if (readMoreBtn) {
+      readMoreBtn.style.display = 'none';
+      document.getElementById('authorReadMoreLabel').textContent = 'Read More';
+      requestAnimationFrame(() => {
+        if (quoteText.scrollHeight > quoteText.clientHeight + 2) {
+          readMoreBtn.style.display = 'inline-flex';
+        }
+      });
+    }
   }
   renderAuthorPhoto(profile);
+}
+
+function toggleAuthorBio() {
+  const quoteText = document.getElementById('authorQuoteText');
+  const label = document.getElementById('authorReadMoreLabel');
+  if (!quoteText || !label) return;
+  const expanded = quoteText.classList.toggle('expanded');
+  label.textContent = expanded ? 'Show Less' : 'Read More';
 }
 
 async function openAuthorPage(authorName, callerEl) {
