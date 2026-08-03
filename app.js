@@ -153,23 +153,20 @@ async function uploadAvatar(file) {
   const base = sb.storage.from('covers').getPublicUrl(path).data.publicUrl;
   return `${base}?t=${Date.now()}`;
 }
-async function handleAvatarUpload(e) {
+function handleAvatarUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
+  openAvatarCropModal(file);
+  e.target.value = '';
+}
+
+async function finishAvatarUpload(file) {
   if (avatarUploading) return;
   avatarUploading = true;
-  const prevUrl = userProfile?.avatar_url || null;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const el = document.getElementById('profileAvatarLarge');
-    if (el) el.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
-  };
-  reader.readAsDataURL(file);
   const url = await uploadAvatar(file);
   if (!url) {
     avatarUploading = false;
     showToast('Could not upload photo');
-    renderUserAvatars();
     return;
   }
   const payload = { user_id: currentUser.id, avatar_url: url };
@@ -177,13 +174,101 @@ async function handleAvatarUpload(e) {
   avatarUploading = false;
   if (error) {
     showToast(error.message || 'Could not save photo');
-    renderUserAvatars();
     return;
   }
   userProfile = data;
   renderUserAvatars();
   showToast('Profile photo updated ✓');
-  e.target.value = '';
+}
+
+// ── AVATAR CROPPER ──
+let acFile = null, acNaturalW = 0, acNaturalH = 0, acBaseScale = 1, acZoomMult = 1;
+let acOffsetX = 0, acOffsetY = 0, acDragging = false, acStartX = 0, acStartY = 0, acStartOffX = 0, acStartOffY = 0;
+const AC_STAGE = 260, AC_CANVAS = 512;
+
+function openAvatarCropModal(file) {
+  acFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('acImg');
+    img.onload = () => {
+      acNaturalW = img.naturalWidth;
+      acNaturalH = img.naturalHeight;
+      acBaseScale = Math.max(AC_STAGE / acNaturalW, AC_STAGE / acNaturalH);
+      acZoomMult = 1;
+      document.getElementById('acZoom').value = 100;
+      acOffsetX = (AC_STAGE - acNaturalW * acBaseScale) / 2;
+      acOffsetY = (AC_STAGE - acNaturalH * acBaseScale) / 2;
+      acApplyTransform();
+      acInitDrag();
+      document.getElementById('avatarCropModal').classList.add('visible');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function acApplyTransform() {
+  const img = document.getElementById('acImg');
+  const scale = acBaseScale * acZoomMult;
+  img.style.width = (acNaturalW * scale) + 'px';
+  img.style.height = (acNaturalH * scale) + 'px';
+  img.style.transform = `translate(${acOffsetX}px, ${acOffsetY}px)`;
+}
+function acClampOffset() {
+  const scale = acBaseScale * acZoomMult;
+  const w = acNaturalW * scale, h = acNaturalH * scale;
+  const minX = AC_STAGE - w, minY = AC_STAGE - h;
+  acOffsetX = Math.min(0, Math.max(minX, acOffsetX));
+  acOffsetY = Math.min(0, Math.max(minY, acOffsetY));
+}
+function acOnZoom() {
+  const val = +document.getElementById('acZoom').value;
+  const oldScale = acBaseScale * acZoomMult;
+  acZoomMult = val / 100;
+  const newScale = acBaseScale * acZoomMult;
+  const cx = AC_STAGE / 2, cy = AC_STAGE / 2;
+  acOffsetX = cx - ((cx - acOffsetX) / oldScale) * newScale;
+  acOffsetY = cy - ((cy - acOffsetY) / oldScale) * newScale;
+  acClampOffset();
+  acApplyTransform();
+}
+function acInitDrag() {
+  const stage = document.getElementById('acStage');
+  stage.onpointerdown = e => {
+    acDragging = true;
+    acStartX = e.clientX; acStartY = e.clientY;
+    acStartOffX = acOffsetX; acStartOffY = acOffsetY;
+    stage.setPointerCapture(e.pointerId);
+    stage.style.cursor = 'grabbing';
+  };
+  stage.onpointermove = e => {
+    if (!acDragging) return;
+    acOffsetX = acStartOffX + (e.clientX - acStartX);
+    acOffsetY = acStartOffY + (e.clientY - acStartY);
+    acClampOffset();
+    acApplyTransform();
+  };
+  const endDrag = () => { acDragging = false; stage.style.cursor = 'grab'; };
+  stage.onpointerup = endDrag;
+  stage.onpointercancel = endDrag;
+}
+function closeAvatarCropModal() {
+  document.getElementById('avatarCropModal').classList.remove('visible');
+  acFile = null;
+}
+async function acSaveCrop() {
+  const scale = acBaseScale * acZoomMult;
+  const factor = AC_CANVAS / AC_STAGE;
+  const canvas = document.createElement('canvas');
+  canvas.width = AC_CANVAS; canvas.height = AC_CANVAS;
+  const ctx = canvas.getContext('2d');
+  const img = document.getElementById('acImg');
+  ctx.drawImage(img, acOffsetX * factor, acOffsetY * factor, acNaturalW * scale * factor, acNaturalH * scale * factor);
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+  if (!blob) { showToast('Could not process image'); return; }
+  const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+  closeAvatarCropModal();
+  await finishAvatarUpload(file);
 }
 
 // ── PUBLIC SHELF URL CHECK ──
