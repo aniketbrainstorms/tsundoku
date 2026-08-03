@@ -1286,7 +1286,13 @@
         </button>
       </div>
       <div class="profile-header-row">
-        <div class="profile-avatar-large" id="profileAvatarLarge">?</div>
+        <div style="position:relative;flex-shrink:0">
+          <div class="profile-avatar-large" id="profileAvatarLarge">?</div>
+          <label style="position:absolute;bottom:-2px;right:-2px;width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(201,113,74,0.5);border:2px solid var(--surface)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <input type="file" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+          </label>
+        </div>
         <div>
           <div class="profile-email-text" id="profileEmailDisplay">—</div>
           <div class="profile-role">Reader</div>
