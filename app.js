@@ -266,6 +266,7 @@ async function acSaveCrop() {
   ctx.drawImage(img, acOffsetX * factor, acOffsetY * factor, acNaturalW * scale * factor, acNaturalH * scale * factor);
   const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
   if (!blob) { showToast('Could not process image'); return; }
+  console.log('[avatar crop] blob size:', blob.size, 'type:', blob.type);
   const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
   closeAvatarCropModal();
   await finishAvatarUpload(file);
