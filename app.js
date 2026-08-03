@@ -48,6 +48,7 @@ let scannerStream = null, scannerInterval = null;
 let userProfile = null;
 let publicBooks = [];
 let publicSort = 'title';
+let avatarUploading = false;
 
 // ── THEME ──
 function setTheme(theme) {
@@ -125,6 +126,65 @@ function getUserInitials(email) {
   const parts = local.split(/[._\-+]/);
   return parts.slice(0, 2).map(p => (p[0] || '').toUpperCase()).filter(Boolean).join('') || email[0].toUpperCase();
 }
+function renderUserAvatars() {
+  const url = userProfile?.avatar_url || null;
+  const initials = getUserInitials(currentUser?.email);
+  const targets = [
+    { id: 'profileAvatarLarge', size: '100%' },
+    { id: 'profileAvatarBtn', size: '100%' },
+    { id: 'deskProfileAvatar', size: '100%' }
+  ];
+  targets.forEach(({ id }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (url) {
+      el.innerHTML = `<img src="${escapeAttr(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentElement.textContent='${escapeAttr(initials)}'" />`;
+    } else {
+      el.textContent = initials;
+    }
+  });
+}
+async function uploadAvatar(file) {
+  const { data: { user } } = await sb.auth.getUser();
+  const ext = file.name.split('.').pop();
+  const path = `${user.id}/avatar.${ext}`;
+  const { error } = await sb.storage.from('covers').upload(path, file, { upsert: true });
+  if (error) return null;
+  const base = sb.storage.from('covers').getPublicUrl(path).data.publicUrl;
+  return `${base}?t=${Date.now()}`;
+}
+async function handleAvatarUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (avatarUploading) return;
+  avatarUploading = true;
+  const prevUrl = userProfile?.avatar_url || null;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const el = document.getElementById('profileAvatarLarge');
+    if (el) el.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+  };
+  reader.readAsDataURL(file);
+  const url = await uploadAvatar(file);
+  if (!url) {
+    avatarUploading = false;
+    showToast('Could not upload photo');
+    renderUserAvatars();
+    return;
+  }
+  const payload = { user_id: currentUser.id, avatar_url: url };
+  const { data, error } = await sb.from('profiles').upsert(payload, { onConflict: 'user_id' }).select().single();
+  avatarUploading = false;
+  if (error) {
+    showToast(error.message || 'Could not save photo');
+    renderUserAvatars();
+    return;
+  }
+  userProfile = data;
+  renderUserAvatars();
+  showToast('Profile photo updated ✓');
+  e.target.value = '';
+}
 
 // ── PUBLIC SHELF URL CHECK ──
 function getShelfParam() {
@@ -158,6 +218,7 @@ function getShelfParam() {
       const initials = getUserInitials(currentUser?.email);
       const avatarBtn = document.getElementById('profileAvatarBtn');
       if (avatarBtn) avatarBtn.textContent = initials;
+      renderUserAvatars();
       document.getElementById('authScreen').style.display = 'none';
       document.getElementById('appScreen').style.display = 'flex';
       updateHintBar();
@@ -371,6 +432,7 @@ async function loadProfile() {
   const { data } = await sb.from('profiles').select('*').eq('user_id', currentUser.id).single();
   userProfile = data || null;
   updateShareUI();
+  renderUserAvatars();
 }
 
 function updateShareUI() {
@@ -1448,9 +1510,8 @@ async function confirmProgress() {
 // ── PROFILE ──
 function openProfileModal() {
   const email = currentUser?.email || '—';
-  const initials = getUserInitials(email);
-  document.getElementById('profileAvatarLarge').textContent = initials;
   document.getElementById('profileEmailDisplay').textContent = email;
+  renderUserAvatars();
   const countEl = document.getElementById('shelfTotalCount');
   const shelfBooks = books.filter(b => b.status !== 'not-owned');
   if (countEl) countEl.textContent = shelfBooks.length === 1 ? '1 book' : `${shelfBooks.length} books`;
