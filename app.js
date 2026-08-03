@@ -148,8 +148,9 @@ async function uploadAvatar(file) {
   const { data: { user } } = await sb.auth.getUser();
   const ext = file.name.split('.').pop();
   const path = `${user.id}/avatar.${ext}`;
+  console.log('[avatar upload] path:', path, 'file:', file, 'size:', file.size, 'type:', file.type);
   const { error } = await sb.storage.from('covers').upload(path, file, { upsert: true });
-  if (error) return null;
+  if (error) { console.error('[avatar upload] storage error:', error); return null; }
   const base = sb.storage.from('covers').getPublicUrl(path).data.publicUrl;
   return `${base}?t=${Date.now()}`;
 }
