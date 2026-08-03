@@ -1412,6 +1412,20 @@
     </div>
   </div>
 
+  <!-- AVATAR CROP MODAL -->
+  <div class="modal-overlay" id="avatarCropModal" onclick="if(event.target===this)closeAvatarCropModal()">
+    <div class="modal-sheet" style="max-width:360px">
+      <div class="modal-handle"></div>
+      <p class="field-label" style="text-align:center;margin-bottom:16px">ADJUST PHOTO</p>
+      <div id="acStage" style="position:relative;width:260px;height:260px;margin:0 auto 18px;border-radius:50%;overflow:hidden;background:#000;touch-action:none;cursor:grab">
+        <img id="acImg" style="position:absolute;top:0;left:0;max-width:none;user-select:none;pointer-events:none" draggable="false">
+      </div>
+      <input type="range" id="acZoom" min="100" max="300" value="100" style="width:100%;margin-bottom:20px" oninput="acOnZoom()">
+      <button class="modal-btn" onclick="acSaveCrop()">Save Photo</button>
+      <button class="modal-btn secondary" onclick="closeAvatarCropModal()" style="color:var(--text-muted)">Cancel</button>
+    </div>
+  </div>
+
   <!-- MY SHELF OVERLAY -->
   <div class="shelf-overlay nav-panel" id="shelfOverlay">
     <div class="shelf-header">
