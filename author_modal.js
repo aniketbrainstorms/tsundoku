@@ -522,7 +522,7 @@ async function _fetchWikidataWorks(authorName) {
     if (!searchRes.ok) return [];
     const searchData = await searchRes.json();
     const candidates = (searchData.search || []).filter(e =>
-      /author|writer|novelist|poet|playwright|philosopher/i.test(e.description || '')
+      /author|writer|novelist|poet|playwright|philosopher|mythologist|historian|journalist|scholar|academic|essayist|biographer/i.test(e.description || '')
     );
     const entity = candidates[0] || searchData.search?.[0];
     if (!entity?.id) return [];
