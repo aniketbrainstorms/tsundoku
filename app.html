@@ -926,86 +926,129 @@
           Back
         </button>
         <span class="edit-sheet-title">Add a book</span>
-        <div style="width:60px"></div>
+        <div style="width:60px;display:flex;justify-content:flex-end;color:var(--accent);opacity:0.85">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H9V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/><path d="M9 4h4v13H9z"/><path d="M13 4h2.5A2.5 2.5 0 0 1 18 6.5V17h-5z"/><path d="M18 8l2.5.7A1.5 1.5 0 0 1 21.5 10.4l-1.9 7a1.5 1.5 0 0 1-1.8 1.1L16 18"/></svg>
+        </div>
       </div>
 
       <!-- COVER -->
       <p class="ef-section-label">Cover</p>
-      <div class="ef-cover-row">
-        <div class="ef-cover-thumb" id="addCoverThumb">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        </div>
-        <div class="ef-cover-actions">
-          <p class="ef-cover-hint">Change cover</p>
-          <p class="ef-cover-sub">Choose how you want to add the cover</p>
-          <label class="ef-cover-url-wrap">
-            <span class="ef-cover-url-label">Paste image link</span>
-            <div class="ef-cover-url-row">
-              <input type="text" id="addCoverUrlInput" class="ef-url-input" placeholder="https://example.com/cover.jpg" oninput="handleCoverUrlPaste(event,'add')" />
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px">
+        <div class="ef-cover-row" style="margin-bottom:0">
+          <div class="ef-cover-thumb" id="addCoverThumb" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span style="font-size:10px;color:var(--text-muted);text-align:center">No cover yet</span>
+          </div>
+          <div class="ef-cover-actions">
+            <p class="ef-cover-hint">Add cover</p>
+            <p class="ef-cover-sub">Add a cover image or link. We'll use it to showcase your book.</p>
+            <label class="ef-cover-url-wrap">
+              <div class="ef-cover-url-row" style="display:flex;align-items:center;gap:9px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <input type="text" id="addCoverUrlInput" class="ef-url-input" placeholder="Paste image link" oninput="handleCoverUrlPaste(event,'add')" style="border:none;padding:0" />
+              </div>
+            </label>
+            <div class="ef-or">OR</div>
+            <label class="ef-upload-btn" id="addCoverUpload">
+              <input type="file" accept="image/*" onchange="handleCoverUpload(event,'add')" style="position:absolute;inset:0;opacity:0;cursor:pointer" />
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload image
+              <span class="ef-upload-hint">JPG, PNG or WebP · Max 5MB</span>
+            </label>
+            <div class="ef-cover-ready" id="addCoverReadyMsg" style="display:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Cover ready
             </div>
-          </label>
-          <div class="ef-or">OR</div>
-          <label class="ef-upload-btn" id="addCoverUpload">
-            <input type="file" accept="image/*" onchange="handleCoverUpload(event,'add')" style="position:absolute;inset:0;opacity:0;cursor:pointer" />
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Upload image
-            <span class="ef-upload-hint">JPG, PNG or WebP. Max 5MB</span>
-          </label>
-          <div class="ef-cover-ready" id="addCoverReadyMsg" style="display:none">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            Cover ready
           </div>
         </div>
       </div>
 
       <!-- DETAILS -->
       <p class="ef-section-label">Details</p>
-      <div class="ef-field">
-        <span class="ef-field-label">Title</span>
-        <input type="text" class="ef-input" id="addTitle" placeholder="e.g. The Midnight Library" />
-      </div>
-      <div class="ef-field">
-        <span class="ef-field-label">Author</span>
-        <input type="text" class="ef-input" id="addAuthor" placeholder="e.g. Matt Haig" />
-      </div>
-      <div class="ef-field">
-        <span class="ef-field-label">ISBN <span style="color:var(--text-muted);font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">— paste to auto-fill</span></span>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" class="ef-input" id="addIsbn" placeholder="e.g. 9780525559474" style="flex:1" />
-          <button type="button" onclick="fetchAddIsbn()" style="padding:0 16px;height:48px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">Fetch</button>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:6px 16px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--border)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" style="flex-shrink:0"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span style="font-size:14px;color:var(--text);flex-shrink:0">Title</span>
+          <input type="text" id="addTitle" placeholder="e.g. The Midnight Library" style="flex:1;min-width:0;background:none;border:none;outline:none;text-align:right;color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:14px" />
         </div>
-      </div>
-      <div class="ef-field-row add-shelf-only">
-        <div class="ef-field-half">
-          <span class="ef-field-label">Year</span>
-          <input type="text" class="ef-input" id="addYear" placeholder="e.g. 2020" />
+        <div style="display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--border)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span style="font-size:14px;color:var(--text);flex-shrink:0">Author</span>
+          <input type="text" id="addAuthor" placeholder="e.g. Matt Haig" style="flex:1;min-width:0;background:none;border:none;outline:none;text-align:right;color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:14px" />
         </div>
-        <div class="ef-field-half">
-          <span class="ef-field-label">Pages</span>
-          <input type="number" class="ef-input" id="addPageCount" placeholder="e.g. 304" />
-        </div>
-      </div>
-      <div class="ef-field-row add-shelf-only">
-        <div class="ef-field-full">
-          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:8px">
-            <span class="ef-field-label" style="margin-bottom:0">Tags</span>
-            <button type="button" id="addFetchGenresBtn" onclick="addFetchGenreThemes()" style="display:flex;align-items:center;gap:5px;padding:6px 11px;background:rgba(201,113,74,0.1);border:1px solid rgba(201,113,74,0.4);border-radius:100px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
-              Fetch with AI
-            </button>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:11px;flex:1;min-width:0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" style="flex-shrink:0"><rect x="2" y="6" width="1.5" height="12"/><rect x="5" y="6" width="1" height="12"/><rect x="7.5" y="6" width="2" height="12"/><rect x="11" y="6" width="1" height="12"/><rect x="13" y="6" width="1.5" height="12"/><rect x="16" y="6" width="1" height="12"/><rect x="18.5" y="6" width="2" height="12"/></svg>
+            <span style="font-size:14px;color:var(--text);flex-shrink:0">ISBN</span>
+            <input type="text" id="addIsbn" placeholder="e.g. 9780525559474" style="flex:1;min-width:0;background:none;border:none;outline:none;text-align:right;color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:14px" />
           </div>
-          <span class="ef-field-label" style="display:block;margin-top:0;margin-bottom:6px;font-size:10px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">Genres — comma separated</span>
-          <input type="text" class="ef-input" id="addGenres" placeholder="e.g. Fantasy, Adventure" style="margin-bottom:12px" />
-          <span class="ef-field-label" style="display:block;margin-bottom:6px;font-size:10px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">Themes — comma separated</span>
-          <input type="text" class="ef-input" id="addThemes" placeholder="e.g. Coming of age, Found family" />
+          <button type="button" onclick="fetchAddIsbn()" style="padding:0 16px;height:38px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">Fetch</button>
+        </div>
+        <div class="add-shelf-only" style="display:flex">
+          <div style="display:flex;align-items:center;gap:9px;flex:1;padding:12px 0;border-right:1px solid var(--border)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span style="font-size:14px;color:var(--text);flex-shrink:0">Year</span>
+            <input type="text" id="addYear" placeholder="2020" style="flex:1;min-width:0;width:0;background:none;border:none;outline:none;text-align:right;color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:14px" />
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;flex:1;padding:12px 0 12px 14px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" style="flex-shrink:0"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span style="font-size:14px;color:var(--text);flex-shrink:0">Pages</span>
+            <input type="number" id="addPageCount" placeholder="304" style="flex:1;min-width:0;width:0;background:none;border:none;outline:none;text-align:right;color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:14px" />
+          </div>
         </div>
       </div>
+
+      <!-- TAGS -->
+      <p class="ef-section-label add-shelf-only">Tags</p>
+      <div class="add-shelf-only" style="background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
+          <div style="display:flex;align-items:flex-start;gap:10px;min-width:0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" style="flex-shrink:0;margin-top:1px"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1" fill="var(--text-muted)" stroke="none"/></svg>
+            <div style="min-width:0">
+              <div style="font-size:14px;font-weight:600;color:var(--text)">Genres</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:1px">Auto-detect genres using AI</div>
+            </div>
+          </div>
+          <button type="button" id="addFetchGenresBtn" onclick="addFetchGenreThemes()" style="display:flex;align-items:center;gap:5px;padding:6px 11px;background:rgba(201,113,74,0.1);border:1px solid rgba(201,113,74,0.4);border-radius:100px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
+            Fetch with AI
+          </button>
+        </div>
+        <input type="text" class="ef-input" id="addGenres" placeholder="e.g. Fantasy, Adventure" style="margin-bottom:5px" />
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:18px">Separate with commas</p>
+
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
+          <div style="display:flex;align-items:flex-start;gap:10px;min-width:0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" style="flex-shrink:0;margin-top:1px"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1" fill="var(--text-muted)" stroke="none"/></svg>
+            <div style="min-width:0">
+              <div style="font-size:14px;font-weight:600;color:var(--text)">Themes</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:1px">Auto-detect themes using AI</div>
+            </div>
+          </div>
+          <button type="button" id="addFetchThemesBtn" onclick="addFetchGenreThemes()" style="display:flex;align-items:center;gap:5px;padding:6px 11px;background:rgba(201,113,74,0.1);border:1px solid rgba(201,113,74,0.4);border-radius:100px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
+            Fetch with AI
+          </button>
+        </div>
+        <input type="text" class="ef-input" id="addThemes" placeholder="e.g. Coming of age, Found family" style="margin-bottom:5px" />
+        <p style="font-size:11px;color:var(--text-muted);margin:0">Separate with commas</p>
+      </div>
+
       <!-- STATUS -->
       <p class="ef-section-label add-shelf-only">Status</p>
-      <div class="ef-status-seg add-shelf-only" id="addPills">
-        <button class="ef-seg-btn ef-seg-active" data-status="unread" onclick="setPillStatus('add','unread')">Unread</button>
-        <button class="ef-seg-btn" data-status="reading" onclick="setPillStatus('add','reading')">Reading</button>
-        <button class="ef-seg-btn" data-status="read" onclick="setPillStatus('add','read')">Read</button>
+      <div class="ef-status-seg add-shelf-only" id="addPills" style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;padding:0">
+        <button class="ef-seg-btn ef-seg-active" data-status="unread" onclick="setPillStatus('add','unread')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 6px;border-right:1px solid var(--border)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          Unread
+        </button>
+        <button class="ef-seg-btn" data-status="reading" onclick="setPillStatus('add','reading')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 6px;border-right:1px solid var(--border)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Reading
+        </button>
+        <button class="ef-seg-btn" data-status="read" onclick="setPillStatus('add','read')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 6px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="8.5 12.5 11 15 16 9.5"/></svg>
+          Read
+        </button>
       </div>
 
       <!-- Borrowed from (hidden by default) -->
