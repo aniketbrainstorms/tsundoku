@@ -2478,10 +2478,9 @@ async function addFetchGenreThemes() {
   const author = document.getElementById('addAuthor')?.value.trim();
   if (!title || !author) { showToast('Enter title and author first'); return; }
 
-  const btn = document.getElementById('addFetchGenresBtn');
-  const originalHtml = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span style="font-size:11px">Fetching…</span>';
+  const btns = [document.getElementById('addFetchGenresBtn'), document.getElementById('addFetchThemesBtn')].filter(Boolean);
+  const originalHtml = btns.map(b => b.innerHTML);
+  btns.forEach(b => { b.disabled = true; b.innerHTML = '<span style="font-size:11px">Fetching…</span>'; });
 
   try {
     const result = await fetchAiGenreThemes(title, author, window._pendingDescription || '');
@@ -2495,8 +2494,7 @@ async function addFetchGenreThemes() {
   } catch {
     showToast('Fetch failed — check connection');
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
+    btns.forEach((b, i) => { b.disabled = false; b.innerHTML = originalHtml[i]; });
   }
 }
 
