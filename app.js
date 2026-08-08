@@ -5192,3 +5192,210 @@ function _swipePreRenderAll(force) {
     }
   });
 })();
+
+// ── BACKFILL TOOLS — genre/theme + author bio, in-app ──────────────────────
+;(function () {
+  const GENRE_PROGRESS_KEY = 'tsundoku_backfill_progress_v1';
+  const AUTHOR_PROGRESS_KEY = 'tsundoku_author_bio_backfill_progress_v1';
+  const DELAY_MS = 5500;
+  const RATE_LIMIT_BACKOFF_MS = 25000;
+
+  window._bfState = { job: null, running: false, done: 0, remaining: 0, failed: 0, total: 0 };
+
+  function bfSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  function bfLoad(key) { try { return JSON.parse(localStorage.getItem(key)) || { done: [], failed: [] }; } catch { return { done: [], failed: [] }; } }
+  function bfSave(key, p) { try { localStorage.setItem(key, JSON.stringify(p)); } catch {} }
+
+  async function bfToken() {
+    const { data } = await sb.auth.getSession();
+    return data?.session?.access_token || SUPABASE_ANON_KEY;
+  }
+
+  async function bfCallGemini(prompt) {
+    const token = await bfToken();
+    return fetch('https://rrnryszgvctxainqyuyr.supabase.co/functions/v1/gemini-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ prompt })
+    });
+  }
+
+  function bfUpdateUI() {
+    const s = window._bfState;
+    const pct = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
+    const fill = document.getElementById('bfBarFill'); if (fill) fill.style.width = pct + '%';
+    const d = document.getElementById('bfDoneLabel'); if (d) d.textContent = `${s.done} done`;
+    const r = document.getElementById('bfRemainingLabel'); if (r) r.textContent = `${s.remaining} remaining`;
+    const f = document.getElementById('bfFailedLabel'); if (f) f.textContent = `${s.failed} failed`;
+    const genreEl = document.getElementById('bfGenreStatus');
+    const authorEl = document.getElementById('bfAuthorStatus');
+    if (genreEl) genreEl.textContent = (s.running && s.job === 'genre') ? `${s.done}/${s.total}` : '';
+    if (authorEl) authorEl.textContent = (s.running && s.job === 'author') ? `${s.done}/${s.total}` : '';
+  }
+
+  window.bfOpenModal = function (title, subtitle) {
+    const t = document.getElementById('bfTitle'); if (t) t.textContent = title;
+    const s = document.getElementById('bfSubtitle'); if (s) s.textContent = subtitle;
+    const m = document.getElementById('backfillModal'); if (m) m.classList.add('visible');
+    bfUpdateUI();
+  };
+  window.bfCloseModal = function () {
+    const m = document.getElementById('backfillModal'); if (m) m.classList.remove('visible');
+  };
+
+  window.bfStart = function (job) {
+    const s = window._bfState;
+    if (s.running) {
+      bfOpenModal(job === 'genre' ? 'Genres & Themes' : 'Author Bios', 'Running in the background');
+      return;
+    }
+    if (job === 'genre') bfRunGenreBackfill();
+    else bfRunAuthorBackfill();
+  };
+
+  async function bfRunGenreBackfill() {
+    const s = window._bfState;
+    const progress = bfLoad(GENRE_PROGRESS_KEY);
+    const doneSet = new Set(progress.done);
+    const remaining = books.filter(b => !doneSet.has(b.id) && !(Array.isArray(b.genres) && b.genres.length));
+
+    s.job = 'genre'; s.running = true;
+    s.done = doneSet.size; s.failed = progress.failed.length;
+    s.total = books.length; s.remaining = remaining.length;
+    bfOpenModal('Genres & Themes', `${remaining.length} books to process`);
+    bfUpdateUI();
+
+    for (let i = 0; i < remaining.length; i++) {
+      const book = remaining[i];
+      const prompt = `You are an AI librarian. Given this book's information, respond ONLY with a valid JSON object (no markdown, no backticks) with exactly these keys:
+- "genres": an array of 1-2 specific sub-genres (e.g. "Magical Realism", "Cyberpunk", "Historical Thriller"). NEVER use "Fiction" or "Novel" alone.
+- "themes": an array of 2-4 short thematic keywords (e.g. "War", "Identity", "Betrayal")
+
+Title: ${book.title}
+Author: ${book.author || 'Unknown'}
+Description: ${book.description || 'No description available.'}`;
+
+      let success = false;
+      let attempt = 0;
+      while (attempt < 3) {
+        attempt++;
+        let res;
+        try { res = await bfCallGemini(prompt); }
+        catch { break; }
+        if (res.status === 429) { await bfSleep(RATE_LIMIT_BACKOFF_MS); continue; }
+        if (!res.ok) break;
+        try {
+          const data = await res.json();
+          const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+          const genres = Array.isArray(parsed.genres) ? parsed.genres.filter(Boolean) : [];
+          const themes = Array.isArray(parsed.themes) ? parsed.themes.filter(Boolean) : [];
+          if (!genres.length && !themes.length) break;
+          const updates = {};
+          if (genres.length) { updates.genres = genres; updates.genre = genres.join(', '); updates.primary_genre = genres[0]; }
+          if (themes.length) updates.themes = themes;
+          const ok = await dbUpdate(book.id, updates);
+          if (ok) { Object.assign(book, updates); success = true; }
+        } catch {}
+        break;
+      }
+
+      if (success) progress.done.push(book.id); else progress.failed.push(book.id);
+      bfSave(GENRE_PROGRESS_KEY, progress);
+      s.done = progress.done.length; s.failed = progress.failed.length; s.remaining = remaining.length - (i + 1);
+      bfUpdateUI();
+
+      if (i < remaining.length - 1) await bfSleep(DELAY_MS);
+    }
+
+    s.running = false;
+    bfUpdateUI();
+    renderGrid();
+    showToast('Genre & theme backfill finished ✓');
+  }
+
+  async function bfRunAuthorBackfill() {
+    const s = window._bfState;
+    const progress = bfLoad(AUTHOR_PROGRESS_KEY);
+    const doneSet = new Set(progress.done);
+
+    const seen = new Map();
+    books.forEach(b => {
+      const name = (b.author || '').trim();
+      if (!name) return;
+      const key = name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      if (!seen.has(key)) seen.set(key, name);
+    });
+    const allAuthors = [...seen.entries()].map(([key, name]) => ({ key, name }));
+
+    let existingRows = new Map();
+    const keys = allAuthors.map(a => a.key);
+    if (keys.length) {
+      const { data } = await sb.from('authors').select('name_key, quote').in('name_key', keys);
+      (data || []).forEach(r => existingRows.set(r.name_key, r.quote || ''));
+    }
+
+    const remaining = allAuthors.filter(a => !doneSet.has(a.key) && !existingRows.get(a.key));
+
+    s.job = 'author'; s.running = true;
+    s.done = doneSet.size; s.failed = progress.failed.length;
+    s.total = allAuthors.length; s.remaining = remaining.length;
+    bfOpenModal('Author Bios', `${remaining.length} authors to process`);
+    bfUpdateUI();
+
+    for (let i = 0; i < remaining.length; i++) {
+      const author = remaining[i];
+      const prompt = `You are a literary reference assistant. Write a short, factual 2-3 sentence description of the author "${author.name}" — their notable style, themes, and place in literature. Do not quote their work directly. Respond with plain text only, no markdown, no surrounding quotation marks.`;
+
+      let success = false;
+      let attempt = 0;
+      while (attempt < 3) {
+        attempt++;
+        let res;
+        try { res = await bfCallGemini(prompt); }
+        catch { break; }
+        if (res.status === 429) { await bfSleep(RATE_LIMIT_BACKOFF_MS); continue; }
+        if (!res.ok) break;
+        try {
+          const data = await res.json();
+          const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const bio = raw.trim().replace(/^["']|["']$/g, '');
+          if (!bio || bio.length < 20) break;
+          const { error } = await sb.from('authors').upsert(
+            { name_key: author.key, name: author.name, quote: bio, user_id: currentUser.id },
+            { onConflict: 'name_key' }
+          );
+          if (!error) {
+            success = true;
+            if (typeof _authorCache !== 'undefined') {
+              _authorCache[author.key] = { ...(_authorCache[author.key] || {}), quote: bio, name: author.name };
+            }
+          }
+        } catch {}
+        break;
+      }
+
+      if (success) progress.done.push(author.key); else progress.failed.push(author.key);
+      bfSave(AUTHOR_PROGRESS_KEY, progress);
+      s.done = progress.done.length; s.failed = progress.failed.length; s.remaining = remaining.length - (i + 1);
+      bfUpdateUI();
+
+      if (i < remaining.length - 1) await bfSleep(DELAY_MS);
+    }
+
+    s.running = false;
+    bfUpdateUI();
+    showToast('Author bio backfill finished ✓');
+  }
+
+  // Refresh the Profile modal's status badges whenever it reopens
+  window.addEventListener('load', () => {
+    const _origOpenProfile = window.openProfileModal;
+    if (typeof _origOpenProfile === 'function') {
+      window.openProfileModal = function () {
+        _origOpenProfile.apply(this, arguments);
+        bfUpdateUI();
+      };
+    }
+  });
+})();
