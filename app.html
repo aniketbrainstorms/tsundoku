@@ -987,23 +987,19 @@
       </div>
       <div class="ef-field-row add-shelf-only">
         <div class="ef-field-full">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <span class="ef-field-label" style="margin-bottom:0">Genres <span style="color:var(--text-muted);font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">— comma separated</span></span>
-            <button type="button" id="addFetchGenresBtn" onclick="addFetchGenreThemes()" style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:rgba(201,113,74,0.1);border:1px solid rgba(201,113,74,0.4);border-radius:8px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:8px">
+            <span class="ef-field-label" style="margin-bottom:0">Tags</span>
+            <button type="button" id="addFetchGenresBtn" onclick="addFetchGenreThemes()" style="display:flex;align-items:center;gap:5px;padding:6px 11px;background:rgba(201,113,74,0.1);border:1px solid rgba(201,113,74,0.4);border-radius:100px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
               Fetch with AI
             </button>
           </div>
-          <input type="text" class="ef-input" id="addGenres" placeholder="e.g. Fantasy, Adventure" />
-        </div>
-      </div>
-      <div class="ef-field-row add-shelf-only">
-        <div class="ef-field-full">
-          <span class="ef-field-label">Themes <span style="color:var(--text-muted);font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">— comma separated</span></span>
+          <span class="ef-field-label" style="display:block;margin-top:0;margin-bottom:6px;font-size:10px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">Genres — comma separated</span>
+          <input type="text" class="ef-input" id="addGenres" placeholder="e.g. Fantasy, Adventure" style="margin-bottom:12px" />
+          <span class="ef-field-label" style="display:block;margin-bottom:6px;font-size:10px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">Themes — comma separated</span>
           <input type="text" class="ef-input" id="addThemes" placeholder="e.g. Coming of age, Found family" />
         </div>
       </div>
-
       <!-- STATUS -->
       <p class="ef-section-label add-shelf-only">Status</p>
       <div class="ef-status-seg add-shelf-only" id="addPills">
