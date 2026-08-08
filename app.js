@@ -2473,6 +2473,33 @@ async function confirmAdd() {
   btn.disabled = false; btn.textContent = addContext === 'list' ? 'Add to List' : 'Add to Shelf';
 }
 
+async function addFetchGenreThemes() {
+  const title = document.getElementById('addTitle')?.value.trim();
+  const author = document.getElementById('addAuthor')?.value.trim();
+  if (!title || !author) { showToast('Enter title and author first'); return; }
+
+  const btn = document.getElementById('addFetchGenresBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span style="font-size:11px">Fetching…</span>';
+
+  try {
+    const result = await fetchAiGenreThemes(title, author, window._pendingDescription || '');
+    if (!result || (!result.genres?.length && !result.themes?.length)) {
+      showToast('Could not fetch — try again');
+      return;
+    }
+    if (result.genres?.length) document.getElementById('addGenres').value = result.genres.join(', ');
+    if (result.themes?.length) document.getElementById('addThemes').value = result.themes.join(', ');
+    showToast('Genres & themes filled ✓');
+  } catch {
+    showToast('Fetch failed — check connection');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
 async function fetchAddIsbn() {
   const isbn = document.getElementById('addIsbn')?.value.trim();
   if (!isbn) { showToast('Enter an ISBN first'); return; }
