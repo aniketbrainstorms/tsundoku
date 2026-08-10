@@ -4790,6 +4790,7 @@ function _swipePreRenderAll(force) {
     _sbSubItemsCache.forEach(el =>
       el.classList.toggle('active', el.dataset.filter === currentFilter));
     updateHintBar();
+    if (typeof updateEnvelopeVisibility === 'function') updateEnvelopeVisibility();
     if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
     const ib = document.querySelector('.tab-ink');
     if (ib) setTimeout(() => { ib.style.willChange = ''; }, SETTLE_MS + 30);
