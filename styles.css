@@ -338,7 +338,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 /* ── FLOATING SEARCH + ADD BAR ── */
 .floating-bar {
   position: fixed;
-  bottom: calc(var(--safe-bottom) + 16px);
+  bottom: max(20px, calc(var(--safe-bottom) + 16px));
   left: 16px; right: 16px;
   display: flex;
   align-items: center;
@@ -401,7 +401,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 .floating-add-btn.open { transform: rotate(45deg); }
 
 html.standalone-webapp .floating-bar {
-  bottom: max(calc(var(--safe-bottom) + 8px), 12px);
+  bottom: max(calc(var(--safe-bottom) + 8px), 20px);
 }
 
 /* ── ADD POPUP ── */
@@ -602,7 +602,7 @@ html.standalone-webapp .add-popup {
   }
   
   /* Hide mobile elements on desktop */
-  .header, .divider, .hint-bar, .floating-bar {
+  .header, .divider, .hint-bar, 
     display: none !important;
   }
 
@@ -1532,14 +1532,18 @@ html.standalone-webapp .add-popup {
 }
 
 /* MODALS */
-.modal-overlay { position: fixed; inset: 0; background: rgba(14,12,10,0.8); backdrop-filter: blur(8px); display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 80; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(14,12,10,0.92); display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 80; }
+@supports (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none)) {
+  .modal-overlay { background: rgba(14,12,10,0.8); backdrop-filter: blur(8px); }
+}
 .modal-overlay.visible { opacity: 1; pointer-events: all; }
 #detailModal { pointer-events: none; }
 #detailModal.visible { pointer-events: all; }
 #detailModal .detail-sheet { pointer-events: none; }
 .modal-overlay.visible .detail-sheet { pointer-events: auto; }
 #progressModal { z-index: 110; }
-.modal-sheet { width: 100%; background: var(--surface); border-radius: 24px 24px 0 0; padding: 0 max(var(--safe-right),24px) max(calc(var(--safe-bottom) + 28px),44px) max(var(--safe-left),24px); transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); border-top: 1px solid var(--border); max-height: 92%; overflow-y: auto; box-shadow: 0 40px 0 40px var(--surface); }
+.modal-sheet { width: 100%; background: var(--surface); border-radius: 24px 24px 0 0; padding: 0 max(var(--safe-right),24px) max(calc(var(--safe-bottom) + 28px),44px) max(var(--safe-left),24px); transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); border-top: 1px solid var(--border); max-height: 92%; overflow-y: auto; position: relative; }
+.modal-sheet::before { content: ''; position: absolute; left: -40px; right: -40px; bottom: -40px; height: 40px; background: var(--surface); z-index: -1; }
 .modal-sheet::-webkit-scrollbar { display: none; }
 .modal-overlay.visible .modal-sheet { transform: translateY(0); }
 .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 20px; flex-shrink: 0; }
@@ -1603,7 +1607,7 @@ html.standalone-webapp .add-popup {
 /* PROFILE */
 #profileModal { align-items: stretch; justify-content: flex-end; pointer-events: none; }
 #profileModal.visible { pointer-events: all; }
-#profileModal .modal-sheet { height: 100%; max-height: 100%; border-radius: 0; border-top: none; padding-top: max(var(--safe-top), 24px); box-shadow: -40px 0 40px var(--surface); transform: none; transition: none; }
+#profileModal .modal-sheet { height: 100dvh; max-height: 100dvh; border-radius: 0; border-top: none; padding-top: max(var(--safe-top), 24px); box-shadow: -40px 0 40px var(--surface); transform: none; transition: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 #profileModal .modal-handle { display: none; }
 .profile-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
 .profile-email-text { font-size: 15px; font-weight: 500; color: var(--text); word-break: break-all; }
@@ -2088,14 +2092,16 @@ html.standalone-webapp .add-popup {
 #detailModal {
   position: fixed;
   align-items: flex-end;
-  background: rgba(14,12,10,0.72);
-  backdrop-filter: blur(6px);
+  background: rgba(14,12,10,0.88);
   transition: opacity 0.3s ease, backdrop-filter 0.4s ease;
   z-index: 90;
 }
 #detailModal.ds-expanded {
-  background: rgba(14,12,10,0.9);
-  backdrop-filter: blur(16px);
+  background: rgba(14,12,10,0.94);
+}
+@supports (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none)) {
+  #detailModal { background: rgba(14,12,10,0.72); backdrop-filter: blur(6px); }
+  #detailModal.ds-expanded { background: rgba(14,12,10,0.9); backdrop-filter: blur(16px); }
 }
 
 .detail-sheet {
