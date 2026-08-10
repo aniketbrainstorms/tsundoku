@@ -602,7 +602,7 @@ html.standalone-webapp .add-popup {
   }
   
   /* Hide mobile elements on desktop */
-  .header, .divider, .hint-bar, 
+  .header, .divider, .hint-bar {
     display: none !important;
   }
 
