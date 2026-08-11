@@ -1607,7 +1607,7 @@ html.standalone-webapp .add-popup {
 /* PROFILE */
 #profileModal { align-items: stretch; justify-content: flex-end; pointer-events: none; }
 #profileModal.visible { pointer-events: all; }
-#profileModal .modal-sheet { width: min(420px, 100vw); height: 100dvh; max-height: 100dvh; border-radius: 0; border-top: none; padding-top: max(var(--safe-top), 24px); box-shadow: -40px 0 40px var(--surface); transform: none; transition: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#profileModal .modal-sheet { width: min(420px, 100vw) !important; height: 100dvh; max-height: 100dvh; border-radius: 0; border-top: none; padding-top: max(var(--safe-top), 24px); box-shadow: -40px 0 40px var(--surface); transform: none; transition: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 @media (min-width: 480px) {
   #profileModal .modal-sheet { border-left: 1px solid var(--border); }
 }
@@ -2536,6 +2536,15 @@ html.standalone-webapp .add-popup {
   }
   #addModal, #scannerModal, #addToListModal, #progressModal {
     justify-content: center;
+  }
+  #addModal .modal-sheet,
+  #scannerModal .modal-sheet,
+  #addToListModal .modal-sheet,
+  #progressModal .modal-sheet {
+    width: min(480px, 90vw);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7);
   }
 }
 
