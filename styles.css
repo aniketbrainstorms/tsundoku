@@ -2534,13 +2534,21 @@ html.standalone-webapp .add-popup {
     max-height: 88dvh;
     box-shadow: 0 24px 80px rgba(0,0,0,0.7);
   }
-  #addModal, #scannerModal, #addToListModal, #progressModal {
+  #addModal, #scannerModal, #addToListModal, #progressModal,
+  #finishBorrowedSheet, #authorPhotoModal, #avatarCropModal,
+  #backfillModal, #listBookDetailModal, #loSheetOverlay {
     justify-content: center;
   }
   #addModal .modal-sheet,
   #scannerModal .modal-sheet,
   #addToListModal .modal-sheet,
-  #progressModal .modal-sheet {
+  #progressModal .modal-sheet,
+  #finishBorrowedSheet .modal-sheet,
+  #authorPhotoModal .modal-sheet,
+  #avatarCropModal .modal-sheet,
+  #backfillModal .modal-sheet,
+  #listBookDetailModal .modal-sheet,
+  #loSheetOverlay .modal-sheet {
     width: min(480px, 90vw);
     border-radius: 20px;
     border: 1px solid var(--border);
