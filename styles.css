@@ -2534,6 +2534,9 @@ html.standalone-webapp .add-popup {
     max-height: 88dvh;
     box-shadow: 0 24px 80px rgba(0,0,0,0.7);
   }
+  #addModal, #scannerModal, #addToListModal, #progressModal {
+    justify-content: center;
+  }
 }
 
 /* ── SUMMARY — sits above CTA, expands upward ── */
