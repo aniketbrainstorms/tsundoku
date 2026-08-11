@@ -1607,7 +1607,10 @@ html.standalone-webapp .add-popup {
 /* PROFILE */
 #profileModal { align-items: stretch; justify-content: flex-end; pointer-events: none; }
 #profileModal.visible { pointer-events: all; }
-#profileModal .modal-sheet { height: 100dvh; max-height: 100dvh; border-radius: 0; border-top: none; padding-top: max(var(--safe-top), 24px); box-shadow: -40px 0 40px var(--surface); transform: none; transition: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#profileModal .modal-sheet { width: min(420px, 100vw); height: 100dvh; max-height: 100dvh; border-radius: 0; border-top: none; padding-top: max(var(--safe-top), 24px); box-shadow: -40px 0 40px var(--surface); transform: none; transition: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+@media (min-width: 480px) {
+  #profileModal .modal-sheet { border-left: 1px solid var(--border); }
+}
 #profileModal .modal-handle { display: none; }
 .profile-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
 .profile-email-text { font-size: 15px; font-weight: 500; color: var(--text); word-break: break-all; }
