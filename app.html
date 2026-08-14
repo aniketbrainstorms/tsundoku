@@ -553,7 +553,7 @@
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14" y2="14"/></svg>
         <input type="text" class="floating-search-input" id="searchInput" placeholder="Search library…" readonly onclick="openShelfSearch()" autocomplete="off" style="font-size:16px;cursor:pointer" />
       </div>
-      <button class="floating-add-btn" id="addBtn" onclick="toggleAddPopup()">
+      <button class="floating-add-btn" id="addBtn" onclick="openBookSearch('shelf')">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
       </button>
       <!-- ADD POPUP -->
@@ -684,10 +684,9 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M16 7v10"/></svg>
       </button>
     </div>
-    <div class="bs-categories" id="bsCategories">
-      <button class="tab-btn active" data-cat="all" onclick="setBsCategory('all')">Everything</button>
-      <button class="tab-btn" data-cat="intitle" onclick="setBsCategory('intitle')">Title</button>
-      <button class="tab-btn" data-cat="inauthor" onclick="setBsCategory('inauthor')">Author</button>
+    <div class="bs-borrow-row add-shelf-only" id="bsBorrowRow" onclick="bsToggleBorrow()">
+      <div class="bs-borrow-track" id="bsBorrowTrack"><div class="bs-borrow-knob"></div></div>
+      <span>I'm borrowing this book</span>
     </div>
     <div class="divider"></div>
     <div class="bs-results" id="bsResults" ontouchstart="if(document.activeElement) document.activeElement.blur();">
@@ -963,6 +962,14 @@
           <span style="font-size:14px;color:var(--text);flex-shrink:0">Author</span>
           <input type="text" id="addAuthor" placeholder="e.g. Matt Haig" style="flex:1;min-width:0;background:none;border:none;outline:none;text-align:right;color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:14px" />
         </div>
+      </div>
+
+      <div class="af-details-toggle" id="afDetailsToggle" onclick="afToggleDetails()">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l5 5 5-5"/></svg>
+        <span id="afDetailsToggleLabel">Add more details</span>
+      </div>
+      <div class="af-details-fields" id="afDetailsFields">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:6px 16px;margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:11px;flex:1;min-width:0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" style="flex-shrink:0"><rect x="2" y="6" width="1.5" height="12"/><rect x="5" y="6" width="1" height="12"/><rect x="7.5" y="6" width="2" height="12"/><rect x="11" y="6" width="1" height="12"/><rect x="13" y="6" width="1.5" height="12"/><rect x="16" y="6" width="1" height="12"/><rect x="18.5" y="6" width="2" height="12"/></svg>
@@ -1020,6 +1027,7 @@
         <input type="text" class="ef-input" id="addThemes" placeholder="e.g. Coming of age, Found family" style="margin-bottom:5px" />
         <p style="font-size:11px;color:var(--text-muted);margin:0">Separate with commas</p>
       </div>
+      </div><!-- /af-details-fields -->
 
       <!-- STATUS -->
       <p class="ef-section-label add-shelf-only">Status</p>
