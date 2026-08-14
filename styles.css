@@ -4038,3 +4038,43 @@ html.standalone-webapp .add-popup {
   transition: transform 0.15s ease;
 }
 .envelope-trigger-btn:active { transform: scale(0.92); }
+
+/* ── UNIFIED ADD FLOW — borrowed toggle + details expander (af-/bs- prefixed) ── */
+.bs-borrow-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 13px; border-radius: 100px;
+  background: var(--surface2); border: 1px solid var(--border);
+  width: fit-content; margin: 0 max(var(--safe-right),16px) 10px max(var(--safe-left),16px);
+  cursor: pointer; user-select: none;
+}
+.bs-borrow-row span { font-size: 12px; color: var(--text-dim); font-weight: 500; }
+.bs-borrow-track {
+  width: 30px; height: 17px; border-radius: 100px;
+  background: var(--border); position: relative; flex-shrink: 0;
+  transition: background 0.2s;
+}
+.bs-borrow-track.on { background: var(--accent); }
+.bs-borrow-knob {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--text-muted); position: absolute; top: 2px; left: 2px;
+  transition: transform 0.2s, background 0.2s;
+}
+.bs-borrow-track.on .bs-borrow-knob { transform: translateX(13px); background: #fff; }
+
+.bs-manual-link {
+  text-align: center; padding: 18px 0 8px;
+  font-size: 12px; color: var(--accent); font-weight: 500; cursor: pointer;
+}
+
+.af-details-toggle {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--accent); font-size: 12px; font-weight: 500;
+  cursor: pointer; padding: 4px 20px 14px;
+}
+.af-details-toggle svg { transition: transform 0.2s; flex-shrink: 0; }
+.af-details-toggle.expanded svg { transform: rotate(180deg); }
+.af-details-fields {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.af-details-fields.expanded { max-height: 900px; }
