@@ -146,6 +146,7 @@ let _activeAuthorName = '';
 let _authorRows = [];
 let _authorFilter = 'all';
 let _authorCallerEl = null;
+let _authorRowsLoading = false;
 
 function normalizeAuthorText(str) {
   return (str || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -696,7 +697,11 @@ function renderAuthorRows(rows) {
   });
 
   if (!dedupedRows.length) {
-    state.textContent = _authorFilter === 'wishlist' ? 'No wishlist books yet.' : 'No books found yet.';
+    if (_authorFilter === 'wishlist') {
+      state.textContent = _authorRowsLoading ? 'Looking up their bibliography…' : 'No books found yet.';
+    } else {
+      state.textContent = 'No books found yet.';
+    }
     timeline.innerHTML = '';
     return;
   }
@@ -848,8 +853,6 @@ function toggleAuthorBio() {
 
 async function openAuthorPage(authorName, callerEl) {
   if (!authorName || !authorName.trim()) return;
-  const rows = buildAuthorRows(authorName);
-  if (!rows.length) return;
   _activeAuthorName = authorName;
   _authorCallerEl = callerEl || null;
   const overlay = document.getElementById('authorOverlay');
@@ -857,7 +860,8 @@ async function openAuthorPage(authorName, callerEl) {
   const fallback = authorFallback(authorName);
   const initialRows = buildAuthorRows(authorName);
   _authorRows = initialRows;
-  _authorFilter = 'all';
+  // No owned books yet — default to Wishlist so the page isn't empty while bibliography loads
+  _authorFilter = initialRows.length ? 'all' : 'wishlist';
   updateAuthorControls();
 
   if (scroll) scroll.scrollTop = 0;
@@ -868,10 +872,12 @@ async function openAuthorPage(authorName, callerEl) {
   document.getElementById('authorState').textContent = '';
 
   // Fetch profile and Wikipedia works in parallel
+  _authorRowsLoading = true;
   const [profile, wikiWorks] = await Promise.all([
     fetchAuthorProfile(authorName),
     fetchWikipediaWorks(authorName)
   ]);
+  _authorRowsLoading = false;
   if (normalizeAuthorText(_activeAuthorName) !== normalizeAuthorText(authorName)) return;
 
   const freshRows = buildAuthorRows(authorName);
