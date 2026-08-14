@@ -40,6 +40,7 @@ let currentUser = null;
 let bookSearchTimer = null;
 let progressBookId = null;
 let bsSearchCategory = 'all';
+let bsBorrowed = false;
 let addContext = 'shelf';
 let currentSort = 'recent';
 let scannerStream = null, scannerInterval = null;
@@ -2215,6 +2216,9 @@ function setAddContext(context) {
 }
 function openBookSearch(context = 'shelf') {
   setAddContext(context);
+  bsBorrowed = false;
+  const bsBorrowTrack = document.getElementById('bsBorrowTrack');
+  if (bsBorrowTrack) bsBorrowTrack.classList.remove('on');
   const bsOverlay = document.getElementById('bookSearchOverlay');
   navPush(null, bsOverlay);
   _updateAppRecede();
@@ -2230,16 +2234,21 @@ function closeBookSearch() {
   document.getElementById('bsInput').value = '';
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>';
   clearTimeout(bookSearchTimer);
-  setBsCategory('all');
 }
 function openAuthorPageFromSearch(authorName) {
   if (typeof openAuthorPage === 'function') openAuthorPage(authorName, document.getElementById('bookSearchOverlay'));
 }
 function setBsCategory(cat) {
   bsSearchCategory = cat;
-  document.getElementById('bsCategories').querySelectorAll('.tab-btn').forEach(btn =>
+  const catsEl = document.getElementById('bsCategories');
+  if (catsEl) catsEl.querySelectorAll('.tab-btn').forEach(btn =>
     btn.classList.toggle('active', btn.dataset.cat === cat));
   if (document.getElementById('bsInput').value.trim()) onBsInput();
+}
+function bsToggleBorrow() {
+  bsBorrowed = !bsBorrowed;
+  const track = document.getElementById('bsBorrowTrack');
+  if (track) track.classList.toggle('on', bsBorrowed);
 }
 function onBsInput() {
   clearTimeout(bookSearchTimer);
@@ -2254,11 +2263,7 @@ async function fetchBookSearch(query) {
   const resultsEl = document.getElementById('bsResults');
   const isIsbn = /^[\d\-]{9,17}$/.test(query.replace(/\s/g, ''));
 
-  async function searchGoogle(q, cat) {
-    let qParam = encodeURIComponent(q);
-    if (cat === 'intitle') qParam = `intitle:${qParam}`;
-    else if (cat === 'inauthor') qParam = `inauthor:${qParam}`;
-    else if (isIsbn) qParam = `isbn:${qParam}`;
+  async function searchGoogle(qParam) {
     const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=40&langRestrict=en&key=${window.BOOKS_API_KEY}`);
     if (!res.ok) return [];
     const data = await res.json();
@@ -2280,11 +2285,7 @@ async function fetchBookSearch(query) {
     });
   }
 
-  async function searchOpenLibrary(q, cat) {
-    let field = 'q';
-    if (cat === 'intitle') field = 'title';
-    else if (cat === 'inauthor') field = 'author';
-    else if (isIsbn) field = 'isbn';
+  async function searchOpenLibrary(field, q) {
     const res = await fetch(`https://openlibrary.org/search.json?${field}=${encodeURIComponent(q)}&limit=30&fields=title,author_name,cover_i,isbn`);
     if (!res.ok) return [];
     const data = await res.json();
@@ -2296,22 +2297,40 @@ async function fetchBookSearch(query) {
     }));
   }
 
-  try {
-    const [gResult, olResult] = await Promise.allSettled([
-      searchGoogle(query, bsSearchCategory),
-      searchOpenLibrary(query, bsSearchCategory)
-    ]);
-    const g = gResult.status === 'fulfilled' ? gResult.value : [];
-    const ol = olResult.status === 'fulfilled' ? olResult.value : [];
-    const seen = new Set(g.map(b => (b.title + b.author).toLowerCase().replace(/\s/g, '')));
-    const merged = [...g, ...ol.filter(b => {
+  function dedupe(list) {
+    const seen = new Set();
+    return list.filter(b => {
       const key = (b.title + b.author).toLowerCase().replace(/\s/g, '');
-      if (seen.has(key)) return false;
+      if (!key || seen.has(key)) return false;
       seen.add(key); return true;
-    })];
+    });
+  }
+
+  try {
+    let gQueries, olQueries;
+    if (isIsbn) {
+      gQueries = [searchGoogle(`isbn:${encodeURIComponent(query)}`)];
+      olQueries = [searchOpenLibrary('isbn', query)];
+    } else {
+      // Silent parallel general + author-scoped queries, merged — same pattern as the Google+OpenLibrary merge
+      gQueries = [searchGoogle(encodeURIComponent(query)), searchGoogle(`inauthor:${encodeURIComponent(query)}`)];
+      olQueries = [searchOpenLibrary('q', query), searchOpenLibrary('author', query)];
+    }
+    const results = await Promise.allSettled([...gQueries, ...olQueries]);
+    const g = results.slice(0, gQueries.length).flatMap(r => r.status === 'fulfilled' ? r.value : []);
+    const ol = results.slice(gQueries.length).flatMap(r => r.status === 'fulfilled' ? r.value : []);
+    const gDeduped = dedupe(g);
+    const seenKeys = new Set(gDeduped.map(b => (b.title + b.author).toLowerCase().replace(/\s/g, '')));
+    const olDeduped = dedupe(ol).filter(b => {
+      const key = (b.title + b.author).toLowerCase().replace(/\s/g, '');
+      if (seenKeys.has(key)) return false;
+      seenKeys.add(key); return true;
+    });
+    const merged = [...gDeduped, ...olDeduped];
+
     // Extract author hit: use the most common author among top results
     let authorHit = null;
-    if (bsSearchCategory !== 'intitle' && merged.length) {
+    if (merged.length) {
       const freq = {};
       merged.slice(0, 15).forEach(b => { if (b.author) freq[b.author] = (freq[b.author] || 0) + 1; });
       const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
@@ -2321,7 +2340,6 @@ async function fetchBookSearch(query) {
       const queryMatchesAuthor = top && queryWords.every(qw => authorWords.some(aw => aw.startsWith(qw) || aw.includes(qw)));
       if (top && top[1] >= 1 && queryMatchesAuthor) {
         authorHit = { name: top[0], photo: null };
-        // Try to fetch author photo from Open Library
         (async () => {
           try {
             const r = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(top[0])}&limit=1`);
@@ -2332,7 +2350,6 @@ async function fetchBookSearch(query) {
               const photoUrl = `https://covers.openlibrary.org/a/olid/${olid}-M.jpg`;
               authorHit.photo = photoUrl;
               authorHit.olid = olid;
-              // Re-render with photo once loaded
               const img = new Image();
               img.onload = () => {
                 const photoEl = document.querySelector('.bs-author-photo');
@@ -2352,8 +2369,10 @@ async function fetchBookSearch(query) {
 
 function renderBsResults(items, authorHit) {
   const el = document.getElementById('bsResults');
+  const manualLink = `<div class="bs-manual-link" id="bsManualLink">Can't find it? Add manually</div>`;
   if (!items.length && !authorHit) {
-    el.innerHTML = '<div class="bs-state"><p>No results found.<br>Try a different keyword or add manually.</p></div>';
+    el.innerHTML = '<div class="bs-state"><p>No results found.<br>Try a different keyword.</p></div>' + manualLink;
+    document.getElementById('bsManualLink')?.addEventListener('click', () => openManualAdd(addContext));
     return;
   }
 
@@ -2378,8 +2397,9 @@ function renderBsResults(items, authorHit) {
       </div>
       <span class="bs-result-add">+</span>
     </div>`;
-  }).join('');
+  }).join('') + manualLink;
   el._bsResults = items;
+  document.getElementById('bsManualLink')?.addEventListener('click', () => openManualAdd(addContext));
   el.querySelectorAll('.bs-result').forEach(row => {
     row.addEventListener('click', () => {
       const book = el._bsResults[+row.dataset.bsIndex];
@@ -2397,6 +2417,7 @@ function renderBsResults(items, authorHit) {
 
 function selectBsResult(title, author, coverUrl, meta) {
   window._pendingDescription = meta?._description || null;
+  const wasBorrowed = bsBorrowed && addContext === 'shelf';
   closeBookSearch();
   addCoverFile = null; addCoverUrl = coverUrl || null;
   document.getElementById('addTitle').value = title || '';
@@ -2414,14 +2435,29 @@ function selectBsResult(title, author, coverUrl, meta) {
     const ready = document.getElementById('addCoverReadyMsg');
     if (ready) ready.style.display = 'flex';
   }
+  if (wasBorrowed) {
+    addOwnership = 'borrowed';
+    const bfGroup = document.getElementById('borrowedFromGroup');
+    if (bfGroup) bfGroup.style.display = '';
+    const addBookBtn = document.getElementById('addBookBtn');
+    if (addBookBtn) addBookBtn.textContent = 'Start Reading';
+  }
   setTimeout(() => document.getElementById('addModal').classList.add('visible'), 80);
 }
 
 function openManualAdd(context = 'shelf') {
+  const wasBorrowed = bsBorrowed && context === 'shelf';
   setAddContext(context);
   closeBookSearch();
   const bar = document.getElementById('floatingBar');
   if (bar) bar.style.display = 'none';
+  if (wasBorrowed) {
+    addOwnership = 'borrowed';
+    const bfGroup = document.getElementById('borrowedFromGroup');
+    if (bfGroup) bfGroup.style.display = '';
+    const addBookBtn = document.getElementById('addBookBtn');
+    if (addBookBtn) addBookBtn.textContent = 'Start Reading';
+  }
   setTimeout(() => document.getElementById('addModal').classList.add('visible'), 80);
 }
 
@@ -2762,7 +2798,22 @@ if (document.readyState === 'loading') {
     }
   });
 })();
+function afToggleDetails() {
+  const fields = document.getElementById('afDetailsFields');
+  const toggle = document.getElementById('afDetailsToggle');
+  const label = document.getElementById('afDetailsToggleLabel');
+  if (!fields || !toggle || !label) return;
+  const expanded = fields.classList.toggle('expanded');
+  toggle.classList.toggle('expanded', expanded);
+  label.textContent = expanded ? 'Hide details' : 'Add more details';
+}
 function resetAddModal() {
+  const afFields = document.getElementById('afDetailsFields');
+  const afToggle = document.getElementById('afDetailsToggle');
+  const afLabel = document.getElementById('afDetailsToggleLabel');
+  if (afFields) afFields.classList.remove('expanded');
+  if (afToggle) afToggle.classList.remove('expanded');
+  if (afLabel) afLabel.textContent = 'Add more details';
   document.getElementById('addTitle').value = '';
   document.getElementById('addAuthor').value = '';
   document.getElementById('addTitle').style.borderColor = '';
