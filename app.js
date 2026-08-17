@@ -615,7 +615,9 @@ function copyShelfLink() {
 
 // ── PUBLIC SHELF ──
 async function loadPublicShelf(slug) {
-  document.getElementById('publicShelfScreen').style.display = 'flex';
+  const publicShelfScreenEl = document.getElementById('publicShelfScreen');
+  publicShelfScreenEl.style.display = 'flex';
+  publicShelfScreenEl.classList.add('open');
 
   const { data: profile, error: profileErr } = await sb
     .from('profiles')
