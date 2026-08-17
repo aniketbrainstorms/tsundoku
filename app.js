@@ -670,11 +670,40 @@ function renderPublicShelf() {
   }
   grid.classList.remove('reading-mode');
   grid.innerHTML = list.map((b, i) => `
-    <div class="pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
+    <div class="book-card pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
       ${coverHtml(b)}
       <div class="status-dot ${b.status}"></div>
     </div>`).join('');
+  grid.querySelectorAll('.pub-book-card').forEach(card => {
+    const id = card.dataset.id;
+    let pubPeekTimer = null, pubPressed = false;
+    card.addEventListener('touchstart', () => {
+      pubPressed = true;
+      pubPeekTimer = setTimeout(() => { if (pubPressed) openPublicPeek(id); }, 300);
+    }, { passive: true });
+    card.addEventListener('touchend', () => { pubPressed = false; clearTimeout(pubPeekTimer); closePeek(); });
+    card.addEventListener('touchcancel', () => { pubPressed = false; clearTimeout(pubPeekTimer); closePeek(); });
+    card.addEventListener('mousedown', () => {
+      pubPressed = true;
+      pubPeekTimer = setTimeout(() => { if (pubPressed) openPublicPeek(id); }, 300);
+    });
+    card.addEventListener('mouseup', () => { pubPressed = false; clearTimeout(pubPeekTimer); closePeek(); });
+    card.addEventListener('mouseleave', () => { pubPressed = false; clearTimeout(pubPeekTimer); closePeek(); });
+  });
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('public');
+}
+
+function onPublicSearchInput() {
+  const val = document.getElementById('publicSearchInput').value;
+  const clearBtn = document.getElementById('publicSearchClear');
+  if (clearBtn) clearBtn.classList.toggle('visible', val.length > 0);
+  renderPublicShelf();
+}
+function clearPublicSearch() {
+  const input = document.getElementById('publicSearchInput');
+  if (input) { input.value = ''; input.focus(); }
+  document.getElementById('publicSearchClear')?.classList.remove('visible');
+  renderPublicShelf();
 }
 
 // ── PUBLIC SORT ──
@@ -2928,9 +2957,17 @@ function _ensurePeekPortal() {
 }
 
 function openPeek(bookId) {
-  _ensurePeekPortal();
   const book = books.find(b => String(b.id) === String(bookId));
   if (!book) return;
+  _openPeekForBook(book);
+}
+function openPublicPeek(bookId) {
+  const book = publicBooks.find(b => String(b.id) === String(bookId));
+  if (!book) return;
+  _openPeekForBook(book);
+}
+function _openPeekForBook(book) {
+  _ensurePeekPortal();
   _peekActive = true;
 
   document.getElementById('bookPeekCover').innerHTML = book.cover_url
