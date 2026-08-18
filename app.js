@@ -1545,6 +1545,10 @@ function openProgressModal(id) {
   const book = books.find(b => b.id === id); if (!book) return;
   progressBookId = id;
   document.getElementById('progressModalSubtitle').textContent = book.title;
+  const pmCoverEl = document.getElementById('progressCoverEl');
+  if (pmCoverEl) pmCoverEl.innerHTML = book.cover_url
+    ? `<img src="${escapeAttr(book.cover_url)}" alt="" draggable="false"/>`
+    : makePlaceholder(book, 26);
   document.getElementById('progressPagesRead').value = book.pages_read || '';
   document.getElementById('progressTotalPages').value = book.total_pages || '';
   updateProgressPreview();
@@ -1564,7 +1568,13 @@ function updateProgressPreview() {
   pctEl.textContent = pct + '%';
   pctEl.style.color = isComplete ? 'var(--green)' : 'var(--accent)';
 
-  document.getElementById('progressPreviewPages').textContent = `${pr} / ${tp > 0 ? tp : '?'} pages`;
+    document.getElementById('progressPreviewPages').textContent = `${pr} / ${tp > 0 ? tp : '?'} pages`;
+
+  const pmBadge = document.getElementById('progressCoverBadge');
+  if (pmBadge) {
+    pmBadge.textContent = pct + '%';
+    pmBadge.style.background = isComplete ? 'var(--green)' : 'var(--accent)';
+  }
 
   const hint = document.getElementById('progressFinishHint');
   if (hint) hint.style.display = isComplete ? 'flex' : 'none';
