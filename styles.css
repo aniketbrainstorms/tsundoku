@@ -4081,7 +4081,8 @@ html.standalone-webapp .add-popup {
 }
 .af-details-fields.expanded { max-height: 900px; }
 
-.pm-cover-wrap { width: 108px; margin: 4px auto 22px; position: relative; }
+.pm-scene-wrap { display: flex; align-items: flex-end; justify-content: center; gap: 16px; margin: 4px auto 0; }
+.pm-cover-wrap { width: 108px; position: relative; margin: 0; }
 .pm-cover {
   width: 100%; aspect-ratio: 2/3; border-radius: 9px; overflow: hidden;
   background: var(--surface2);
@@ -4092,13 +4093,16 @@ html.standalone-webapp .add-popup {
 }
 .pm-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pm-cover .book-placeholder { height: 100%; }
+.pm-coffee-wrap { width: 72px; flex-shrink: 0; padding-bottom: 6px; }
+.pm-coffee-wrap img { width: 100%; display: block; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.4)); }
 .pm-cover-badge {
-  position: absolute; bottom: -10px; right: -8px;
-  min-width: 30px; padding: 4px 8px 6px;
+  display: block;
+  width: 46px; margin: -8px auto 20px;
+  padding: 4px 0 6px;
   background: var(--accent); color: #fff;
   font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700;
-  text-align: center; border-radius: 3px 3px 0 0;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+  text-align: center; border-radius: 0 0 4px 4px;
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
   box-shadow: 0 4px 10px rgba(0,0,0,0.4);
   z-index: 2;
 }
