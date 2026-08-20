@@ -4902,6 +4902,8 @@ function _swipePreRenderAll(force) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     // Don't intercept taps on interactive children
     if (e.target.closest('button, a, input, .rc-edit-btn')) return;
+    // Leave the left edge free for the back-swipe gesture
+    if (e.clientX < 24) return;
 
     const anyOverlay = document.querySelector(
       '.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open, .book-search-overlay.open'
@@ -5628,5 +5630,40 @@ Description: ${book.description || 'No description available.'}`;
   } else {
     pwaBackInit();
   }
+
+  // ── Left-edge swipe = back action ──
+  // Independent of the system gesture — works even when the OS/browser
+  // doesn't forward its own edge-swipe as popstate (common in installed PWAs).
+  const EDGE_ZONE = 24;      // px from left edge that starts tracking
+  const TRIGGER_DX = 70;     // px dragged right before we treat it as "back"
+  const MAX_DY = 60;         // px of vertical drift allowed before we bail
+  let edgeStartX = 0, edgeStartY = 0, edgeTracking = false, edgeTriggered = false;
+
+  document.addEventListener('touchstart', e => {
+    if (pwaCountOpen() === 0) { edgeTracking = false; return; }
+    const t = e.touches[0];
+    if (t.clientX > EDGE_ZONE) { edgeTracking = false; return; }
+    edgeTracking = true;
+    edgeTriggered = false;
+    edgeStartX = t.clientX;
+    edgeStartY = t.clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!edgeTracking || edgeTriggered) return;
+    const t = e.touches[0];
+    const dx = t.clientX - edgeStartX;
+    const dy = Math.abs(t.clientY - edgeStartY);
+    if (dy > MAX_DY) { edgeTracking = false; return; }
+    if (dx > TRIGGER_DX) {
+      edgeTriggered = true;
+      edgeTracking = false;
+      pwaCloseTopmost();
+      requestAnimationFrame(() => pwaSyncHistory());
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => { edgeTracking = false; });
+  document.addEventListener('touchcancel', () => { edgeTracking = false; });
 })();
 // ── END ANDROID HARDWARE/GESTURE BACK BUTTON ────────────────────────────
