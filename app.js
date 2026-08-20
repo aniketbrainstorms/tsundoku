@@ -5514,7 +5514,7 @@ Description: ${book.description || 'No description available.'}`;
     showToast('Author bio backfill finished ✓');
   }
 
-  // Refresh the Profile modal's status badges whenever it reopens
+    // Refresh the Profile modal's status badges whenever it reopens
   window.addEventListener('load', () => {
     const _origOpenProfile = window.openProfileModal;
     if (typeof _origOpenProfile === 'function') {
@@ -5525,3 +5525,108 @@ Description: ${book.description || 'No description available.'}`;
     }
   });
 })();
+
+// ── ANDROID HARDWARE/GESTURE BACK BUTTON ────────────────────────────────
+// Makes back close the topmost open overlay/modal/sheet instead of exiting
+// the installed PWA. Fully additive — no existing open/close functions
+// are modified, only called.
+;(function () {
+  const OVERLAY_SELECTOR = '.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open';
+
+  // Close functions that need more than a generic classList removal.
+  const SPECIAL_MODAL_CLOSE = {
+    scannerModal: () => { if (typeof closeScannerModal === 'function') closeScannerModal(); },
+    editSheetOverlay: () => { if (typeof closeEditSheet === 'function') closeEditSheet(); },
+    listBookDetailModal: () => { if (typeof closeListBookDetail === 'function') closeListBookDetail(); },
+    finishBorrowedSheet: () => { if (typeof closeFinishBorrowedSheet === 'function') closeFinishBorrowedSheet(); },
+    authorPhotoModal: () => { if (typeof closeAuthorPhotoModal === 'function') closeAuthorPhotoModal(); },
+    avatarCropModal: () => { if (typeof closeAvatarCropModal === 'function') closeAvatarCropModal(); },
+    loSheetOverlay: () => { if (typeof window.loCloseSheet === 'function') window.loCloseSheet(); },
+  };
+
+  const NAV_PANEL_CLOSE = {
+    shelfOverlay: () => window.closeShelfView?.(),
+    bookSearchOverlay: () => window.closeBookSearch?.(),
+    readNotOwnedOverlay: () => window.closeReadNotOwnedOverlay?.(),
+    listsOverlay: () => window.closeListsOverlay?.(),
+    authorsListOverlay: () => window.closeAuthorsOverlay?.(),
+    authorOverlay: () => window.closeAuthorPage?.(),
+    listDetailOverlay: () => window.closeListDetail?.(),
+    genresListOverlay: () => window.closeGenresOverlay?.(),
+    genreDetailOverlay: () => window.closeGenreDetail?.(),
+  };
+
+  function pwaCountOpen() {
+    return document.querySelectorAll(OVERLAY_SELECTOR).length;
+  }
+
+  function pwaCloseTopmost() {
+    // Modals/sheets (includes detailModal + editSheetOverlay + profileModal + addModal etc.)
+    const modals = document.querySelectorAll('.modal-overlay.visible');
+    if (modals.length) {
+      const top = modals[modals.length - 1];
+      const special = SPECIAL_MODAL_CLOSE[top.id];
+      if (special) { special(); return true; }
+      if (top.id && typeof closeModal === 'function') { closeModal(top.id); return true; }
+      top.classList.remove('visible');
+      return true;
+    }
+    // Shelf search bottom sheet
+    const sbs = document.getElementById('shelfSearchOverlay');
+    if (sbs && sbs.classList.contains('open')) {
+      if (typeof closeShelfSearch === 'function') closeShelfSearch();
+      return true;
+    }
+    // Nav-panel overlays (profile/lists/authors/etc.)
+    const panels = document.querySelectorAll('.nav-panel.open');
+    if (panels.length) {
+      const top = panels[panels.length - 1];
+      const fn = NAV_PANEL_CLOSE[top.id];
+      if (fn) { fn(); return true; }
+      top.classList.remove('open');
+      return true;
+    }
+    return false;
+  }
+
+  let lastCount = 0;
+  let suppressCount = 0; // how many upcoming popstates were triggered by us, not the user
+
+  function pwaSyncHistory() {
+    const n = pwaCountOpen();
+    if (n > lastCount) {
+      for (let i = 0; i < n - lastCount; i++) history.pushState({ tsundokuOverlay: true }, '');
+    } else if (n < lastCount) {
+      const diff = lastCount - n;
+      for (let i = 0; i < diff; i++) { suppressCount++; history.back(); }
+    }
+    lastCount = n;
+  }
+
+  window.addEventListener('popstate', () => {
+    if (suppressCount > 0) { suppressCount--; return; }
+    pwaCloseTopmost();
+    requestAnimationFrame(() => { lastCount = pwaCountOpen(); });
+  });
+
+  let mutationScheduled = false;
+  const observer = new MutationObserver(() => {
+    if (mutationScheduled) return;
+    mutationScheduled = true;
+    requestAnimationFrame(() => {
+      mutationScheduled = false;
+      pwaSyncHistory();
+    });
+  });
+
+  function pwaBackInit() {
+    lastCount = pwaCountOpen();
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', pwaBackInit);
+  } else {
+    pwaBackInit();
+  }
+})();
+// ── END ANDROID HARDWARE/GESTURE BACK BUTTON ────────────────────────────
