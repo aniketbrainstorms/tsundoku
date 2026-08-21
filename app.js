@@ -313,6 +313,7 @@ function getShelfParam() {
       loadBooks();
       loadProfile();
       loLoadLists();
+      if (typeof loadHabitTracker === 'function') loadHabitTracker();
     } else {
       currentUser = null;
       document.getElementById('authScreen').style.display = 'flex';
