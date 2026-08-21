@@ -493,7 +493,42 @@
       <!-- Main grid container -->
       <div class="grid-container" id="mainGridContainer">
         <div class="swipe-strip" id="swipeStrip">
-          <div class="swipe-pane" id="pane-reading"><div class="book-grid" id="bookGrid-reading"></div></div>
+          <div class="swipe-pane" id="pane-reading">
+          <div class="habit-card" id="habitCard">
+            <div class="habit-head">
+              <button type="button" class="habit-toggle" id="habitToggle" onclick="habitToggleExpand()">
+                <span class="habit-toggle-left">
+                  <span class="habit-question" id="habitQuestion">Have you read today?</span>
+                  <span class="habit-date" id="habitDate"></span>
+                </span>
+                <span class="habit-toggle-right" id="habitToggleRight"></span>
+              </button>
+              <div class="habit-actions" id="habitActions">
+                <button type="button" class="habit-btn no" onclick="habitMarkToday(false)">NO</button>
+                <button type="button" class="habit-btn yes" onclick="habitMarkToday(true)">YES</button>
+              </div>
+            </div>
+            <div class="habit-body">
+              <div class="habit-body-inner">
+                <div class="cal-nav">
+                  <button type="button" class="cal-nav-btn" id="habitPrevMonth" onclick="habitShiftMonth(-1)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                  <div class="cal-month" id="habitCalMonth"></div>
+                  <button type="button" class="cal-nav-btn" id="habitNextMonth" onclick="habitShiftMonth(1)" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                </div>
+                <div class="cal-grid" id="habitCalGrid"></div>
+                <div class="habit-stats">
+                  <div class="stat"><div class="n" id="habitStreakStat">0</div><div class="l">day streak</div></div>
+                  <div class="stat"><div class="n" id="habitMonthStat">0</div><div class="l">days this month</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="book-grid" id="bookGrid-reading"></div>
+        </div>
           <div class="swipe-pane" id="pane-read"><div class="book-grid" id="bookGrid-read"></div></div>
           <div class="swipe-pane" id="pane-unread"><div class="book-grid" id="bookGrid-unread"></div></div>
         </div>
@@ -1936,6 +1971,7 @@
   window.BOOKS_API_KEY = 'AIzaSyDY0HE6xmGgZBpFavD-T7dDgA21lHFz49A';
 </script>
 <script src="app.js"></script>
+<script src="habit_tracker.js"></script>
 <script src="detail_sheet.js"></script>
 <script src="author_modal.js"></script>
 <script src="genrepie.js"></script>
