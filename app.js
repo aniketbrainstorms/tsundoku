@@ -799,6 +799,12 @@ function clearPublicSearch() {
 }
 
 // ── PUBLIC SORT ──
+function togglePublicSort() {
+  publicSort = publicSort === 'title' ? 'author' : 'title';
+  const btn = document.getElementById('publicSortToggleBtn');
+  if (btn) btn.lastChild.textContent = publicSort === 'title' ? ' sort by title' : ' sort by author';
+  renderPublicShelf();
+}
 function openPublicSortMenu(btn) {
   const menu = document.getElementById('publicSortMenu');
   menu.querySelectorAll('.qm-item').forEach(i => i.classList.toggle('current-status', i.dataset.psort === publicSort));
