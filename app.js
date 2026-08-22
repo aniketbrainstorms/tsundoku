@@ -677,7 +677,8 @@ async function loadPublicShelf(slug) {
   document.getElementById('publicShelfOwner').textContent = `${profile.shelf_slug}'s shelf`;
   const countPill = document.getElementById('publicShelfCountPill');
   if (countPill) {
-    countPill.textContent = `${publicBooks.length} ${publicBooks.length === 1 ? 'book' : 'books'}`;
+    const visibleCount = publicBooks.filter(b => b.status !== 'not-owned').length;
+    countPill.textContent = `${visibleCount} ${visibleCount === 1 ? 'book' : 'books'}`;
     countPill.style.display = 'inline-block';
   }
 
