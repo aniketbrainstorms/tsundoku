@@ -716,6 +716,33 @@ function renderPublicGenreChips() {
   });
 }
 
+function pubGroupKey(book) {
+  if (publicSort === 'author') return (book.author || '').trim().toLowerCase() || '\u0000';
+  const c = (book.title || '').trim()[0];
+  return c && /[a-z]/i.test(c) ? c.toUpperCase() : '#';
+}
+function pubGroupLabel(book) {
+  if (publicSort === 'author') return (book.author || '').trim() || 'Unknown Author';
+  return pubGroupKey(book);
+}
+function buildPublicGroupedHtml(list) {
+  let html = '';
+  let lastKey = null;
+  list.forEach((b, i) => {
+    const key = pubGroupKey(b);
+    if (key !== lastKey) {
+      const cls = publicSort === 'author' ? 'pub-group-header pub-group-header--author' : 'pub-group-header pub-group-header--letter';
+      html += `<div class="${cls}">${escapeHtml(pubGroupLabel(b))}</div>`;
+      lastKey = key;
+    }
+    html += `
+    <div class="book-card pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
+      ${coverHtml(b)}
+      <div class="status-dot ${b.status}"></div>
+    </div>`;
+  });
+  return html;
+}
 function renderPublicShelf() {
   const q = (document.getElementById('publicSearchInput')?.value || '').toLowerCase().trim();
   let list = publicBooks.filter(b => b.status !== 'not-owned');
@@ -738,11 +765,7 @@ function renderPublicShelf() {
     return;
   }
   grid.classList.remove('reading-mode');
-  grid.innerHTML = list.map((b, i) => `
-    <div class="book-card pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
-      ${coverHtml(b)}
-      <div class="status-dot ${b.status}"></div>
-    </div>`).join('');
+  grid.innerHTML = buildPublicGroupedHtml(list);
   grid.querySelectorAll('.pub-book-card').forEach(card => {
     const id = card.dataset.id;
     let pubPeekTimer = null, pubPressed = false;
