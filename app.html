@@ -648,12 +648,7 @@
       </div>
       <div id="publicShelfCountPill" style="display:none;font-size:11px;color:var(--accent);background:rgba(201,113,74,0.12);border-radius:100px;padding:4px 11px;margin-bottom:14px"></div>
       <div id="publicGenreChipRow" style="display:none;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:2px"></div>
-      <div class="public-shelf-toolbar">
-        <div class="al-search-wrap" style="flex:1;position:relative">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" class="al-search-input" id="publicSearchInput" placeholder="Search by title or author…" oninput="onPublicSearchInput()" autocomplete="off" autocorrect="off" spellcheck="false" style="padding-right:26px" />
-          <button class="search-row-clear" id="publicSearchClear" onclick="clearPublicSearch()" style="right:6px">×</button>
-        </div>
+      <div class="public-shelf-toolbar" style="justify-content:flex-end">
         <button class="sort-btn" id="publicSortBtn" onclick="openPublicSortMenu(this)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
         </button>
@@ -667,6 +662,12 @@
       <div class="alpha-track" id="publicAlphaTrack"></div>
     </div>
     <div class="alpha-bubble" id="publicAlphaBubble"></div>
+    <div class="floating-bar" id="publicFloatingBar">
+      <div class="floating-search-field" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14" y2="14"/></svg>
+        <input type="text" class="floating-search-input" id="publicSearchInput" placeholder="Search by title or author…" oninput="onPublicSearchInput()" autocomplete="off" autocorrect="off" spellcheck="false" style="cursor:text;caret-color:var(--accent)" />
+      </div>
+    </div>
   </div>
 
 <!-- SHELF SEARCH — backdrop + unified sheet -->
