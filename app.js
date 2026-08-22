@@ -613,6 +613,10 @@ function copyShelfLink() {
   const url = `${location.origin}${location.pathname}?shelf=${slug}`;
   navigator.clipboard.writeText(url).then(() => showToast('Link copied ✓')).catch(() => showToast('Copy failed'));
 }
+function copyAppLink() {
+  const url = 'https://aniketbrainstorms.github.io/tsundoku/app.html';
+  navigator.clipboard.writeText(url).then(() => showToast('App link copied ✓')).catch(() => showToast('Copy failed'));
+}
 
 // ── PUBLIC SHELF ──
 async function loadPublicShelf(slug) {
