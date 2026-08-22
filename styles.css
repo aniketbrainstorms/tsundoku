@@ -1768,7 +1768,7 @@ html.standalone-webapp .add-popup {
 }
 .public-shelf-empty p { color: var(--text-muted); font-size: 14px; line-height: 1.7; }
 .public-shelf-content {
-  flex: 1; min-height: 0; overflow-y: auto; padding: 0 max(var(--safe-right),16px) max(calc(var(--safe-bottom)+24px),24px) max(var(--safe-left),16px);
+  flex: 1; min-height: 0; overflow-y: auto; padding: 16px max(var(--safe-right),16px) max(calc(var(--safe-bottom) + 92px), 108px) max(var(--safe-left),16px);
   scrollbar-width: none;
 }
 .public-shelf-content::-webkit-scrollbar { display: none; }
