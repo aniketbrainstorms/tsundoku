@@ -1515,11 +1515,12 @@
   <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
 </button>
 <p class="profile-section-label">invite friends</p>
-<div style="display:flex;gap:14px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:20px">
-  <div style="width:76px;height:76px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#fff;padding:4px">
+<div style="position:relative;display:flex;gap:14px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:20px;overflow:hidden">
+  <img src="https://raw.githubusercontent.com/aniketbrainstorms/tsundoku/main/book_plant.png" alt="" style="position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:90px;opacity:0.85;pointer-events:none" onerror="this.style.display='none'" />
+  <div style="width:76px;height:76px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#fff;padding:4px;position:relative;z-index:1">
     <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https%3A%2F%2Faniketbrainstorms.github.io%2Ftsundoku%2Fapp.html" alt="" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:6px" />
   </div>
-  <div style="flex:1;min-width:0">
+  <div style="flex:1;min-width:0;position:relative;z-index:1">
     <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px">invite a fellow reader</div>
     <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;line-height:1.4">scan to open tsundoku</div>
     <button onclick="copyAppLink()" style="display:flex;align-items:center;gap:6px;padding:8px 13px;background:rgba(201,113,74,0.1);border:1px solid rgba(201,113,74,0.4);border-radius:100px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">
