@@ -50,6 +50,7 @@ let userProfile = null;
 let publicBooks = [];
 let publicSort = 'title';
 let avatarUploading = false;
+let publicGenreFilter = null;
 
 // ── THEME ──
 function setTheme(theme) {
@@ -533,6 +534,8 @@ function updateShareUI() {
   const slug = userProfile?.shelf_slug || '';
   const isPublic = userProfile?.shelf_public || false;
   slugInput.value = slug;
+  const taglineInput = document.getElementById('shareTaglineInput');
+  if (taglineInput) taglineInput.value = userProfile?.tagline || '';
 
   if (slug) {
     const url = `${location.origin}${location.pathname}?shelf=${slug}`;
@@ -597,6 +600,18 @@ async function saveSlug() {
   showToast('Link saved ✓');
 }
 
+async function saveTagline() {
+  const tagline = document.getElementById('shareTaglineInput').value.trim().slice(0, 80);
+  const btn = document.getElementById('shareTaglineSave');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const payload = { user_id: currentUser.id, tagline };
+  const { data, error } = await sb.from('profiles').upsert(payload, { onConflict: 'user_id' }).select().single();
+  btn.disabled = false; btn.textContent = 'Save';
+  if (error) { showToast(error.message || 'Could not save'); return; }
+  userProfile = data;
+  showToast('Tagline saved ✓');
+}
+
 async function toggleShelfPublic() {
   if (!userProfile?.shelf_slug) { showToast('Set a name first'); return; }
   const newVal = !userProfile.shelf_public;
@@ -626,15 +641,26 @@ async function loadPublicShelf(slug) {
 
   const { data: profile, error: profileErr } = await sb
     .from('profiles')
-    .select('user_id, shelf_slug, shelf_public')
+    .select('user_id, shelf_slug, shelf_public, avatar_url, tagline')
     .eq('shelf_slug', slug)
     .single();
 
   if (profileErr || !profile || !profile.shelf_public) {
     document.getElementById('publicShelfOwner').textContent = 'Shelf not found';
-    document.getElementById('publicShelfSub').textContent = 'This shelf may be private or the link is incorrect.';
+    document.getElementById('publicShelfTagline').textContent = 'This shelf may be private or the link is incorrect.';
     return;
   }
+
+  const avatarEl = document.getElementById('publicShelfAvatar');
+  if (avatarEl) {
+    if (profile.avatar_url) {
+      avatarEl.innerHTML = `<img src="${escapeAttr(profile.avatar_url)}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.textContent='${escapeAttr((profile.shelf_slug||'?')[0].toUpperCase())}'" />`;
+    } else {
+      avatarEl.textContent = (profile.shelf_slug || '?')[0].toUpperCase();
+    }
+  }
+  const taglineEl = document.getElementById('publicShelfTagline');
+  if (taglineEl) taglineEl.textContent = profile.tagline || '';
 
   const { data: booksData, error: booksErr } = await sb
     .from('books')
@@ -649,15 +675,50 @@ async function loadPublicShelf(slug) {
 
   publicBooks = booksData || [];
   document.getElementById('publicShelfOwner').textContent = `${profile.shelf_slug}'s shelf`;
-  document.getElementById('publicShelfSub').textContent =
-    `${publicBooks.length} ${publicBooks.length === 1 ? 'book' : 'books'}`;
+  const countPill = document.getElementById('publicShelfCountPill');
+  if (countPill) {
+    countPill.textContent = `${publicBooks.length} ${publicBooks.length === 1 ? 'book' : 'books'}`;
+    countPill.style.display = 'inline-block';
+  }
 
+  renderPublicGenreChips();
   renderPublicShelf();
+}
+
+function buildPublicGenreMap() {
+  const map = new Map();
+  publicBooks.filter(b => b.status !== 'not-owned').forEach(b => {
+    getBookGenres(b).forEach(g => {
+      if (!map.has(g)) map.set(g, []);
+      map.get(g).push(b);
+    });
+  });
+  return map;
+}
+
+function renderPublicGenreChips() {
+  const row = document.getElementById('publicGenreChipRow');
+  if (!row) return;
+  const map = buildPublicGenreMap();
+  if (!map.size) { row.style.display = 'none'; return; }
+  row.style.display = 'flex';
+  const sorted = Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+  const chips = [`<button class="ld-chip${publicGenreFilter === null ? ' active' : ''}" data-genre="">All</button>`]
+    .concat(sorted.map(([name, arr]) => `<button class="ld-chip${publicGenreFilter === name ? ' active' : ''}" data-genre="${escapeAttr(name)}">${escapeHtml(name)} <span style="opacity:0.65">${arr.length}</span></button>`));
+  row.innerHTML = chips.join('');
+  row.querySelectorAll('.ld-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      publicGenreFilter = chip.dataset.genre || null;
+      renderPublicGenreChips();
+      renderPublicShelf();
+    });
+  });
 }
 
 function renderPublicShelf() {
   const q = (document.getElementById('publicSearchInput')?.value || '').toLowerCase().trim();
   let list = publicBooks.filter(b => b.status !== 'not-owned');
+  if (publicGenreFilter) list = list.filter(b => getBookGenres(b).includes(publicGenreFilter));
   if (q) list = list.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
 
   list.sort((a, b) => {
