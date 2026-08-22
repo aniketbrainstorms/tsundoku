@@ -1514,6 +1514,21 @@
   <span class="profile-shelf-count" id="bfAuthorStatus"></span>
   <svg class="profile-shelf-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
 </button>
+<p class="profile-section-label">invite friends</p>
+<div style="display:flex;gap:14px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:20px">
+  <div style="width:76px;height:76px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#fff;padding:4px">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https%3A%2F%2Faniketbrainstorms.github.io%2Ftsundoku" alt="" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:6px" />
+  </div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px">invite a fellow reader</div>
+    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;line-height:1.4">scan to open tsundoku</div>
+    <button onclick="copyAppLink()" style="display:flex;align-items:center;gap:6px;padding:8px 13px;background:rgba(201,113,74,0.1);border:1px solid rgba(201,113,74,0.4);border-radius:100px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      copy app link
+    </button>
+  </div>
+</div>
+<div class="divider" style="margin:0 0 20px"></div>
 <p class="profile-section-label">coming soon</p>
 <div class="profile-coming-soon">
   Annual reading goal · Import from Goodreads
