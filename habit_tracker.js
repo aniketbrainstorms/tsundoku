@@ -5,6 +5,7 @@
 
 let habitAnsweredToday = null; // null | true | false
 let habitStreak = 0;
+let habitLoadToken = 0; // guards against out-of-order loadHabitTracker() calls
 let habitViewYear = new Date().getFullYear();
 let habitViewMonth = new Date().getMonth(); // 0-indexed
 let habitMonthCache = {}; // 'YYYY-MM-DD' -> boolean, for the currently viewed month
@@ -23,6 +24,7 @@ function habitFmtDate(d) {
 // ── LOAD ──
 async function loadHabitTracker() {
   if (!currentUser) return;
+  const myToken = ++habitLoadToken; // this call "owns" the result only if still latest when it resolves
   const todayIso = habitTodayIso();
   const dateEl = document.getElementById('habitDate');
   if (dateEl) dateEl.textContent = habitFmtDate(new Date());
@@ -30,18 +32,24 @@ async function loadHabitTracker() {
   habitViewYear = new Date().getFullYear();
   habitViewMonth = new Date().getMonth();
 
+  let resolvedAnswered = null;
+  let resolvedStreak = 0;
   try {
     const [{ data: todayRow }, streak] = await Promise.all([
       sb.from('reading_checkins').select('answered').eq('user_id', currentUser.id).eq('date', todayIso).maybeSingle(),
       habitComputeStreak()
     ]);
-    habitAnsweredToday = todayRow ? todayRow.answered : null;
-    habitStreak = streak;
+    resolvedAnswered = todayRow ? todayRow.answered : null;
+    resolvedStreak = streak;
   } catch {
-    habitAnsweredToday = null;
-    habitStreak = 0;
+    resolvedAnswered = null;
+    resolvedStreak = 0;
   }
 
+  if (myToken !== habitLoadToken) return; // a newer load started — discard this stale result
+
+  habitAnsweredToday = resolvedAnswered;
+  habitStreak = resolvedStreak;
   habitRenderHead();
   await habitBuildCalendar();
 }
