@@ -1606,10 +1606,14 @@
       <button class="sort-btn" id="shelfSortBtn" onclick="openShelfSortMenu(this)">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
       </button>
+      <button class="sort-btn" id="myShelfViewToggleBtn" onclick="toggleMyShelfView()">
+        <svg id="myShelfViewToggleIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </button>
     </div>
     <div class="divider"></div>
     <div class="grid-container" style="padding-bottom: max(calc(var(--safe-bottom) + 32px),32px)" id="shelfGridContainer">
       <div class="book-grid" id="shelfGrid"></div>
+      <div class="pub-shelf-rows" id="myShelfShelfRows" style="display:none"></div>
     </div>
     <div class="alpha-bar" id="shelfAlphaBar">
       <div class="alpha-track" id="shelfAlphaTrack"></div>
