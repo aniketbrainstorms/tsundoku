@@ -3181,7 +3181,7 @@ Description: ${description || 'No description available.'}`;
       barId: 'publicAlphaBar',
       trackId: 'publicAlphaTrack',
       bubbleId: 'publicAlphaBubble',
-      gridId: 'publicBookGrid',
+      gridId: 'publicShelfContent',
       containerId: 'publicShelfContent',
       getSort: () => publicSort,
     },
@@ -3213,7 +3213,7 @@ Description: ${description || 'No description available.'}`;
     const grid = document.getElementById(CONTEXTS[ctx].gridId);
     if (!grid) return [];
     if (ctx === 'authors') return Array.from(grid.querySelectorAll('.al-author-row[data-author]'));
-    return Array.from(grid.querySelectorAll('.book-card[data-id], .pub-book-card[data-id]'));
+    return Array.from(grid.querySelectorAll('.book-card[data-id], .pub-book-card[data-id], .pub-spine[data-id]'));
   }
 
   function getActiveLetters(ctx) {
