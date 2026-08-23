@@ -869,7 +869,9 @@ function pubSpineHtml(book) {
   const hex = cached || pal[1];
   const shaded1 = pubShade(hex, -28);
   const textColor = pubTextColorFor(hex);
-  return `<div class="pub-spine" data-id="${book.id}" data-title="${escapeAttr(book.title || '')}" data-author="${escapeAttr(book.author || '')}" style="width:${w}px;background:linear-gradient(100deg, ${shaded1} 0%, ${hex} 45%, ${shaded1} 100%)">
+  const bgImage = book.cover_url ? `background-image:url('${escapeAttr(book.cover_url)}');background-size:cover;background-position:left center;` : '';
+  return `<div class="pub-spine" data-id="${book.id}" data-title="${escapeAttr(book.title || '')}" data-author="${escapeAttr(book.author || '')}" style="width:${w}px;${bgImage}">
+    <div class="pub-spine-scrim" style="background:linear-gradient(100deg, ${shaded1}e6 0%, ${hex}cc 45%, ${shaded1}e6 100%)"></div>
     <div class="pub-spine-text">
       <span class="pub-spine-title" style="color:${textColor}">${escapeHtml(book.title || '')}</span>
       ${book.author ? `<span class="pub-spine-author" style="color:${textColor}">${escapeHtml(book.author)}</span>` : ''}
@@ -929,7 +931,8 @@ function renderPublicShelfRows(list) {
       pubExtractSpineColor(book, hex => {
         if (!hex) return;
         const shaded1 = pubShade(hex, -28);
-        el.style.background = `linear-gradient(100deg, ${shaded1} 0%, ${hex} 45%, ${shaded1} 100%)`;
+        const scrimEl = el.querySelector('.pub-spine-scrim');
+        if (scrimEl) scrimEl.style.background = `linear-gradient(100deg, ${shaded1}e6 0%, ${hex}cc 45%, ${shaded1}e6 100%)`;
         const textColor = pubTextColorFor(hex);
         el.querySelectorAll('.pub-spine-title, .pub-spine-author').forEach(t => t.style.color = textColor);
       });
