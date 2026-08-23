@@ -2275,6 +2275,78 @@ function renderGenreDetailGrid() {
 // ── MY SHELF VIEW ──
 let shelfSort = 'recent';
 let shelfGenreFilter = null;
+let myShelfView = 'grid';
+try { myShelfView = localStorage.getItem('tsundoku_myshelf_view') || 'grid'; } catch {}
+function toggleMyShelfView() {
+  myShelfView = myShelfView === 'shelf' ? 'grid' : 'shelf';
+  try { localStorage.setItem('tsundoku_myshelf_view', myShelfView); } catch {}
+  updateMyShelfViewToggleIcon();
+  renderShelfGrid();
+}
+function updateMyShelfViewToggleIcon() {
+  const icon = document.getElementById('myShelfViewToggleIcon');
+  if (!icon) return;
+  icon.innerHTML = myShelfView === 'shelf'
+    ? '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'
+    : '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>';
+  const btn = document.getElementById('myShelfViewToggleBtn');
+  if (btn) btn.style.color = myShelfView === 'shelf' ? 'var(--accent)' : '';
+}
+function renderMyShelfRows(list) {
+  const wrap = document.getElementById('myShelfShelfRows');
+  if (!wrap) return;
+  const containerEl = document.getElementById('shelfGridContainer');
+  let containerWidth = 340;
+  if (containerEl) {
+    const cs = getComputedStyle(containerEl);
+    containerWidth = containerEl.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  }
+  const GAP = 3;
+  const rows = [];
+  let current = [];
+  let currentW = 0;
+  list.forEach(book => {
+    const w = pubSpineWidth(book);
+    if (current.length && currentW + GAP + w > containerWidth) {
+      rows.push(current);
+      current = [];
+      currentW = 0;
+    }
+    current.push(book);
+    currentW += (current.length > 1 ? GAP : 0) + w;
+  });
+  if (current.length) rows.push(current);
+
+  wrap.innerHTML = rows.map(row => `
+    <div class="pub-shelf-row">
+      <div class="pub-shelf-row-books">${row.map(b => pubSpineHtml(b)).join('')}</div>
+      <div class="pub-shelf-plank"></div>
+    </div>`).join('');
+
+  wrap.querySelectorAll('.pub-spine').forEach(el => {
+    const id = el.dataset.id;
+    el.addEventListener('touchstart', e => startPress(e, id, el), { passive: true });
+    el.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, el); });
+    el.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(el); });
+    el.addEventListener('click', e => {
+      if (isTouch()) { openDetailModal(id); return; }
+      if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
+      else openQuickMenu(id, el);
+    });
+
+    const book = list.find(b => String(b.id) === String(id));
+    if (book && book.cover_url && !pubGetCachedSpineColor(book.id)) {
+      pubExtractSpineColor(book, hex => {
+        if (!hex) return;
+        const shaded1 = pubShade(hex, -28);
+        const scrimEl = el.querySelector('.pub-spine-scrim');
+        if (scrimEl) scrimEl.style.background = `linear-gradient(100deg, ${shaded1}e6 0%, ${hex}cc 45%, ${shaded1}e6 100%)`;
+        const textColor = pubTextColorFor(hex);
+        el.querySelectorAll('.pub-spine-title, .pub-spine-author').forEach(t => t.style.color = textColor);
+      });
+    }
+  });
+}
 function renderShelfGenreChips() {
   const row = document.getElementById('shelfGenreChipRow');
   if (!row) return;
@@ -2304,6 +2376,7 @@ function openShelfView() {
   const si = document.getElementById('shelfViewSearchInput');
   if (si) { si.value = ''; document.getElementById('shelfSearchClear').classList.remove('visible'); }
   updateShelfStats();
+  updateMyShelfViewToggleIcon();
   renderShelfGrid();
   navPush(null, document.getElementById('shelfOverlay'));
   _updateAppRecede();
@@ -2448,6 +2521,21 @@ function renderShelfGrid() {
     return new Date(b.created_at) - new Date(a.created_at);
   });
   if (countEl) countEl.textContent = all.length === 1 ? '1 book' : `${all.length} books`;
+  const myShelfRowsWrap = document.getElementById('myShelfShelfRows');
+  if (myShelfView === 'shelf') {
+    grid.style.display = 'none';
+    if (myShelfRowsWrap) myShelfRowsWrap.style.display = '';
+    if (!all.length) {
+      if (myShelfRowsWrap) myShelfRowsWrap.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>Your shelf is empty.<br>Tap <strong style="color:var(--accent)">+</strong> to add books.</p></div>`;
+      if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
+      return;
+    }
+    renderMyShelfRows(all);
+    if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
+    return;
+  }
+  grid.style.display = '';
+  if (myShelfRowsWrap) myShelfRowsWrap.style.display = 'none';
   if (!all.length) {
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>Your shelf is empty.<br>Tap <strong style="color:var(--accent)">+</strong> to add books.</p></div>`;
     return;
@@ -3330,7 +3418,7 @@ Description: ${description || 'No description available.'}`;
       barId: 'shelfAlphaBar',
       trackId: 'shelfAlphaTrack',
       bubbleId: 'shelfAlphaBubble',
-      gridId: 'shelfGrid',
+      gridId: 'shelfGridContainer',
       containerId: 'shelfGridContainer',
       getSort: () => shelfSort,
     },
