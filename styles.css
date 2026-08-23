@@ -1799,6 +1799,9 @@ html.standalone-webapp .add-popup {
   transition: filter 0.12s ease;
 }
 .pub-spine.pressing { filter: brightness(0.75); }
+.pub-spine-scrim {
+  position: absolute; inset: 0;
+}
 .pub-spine-text {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center; gap: 5px;
