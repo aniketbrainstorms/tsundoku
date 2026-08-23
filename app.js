@@ -51,6 +51,7 @@ let publicBooks = [];
 let publicSort = 'title';
 let avatarUploading = false;
 let publicGenreFilter = null;
+let publicView = 'shelf';
 
 // ── THEME ──
 function setTheme(theme) {
@@ -638,6 +639,8 @@ async function loadPublicShelf(slug) {
   const publicShelfScreenEl = document.getElementById('publicShelfScreen');
   publicShelfScreenEl.style.display = 'flex';
   publicShelfScreenEl.classList.add('open');
+  try { publicView = localStorage.getItem('tsundoku_public_view') || 'shelf'; } catch { publicView = 'shelf'; }
+  updatePublicViewToggleIcon();
 
   const { data: profile, error: profileErr } = await sb
     .from('profiles')
@@ -758,6 +761,20 @@ function renderPublicShelf() {
   });
 
   const grid = document.getElementById('publicBookGrid');
+  const rowsWrap = document.getElementById('publicShelfRows');
+  if (publicView === 'shelf') {
+    grid.style.display = 'none';
+    if (rowsWrap) rowsWrap.style.display = '';
+    if (!list.length) {
+      if (rowsWrap) rowsWrap.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>${q ? 'No results found.' : 'No books yet.'}</p></div>`;
+      if (typeof alphaBarRefresh === 'function') alphaBarRefresh('public');
+      return;
+    }
+    renderPublicShelfRows(list);
+    return;
+  }
+  grid.style.display = '';
+  if (rowsWrap) rowsWrap.style.display = 'none';
   if (!list.length) {
     grid.classList.remove('reading-mode');
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>${q ? 'No results found.' : 'No books yet.'}</p></div>`;
@@ -785,6 +802,142 @@ function renderPublicShelf() {
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('public');
 }
 
+function togglePublicView() {
+  publicView = publicView === 'shelf' ? 'grid' : 'shelf';
+  try { localStorage.setItem('tsundoku_public_view', publicView); } catch {}
+  updatePublicViewToggleIcon();
+  renderPublicShelf();
+}
+function updatePublicViewToggleIcon() {
+  const icon = document.getElementById('publicViewToggleIcon');
+  if (!icon) return;
+  icon.innerHTML = publicView === 'shelf'
+    ? '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'
+    : '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>';
+}
+function pubSpineWidth(book) {
+  const pc = book.page_count;
+  const MIN = 22, MAX = 46, DEFAULT = 30;
+  if (!pc || pc <= 0) return DEFAULT;
+  const clamped = Math.max(100, Math.min(700, pc));
+  return Math.round(MIN + (clamped - 100) / (700 - 100) * (MAX - MIN));
+}
+function pubGetCachedSpineColor(bookId) {
+  try { return localStorage.getItem('tsundoku_spine_color_' + bookId); } catch { return null; }
+}
+function pubSetCachedSpineColor(bookId, hex) {
+  try { localStorage.setItem('tsundoku_spine_color_' + bookId, hex); } catch {}
+}
+function pubShade(hex, amount) {
+  const num = parseInt(hex.slice(1), 16);
+  let r = (num >> 16) + amount, g = ((num >> 8) & 0xff) + amount, b = (num & 0xff) + amount;
+  r = Math.max(0, Math.min(255, r)); g = Math.max(0, Math.min(255, g)); b = Math.max(0, Math.min(255, b));
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+function pubTextColorFor(hex) {
+  const num = parseInt(hex.slice(1), 16);
+  const r = (num >> 16) & 0xff, g = (num >> 8) & 0xff, b = num & 0xff;
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.55 ? '#1a1108' : '#f2ece2';
+}
+function pubExtractSpineColor(book, onDone) {
+  if (!book.cover_url) { onDone(null); return; }
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 12; canvas.height = 12;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, 12, 12);
+      const data = ctx.getImageData(0, 0, 12, 12).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; n++; }
+      r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n);
+      const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+      pubSetCachedSpineColor(book.id, hex);
+      onDone(hex);
+    } catch (e) { onDone(null); }
+  };
+  img.onerror = () => onDone(null);
+  img.src = book.cover_url;
+}
+function pubSpineHtml(book) {
+  const w = pubSpineWidth(book);
+  const cached = pubGetCachedSpineColor(book.id);
+  const pal = palettes[palSeed(book.id)];
+  const hex = cached || pal[1];
+  const shaded1 = pubShade(hex, -28);
+  const textColor = pubTextColorFor(hex);
+  return `<div class="pub-spine" data-id="${book.id}" data-title="${escapeAttr(book.title || '')}" data-author="${escapeAttr(book.author || '')}" style="width:${w}px;background:linear-gradient(100deg, ${shaded1} 0%, ${hex} 45%, ${shaded1} 100%)">
+    <div class="pub-spine-text">
+      <span class="pub-spine-title" style="color:${textColor}">${escapeHtml(book.title || '')}</span>
+      ${book.author ? `<span class="pub-spine-author" style="color:${textColor}">${escapeHtml(book.author)}</span>` : ''}
+    </div>
+  </div>`;
+}
+function renderPublicShelfRows(list) {
+  const wrap = document.getElementById('publicShelfRows');
+  if (!wrap) return;
+  const contentEl = document.getElementById('publicShelfContent');
+  let containerWidth = 340;
+  if (contentEl) {
+    const cs = getComputedStyle(contentEl);
+    containerWidth = contentEl.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  }
+  const GAP = 3;
+  const rows = [];
+  let current = [];
+  let currentW = 0;
+  list.forEach(book => {
+    const w = pubSpineWidth(book);
+    if (current.length && currentW + GAP + w > containerWidth) {
+      rows.push(current);
+      current = [];
+      currentW = 0;
+    }
+    current.push(book);
+    currentW += (current.length > 1 ? GAP : 0) + w;
+  });
+  if (current.length) rows.push(current);
+
+  wrap.innerHTML = rows.map(row => `
+    <div class="pub-shelf-row">
+      <div class="pub-shelf-row-books">${row.map(b => pubSpineHtml(b)).join('')}</div>
+      <div class="pub-shelf-plank"></div>
+    </div>`).join('');
+
+  wrap.querySelectorAll('.pub-spine').forEach(el => {
+    const id = el.dataset.id;
+    let pressed = false, timer = null;
+    el.addEventListener('touchstart', () => {
+      pressed = true;
+      el.classList.add('pressing');
+      timer = setTimeout(() => { if (pressed) openPublicPeek(id); }, 300);
+    }, { passive: true });
+    el.addEventListener('touchend', () => { pressed = false; el.classList.remove('pressing'); clearTimeout(timer); closePeek(); });
+    el.addEventListener('touchcancel', () => { pressed = false; el.classList.remove('pressing'); clearTimeout(timer); closePeek(); });
+    el.addEventListener('mousedown', () => {
+      pressed = true; el.classList.add('pressing');
+      timer = setTimeout(() => { if (pressed) openPublicPeek(id); }, 300);
+    });
+    el.addEventListener('mouseup', () => { pressed = false; el.classList.remove('pressing'); clearTimeout(timer); closePeek(); });
+    el.addEventListener('mouseleave', () => { pressed = false; el.classList.remove('pressing'); clearTimeout(timer); closePeek(); });
+
+    const book = list.find(b => String(b.id) === String(id));
+    if (book && book.cover_url && !pubGetCachedSpineColor(book.id)) {
+      pubExtractSpineColor(book, hex => {
+        if (!hex) return;
+        const shaded1 = pubShade(hex, -28);
+        el.style.background = `linear-gradient(100deg, ${shaded1} 0%, ${hex} 45%, ${shaded1} 100%)`;
+        const textColor = pubTextColorFor(hex);
+        el.querySelectorAll('.pub-spine-title, .pub-spine-author').forEach(t => t.style.color = textColor);
+      });
+    }
+  });
+
+  if (typeof alphaBarRefresh === 'function') alphaBarRefresh('public');
+}
 function onPublicSearchInput() {
   const val = document.getElementById('publicSearchInput').value;
   const clearBtn = document.getElementById('publicSearchClear');
