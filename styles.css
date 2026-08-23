@@ -1714,6 +1714,7 @@ html.standalone-webapp .add-popup {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  padding: 16px max(var(--safe-right),16px) 16px max(var(--safe-left),16px);
 }
 #shelfGridContainer::-webkit-scrollbar, #genreDetailGridContainer::-webkit-scrollbar { display: none; }
 .shelf-header { display: flex; align-items: center; justify-content: space-between; position: relative; gap: 10px; padding: max(var(--safe-top),16px) max(var(--safe-right),16px) 14px max(var(--safe-left),16px); flex-shrink: 0; }
