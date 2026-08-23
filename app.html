@@ -645,10 +645,15 @@
           <div class="public-shelf-owner" id="publicShelfOwner">Loading…</div>
           <div id="publicShelfTagline" style="font-size:12px;color:var(--text-muted);margin-top:2px"></div>
         </div>
-        <button id="publicSortToggleBtn" onclick="togglePublicSort()" style="flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
-          sort by title
-        </button>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button id="publicViewToggleBtn" onclick="togglePublicView()" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;padding:0">
+            <svg id="publicViewToggleIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </button>
+          <button id="publicSortToggleBtn" onclick="togglePublicSort()" style="flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+            sort by title
+          </button>
+        </div>
       </div>
       <div id="publicShelfCountPill" style="display:none;font-size:11px;color:var(--accent);background:rgba(201,113,74,0.12);border-radius:100px;padding:4px 11px;margin-bottom:14px"></div>
       <div id="publicGenreChipRow" style="display:none;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:2px"></div>
@@ -656,6 +661,7 @@
     <div class="divider"></div>
     <div class="public-shelf-content" id="publicShelfContent">
       <div class="book-grid" id="publicBookGrid"></div>
+      <div class="pub-shelf-rows" id="publicShelfRows" style="display:none"></div>
     </div>
     <div class="alpha-bar" id="publicAlphaBar">
       <div class="alpha-track" id="publicAlphaTrack"></div>
