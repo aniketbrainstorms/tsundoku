@@ -146,9 +146,6 @@ nav{
   .hero-actions{flex-direction:column;align-items:stretch}
   .hero-actions .btn-primary{justify-content:center;width:100%}
   .hero-actions .btn-ghost{justify-content:center;width:100%}
-  .hero-phone-wrap{padding:0!important;flex-direction:column;align-items:center;gap:10px}
-  .fl-hero-r,.fl-hero-l{position:static!important;transform:none!important;margin:0 auto}
-  .fl-hero-r::after,.fl-hero-l::after{display:none}
 }
 .btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--text);color:var(--bg);border:none;padding:15px 26px;border-radius:100px;font-family:var(--fb);font-size:15px;font-weight:500;cursor:pointer;text-decoration:none;transition:transform 0.25s var(--ease-spring),background 0.2s;-webkit-tap-highlight-color:transparent;min-height:52px;touch-action:manipulation}
 .btn-primary:hover,.btn-primary:active{background:var(--accent);transform:scale(1.02)}
@@ -424,8 +421,8 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
   .hero-phone-wrap{order:-1}
   .phone-device{width:min(200px,52vw)!important;height:calc(min(200px,52vw) * 2.04)!important;border-radius:34px!important}
   .fl{font-size:9px!important;padding:5px 9px!important;white-space:nowrap}
-  .fl-hero-r{right:clamp(-6px,-2vw,0px)!important;top:auto!important;bottom:44px!important}
-  .fl-hero-l{left:clamp(-6px,-2vw,0px)!important;top:56px!important}
+  .fl-hero-r{right:-8px!important;left:auto!important;top:auto!important;bottom:120px!important}
+  .fl-hero-l{left:-8px!important;right:auto!important;top:150px!important}
   .word-inner{grid-template-columns:1fr;gap:32px}
   .word-kanji-display{order:-1;text-align:center}
   .feat-inner{grid-template-columns:1fr!important;direction:ltr!important}
@@ -506,7 +503,7 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
     </div>
 
     <!-- PHONE: live shelf -->
-    <div class="hero-phone-wrap reveal reveal-delay-2" style="display:flex;justify-content:center;position:relative;padding:0 clamp(48px,14vw,0px)">
+    <div class="hero-phone-wrap reveal reveal-delay-2" style="display:flex;justify-content:center;position:relative;padding:0 clamp(38px,10vw,0px)">
       <div class="phone-outer">
         <div class="phone-device" style="width:240px;height:490px">
           <div class="phone-btn-v" style="top:80px;height:26px"></div>
