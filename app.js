@@ -2901,7 +2901,7 @@ async function addFetchGenreThemes() {
   btns.forEach(b => { b.disabled = true; b.innerHTML = '<span style="font-size:11px">Fetching…</span>'; });
 
   try {
-    const result = await fetchAiGenreThemes(title, author, window._pendingDescription || '');
+    const result = await fetchAiBookContent(title, author, window._pendingDescription || '', true);
     if (!result || (!result.genres?.length && !result.themes?.length)) {
       showToast('Could not fetch — try again');
       return;
@@ -3343,21 +3343,44 @@ function closePeek() {
   if (portal) portal.classList.remove('peek-visible');
 }
 
-// ── AI LIBRARIAN — genre + theme tagging only ──
+// ── AI LIBRARIAN — combined summary + genre/theme tagging ──
 const aiCache = new Map();
 
-async function fetchAiGenreThemes(title, author, description) {
-  if (!title) return null;
-  const cacheKey = `${title}-${author || ''}`;
-  if (aiCache.has(cacheKey)) return aiCache.get(cacheKey);
-
-  const prompt = `You are an AI librarian. Given this book's information, respond ONLY with a valid JSON object (no markdown, no backticks) with exactly these keys:
-- "genres": an array of 1-2 specific sub-genres (e.g. "Magical Realism", "Cyberpunk", "Historical Thriller"). NEVER use "Fiction" or "Novel" alone.
-- "themes": an array of 2-4 short thematic keywords (e.g. "War", "Identity", "Betrayal")
+function buildAiContentPrompt(title, author, rawDescription, needGenreThemes) {
+  const genreThemeKeys = needGenreThemes ? `
+- "genres": array of 1-2 specific sub-genres (e.g. "Magical Realism", not just "Fiction")
+- "themes": array of 2-4 short thematic keywords` : '';
+  return `You are a librarian writing concise book blurbs. Given this book, respond ONLY with valid JSON (no markdown, no backticks) with exactly these keys:
+- "summary": a neutral 2-3 sentence description (40-70 words) of the book's premise and setup only. No spoilers about the ending or major twists. NEVER mention awards, prizes, bestseller status, review quotes, or marketing language — describe only the story/content itself.${genreThemeKeys}
 
 Title: ${title}
 Author: ${author || 'Unknown'}
-Description: ${description || 'No description available.'}`;
+${rawDescription ? `Reference description (rewrite this, removing any awards/reviews/marketing language): ${rawDescription}` : 'No reference description available — write from your own knowledge. If you do not recognize this book, write a brief generic description based only on title and author, without inventing specific plot details.'}`;
+}
+
+function aiSummaryRegenKey() {
+  return 'tsundoku_ai_summary_regenerated_v1_' + currentUser.id;
+}
+function aiSummaryIsRegenerated(bookId) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(aiSummaryRegenKey()) || '[]');
+    return arr.includes(String(bookId));
+  } catch { return false; }
+}
+function aiSummaryMarkRegenerated(bookId) {
+  try {
+    const key = aiSummaryRegenKey();
+    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!arr.includes(String(bookId))) { arr.push(String(bookId)); localStorage.setItem(key, JSON.stringify(arr)); }
+  } catch {}
+}
+
+async function fetchAiBookContent(title, author, rawDescription, needGenreThemes) {
+  if (!title) return null;
+  const cacheKey = `${title}-${author || ''}-${needGenreThemes ? 'full' : 'summary'}`;
+  if (aiCache.has(cacheKey)) return aiCache.get(cacheKey);
+
+  const prompt = buildAiContentPrompt(title, author, rawDescription, needGenreThemes);
 
   try {
     const session = (await sb.auth.getSession()).data.session;
@@ -3376,7 +3399,7 @@ Description: ${description || 'No description available.'}`;
     if (!res.ok) {
       if (res.status === 429 || res.status === 504) {
         await new Promise(r => setTimeout(r, res.status === 504 ? 5000 : 15000));
-        return fetchAiGenreThemes(title, author, description);
+        return fetchAiBookContent(title, author, rawDescription, needGenreThemes);
       }
       return null;
     }
@@ -5665,6 +5688,7 @@ function _swipePreRenderAll(force) {
 // ── BACKFILL TOOLS — genre/theme + author bio, in-app ──────────────────────
 ;(function () {
   const GENRE_PROGRESS_KEY = 'tsundoku_backfill_progress_v1';
+  const AICONTENT_PROGRESS_KEY = 'tsundoku_ai_content_backfill_progress_v1';
   const AUTHOR_PROGRESS_KEY = 'tsundoku_author_bio_backfill_progress_v1';
   const DELAY_MS = 5500;
   const RATE_LIMIT_BACKOFF_MS = 25000;
@@ -5718,31 +5742,28 @@ function _swipePreRenderAll(force) {
       bfOpenModal(job === 'genre' ? 'Genres & Themes' : 'Author Bios', 'Running in the background');
       return;
     }
-    if (job === 'genre') bfRunGenreBackfill();
+    if (job === 'genre') bfRunAiContentBackfill();
     else bfRunAuthorBackfill();
   };
 
-  async function bfRunGenreBackfill() {
+  async function bfRunAiContentBackfill() {
     const s = window._bfState;
-    const progress = bfLoad(GENRE_PROGRESS_KEY);
+    const progress = bfLoad(AICONTENT_PROGRESS_KEY);
     const doneSet = new Set(progress.done);
-    const remaining = books.filter(b => !doneSet.has(b.id) && !(Array.isArray(b.genres) && b.genres.length));
+    const remaining = books.filter(b => !doneSet.has(b.id));
 
     s.job = 'genre'; s.running = true;
     s.done = doneSet.size; s.failed = progress.failed.length;
     s.total = books.length; s.remaining = remaining.length;
-    bfOpenModal('Genres & Themes', `${remaining.length} books to process`);
+    bfOpenModal('AI Content', `${remaining.length} books to process`);
     bfUpdateUI();
 
     for (let i = 0; i < remaining.length; i++) {
       const book = remaining[i];
-      const prompt = `You are an AI librarian. Given this book's information, respond ONLY with a valid JSON object (no markdown, no backticks) with exactly these keys:
-- "genres": an array of 1-2 specific sub-genres (e.g. "Magical Realism", "Cyberpunk", "Historical Thriller"). NEVER use "Fiction" or "Novel" alone.
-- "themes": an array of 2-4 short thematic keywords (e.g. "War", "Identity", "Betrayal")
-
-Title: ${book.title}
-Author: ${book.author || 'Unknown'}
-Description: ${book.description || 'No description available.'}`;
+      const needsGenres = !(Array.isArray(book.genres) && book.genres.length);
+      const needsThemes = !(Array.isArray(book.themes) && book.themes.length);
+      const needGenreThemes = needsGenres || needsThemes;
+      const prompt = buildAiContentPrompt(book.title, book.author, book.description || '', needGenreThemes);
 
       let success = false;
       let attempt = 0;
@@ -5757,20 +5778,21 @@ Description: ${book.description || 'No description available.'}`;
           const data = await res.json();
           const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
           const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+          const summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : '';
           const genres = Array.isArray(parsed.genres) ? parsed.genres.filter(Boolean) : [];
           const themes = Array.isArray(parsed.themes) ? parsed.themes.filter(Boolean) : [];
-          if (!genres.length && !themes.length) break;
-          const updates = {};
-          if (genres.length) { updates.genres = genres; updates.genre = genres.join(', '); updates.primary_genre = genres[0]; }
-          if (themes.length) updates.themes = themes;
+          if (!summary) break;
+          const updates = { description: summary };
+          if (genres.length && needsGenres) { updates.genres = genres; updates.genre = genres.join(', '); updates.primary_genre = genres[0]; }
+          if (themes.length && needsThemes) updates.themes = themes;
           const ok = await dbUpdate(book.id, updates);
-          if (ok) { Object.assign(book, updates); success = true; }
+          if (ok) { Object.assign(book, updates); aiSummaryMarkRegenerated(book.id); success = true; }
         } catch {}
         break;
       }
 
       if (success) progress.done.push(book.id); else progress.failed.push(book.id);
-      bfSave(GENRE_PROGRESS_KEY, progress);
+      bfSave(AICONTENT_PROGRESS_KEY, progress);
       s.done = progress.done.length; s.failed = progress.failed.length; s.remaining = remaining.length - (i + 1);
       bfUpdateUI();
 
@@ -5780,7 +5802,7 @@ Description: ${book.description || 'No description available.'}`;
     s.running = false;
     bfUpdateUI();
     renderGrid();
-    showToast('Genre & theme backfill finished ✓');
+    showToast('AI content backfill finished ✓');
   }
 
   async function bfRunAuthorBackfill() {
