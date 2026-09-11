@@ -890,7 +890,7 @@ window.openDetailModal = async function openDetailModal(id) {
     // Open sheet
     dsOpen();
 
-    // ── Summary — Google Books description only ──
+    // ── Summary — AI-generated via Gemini, with regeneration tracking ──
     const summarySection = document.getElementById('dsSummarySection');
     const summaryEl = document.getElementById('dsAiSummary');
     const moodEl = document.getElementById('dsAiMood');
@@ -899,28 +899,16 @@ window.openDetailModal = async function openDetailModal(id) {
     if (summarySection) summarySection.style.display = 'flex';
     if (moodEl) moodEl.textContent = '';
 
-    // Use stored description if available
-    if (book.description && isEnglishText(book.description)) {
+    if (aiSummaryIsRegenerated(book.id)) {
       if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
-      if (summaryEl) summaryEl.textContent = book.description;
+      if (summaryEl) summaryEl.textContent = book.description || 'No summary available.';
       DS.summaryExpanded = false;
     } else {
-      // Fetch from Google Books
-      if (summaryLabel) summaryLabel.textContent = 'SUMMARY · LOADING…';
+      if (summaryLabel) summaryLabel.textContent = 'SUMMARY · WRITING…';
       if (summaryEl) summaryEl.textContent = '';
 
       fetchBookMeta(book.title, book.author || '').then(async meta => {
-        if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
-        const desc = meta?.description || '';
         const apiUpdates = {};
-
-        if (desc) {
-          book.description = desc;
-          apiUpdates.description = desc;
-          if (summaryEl) summaryEl.textContent = desc;
-        } else {
-          if (summaryEl) summaryEl.textContent = 'No summary available.';
-        }
 
         // Fill missing meta fields while we have the data
         if (meta?.year && !book.year) { book.year = meta.year; apiUpdates.year = meta.year; }
@@ -928,20 +916,32 @@ window.openDetailModal = async function openDetailModal(id) {
 
         const needsGenres = !(Array.isArray(book.genres) && book.genres.length);
         const needsThemes = !(Array.isArray(book.themes) && book.themes.length);
-        if (needsGenres || needsThemes) {
-          const ai = await fetchAiGenreThemes(book.title, book.author, desc || book.description);
-          if (ai?.genres?.length && needsGenres) {
-            book.genres = ai.genres;
-            book.genre = ai.genres.join(', ');
-            book.primary_genre = ai.genres[0];
-            apiUpdates.genres = ai.genres;
-            apiUpdates.genre = book.genre;
-            apiUpdates.primary_genre = book.primary_genre;
-          }
-          if (ai?.themes?.length && needsThemes) {
-            book.themes = ai.themes;
-            apiUpdates.themes = ai.themes;
-          }
+        const needGenreThemes = needsGenres || needsThemes;
+        const rawDescription = meta?.description || book.description || '';
+        const ai = await fetchAiBookContent(book.title, book.author, rawDescription, needGenreThemes);
+
+        if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
+
+        if (ai?.summary) {
+          book.description = ai.summary;
+          apiUpdates.description = ai.summary;
+          if (summaryEl) summaryEl.textContent = ai.summary;
+          aiSummaryMarkRegenerated(book.id);
+        } else {
+          if (summaryEl) summaryEl.textContent = book.description || 'No summary available.';
+        }
+
+        if (ai?.genres?.length && needsGenres) {
+          book.genres = ai.genres;
+          book.genre = ai.genres.join(', ');
+          book.primary_genre = ai.genres[0];
+          apiUpdates.genres = ai.genres;
+          apiUpdates.genre = book.genre;
+          apiUpdates.primary_genre = book.primary_genre;
+        }
+        if (ai?.themes?.length && needsThemes) {
+          book.themes = ai.themes;
+          apiUpdates.themes = ai.themes;
         }
 
         if (Object.keys(apiUpdates).length) await dbUpdate(id, apiUpdates);
