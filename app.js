@@ -1042,7 +1042,7 @@ function readingCardHtml(book, i) {
           <span class="rc-progress-label">${pagesRead} / ${totalPages} pages</span>
           <span class="rc-progress-pct">${pct}%</span>
         </div>
-        <div class="rc-bar-bg"><div class="rc-bar-fill" style="width:${pct}%"></div></div>
+        <div class="rc-wave-track" data-rc-wave data-percent="${pct}"></div>
       </div>`
     : `<p class="rc-no-progress">tap ✏️ to track progress</p>`;
   return `<div class="reading-card" data-id="${book.id}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
@@ -1058,8 +1058,109 @@ function readingCardHtml(book, i) {
     </button>
   </div>`;
 }
+// ── READING PROGRESS WAVEFORM ──
+const RC_WAVE_AMPLITUDE = 3.5;
+const RC_WAVE_LENGTH = 22;
+const RC_WAVE_STROKE = 1.6;
+const RC_WAVE_STEP = 2;
+const RC_WAVE_CYCLE_MS = 1500;
+let _rcWaves = [];
+let _rcWaveRafRunning = false;
+const _rcReduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function _rcSineY(x, phase, midY) {
+  return midY + RC_WAVE_AMPLITUDE * Math.sin((2 * Math.PI * (x + phase)) / RC_WAVE_LENGTH);
+}
+function _rcWavePathD(width, height, phase) {
+  const midY = height / 2;
+  let pts = [];
+  for (let x = 0; x <= width; x += RC_WAVE_STEP) pts.push([x, _rcSineY(x, phase, midY)]);
+  if (pts[pts.length - 1][0] !== width) pts.push([width, _rcSineY(width, phase, midY)]);
+  return pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(2) + ',' + p[1].toFixed(2)).join(' ');
+}
+function _rcFlatD(width, height) {
+  const midY = height / 2;
+  return `M0,${midY} L${width.toFixed(2)},${midY}`;
+}
+function initRcWave(card) {
+  const container = card.querySelector('[data-rc-wave]');
+  if (!container) return;
+  const percent = parseFloat(container.dataset.percent) || 0;
+  const height = 16;
+  const uid = 'rcw' + Math.random().toString(36).slice(2, 9);
+  container.innerHTML = '';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.innerHTML = `
+    <defs>
+      <clipPath id="clipPre-${uid}"><rect x="0" y="0" width="0" height="${height}"></rect></clipPath>
+      <clipPath id="clipPost-${uid}"><rect x="0" y="0" width="0" height="${height}"></rect></clipPath>
+      <radialGradient id="glow-${uid}" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <path class="rcw-grey" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="${RC_WAVE_STROKE}" stroke-linecap="round" clip-path="url(#clipPost-${uid})"></path>
+    <path class="rcw-orange" fill="none" stroke="var(--accent)" stroke-width="${RC_WAVE_STROKE}" stroke-linecap="round" clip-path="url(#clipPre-${uid})"></path>
+    <circle class="rcw-glow" r="9" fill="url(#glow-${uid})"></circle>
+    <circle class="rcw-thumb" r="3.4" fill="#f2d3ab" stroke="var(--accent)" stroke-width="1"></circle>
+  `;
+  container.appendChild(svg);
+  const w = {
+    container, svg, percent, height,
+    clipPre: svg.querySelector(`#clipPre-${uid} rect`),
+    clipPost: svg.querySelector(`#clipPost-${uid} rect`),
+    waveGrey: svg.querySelector('.rcw-grey'),
+    waveOrange: svg.querySelector('.rcw-orange'),
+    thumbGlow: svg.querySelector('.rcw-glow'),
+    thumbCore: svg.querySelector('.rcw-thumb'),
+    width: 0
+  };
+  _rcLayoutWave(w);
+  _rcRenderWave(w, _rcReduceMotion ? 0 : _rcPhaseAt(performance.now()));
+  _rcWaves.push(w);
+  if (!_rcReduceMotion && !_rcWaveRafRunning) {
+    _rcWaveRafRunning = true;
+    requestAnimationFrame(_rcWaveTick);
+  }
+}
+function _rcLayoutWave(w) {
+  w.width = w.container.clientWidth || 0;
+  if (!w.width) return;
+  w.svg.setAttribute('viewBox', `0 0 ${w.width} ${w.height}`);
+  const thumbX = (w.percent / 100) * w.width;
+  w.clipPre.setAttribute('width', thumbX.toFixed(2));
+  w.clipPost.setAttribute('x', thumbX.toFixed(2));
+  w.clipPost.setAttribute('width', (w.width - thumbX).toFixed(2));
+  w.thumbX = thumbX;
+}
+function _rcRenderWave(w, phase) {
+  if (!w.width) _rcLayoutWave(w);
+  if (!w.width) return;
+  w.waveGrey.setAttribute('d', _rcFlatD(w.width, w.height));
+  w.waveOrange.setAttribute('d', _rcWavePathD(w.width, w.height, phase));
+  const midY = w.height / 2;
+  const ty = _rcSineY(w.thumbX, phase, midY);
+  w.thumbGlow.setAttribute('cx', w.thumbX.toFixed(2));
+  w.thumbGlow.setAttribute('cy', ty.toFixed(2));
+  w.thumbCore.setAttribute('cx', w.thumbX.toFixed(2));
+  w.thumbCore.setAttribute('cy', ty.toFixed(2));
+}
+function _rcPhaseAt(t) {
+  return ((t % RC_WAVE_CYCLE_MS) / RC_WAVE_CYCLE_MS) * RC_WAVE_LENGTH;
+}
+function _rcWaveTick(t) {
+  _rcWaves = _rcWaves.filter(w => document.body.contains(w.container));
+  const phase = _rcPhaseAt(t);
+  _rcWaves.forEach(w => _rcRenderWave(w, phase));
+  if (_rcWaves.length) requestAnimationFrame(_rcWaveTick);
+  else _rcWaveRafRunning = false;
+}
+window.addEventListener('resize', () => { _rcWaves.forEach(w => _rcLayoutWave(w)); });
+
 function attachReadingCardEvents(card) {
   const id = card.dataset.id;
+  initRcWave(card);
   const editBtn = card.querySelector('.rc-edit-btn');
   editBtn.addEventListener('click', e => { e.stopPropagation(); openProgressModal(id); });
   editBtn.addEventListener('touchend', e => { e.stopPropagation(); });
