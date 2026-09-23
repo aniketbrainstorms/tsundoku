@@ -2043,20 +2043,22 @@
     }
     window.setAppIcon = function(file){
       try { localStorage.setItem(TSD_ICON_KEY, file); } catch(e){}
+      var bustUrl = file + '?v=' + Date.now();
       var touchIcon = document.getElementById('appTouchIconLink');
       var favicon = document.getElementById('appFaviconLink');
-      if (touchIcon) touchIcon.setAttribute('href', file);
-      if (favicon) favicon.setAttribute('href', file);
+      if (touchIcon) touchIcon.setAttribute('href', bustUrl);
+      if (favicon) favicon.setAttribute('href', bustUrl);
       tsdSetAppIconUI(file);
       tsdApplyManifest(file);
     };
     document.addEventListener('DOMContentLoaded', function(){
       var saved = TSD_DEFAULT_ICON;
       try { saved = localStorage.getItem(TSD_ICON_KEY) || saved; } catch(e){}
+      var savedBust = saved + '?v=' + Date.now();
       var touchIcon = document.getElementById('appTouchIconLink');
       var favicon = document.getElementById('appFaviconLink');
-      if (touchIcon) touchIcon.setAttribute('href', saved);
-      if (favicon) favicon.setAttribute('href', saved);
+      if (touchIcon) touchIcon.setAttribute('href', savedBust);
+      if (favicon) favicon.setAttribute('href', savedBust);
       tsdSetAppIconUI(saved);
       tsdApplyManifest(saved);
     });
