@@ -14,9 +14,9 @@
 <meta property="og:url" content="https://aniketbrainstorms.github.io/tsundoku/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" type="image/png" href="fav_icon_640.png">
-<link rel="apple-touch-icon" href="fav_icon_640.png">
-<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="fav_icon_640.png" id="appFaviconLink">
+<link rel="apple-touch-icon" href="fav_icon_640.png" id="appTouchIconLink">
+<link rel="manifest" href="manifest.json" id="appManifestLink">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   @font-face {
@@ -1430,6 +1430,26 @@
         </div>
       </div>
       <div class="divider" style="margin:0 0 20px"></div>
+      <p class="profile-section-label">App Icon</p>
+      <div id="appIconRow" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
+        <button class="app-icon-opt" data-icon="app_icon1.png" onclick="setAppIcon('app_icon1.png')" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('app_icon1.png');background-size:cover;background-position:center"></div>
+          <span style="font-size:10px;font-weight:500;color:var(--text-muted)">Classic</span>
+        </button>
+        <button class="app-icon-opt" data-icon="app_icon2.png" onclick="setAppIcon('app_icon2.png')" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('app_icon2.png');background-size:cover;background-position:center"></div>
+          <span style="font-size:10px;font-weight:500;color:var(--text-muted)">Forest</span>
+        </button>
+        <button class="app-icon-opt" data-icon="app_icon3.png" onclick="setAppIcon('app_icon3.png')" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('app_icon3.png');background-size:cover;background-position:center"></div>
+          <span style="font-size:10px;font-weight:500;color:var(--text-muted)">Midnight</span>
+        </button>
+        <button class="app-icon-opt" data-icon="app_icon4.png" onclick="setAppIcon('app_icon4.png')" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('app_icon4.png');background-size:cover;background-position:center"></div>
+          <span style="font-size:10px;font-weight:500;color:var(--text-muted)">Paper</span>
+        </button>
+      </div>
+      <div class="divider" style="margin:0 0 20px"></div>
       <p class="profile-section-label">My Library</p>
       <button class="profile-shelf-btn" onclick="openShelfView()">
         <span class="profile-shelf-icon">
@@ -1994,6 +2014,53 @@
 
 <script>
   window.BOOKS_API_KEY = 'AIzaSyDY0HE6xmGgZBpFavD-T7dDgA21lHFz49A';
+</script>
+<script>
+  (function(){
+    var TSD_ICON_KEY = 'tsundoku_app_icon';
+    var TSD_DEFAULT_ICON = 'app_icon1.png';
+    function tsdApplyManifest(file){
+      fetch('manifest.json').then(function(r){ return r.json(); }).then(function(m){
+        m.icons = (m.icons || []).map(function(ic){
+          var copy = {}; for (var k in ic) copy[k] = ic[k];
+          copy.src = file; return copy;
+        });
+        var blob = new Blob([JSON.stringify(m)], {type:'application/json'});
+        var manifestLink = document.getElementById('appManifestLink');
+        if (manifestLink) manifestLink.setAttribute('href', URL.createObjectURL(blob));
+      }).catch(function(){});
+    }
+    function tsdSetAppIconUI(file){
+      var opts = document.querySelectorAll('.app-icon-opt');
+      for (var i = 0; i < opts.length; i++){
+        var btn = opts[i];
+        var active = btn.getAttribute('data-icon') === file;
+        var sw = btn.querySelector('.app-icon-swatch');
+        var lbl = btn.querySelector('span');
+        if (sw) sw.style.boxShadow = active ? '0 0 0 2px var(--surface2), 0 0 0 4px var(--accent)' : 'none';
+        if (lbl) { lbl.style.color = active ? 'var(--accent)' : 'var(--text-muted)'; lbl.style.fontWeight = active ? '600' : '500'; }
+      }
+    }
+    window.setAppIcon = function(file){
+      try { localStorage.setItem(TSD_ICON_KEY, file); } catch(e){}
+      var touchIcon = document.getElementById('appTouchIconLink');
+      var favicon = document.getElementById('appFaviconLink');
+      if (touchIcon) touchIcon.setAttribute('href', file);
+      if (favicon) favicon.setAttribute('href', file);
+      tsdSetAppIconUI(file);
+      tsdApplyManifest(file);
+    };
+    document.addEventListener('DOMContentLoaded', function(){
+      var saved = TSD_DEFAULT_ICON;
+      try { saved = localStorage.getItem(TSD_ICON_KEY) || saved; } catch(e){}
+      var touchIcon = document.getElementById('appTouchIconLink');
+      var favicon = document.getElementById('appFaviconLink');
+      if (touchIcon) touchIcon.setAttribute('href', saved);
+      if (favicon) favicon.setAttribute('href', saved);
+      tsdSetAppIconUI(saved);
+      tsdApplyManifest(saved);
+    });
+  })();
 </script>
 <script src="app.js"></script>
 <script src="habit_tracker.js"></script>
