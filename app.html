@@ -139,10 +139,12 @@
         position: absolute;
         bottom: 24px;
         left: 50%;
-        transform: translateX(-50%);
-        width: 160px;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(201,113,74,0.12) 30%, rgba(201,113,74,0.12) 70%, transparent);
+        transform: translateX(-50%) rotate(-0.6deg);
+        width: 150px;
+        height: 3px;
+        background: rgba(201,113,74,0.45);
+        border-radius: 50%;
+        box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
       }
       .ls-floor-glow {
         position: absolute;
@@ -158,48 +160,39 @@
         position: absolute;
         left: 50%;
         transform: translateX(-50%) translateY(-260px);
-        border-radius: 3px 5px 5px 3px;
+        transform-origin: center bottom;
+        border: 2.5px solid rgba(232,224,213,0.55);
+        border-radius: 3px 5px 4px 2px;
+        box-shadow: 2px 2px 0 rgba(0,0,0,0.35);
         will-change: transform, opacity;
-      }
-      .ls-book::before {
-        content: '';
-        position: absolute;
-        left: 0; top: 0; bottom: 0;
-        width: 10px;
-        border-radius: 3px 0 0 3px;
-        background: rgba(0,0,0,0.25);
-      }
-      .ls-book::after {
-        content: '';
-        position: absolute;
-        right: 0; top: 2px; bottom: 2px;
-        width: 5px;
-        border-radius: 0 3px 3px 0;
-        background: rgba(232,221,208,0.12);
+        clip-path: polygon(1% 8%, 97% 2%, 100% 91%, 4% 100%);
       }
       .ls-stripe {
         position: absolute;
-        left: 14px; top: 50%; transform: translateY(-50%);
-        right: 10px; height: 2px;
-        border-radius: 1px;
-        background: rgba(255,255,255,0.15);
+        right: 6px; top: 4px; bottom: 4px;
+        width: 8px;
+        border-left: 2px solid rgba(0,0,0,0.28);
+        background: repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,0.45) 0px,
+          rgba(255,255,255,0.45) 1px,
+          transparent 1px,
+          transparent 3px
+        );
       }
       .ls-book-1 {
         width: 148px; height: 38px;
         background: #c9714a;
-        box-shadow: 0 2px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
         animation: lsDrop1 2.8s cubic-bezier(0.22,1,0.36,1) infinite;
       }
       .ls-book-2 {
         width: 136px; height: 38px;
         background: #3d5a47;
-        box-shadow: 0 2px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
         animation: lsDrop2 2.8s cubic-bezier(0.22,1,0.36,1) infinite;
       }
       .ls-book-3 {
         width: 156px; height: 38px;
         background: #4a6080;
-        box-shadow: 0 2px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
         animation: lsDrop3 2.8s cubic-bezier(0.22,1,0.36,1) infinite;
       }
       @keyframes lsDrop1 {
