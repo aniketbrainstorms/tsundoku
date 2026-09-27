@@ -2401,9 +2401,11 @@ html.standalone-webapp .add-popup {
 
 /* NEW */
 /* ── SCROLLABLE BODY — the only region that grows/scrolls; card height stays fixed ── */
+/* FIX — hard cap so this region scrolls internally instead of growing the auto-height sheet past the CTA */
 .ds-middle-scroll {
   flex: 1;
   min-height: 0;
+  max-height: 50vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
