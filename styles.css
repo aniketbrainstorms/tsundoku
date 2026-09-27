@@ -2693,8 +2693,9 @@ html.standalone-webapp .add-popup {
     background 0.28s ease;
 }
 /* NEW — enough headroom for real summaries; ds-middle-scroll (not this box) is now the single scroller if it's ever still too tall */
+/* FIX — cap the card itself so it can never grow past the CTA area; the text inside scrolls instead */
 .summary-section.expanded {
-  max-height: 480px;
+  max-height: 260px;
   border-color: rgba(201,113,74,0.28);
   background: rgba(34,30,26,0.95);
 }
@@ -2747,6 +2748,7 @@ html.standalone-webapp .add-popup {
   min-height: 0;
 }
 /* NEW — sizes to its actual content; no competing inner scroll */
+/* FIX — this is now the actual scroller; caps at the card's max-height minus header, scrolls internally */
 .summary-scroll {
   padding: 0 16px 16px;
   font-size: 13.5px;
@@ -2756,6 +2758,10 @@ html.standalone-webapp .add-popup {
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 0.26s ease 0.16s, transform 0.32s cubic-bezier(0.34,1.56,0.64,1) 0.1s;
+  max-height: 216px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .summary-section.expanded .summary-scroll {
   opacity: 1;
