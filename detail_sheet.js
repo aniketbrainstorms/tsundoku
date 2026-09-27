@@ -129,12 +129,13 @@ function dsClose() {
 }
 
 // ── Touch / drag handling ──
+/* NEW — the whole middle area (#dsScroll) can now scroll, not just the summary card, so hand it off the same way */
 function dsOnTouchStart(e) {
   if (!DS.isOpen) return;
   if (DS.animating) return;
   if (document.getElementById('progressModal').classList.contains('visible')) return;
   if (!e.target.closest('#detailSheet')) return;
-  if (e.target.closest('#dsSummarySection') && !e.target.closest('#dsSummaryHeader')) return;
+  if (e.target.closest('#dsScroll') && !e.target.closest('#dsSummaryHeader')) return;
   // Block drag-up to full — only summary tap can expand
   // In FULL state, only allow drag from handle area
   if (DS.isExpanded) {
