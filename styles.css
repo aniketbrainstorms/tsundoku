@@ -2691,8 +2691,9 @@ html.standalone-webapp .add-popup {
     border-color 0.28s ease,
     background 0.28s ease;
 }
+/* NEW — enough headroom for real summaries; ds-middle-scroll (not this box) is now the single scroller if it's ever still too tall */
 .summary-section.expanded {
-  max-height: 260px;
+  max-height: 480px;
   border-color: rgba(201,113,74,0.28);
   background: rgba(34,30,26,0.95);
 }
@@ -2744,12 +2745,9 @@ html.standalone-webapp .add-popup {
   overflow: hidden;
   min-height: 0;
 }
+/* NEW — sizes to its actual content; no competing inner scroll */
 .summary-scroll {
   padding: 0 16px 16px;
-  max-height: 214px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   font-size: 13.5px;
   line-height: 1.75;
   color: var(--text-dim);
@@ -2757,7 +2755,6 @@ html.standalone-webapp .add-popup {
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 0.26s ease 0.16s, transform 0.32s cubic-bezier(0.34,1.56,0.64,1) 0.1s;
-  overscroll-behavior: contain;
 }
 .summary-section.expanded .summary-scroll {
   opacity: 1;
