@@ -897,11 +897,9 @@ window.openDetailModal = async function openDetailModal(id) {
     // ── Summary — AI-generated via Gemini, with regeneration tracking ──
     const summarySection = document.getElementById('dsSummarySection');
     const summaryEl = document.getElementById('dsAiSummary');
-    const moodEl = document.getElementById('dsAiMood');
     const summaryLabel = summarySection?.querySelector('.summary-label');
 
     if (summarySection) summarySection.style.display = 'flex';
-    if (moodEl) moodEl.textContent = '';
 
     if (aiSummaryIsRegenerated(book.id)) {
       if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
