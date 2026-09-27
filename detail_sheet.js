@@ -452,12 +452,15 @@ async function doSecondaryAction() {
 function toggleDetailSummary() {
   DS.summaryExpanded = !DS.summaryExpanded;
   const section = document.getElementById('dsSummarySection');
+  const sheetInner = document.querySelector('.ds-sheet-inner');
   if (!section) return;
 
   if (DS.summaryExpanded) {
     section.classList.add('expanded');
+    if (sheetInner) sheetInner.classList.add('ds-summary-expanded');
   } else {
     section.classList.remove('expanded');
+    if (sheetInner) sheetInner.classList.remove('ds-summary-expanded');
   }
 }
 
