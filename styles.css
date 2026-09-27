@@ -2193,6 +2193,7 @@ html.standalone-webapp .add-popup {
 }
 
 /* NEW */
+/* NEW */
 .detail-sheet {
   width: 100%;
   height: auto;
@@ -2209,22 +2210,26 @@ html.standalone-webapp .add-popup {
   pointer-events: none;
 }
 .ds-sheet-card {
+  position: relative;
+  flex-shrink: 0;
+}
+.ds-sheet-inner {
   background: var(--surface);
   border-radius: 24px 24px 0 0;
   border-top: 1px solid rgba(201,113,74,0.18);
   box-shadow: 0 -12px 64px rgba(0,0,0,0.72), 0 -1px 0 rgba(201,113,74,0.08);
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  height: min(640px, 82dvh);
+  height: min(640px, 82vh);
   overflow: hidden;
-  position: relative;
 }
 .ds-cover-float {
   position: relative;
   z-index: 2;
   display: flex;
   justify-content: center;
-  margin-bottom: -48px;
+  margin-bottom: -92px;
   pointer-events: none;
 }
 .modal-overlay.visible .detail-sheet {
@@ -2248,10 +2253,11 @@ html.standalone-webapp .add-popup {
 .ds-handle-wrap:hover .ds-handle { background: var(--text-muted); }
 
 /* NEW */
+/* NEW */
 .ds-top {
   flex-shrink: 0;
   flex-grow: 0;
-  padding: 58px 20px 0;
+  padding: 108px 20px 0;
   background: var(--surface);
   position: relative;
   z-index: 1;
@@ -2260,7 +2266,7 @@ html.standalone-webapp .add-popup {
 }
 .ds-circle-btn {
   position: absolute;
-  top: -22px;
+  top: -46px; /* 44px tall + 2px gap = sits 2px above the sheet card's own top edge */
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -2287,18 +2293,19 @@ html.standalone-webapp .add-popup {
   text-align: center;
   margin-bottom: 14px;
 }
+/* NEW */
 .ds-cover {
-  width: 88px;
-  height: 130px;
-  border-radius: 14px;
+  width: 152px;
+  height: 224px;
+  border-radius: 18px;
   overflow: hidden;
   background: var(--surface2);
   flex-shrink: 0;
   box-shadow:
     0 2px 0 rgba(255,255,255,0.06) inset,
     0 -1px 0 rgba(0,0,0,0.4) inset,
-    0 8px 24px rgba(0,0,0,0.55),
-    0 24px 56px rgba(0,0,0,0.45),
+    0 10px 28px rgba(0,0,0,0.55),
+    0 30px 64px rgba(0,0,0,0.45),
     0 1px 2px rgba(0,0,0,0.8);
   border: 1px solid rgba(255,255,255,0.09);
   transform: rotate(-0.5deg);
@@ -2391,10 +2398,18 @@ html.standalone-webapp .add-popup {
 .ds-meta-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); font-weight: 700; opacity: 0.6; }
 .ds-meta-val { font-size: 13px; color: var(--text-dim); font-weight: 500; line-height: 1.3; }
 
-/* ── SCROLLABLE BODY ── */
-.ds-scroll { display: none; }
-.ds-scroll::-webkit-scrollbar { display: none; }
-.sheet-content { padding-bottom: 16px; }
+/* NEW */
+/* ── SCROLLABLE BODY — the only region that grows/scrolls; card height stays fixed ── */
+.ds-middle-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding-top: 8px;
+}
+.ds-middle-scroll::-webkit-scrollbar { display: none; }
 
 /* Edit form inside scroll */
 /* ══════════════════════════════════════
@@ -2659,14 +2674,6 @@ html.standalone-webapp .add-popup {
 /* ── SUMMARY — sits above CTA, expands upward ── */
 .ds-flex-spacer {
   display: none;
-}
-
-.ds-bottom-cluster {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  margin-top: 2px;
-  gap: 0;
 }
 
 .summary-section {
