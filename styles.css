@@ -2224,6 +2224,11 @@ html.standalone-webapp .add-popup {
   max-height: min(640px, 82dvh);
   max-height: min(640px, 82vh);
   overflow: hidden;
+  transition: max-height 0.42s cubic-bezier(0.32,0.72,0,1);
+}
+.ds-sheet-inner.ds-summary-expanded {
+  max-height: min(760px, 92dvh);
+  max-height: min(760px, 92vh);
 }
 .ds-cover-float {
   position: relative;
@@ -2411,6 +2416,10 @@ html.standalone-webapp .add-popup {
   overscroll-behavior: contain;
   scrollbar-width: none;
   padding-top: 8px;
+  transition: max-height 0.42s cubic-bezier(0.32,0.72,0,1);
+}
+.ds-sheet-inner.ds-summary-expanded .ds-middle-scroll {
+  max-height: 62vh;
 }
 .ds-middle-scroll::-webkit-scrollbar { display: none; }
 
