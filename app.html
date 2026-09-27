@@ -1124,7 +1124,22 @@
         <div class="ds-cover" id="detailCoverEl"></div>
       </div>
 
+<!-- NEW -->
       <div class="ds-sheet-card">
+
+      <!-- Circle back/edit — sit outside the clipped card, 2px above its top edge -->
+      <button class="ds-circle-btn ds-circle-back" onclick="closeModal('detailModal')" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13L5 8l5-5"/>
+        </svg>
+      </button>
+      <button class="ds-circle-btn ds-circle-edit" id="dsEditToggle" onclick="openEditSheet()" aria-label="Edit">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 2.5l2.5 2.5-8 8L3 13l.5-2.5 8-8z"/><path d="M9.5 4l2.5 2.5"/>
+        </svg>
+      </button>
+
+      <div class="ds-sheet-inner">
 
       <!-- Drag handle -->
       <div class="ds-handle-wrap" id="dsHandleWrap">
@@ -1133,16 +1148,6 @@
 
       <!-- ── STICKY TOP ── -->
       <div class="ds-top" id="dsTop">
-        <button class="ds-circle-btn ds-circle-back" onclick="closeModal('detailModal')" aria-label="Back">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10 13L5 8l5-5"/>
-          </svg>
-        </button>
-        <button class="ds-circle-btn ds-circle-edit" id="dsEditToggle" onclick="openEditSheet()" aria-label="Edit">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 2.5l2.5 2.5-8 8L3 13l.5-2.5 8-8z"/><path d="M9.5 4l2.5 2.5"/>
-          </svg>
-        </button>
         <div class="ds-book-row">
           <div class="ds-info">
             <div class="ds-title" id="detailTitleEl"></div>
@@ -1154,12 +1159,7 @@
             <div class="ds-rating" id="detailRating"></div>
           </div>
         </div>
-        <div class="ds-meta-grid" id="detailMetaGrid">
-          <div class="ds-meta-col">
-            <div class="ds-meta-label">Pages</div>
-            <div class="ds-meta-val" id="detailMetaPages">—</div>
-          </div>
-        </div>
+<!-- NEW -->
         <div id="detailGenresRow" style="display:none;margin:0 20px 10px;text-align:center">
           <div class="ds-meta-label">Genres</div>
           <div id="detailGenresPills" style="margin-top:4px"></div>
@@ -1170,11 +1170,9 @@
         </div>
       </div>
       
-      <!-- ── SCROLLABLE BODY ── -->
-      <div class="ds-scroll sheet-content" id="dsScroll">
-        <div style="height:8px"></div>
-      </div>
-      <div class="ds-bottom-cluster">
+<!-- NEW -->
+      <!-- ── MIDDLE — fixed-height card, this is the only part that scrolls ── -->
+      <div class="ds-middle-scroll" id="dsScroll">
         <div class="summary-section" id="dsSummarySection">
           <button class="summary-header" id="dsSummaryHeader" type="button" onclick="toggleDetailSummary()">
             <span class="summary-label">SUMMARY</span>
@@ -1193,17 +1191,20 @@
           </div>
         </div>
 
-        <!-- ── FIXED CTA — always at bottom ── -->
+  <!-- NEW -->
+        </div><!-- end ds-middle-scroll -->
+  
+        <!-- ── FIXED CTA — always the same distance from the card bottom ── -->
         <div class="ds-cta-area sheet-footer" id="dsCTAArea">
           <button class="ds-primary-btn btn-accent" id="dsPrimaryBtn" onclick="doPrimaryAction()"></button>
           <button class="ds-secondary-btn" id="dsSecondaryBtn" onclick="doSecondaryAction()"></button>
           <button class="ds-tertiary-btn" id="dsTertiaryBtn" style="display:none"></button>
         </div><!-- end ds-cta-area -->
-      </div><!-- end ds-bottom-cluster -->
-
-      </div><!-- end ds-sheet-card -->
+  
+        </div><!-- end ds-sheet-inner -->
+        </div><!-- end ds-sheet-card -->
+      </div>
     </div>
-  </div>
 
   <!-- EDIT SHEET — standalone overlay, opens on top of detail sheet -->
   <div class="modal-overlay" id="editSheetOverlay" onclick="if(event.target===this)closeEditSheet()">
