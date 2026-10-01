@@ -258,7 +258,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   z-index: 200; transition: opacity 0.4s ease;
 }
 .loading-screen.hidden { opacity: 0; pointer-events: none; }
-.loading-screen img { width: 180px; margin-bottom: 28px; }
+.loading-screen img:not(.ls-book) { width: 180px; margin-bottom: 28px; }
 .loading-spinner { width: 22px; height: 22px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
