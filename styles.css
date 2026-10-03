@@ -2796,7 +2796,7 @@ html.standalone-webapp .add-popup {
   align-items: stretch;
   gap: 8px;
   margin: 0 16px;
-  padding: 12px 0 max(calc(var(--safe-bottom) + 24px), 32px);
+  padding: 12px 0 32px;
   background: transparent;
   border-top: none;
   z-index: 3;
