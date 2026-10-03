@@ -2813,7 +2813,7 @@ html.standalone-webapp .add-popup {
   pointer-events: none;
 }
 
-.sheet-footer { display: block; }
+.ds-cta-area.sheet-footer { display: flex; }
 
 .ds-primary-btn {
   flex: 1 1 0;
