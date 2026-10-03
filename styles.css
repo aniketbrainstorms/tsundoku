@@ -2793,9 +2793,10 @@ html.standalone-webapp .add-popup {
 .ds-cta-area {
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: stretch;
-  gap: 8px;
+  gap: 10px;
   margin: 0 16px;
   padding: 12px 0 max(calc(var(--safe-bottom) + 24px), 32px);
   background: transparent;
@@ -2815,8 +2816,12 @@ html.standalone-webapp .add-popup {
 .sheet-footer { display: block; }
 
 .ds-primary-btn {
-  width: 100%;
-  padding: 14px 20px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 14px 12px;
+  font-size: 14px;
+  line-height: 1.2;
+  text-align: center;
   border: none;
   border-radius: 100px;
   color: #fff;
@@ -2850,8 +2855,12 @@ html.standalone-webapp .add-popup {
 .ds-primary-btn.btn-neutral { background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); }
 
 .ds-secondary-btn {
-  width: 100%;
-  padding: 14px 20px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 14px 12px;
+  font-size: 14px;
+  line-height: 1.2;
+  text-align: center;
   border: 1.5px solid var(--border);
   border-radius: 100px;
   background: var(--surface2);
@@ -2871,6 +2880,7 @@ html.standalone-webapp .add-popup {
 .ds-secondary-btn:active { transform: scale(0.97); color: var(--accent); border-color: var(--accent); }
 
 .ds-tertiary-btn {
+  flex: 1 1 100%;
   width: 100%;
   padding: 10px;
   background: transparent;
@@ -2891,6 +2901,8 @@ html.standalone-webapp .add-popup {
 .ds-tertiary-btn:active {
   color: var(--text);
 }
+.ds-primary-btn svg,
+.ds-secondary-btn svg { flex-shrink: 0; }
 
 /* Scroll hint (half-state only) */
 .ds-scroll-hint {
