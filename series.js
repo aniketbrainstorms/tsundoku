@@ -14,7 +14,7 @@ window.TsundokuSeries = (function () {
   // Returns {name, index} | null. Throws on network failure.
   async function viaWikidata(book) {
     const base = 'https://www.wikidata.org/w/api.php';
-    const s = await getJson(`${base}?action=wbsearchentities&search=${encodeURIComponent(book.title)}&language=en&type=item&limit=6&format=json&origin=*`);
+    const s = await getJson(`${base}?action=wbsearchentities&search=${encodeURIComponent(book.title)}&language=en&type=item&limit=10&format=json&origin=*`);
     const ids = (s.search || []).map(x => x.id);
     if (!ids.length) return null;
     const e = await getJson(`${base}?action=wbgetentities&ids=${ids.join('|')}&props=claims|labels|descriptions&languages=en&format=json&origin=*`);
@@ -25,8 +25,11 @@ window.TsundokuSeries = (function () {
       if (!claim) continue;
       const label = keyOf(ent.labels?.en?.value);
       const desc = (ent.descriptions?.en?.value || '').toLowerCase();
-      if (label !== t) continue;
-      if (!/novel|book|fantasy|fiction|literary|written work|memoir|story/.test(desc)) continue;
+      const last = keyOf((book.author || '').split(/\s+/).pop());
+      const titleOk = label === t || (label && (t.startsWith(label + ' ') || label.startsWith(t + ' ')));
+      if (!titleOk) continue;
+      const authorOk = last && keyOf(desc).includes(last);
+      if (!authorOk && !/novel|book|fantasy|fiction|literary|written work|memoir|story|comic|manga/.test(desc)) continue;
       const serId = claim.mainsnak?.datavalue?.value?.id;
       if (!serId) continue;
       const ord = parseFloat(claim.qualifiers?.P1545?.[0]?.datavalue?.value);
