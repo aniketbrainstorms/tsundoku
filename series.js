@@ -91,5 +91,75 @@ window.TsundokuSeries = (function () {
       .sort((a, b) => (a.series_index ?? 1e9) - (b.series_index ?? 1e9));
   }
 
-  return { detect, booksIn, keyOf, mount() {}, open() {} }; // mount/open filled in steps 3–4
-})();
+  function open(seriesKey) { /* step 4: series page */ }
+
+  // Series line under the author. Hidden unless the book has a series.
+  function mount(book, anchor) {
+    if (!anchor || !book) return;
+    const next = anchor.nextElementSibling;
+    if (next && next.classList.contains('sr-line')) next.remove();
+    anchor.dataset.srBook = String(book.id);
+    const has = (book.series_source === 'auto' || book.series_source === 'manual') && book.series_name;
+    if (has) {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'sr-line';
+      el.dataset.series = keyOf(book.series_name);
+      const num = book.series_index != null && book.series_index !== '' ? Number(book.series_index) : null;
+      el.innerHTML = `<span class="sr-name">${escapeHtml(book.series_name)}</span>`
+        + (num != null && !isNaN(num) ? `<span class="sr-sep">·</span><span class="sr-num">book ${num}</span>` : '')
+        + `<svg class="sr-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="9 18 15 12 9 6"/></svg>`;
+      el.addEventListener('click', e => { e.stopPropagation(); open(el.dataset.series); });
+      anchor.after(el);
+      return;
+    }
+    if (!book.series_source) {
+      detect(book).then(b => {
+        if (anchor.dataset.srBook === String(book.id) && b && b.series_source) mount(b, anchor);
+      });
+    }
+  }
+
+  // Edit-sheet fields, injected after the themes field.
+  function mountEdit(book) {
+    const themes = document.getElementById('editThemes');
+    if (!themes || !book) return;
+    let box = document.getElementById('srEditBox');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'srEditBox';
+      box.className = 'sr-edit';
+      box.innerHTML = `<div class="sr-edit-head"><p class="field-label">series</p><span class="sr-badge" id="srEditBadge"></span></div>
+        <div class="sr-edit-row">
+          <input type="text" class="text-input" id="srEditName" placeholder="series name" />
+          <input type="text" inputmode="decimal" class="text-input" id="srEditIdx" placeholder="#" />
+        </div>`;
+      themes.parentElement.after(box);
+      box.addEventListener('input', () => {
+        const same = (document.getElementById('srEditName').value.trim().toLowerCase() + '|' + document.getElementById('srEditIdx').value.trim()) === box.dataset.orig;
+        document.getElementById('srEditBadge').textContent = same ? (box.dataset.src === 'auto' ? 'auto-detected' : box.dataset.src === 'manual' ? 'set by you' : '') : 'set by you';
+      });
+    }
+    const name = book.series_name || '';
+    const idx = book.series_index != null && book.series_index !== '' ? String(Number(book.series_index)) : '';
+    document.getElementById('srEditName').value = name;
+    document.getElementById('srEditIdx').value = idx;
+    box.dataset.book = String(book.id);
+    box.dataset.src = book.series_source || '';
+    box.dataset.orig = name.trim().toLowerCase() + '|' + idx;
+    document.getElementById('srEditBadge').textContent = book.series_source === 'auto' ? 'auto-detected' : book.series_source === 'manual' ? 'set by you' : '';
+  }
+
+  // Returns the columns to merge into the edit save. {} when untouched.
+  function readEdit(id) {
+    const box = document.getElementById('srEditBox');
+    if (!box || box.dataset.book !== String(id)) return {};
+    const name = document.getElementById('srEditName').value.trim().toLowerCase();
+    const rawIdx = document.getElementById('srEditIdx').value.trim();
+    if ((name + '|' + rawIdx) === box.dataset.orig) return {};
+    if (!name) return { series_name: null, series_index: null, series_source: 'none' };
+    const idx = parseFloat(rawIdx);
+    return { series_name: name, series_index: isNaN(idx) ? null : idx, series_source: 'manual' };
+  }
+
+  return { detect, booksIn, keyOf, mount, mountEdit, readEdit, open };})();
