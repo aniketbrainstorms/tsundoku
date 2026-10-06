@@ -87,7 +87,7 @@ window.TsundokuSeries = (function () {
   async function run(book) {
     const probe = { ...book, title: cleanTitle(book.title) };
     let result = null, failed = 0;
-    for (const fn of [viaWikidata, viaOpenLibrary, viaGemini]) {
+    for (const fn of [viaWikidata, viaGemini]) {
       try {
         const r = await fn(probe);
  
@@ -294,4 +294,69 @@ window.TsundokuSeries = (function () {
     return { series_name: name, series_index: isNaN(idx) ? null : idx, series_source: 'manual' };
   }
 
-  return { detect, booksIn, keyOf, mount, mountEdit, readEdit, open, close };})();
+    // ── Bulk detection: Wikipedia evidence → Gemini in batches ──
+  const BAD_SERIES = /classics|edition|\bpress\b|publish|collection|library|bookshelf|tascabili|poche|\bbur\b|supercoralli|\bno\.\s*\d|\s--\s|\d{4,}/i;
+  const okSeries = n => !!n && typeof n === 'string' && !BAD_SERIES.test(n);
+
+  async function wikiEvidence(book) {
+    const q = encodeURIComponent(`${book.title} ${book.author || ''} novel`);
+    const d = await getJson(`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrlimit=1&prop=extracts|revisions&exintro=1&explaintext=1&exchars=350&rvprop=content&rvslots=main&rvsection=0&format=json&formatversion=2&origin=*`);
+    const p = d.query?.pages?.[0];
+    if (!p) return '';
+    const wt = p.revisions?.[0]?.slots?.main?.content || '';
+    const m = wt.match(/\|\s*series\s*=\s*([^\n|]+)/i);
+    const infobox = m ? m[1].replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1').replace(/<[^>]+>|'''?|\{\{|\}\}/g, '').trim() : '';
+    return `page "${p.title}"` + (infobox ? `; infobox series: ${infobox}` : '') + `; intro: ${(p.extract || '').replace(/\s+/g, ' ').slice(0, 300)}`;
+  }
+
+  async function bulkDetect({ limit = 12, dry = false } = {}) {
+    const todo = books.filter(b => !b.series_source && b.title).slice(0, limit);
+    if (!todo.length) { console.log('nothing to check'); return []; }
+    const known = [...new Set(books.filter(b => (b.series_source === 'manual' || b.series_source === 'auto') && okSeries(b.series_name)).map(b => b.series_name))];
+    const session = (await sb.auth.getSession()).data.session;
+    const report = [];
+    for (let i = 0; i < todo.length; i += 12) {
+      const batch = todo.slice(i, i + 12);
+      const ev = await Promise.all(batch.map(b => wikiEvidence({ ...b, title: cleanTitle(b.title) }).catch(() => '')));
+      const lines = batch.map((b, j) => `${j + 1} | ${cleanTitle(b.title)} | ${b.author || 'unknown'} | wikipedia: ${ev[j] || 'none found'}`).join('\n');
+      const prompt = `For each book below, decide whether it is part of a named book series.
+Rules:
+- Use the Wikipedia evidence when it clearly matches the book. Otherwise use only what you are certain of. Never guess.
+- "series" is the series' common English name in lowercase, e.g. "shiva trilogy". If the book belongs to one of these existing names, reuse it exactly: ${known.join('; ') || '(none yet)'}
+- "index" is the book's position in the series as a number, or null if unsure. Omnibus editions and box sets: null.
+- Publisher imprints, editions and collections (Penguin Classics, Dover Thrift, etc.) are NOT series.
+- "basis" is "wikipedia" or "memory".
+Respond ONLY with a JSON array, one object per book: [{"n": 1, "series": string or null, "index": number or null, "basis": string}]
+
+Books (n | title | author | evidence):
+${lines}`;
+      let arr;
+      try {
+        const res = await fetch('https://rrnryszgvctxainqyuyr.supabase.co/functions/v1/gemini-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}` },
+          body: JSON.stringify({ prompt })
+        });
+        if (!res.ok) throw new Error('http ' + res.status);
+        const data = await res.json();
+        const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        arr = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1));
+      } catch (e) { console.warn('batch skipped (left unchecked):', i, e.message); continue; }
+      for (const r of arr) {
+        const b = batch[(r.n | 0) - 1];
+        if (!b || b.series_source === 'manual') continue;
+        const name = okSeries(r.series) ? cleanName(r.series) : null;
+        const idx = parseFloat(r.index);
+        const updates = name
+          ? { series_name: name, series_index: isNaN(idx) ? null : idx, series_source: 'auto' }
+          : { series_name: null, series_index: null, series_source: 'none' };
+        report.push({ title: b.title, series: name, idx: updates.series_index, basis: r.basis });
+        if (!dry && await dbUpdate(b.id, updates)) Object.assign(b, updates);
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    console.table(report.filter(r => r.series));
+    return report;
+  }
+  
+  return { detect, booksIn, keyOf, mount, mountEdit, readEdit, open, close, bulkDetect };})();
