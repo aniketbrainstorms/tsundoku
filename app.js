@@ -1808,6 +1808,7 @@ async function confirmEdit() {
     genre: _editGenresArr.length ? _editGenresArr.join(', ') : null,
     page_count: parseInt(document.getElementById('editPageCount').value) || null,
     rating: editStatus === 'read' ? (_userRating || null) : null,
+    ...(window.TsundokuSeries ? TsundokuSeries.readEdit(editingId) : {}),
   };
 
   if (editCoverFile) {
@@ -5507,6 +5508,7 @@ function _swipePreRenderAll(force) {
 
     document.getElementById('ddpTitle').textContent  = book.title || '—';
     document.getElementById('ddpAuthor').textContent = book.author || '—';
+    if (window.TsundokuSeries) TsundokuSeries.mount(book, document.getElementById('ddpAuthor'));
     document.getElementById('ddpYear').textContent   = [book.year, book.publisher].filter(Boolean).join(' · ') || '';
 
     // Badge
