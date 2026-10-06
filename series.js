@@ -126,6 +126,12 @@ window.TsundokuSeries = (function () {
       <div class="sr-page-scroll" id="srScroll"></div>`;
     document.body.appendChild(pg);
     pg.querySelector('#srBack').addEventListener('click', close);
+    pg.querySelector('#srScroll').addEventListener('click', e => {
+      const row = e.target.closest('.sr-row-tap');
+      if (!row) return;
+      close();
+      setTimeout(() => { if (typeof openDetailModal === 'function') openDetailModal(row.dataset.id); }, 120);
+    });
     return pg;
   }
 
@@ -137,7 +143,7 @@ window.TsundokuSeries = (function () {
   function rowHtml(b) {
     const n = b.series_index != null && b.series_index !== '' ? Number(b.series_index) : null;
     const st = b.status === 'not-owned' ? 'not owned' : b.status;
-    return `<div class="sr-row${b.id === undefined ? '' : ''}">
+    return `<div class="sr-row sr-row-tap" data-id="${b.id}">
       <div class="sr-num-col">${n != null && !isNaN(n) ? n : '–'}</div>
       <div class="sr-cover">${coverHtml(b, 12)}</div>
       <div class="sr-info">
@@ -163,16 +169,8 @@ window.TsundokuSeries = (function () {
       ? `you have ${joinNums([...haveSet].sort((a, b) => a - b))}`
       : `${list.length} ${list.length === 1 ? 'book' : 'books'}`;
 
-    const lo = ints.length ? Math.min(...ints) : 0, hi = ints.length ? Math.max(...ints) : 0;
     let html = '';
-    const done = new Set();
-    numbered.forEach(b => {
-      const n = Number(b.series_index);
-      if (Number.isInteger(n) && ints.length > 1 && !done.has(n)) {
-        done.add(n);
-      }
-    });
-    // walk numbered books in order, inserting dashed gaps between owned integers
+    // walk numbered books
     let prevInt = null;
     numbered.forEach(b => {
       const n = Number(b.series_index);
