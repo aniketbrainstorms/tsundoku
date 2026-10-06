@@ -3360,10 +3360,12 @@ function exportLibraryMarkdown() {
   const modal = document.createElement('div');
   modal.id = 'libraryTableModal';
   modal.className = 'modal-overlay visible';
+  modal.style.cssText = 'display:flex;align-items:center;justify-content:center';
   modal.innerHTML = `
-    <div class="modal-sheet" style="max-width:520px;width:92%;max-height:80vh;display:flex;flex-direction:column">
+    <div class="modal-sheet" style="max-width:520px;width:92%;max-height:80vh;display:flex;flex-direction:column;margin:auto;border-radius:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
         <div style="font-weight:600;font-size:15px">My Library (${rows.length})</div>
+        <button id="libCopyBtn" style="margin-left:auto;margin-right:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">Copy</button>
         <button onclick="document.getElementById('libraryTableModal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1">&times;</button>
       </div>
       <div style="overflow-y:auto;padding:0 18px 18px">
@@ -3387,6 +3389,10 @@ function exportLibraryMarkdown() {
       </div>
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  modal.querySelector('#libCopyBtn').addEventListener('click', () => {
+    const text = rows.map(r => `${r.title} | ${r.author}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => showToast('Library copied ✓')).catch(() => showToast('Copy failed'));
+  });
   document.body.appendChild(modal);
 }
 
