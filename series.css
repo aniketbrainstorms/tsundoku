@@ -1,0 +1,10 @@
+.sr-line{display:inline-flex;align-items:center;gap:5px;margin-top:4px;padding:0;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--accent);cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
+.sr-line .sr-sep{opacity:.5}
+.sr-line .sr-chev{opacity:.7}
+.sr-edit{margin:14px 0}
+.sr-edit-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sr-edit-head .field-label{margin:0}
+.sr-badge{font-size:10px;font-weight:500;color:var(--text-muted)}
+.sr-edit-row{display:flex;gap:8px}
+.sr-edit-row #srEditName{flex:1;min-width:0}
+.sr-edit-row #srEditIdx{width:64px;flex:none;text-align:center}
