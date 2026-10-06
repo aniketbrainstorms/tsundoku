@@ -252,12 +252,12 @@ window.TsundokuSeries = (function () {
       box = document.createElement('div');
       box.id = 'srEditBox';
       box.className = 'sr-edit';
-      box.innerHTML = `<div class="sr-edit-head"><p class="field-label">series</p><span class="sr-badge" id="srEditBadge"></span></div>
+      box.innerHTML = `<div class="sr-edit-head"><span class="es-field-label">Series <span style="color:var(--text-muted);font-weight:400;font-size:10px">— name and book number</span></span><span class="sr-badge" id="srEditBadge"></span></div>
         <div class="sr-edit-row">
-          <input type="text" class="text-input" id="srEditName" placeholder="series name" />
-          <input type="text" inputmode="decimal" class="text-input" id="srEditIdx" placeholder="#" />
+          <input type="text" class="es-input" id="srEditName" placeholder="e.g. shiva trilogy" />
+          <input type="text" inputmode="decimal" class="es-input" id="srEditIdx" placeholder="#" />
         </div>`;
-      themes.parentElement.after(box);
+      (themes.closest('.es-field-row') || themes.parentElement).after(box);
       box.addEventListener('input', () => {
         const same = (document.getElementById('srEditName').value.trim().toLowerCase() + '|' + document.getElementById('srEditIdx').value.trim()) === box.dataset.orig;
         document.getElementById('srEditBadge').textContent = same ? (box.dataset.src === 'auto' ? 'auto-detected' : box.dataset.src === 'manual' ? 'set by you' : '') : 'set by you';
