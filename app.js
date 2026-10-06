@@ -6028,7 +6028,7 @@ function _swipePreRenderAll(force) {
 // the installed PWA. Fully additive — no existing open/close functions
 // are modified, only called.
 ;(function () {
-  const OVERLAY_SELECTOR = '.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open';
+  const OVERLAY_SELECTOR = '.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open, .sr-page.open';
 
   // Close functions that need more than a generic classList removal.
   const SPECIAL_MODAL_CLOSE = {
@@ -6058,6 +6058,11 @@ function _swipePreRenderAll(force) {
   }
 
   function pwaCloseTopmost() {
+    // Series page sits above everything (z-index 2500)
+    if (document.querySelector('.sr-page.open') && window.TsundokuSeries) {
+      window.TsundokuSeries.close();
+      return true;
+    }
     // Modals/sheets (includes detailModal + editSheetOverlay + profileModal + addModal etc.)
     const modals = document.querySelectorAll('.modal-overlay.visible');
     if (modals.length) {
