@@ -4826,6 +4826,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
       if (el.textContent.trim() === 'Status') el.style.display = 'none';
     });
 
+    if (window.TsundokuSeries) TsundokuSeries.mountEdit(book);
     document.getElementById('editSheetOverlay').classList.add('visible');
     window._editingListBookMode = true;
   };
@@ -5617,7 +5618,10 @@ function _swipePreRenderAll(force) {
 
   if (closeBtn) closeBtn.addEventListener('click', closeDDP);
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeDDP(); closeSidebar(); }
+    if (e.key === 'Escape') {
+      if (document.querySelector('.sr-page.open') && window.TsundokuSeries) { window.TsundokuSeries.close(); return; }
+      closeDDP(); closeSidebar();
+    }
   });
 
   // ── Desktop clicks — event delegation (survives every renderGrid call) ──
