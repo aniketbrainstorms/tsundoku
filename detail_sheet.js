@@ -495,6 +495,7 @@ function openEditSheet() {
     btn.classList.toggle('es-seg-active', btn.dataset.seg === editStatus);
     btn.classList.toggle('ef-seg-active', btn.dataset.seg === editStatus);
   });
+  if (window.TsundokuSeries) TsundokuSeries.mountEdit(book);
   document.getElementById('dsEditToggle').classList.add('active');
   document.getElementById('editSheetOverlay').classList.add('visible');
 }
@@ -836,6 +837,7 @@ window.openDetailModal = async function openDetailModal(id) {
     // Populate top section
     document.getElementById('detailTitleEl').textContent = book.title;
     document.getElementById('detailAuthorEl').textContent = book.author || '';
+    if (window.TsundokuSeries) TsundokuSeries.mount(book, document.getElementById('detailAuthorEl'));
     document.getElementById('detailCoverEl').innerHTML = coverHtml(book, 14);
     const dsBorrowedChip = document.getElementById('dsBorrowedChip');
     if (dsBorrowedChip) {
@@ -1009,6 +1011,7 @@ window.dsRefreshDetailSheet = function () {
 
   if (titleEl) titleEl.textContent = book.title;
   if (authorEl) authorEl.textContent = book.author || '';
+  if (authorEl && window.TsundokuSeries) TsundokuSeries.mount(book, authorEl);
   if (coverEl) coverEl.innerHTML = coverHtml(book, 14);
   if (yearPubEl) yearPubEl.textContent = book.year || '';
 
