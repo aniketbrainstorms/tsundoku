@@ -31,6 +31,3 @@
 .sr-gap .sr-num-col{color:var(--text-muted)}
 .sr-gap-text{font-size:12.5px;color:var(--text-muted)}
 .sr-empty{padding:18px 0;text-align:center;font-size:13px;color:var(--text-muted)}
-.sr-row-tap{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s ease,border-color .2s}
-.sr-row-tap:active{transform:scale(.985);border-color:var(--accent)}
-@media (prefers-reduced-motion:reduce){.sr-page,.sr-row-tap{transition:none}}
