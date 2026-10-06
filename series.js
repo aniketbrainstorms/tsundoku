@@ -1,3 +1,11 @@
+const cleanTitle = t => {
+  let s = (t || '').trim();
+  s = s.replace(/^SE\s+/, '');                                  // "SE Norwegian Wood"
+  s = s.replace(/^[^\d:]+?\s\d+\s*:?\s+(?=\S)/, '');            // "Shiva Trilogy 2 : X", "PLBC 81: X", "kalki trilogy 01 X"
+  s = s.replace(/(?:[:,]\s*|\s+)(?:vol\.?|volume|book)?\s*\d+$/i, ''); // "The Hidden Hindu 2", "Mahabharata: Volume 3"
+  return s.trim() || t;
+};
+
 // ── SERIES (sr- namespace) ──
 window.TsundokuSeries = (function () {
   const inflight = new Map();
@@ -77,10 +85,11 @@ window.TsundokuSeries = (function () {
   }
 
   async function run(book) {
+    const probe = { ...book, title: cleanTitle(book.title) };
     let result = null, failed = 0;
     for (const fn of [viaWikidata, viaOpenLibrary, viaGemini]) {
       try {
-        const r = await fn(book);
+        const r = await fn(probe);
  
         if (r) { result = r; break; }
       } catch (e) { if (fn === viaGemini) failed++; }
@@ -147,7 +156,7 @@ window.TsundokuSeries = (function () {
       <div class="sr-num-col">${n != null && !isNaN(n) ? n : '–'}</div>
       <div class="sr-cover">${coverHtml(b, 12)}</div>
       <div class="sr-info">
-        <div class="sr-row-title">${escapeHtml(b.title || '')}</div>
+        <div class="sr-row-title">${escapeHtml(cleanTitle(b.title || ''))}</div>
         <div class="sr-row-author">${escapeHtml(b.author || '')}</div>
       </div>
       <span class="sr-st sr-st-${b.status === 'not-owned' ? 'none' : b.status}">${st}</span>
