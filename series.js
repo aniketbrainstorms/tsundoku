@@ -91,7 +91,112 @@ window.TsundokuSeries = (function () {
       .sort((a, b) => (a.series_index ?? 1e9) - (b.series_index ?? 1e9));
   }
 
-  function open(seriesKey) { /* step 4: series page */ }
+  // ── Series page ──
+  let pg = null, openKey = null, bgRunning = false;
+
+  function ensurePage() {
+    if (pg) return pg;
+    pg = document.createElement('div');
+    pg.id = 'srPage';
+    pg.className = 'sr-page';
+    pg.innerHTML = `<div class="sr-page-bar">
+        <button type="button" class="sr-back" id="srBack" aria-label="back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div class="sr-page-titles"><div class="sr-page-title" id="srTitle"></div><div class="sr-page-sub" id="srSub"></div></div>
+      </div>
+      <div class="sr-page-scroll" id="srScroll"></div>`;
+    document.body.appendChild(pg);
+    pg.querySelector('#srBack').addEventListener('click', close);
+    return pg;
+  }
+
+  function joinNums(a) {
+    if (a.length <= 1) return a.join('');
+    return a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+  }
+
+  function rowHtml(b) {
+    const n = b.series_index != null && b.series_index !== '' ? Number(b.series_index) : null;
+    const st = b.status === 'not-owned' ? 'not owned' : b.status;
+    return `<div class="sr-row${b.id === undefined ? '' : ''}">
+      <div class="sr-num-col">${n != null && !isNaN(n) ? n : '–'}</div>
+      <div class="sr-cover">${coverHtml(b, 12)}</div>
+      <div class="sr-info">
+        <div class="sr-row-title">${escapeHtml(b.title || '')}</div>
+        <div class="sr-row-author">${escapeHtml(b.author || '')}</div>
+      </div>
+      <span class="sr-st sr-st-${b.status === 'not-owned' ? 'none' : b.status}">${st}</span>
+    </div>`;
+  }
+
+  function render() {
+    if (!pg || !openKey) return;
+    const list = booksIn(openKey);
+    const scroll = pg.querySelector('#srScroll');
+    if (!list.length) { scroll.innerHTML = '<div class="sr-empty">nothing on your shelf for this series yet</div>'; return; }
+
+    pg.querySelector('#srTitle').textContent = list[0].series_name;
+    const numbered = list.filter(b => b.series_index != null && b.series_index !== '' && !isNaN(Number(b.series_index)));
+    const unnumbered = list.filter(b => !numbered.includes(b));
+    const ints = numbered.map(b => Number(b.series_index)).filter(Number.isInteger);
+    const haveSet = new Set(ints);
+    pg.querySelector('#srSub').textContent = ints.length
+      ? `you have ${joinNums([...haveSet].sort((a, b) => a - b))}`
+      : `${list.length} ${list.length === 1 ? 'book' : 'books'}`;
+
+    const lo = ints.length ? Math.min(...ints) : 0, hi = ints.length ? Math.max(...ints) : 0;
+    let html = '';
+    const done = new Set();
+    numbered.forEach(b => {
+      const n = Number(b.series_index);
+      if (Number.isInteger(n) && ints.length > 1 && !done.has(n)) {
+        done.add(n);
+      }
+    });
+    // walk numbered books in order, inserting dashed gaps between owned integers
+    let prevInt = null;
+    numbered.forEach(b => {
+      const n = Number(b.series_index);
+      if (Number.isInteger(n)) {
+        if (prevInt != null) for (let g = prevInt + 1; g < n; g++) if (!haveSet.has(g)) html += `<div class="sr-row sr-gap"><div class="sr-num-col">${g}</div><div class="sr-gap-text">not on your shelf</div></div>`;
+        prevInt = n;
+      }
+      html += rowHtml(b);
+    });
+    html += unnumbered.map(rowHtml).join('');
+    if (list.length === 1) html += '<div class="sr-empty">just this one on your shelf so far</div>';
+    scroll.innerHTML = html;
+  }
+
+  // Other books by the same author may not be checked yet; check a few quietly.
+  async function backgroundDetect(author) {
+    if (bgRunning || !author) return;
+    bgRunning = true;
+    const todo = books.filter(b => !b.series_source && b.title && (b.author || '').trim() === author.trim()).slice(0, 8);
+    for (const b of todo) {
+      if (!openKey) break;
+      await detect(b);
+      render();
+      await new Promise(r => setTimeout(r, 400));
+    }
+    bgRunning = false;
+  }
+
+  function open(seriesKey) {
+    if (!seriesKey) return;
+    ensurePage();
+    openKey = seriesKey;
+    render();
+    pg.querySelector('#srScroll').scrollTop = 0;
+    requestAnimationFrame(() => pg.classList.add('open'));
+    const first = booksIn(seriesKey)[0];
+    if (first) backgroundDetect(first.author);
+  }
+
+  function close() {
+    if (!pg) return;
+    pg.classList.remove('open');
+    openKey = null;
+  }
 
   // Series line under the author. Hidden unless the book has a series.
   function mount(book, anchor) {
@@ -162,4 +267,4 @@ window.TsundokuSeries = (function () {
     return { series_name: name, series_index: isNaN(idx) ? null : idx, series_source: 'manual' };
   }
 
-  return { detect, booksIn, keyOf, mount, mountEdit, readEdit, open };})();
+  return { detect, booksIn, keyOf, mount, mountEdit, readEdit, open, close };})();
