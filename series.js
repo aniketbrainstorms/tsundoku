@@ -2,7 +2,7 @@
 window.TsundokuSeries = (function () {
   const inflight = new Map();
 
-  const keyOf = s => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const keyOf = s => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/^the /, '');
   const cleanName = s => (s || '').replace(/\s+/g, ' ').replace(/\s*(series|saga|trilogy)\s*$/i, ' $1').trim().toLowerCase();
 
   async function getJson(url) {
@@ -59,16 +59,33 @@ window.TsundokuSeries = (function () {
     return null;
   }
 
+  async function viaGemini(book) {
+    const session = (await sb.auth.getSession()).data.session;
+    const prompt = `Is the book "${book.title}" by ${book.author || 'an unknown author'} part of a named series? Respond ONLY with valid JSON (no markdown): {"series": string or null, "index": number or null}. Use the series' common English name, e.g. "Shiva Trilogy". "index" is this book's position in the series. If you are not sure, return null for both. Never guess.`;
+    const res = await fetch('https://rrnryszgvctxainqyuyr.supabase.co/functions/v1/gemini-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ prompt })
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    const data = await res.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    if (!parsed.series || typeof parsed.series !== 'string') return null;
+    const idx = parseFloat(parsed.index);
+    return { name: cleanName(parsed.series), index: isNaN(idx) ? null : idx };
+  }
+
   async function run(book) {
-    let result = null, okCount = 0;
-    for (const fn of [viaWikidata, viaOpenLibrary]) {
+    let result = null, failed = 0;
+    for (const fn of [viaWikidata, viaOpenLibrary, viaGemini]) {
       try {
         const r = await fn(book);
-        okCount++;
+ 
         if (r) { result = r; break; }
-      } catch (e) { /* try next source */ }
+      } catch (e) { if (fn === viaGemini) failed++; }
     }
-    if (!result && okCount === 0) return book; // all sources failed: leave unchecked, retry next open
+    if (!result && failed > 0) return book; // Gemini failed (quota/network): leave unchecked, retry next open
     const updates = result
       ? { series_name: result.name, series_index: result.index, series_source: 'auto' }
       : { series_name: null, series_index: null, series_source: 'none' };
