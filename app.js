@@ -3391,7 +3391,30 @@ function exportLibraryMarkdown() {
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   modal.querySelector('#libCopyBtn').addEventListener('click', () => {
     const text = rows.map(r => `${r.title} | ${r.author}`).join('\n');
-    navigator.clipboard.writeText(text).then(() => showToast('Library copied ✓')).catch(() => showToast('Copy failed'));
+    const btn = modal.querySelector('#libCopyBtn');
+    const flash = ok => {
+      btn.textContent = ok ? 'Copied ✓' : 'Copy failed';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
+    };
+    const fallbackCopy = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+      modal.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { }
+      ta.remove();
+      flash(ok);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => flash(true)).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
   });
   document.body.appendChild(modal);
 }
