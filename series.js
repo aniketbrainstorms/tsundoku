@@ -172,11 +172,13 @@ window.TsundokuSeries = (function () {
     pg.querySelector('#srTitle').textContent = list[0].series_name;
     const numbered = list.filter(b => b.series_index != null && b.series_index !== '' && !isNaN(Number(b.series_index)));
     const unnumbered = list.filter(b => !numbered.includes(b));
+    const owned = list.filter(b => b.status !== 'not-owned');
+    const ownedInts = owned.filter(b => numbered.includes(b)).map(b => Number(b.series_index)).filter(Number.isInteger);
     const ints = numbered.map(b => Number(b.series_index)).filter(Number.isInteger);
     const haveSet = new Set(ints);
-    pg.querySelector('#srSub').textContent = ints.length
-      ? `you have ${joinNums([...haveSet].sort((a, b) => a - b))}`
-      : `${list.length} ${list.length === 1 ? 'book' : 'books'}`;
+    pg.querySelector('#srSub').textContent = ownedInts.length
+      ? `you have ${joinNums([...new Set(ownedInts)].sort((a, b) => a - b))}`
+      : `${owned.length} ${owned.length === 1 ? 'book' : 'books'}`;
 
     let html = '';
     // walk numbered books
