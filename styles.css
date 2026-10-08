@@ -1720,9 +1720,9 @@ html.standalone-webapp .add-popup {
               border-radius 0.38s ease;
 }
 .app-screen.nav-receded {
-  transform: scale(0.93) translateY(10px);
-  filter: brightness(0.82);
-  border-radius: 16px;
+  transform: none;
+  filter: none;
+  border-radius: 0;
   overflow: hidden;
 }
 
