@@ -385,6 +385,8 @@ function dsRenderCTA(status, notOwned) {
     return;
   }
 
+  if (window.OM && book && OM.is(book)) { OM.renderCTA(primary, secondary, status, book); return; }
+
   // ── Default: owned book (reading / read / unread) ──
   primary.onclick = doPrimaryAction;
   secondary.onclick = doSecondaryAction;
@@ -896,6 +898,8 @@ window.openDetailModal = async function openDetailModal(id) {
     // Open sheet
     dsOpen();
 
+    if (window.OM) { OM.decorateDetail(book); if (OM.is(book)) return; }
+
     // ── Summary — AI-generated via Gemini, with regeneration tracking ──
     const summarySection = document.getElementById('dsSummarySection');
     const summaryEl = document.getElementById('dsAiSummary');
@@ -1020,6 +1024,7 @@ window.dsRefreshDetailSheet = function () {
   updateDetailBadge(book.status);
   dsRenderCTA(book.status, book.status === 'not-owned');
   editStatus = book.status;
+  if (window.OM) OM.decorateDetail(book);
   // Sync edit form fields to reflect saved values
   document.getElementById('editTitle').value = book.title;
   document.getElementById('editAuthor').value = book.author || '';
