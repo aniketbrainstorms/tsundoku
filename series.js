@@ -149,15 +149,18 @@ window.TsundokuSeries = (function () {
     return a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
   }
 
-  function rowHtml(b) {
+  function rowHtml(b, cov) {
     const n = b.series_index != null && b.series_index !== '' ? Number(b.series_index) : null;
-    const st = b.status === 'not-owned' ? 'not owned' : b.status;
+    const om = window.OM && OM.is(b) ? OM.range(b) : null;
+    const inOm = !om && b.status === 'not-owned' && cov && n != null && cov.has(n);
+    const st = inOm ? 'in your omnibus' : (b.status === 'not-owned' ? 'not owned' : b.status);
     return `<div class="sr-row sr-row-tap" data-id="${b.id}">
-      <div class="sr-num-col">${n != null && !isNaN(n) ? n : '–'}</div>
+      <div class="sr-num-col">${om ? om.a + '–' + om.z : (n != null && !isNaN(n) ? n : '–')}</div>
       <div class="sr-cover">${coverHtml(b, 12)}</div>
       <div class="sr-info">
         <div class="sr-row-title">${escapeHtml(cleanTitle(b.title || ''))}</div>
         <div class="sr-row-author">${escapeHtml(b.author || '')}</div>
+        ${om ? OM.parts(b).map((p, i) => `<div class="sr-row-author">${om.a + i} · ${escapeHtml(p.n)} — ${p.d ? 'read' : 'unread'}</div>`).join('') : ''}
       </div>
       <span class="sr-st sr-st-${b.status === 'not-owned' ? 'none' : b.status}">${st}</span>
     </div>`;
@@ -173,9 +176,11 @@ window.TsundokuSeries = (function () {
     const numbered = list.filter(b => b.series_index != null && b.series_index !== '' && !isNaN(Number(b.series_index)));
     const unnumbered = list.filter(b => !numbered.includes(b));
     const owned = list.filter(b => b.status !== 'not-owned');
-    const ownedInts = owned.filter(b => numbered.includes(b)).map(b => Number(b.series_index)).filter(Number.isInteger);
+    const cov = new Set();
+    owned.forEach(b => { const g = window.OM && OM.is(b) ? OM.range(b) : null; if (g) for (let k = g.a; k <= g.z; k++) cov.add(k); });
+    const ownedInts = owned.filter(b => numbered.includes(b)).map(b => Number(b.series_index)).filter(Number.isInteger).concat([...cov]);
     const ints = numbered.map(b => Number(b.series_index)).filter(Number.isInteger);
-    const haveSet = new Set(ints);
+    const haveSet = new Set([...ints, ...cov]);
     pg.querySelector('#srSub').textContent = ownedInts.length
       ? `you have ${joinNums([...new Set(ownedInts)].sort((a, b) => a - b))}`
       : `${owned.length} ${owned.length === 1 ? 'book' : 'books'}`;
@@ -187,11 +192,11 @@ window.TsundokuSeries = (function () {
       const n = Number(b.series_index);
       if (Number.isInteger(n)) {
         if (prevInt != null) for (let g = prevInt + 1; g < n; g++) if (!haveSet.has(g)) html += `<div class="sr-row sr-gap"><div class="sr-num-col">${g}</div><div class="sr-gap-text">not on your shelf</div></div>`;
-        prevInt = n;
+        prevInt = Math.max(prevInt ?? 0, n, (window.OM && OM.is(b) && OM.range(b)) ? OM.range(b).z : 0);
       }
-      html += rowHtml(b);
+      html += rowHtml(b, cov);
     });
-    html += unnumbered.map(rowHtml).join('');
+    html += unnumbered.map(b => rowHtml(b, cov)).join('');
     if (list.length === 1) html += '<div class="sr-empty">just this one on your shelf so far</div>';
     scroll.innerHTML = html;
   }
@@ -267,10 +272,11 @@ window.TsundokuSeries = (function () {
         <div class="sr-edit-row">
           <input type="text" class="es-input" id="srEditName" placeholder="e.g. shiva trilogy" />
           <input type="text" inputmode="decimal" class="es-input" id="srEditIdx" placeholder="#" />
+          <input type="text" class="es-input" id="srEditCovers" placeholder="1-3" title="omnibus covers books, e.g. 1-3" />
         </div>`;
       (themes.closest('.es-field-row') || themes.parentElement).after(box);
       box.addEventListener('input', () => {
-        const same = (document.getElementById('srEditName').value.trim().toLowerCase() + '|' + document.getElementById('srEditIdx').value.trim()) === box.dataset.orig;
+        const same = (document.getElementById('srEditName').value.trim().toLowerCase() + '|' + document.getElementById('srEditIdx').value.trim() + '|' + document.getElementById('srEditCovers').value.trim().replace(/\s+/g, '')) === box.dataset.orig;
         document.getElementById('srEditBadge').textContent = same ? (box.dataset.src === 'auto' ? 'auto-detected' : box.dataset.src === 'manual' ? 'set by you' : '') : 'set by you';
       });
     }
@@ -278,9 +284,10 @@ window.TsundokuSeries = (function () {
     const idx = book.series_index != null && book.series_index !== '' ? String(Number(book.series_index)) : '';
     document.getElementById('srEditName').value = name;
     document.getElementById('srEditIdx').value = idx;
+    document.getElementById('srEditCovers').value = book.series_covers || '';
     box.dataset.book = String(book.id);
     box.dataset.src = book.series_source || '';
-    box.dataset.orig = name.trim().toLowerCase() + '|' + idx;
+    box.dataset.orig = name.trim().toLowerCase() + '|' + idx + '|' + (book.series_covers || '');
     document.getElementById('srEditBadge').textContent = book.series_source === 'auto' ? 'auto-detected' : book.series_source === 'manual' ? 'set by you' : '';
   }
 
@@ -290,10 +297,11 @@ window.TsundokuSeries = (function () {
     if (!box || box.dataset.book !== String(id)) return {};
     const name = document.getElementById('srEditName').value.trim().toLowerCase();
     const rawIdx = document.getElementById('srEditIdx').value.trim();
-    if ((name + '|' + rawIdx) === box.dataset.orig) return {};
-    if (!name) return { series_name: null, series_index: null, series_source: 'none' };
+    const cov = document.getElementById('srEditCovers').value.trim().replace(/\s+/g, '');
+    if ((name + '|' + rawIdx + '|' + cov) === box.dataset.orig) return {};
+    if (!name) return { series_name: null, series_index: null, series_source: 'none', series_covers: null };
     const idx = parseFloat(rawIdx);
-    return { series_name: name, series_index: isNaN(idx) ? null : idx, series_source: 'manual' };
+    return { series_name: name, series_index: isNaN(idx) ? null : idx, series_source: 'manual', series_covers: cov || null };
   }
 
     // ── Bulk detection: Wikipedia evidence → Gemini in batches ──
