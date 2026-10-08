@@ -6185,8 +6185,3 @@ function _swipePreRenderAll(force) {
   document.addEventListener('touchcancel', () => { edgeTracking = false; });
 })();
 // ── END ANDROID HARDWARE/GESTURE BACK BUTTON ────────────────────────────
-
-(function(){const d=document.createElement('div');d.style.cssText='position:fixed;top:60px;left:8px;z-index:99999;background:#000c;color:#0f0;font:11px monospace;padding:6px;pointer-events:none';document.body.appendChild(d);
-function u(){const p=document.createElement('div');p.style.cssText='position:fixed;bottom:0;height:env(safe-area-inset-bottom)';document.body.appendChild(p);const sb=p.offsetHeight;p.remove();
-d.textContent=`inner ${innerWidth}x${innerHeight} | vv ${visualViewport.height|0} | screen ${screen.width}x${screen.height} | app ${document.getElementById('app').offsetHeight} | safeB ${sb}`;}
-u();addEventListener('resize',u);addEventListener('orientationchange',()=>setTimeout(u,300));setInterval(u,1000)})();
