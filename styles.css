@@ -4369,3 +4369,40 @@ html.standalone-webapp .add-popup {
 .habit-stats .stat .l { font-size: 10px; color: var(--text-muted); }
 
 
+
+/* ── OMNIBUS ── */
+.om-prog { margin: 10px 28px 0; }
+.om-prog-t { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 4px; }
+.om-segs { display: flex; gap: 4px; }
+.om-seg { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: var(--text-muted); text-align: center; min-width: 0; }
+.om-seg i { display: block; height: 5px; border-radius: 3px; background: var(--border); }
+.om-seg.on { color: var(--green); }
+.om-seg.on i { background: var(--green); }
+.reading-card .om-segs { margin-top: 6px; }
+.om-car { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -2px; }
+.om-car::-webkit-scrollbar { display: none; }
+.om-sl { flex: none; width: 100%; scroll-snap-align: center; padding: 0 2px; box-sizing: border-box; }
+.om-pn { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text); }
+.om-st { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.om-sl.on .om-st { color: var(--green); }
+.om-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex: none; }
+.om-sl.on .om-dot { background: var(--green); }
+.om-sum { font-size: 13px; line-height: 1.5; color: var(--text-dim); margin: 8px 0 0; }
+.om-dts { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+.om-dts i { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+.om-dts i.a { background: var(--accent); }
+.om-ov { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; }
+.om-ov.on { display: flex; }
+.om-sh { width: 100%; background: var(--surface); border-top: 1px solid var(--border); border-radius: 24px 24px 0 0; padding: 20px 20px calc(20px + var(--safe-bottom)); box-sizing: border-box; }
+.om-h { font-weight: 700; font-size: 17px; color: var(--text); }
+.om-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+.om-k { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; margin-top: 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface2); color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+.om-bx { width: 22px; height: 22px; border: 1.5px solid var(--text-muted); border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 14px; flex: none; }
+.om-k.on .om-bx { background: var(--green); border-color: var(--green); }
+.om-note { font-size: 13px; color: var(--text-muted); margin: 12px 0 0; }
+.om-ac { display: flex; gap: 8px; margin-top: 12px; }
+.om-b { flex: 1; padding: 13px 6px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font: inherit; cursor: pointer; }
+.om-b.p { background: var(--accent); border-color: var(--accent); color: #fff; }
+.om-tabs { display: flex; gap: 6px; margin-bottom: 14px; padding: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; }
+.om-tabs button { flex: 1; padding: 8px 2px; border: 0; border-radius: 10px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; overflow: hidden; }
+.om-tabs button.on { background: var(--accent); color: #fff; }
