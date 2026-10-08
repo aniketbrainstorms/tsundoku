@@ -250,17 +250,15 @@ html, body {
 body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
 
 #app {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: calc(env(safe-area-inset-bottom, 0px) * -1);
+  position: relative;
   width: 100%;
-  min-height: 100%;
-  background: #000;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* ── LOADING ── */
