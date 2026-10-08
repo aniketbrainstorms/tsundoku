@@ -11,7 +11,7 @@ const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelf
 function navPush(prevEl, nextEl) {
   if (prevEl) prevEl.classList.add('nav-behind');
   nextEl.classList.remove('nav-behind');
-  nextEl.classList.add('open');
+  nextEl.classList.add('open');e
 }
 
 function navPop(currentEl, prevEl) {
@@ -1120,6 +1120,7 @@ function initRcWave(card) {
   _rcLayoutWave(w);
   _rcRenderWave(w, _rcReduceMotion ? 0 : _rcPhaseAt(performance.now()));
   _rcWaves.push(w);
+  if (_rcRO) _rcRO.observe(container);
   if (!_rcReduceMotion && !_rcWaveRafRunning) {
     _rcWaveRafRunning = true;
     requestAnimationFrame(_rcWaveTick);
@@ -1157,6 +1158,12 @@ function _rcWaveTick(t) {
   if (_rcWaves.length) requestAnimationFrame(_rcWaveTick);
   else _rcWaveRafRunning = false;
 }
+const _rcRO = window.ResizeObserver ? new ResizeObserver(entries => {
+  entries.forEach(e => {
+    const w = _rcWaves.find(x => x.container === e.target);
+    if (w) { _rcLayoutWave(w); _rcRenderWave(w, _rcReduceMotion ? 0 : _rcPhaseAt(performance.now())); }
+  });
+}) : null;
 window.addEventListener('resize', () => { _rcWaves.forEach(w => _rcLayoutWave(w)); });
 
 function attachReadingCardEvents(card) {
@@ -5482,16 +5489,19 @@ function _swipePreRenderAll(force) {
   function strip_el() { return document.getElementById('swipeStrip') || { style: {} }; }
 
   // ── Resize: re-snap in px space ──
-  window.addEventListener('resize', () => {
-    if (isDesktop()) return;
+  function relayout() {
+    if (isDesktop() || down) return;
     getW();
     const strip = document.getElementById('swipeStrip');
-    if (strip) { strip.style.transition = 'none'; }
+    if (strip) strip.style.transition = 'none';
     const ib = document.querySelector('.tab-ink');
     if (ib) ib.style.transition = 'none';
     applyTranslate(-currentIdx() * W, false);
     if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
-  });
+  }
+  window.addEventListener('resize', relayout);
+  window.addEventListener('orientationchange', () => { relayout(); setTimeout(relayout, 120); setTimeout(relayout, 400); });
+  if (window.ResizeObserver) new ResizeObserver(relayout).observe(container);
 
   // ── Init ──
   getW();
@@ -6176,3 +6186,7 @@ function _swipePreRenderAll(force) {
 })();
 // ── END ANDROID HARDWARE/GESTURE BACK BUTTON ────────────────────────────
 
+(function(){const d=document.createElement('div');d.style.cssText='position:fixed;top:60px;left:8px;z-index:99999;background:#000c;color:#0f0;font:11px monospace;padding:6px;pointer-events:none';document.body.appendChild(d);
+function u(){const p=document.createElement('div');p.style.cssText='position:fixed;bottom:0;height:env(safe-area-inset-bottom)';document.body.appendChild(p);const sb=p.offsetHeight;p.remove();
+d.textContent=`inner ${innerWidth}x${innerHeight} | vv ${visualViewport.height|0} | screen ${screen.width}x${screen.height} | app ${document.getElementById('app').offsetHeight} | safeB ${sb}`;}
+u();addEventListener('resize',u);addEventListener('orientationchange',()=>setTimeout(u,300));setInterval(u,1000)})();
