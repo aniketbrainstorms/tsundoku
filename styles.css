@@ -3731,7 +3731,7 @@ html.standalone-webapp .add-popup {
 }
 
 /* ─── TABLET (768–1023px): hamburger + overlay sidebar ─── */
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 768px) and (max-width: 1023px) and (min-height: 600px) {
   .desk-hamburger {
     display: flex;
     align-items: center;
@@ -4403,3 +4403,142 @@ html.standalone-webapp .add-popup {
 .om-tabs { display: flex; gap: 6px; margin-bottom: 14px; padding: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; }
 .om-tabs button { flex: 1; padding: 8px 2px; border: 0; border-radius: 10px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; overflow: hidden; }
 .om-tabs button.on { background: var(--accent); color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════
+   DESIGN LAYER — additive. New features: use tokens + .tsd-* kit.
+   z-index scale for new UI: bar 21 · menus 20/101 · sheets 80–90
+   · nav panels 85–88 · edit/modal 110–135 · toast 200
+   ═══════════════════════════════════════════════════════════ */
+
+/* 1 · TOKENS */
+:root {
+  --tap: 44px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-pill: 100px;
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 0.15s; --dur-med: 0.28s; --dur-slow: 0.38s;
+  --page-pad-l: max(var(--safe-left), 16px);
+  --page-pad-r: max(var(--safe-right), 16px);
+}
+/* slightly brighter muted text in dark mode (AA contrast) */
+:root:not([data-theme="light"]) { --text-muted: #8b8178; }
+
+/* 2 · BASE */
+html { background: var(--bg); }
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+button, [role="tab"], a, label, select { touch-action: manipulation; }
+.hint-bar { opacity: 0.6; font-size: 12px; }
+
+/* 3 · TOUCH TARGETS (44pt) */
+.tab-btn { min-height: var(--tap); }
+.ld-chip { min-height: 40px; }
+.sort-btn { width: 40px; height: 40px; min-width: 40px; }
+:is(.profile-avatar, .cal-nav-btn, .status-chevron-btn, .share-copy-btn,
+    .ld-more-btn, .ld-view-btn, .author-more-btn) { position: relative; }
+:is(.profile-avatar, .share-copy-btn, .ld-more-btn, .ld-view-btn, .author-more-btn)::after {
+  content: ''; position: absolute; inset: -6px;
+}
+:is(.rc-edit-btn, .cal-nav-btn, .status-chevron-btn)::after {
+  content: ''; position: absolute; inset: -9px;
+}
+
+/* 4 · iOS: stop zoom-on-focus (inputs under 16px trigger it) */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(#authOtpInput),
+  textarea, select { font-size: 16px !important; }
+}
+
+/* 5 · FEEDBACK — touch press / desktop hover + focus */
+@media (hover: none) {
+  :is(.tab-btn, .sort-btn, .ld-chip, .profile-shelf-btn, .qm-item, .sd-item, .ld-add-btn):active { opacity: 0.7; }
+}
+@media (hover: hover) {
+  button { cursor: pointer; }
+  :is(.tab-btn, .ld-chip):not(.active):hover,
+  .sort-btn:hover { border-color: var(--text-muted); color: var(--text); }
+  /* allow copying reading text on desktop */
+  :is(.summary-scroll, .author-quote-text, .ddp-sum-text, .om-sum) {
+    user-select: text; -webkit-user-select: text;
+  }
+}
+:is(button, [role="tab"], a[href], summary):focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+/* 6 · DESKTOP — visible, themed thin scrollbars (previously all hidden) */
+@media (hover: hover) and (min-width: 1024px) {
+  :is(.swipe-pane, .al-scroll, .lo-scroll, .ld-list-scroll, .es-scroll, .author-scroll,
+      #shelfGridContainer, .public-shelf-content, .sbs-results, .bs-results, .ddp-scroll, .alt-view) {
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  :is(.swipe-pane, .al-scroll, .lo-scroll, .ld-list-scroll, .es-scroll, .author-scroll,
+      #shelfGridContainer, .public-shelf-content, .sbs-results, .bs-results, .ddp-scroll, .alt-view)::-webkit-scrollbar {
+    display: block; width: 8px; height: 8px;
+  }
+  :is(.swipe-pane, .al-scroll, .lo-scroll, .ld-list-scroll, .es-scroll, .author-scroll,
+      #shelfGridContainer, .public-shelf-content, .sbs-results, .bs-results, .ddp-scroll, .alt-view)::-webkit-scrollbar-thumb {
+    background: var(--border); border-radius: 8px;
+  }
+}
+
+/* 7 · PHONE LANDSCAPE — reclaim vertical space */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 1023px) {
+  .hint-bar { display: none; }
+  .header-top { margin-bottom: 6px; }
+  .header-logo img { height: 26px; }
+  .tab-btn { min-height: 38px; }
+  .swipe-pane { padding-top: 10px; padding-bottom: max(calc(var(--safe-bottom) + 76px), 84px); }
+  .modal-sheet { max-height: 96%; }
+}
+
+/* 8 · MOTION */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .loading-spinner { animation-duration: 0.8s !important; animation-iteration-count: infinite !important; }
+}
+
+/* 9 · COMPONENT KIT — build every new screen from these */
+.tsd-page { padding: var(--sp-4) var(--page-pad-r) max(calc(var(--safe-bottom) + 92px), 108px) var(--page-pad-l); }
+.tsd-section-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-muted); font-weight: 600; margin: var(--sp-5) 0 var(--sp-2);
+}
+.tsd-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: var(--sp-4); margin-bottom: var(--sp-3);
+}
+.tsd-row {
+  display: flex; align-items: center; gap: var(--sp-3);
+  min-height: var(--tap); padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--border); cursor: pointer;
+  transition: opacity var(--dur-fast);
+}
+.tsd-row:last-child { border-bottom: 0; }
+.tsd-row:active { opacity: 0.6; }
+.tsd-row-main { flex: 1; min-width: 0; }
+.tsd-row-title { font-size: 14px; font-weight: 600; color: var(--text); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tsd-row-sub { font-size: 12px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-top: 2px; }
+.tsd-btn {
+  min-height: var(--tap); padding: 0 var(--sp-5); border-radius: var(--r-pill);
+  border: 1.5px solid var(--border); background: var(--surface2); color: var(--text);
+  font: 600 14px 'DM Sans', sans-serif; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  transition: transform var(--dur-med) var(--ease-spring), opacity var(--dur-fast);
+}
+.tsd-btn:active { transform: scale(0.97); opacity: 0.9; }
+.tsd-btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tsd-btn--block { width: 100%; }
+.tsd-chip {
+  min-height: 36px; padding: 0 14px; border-radius: var(--r-pill);
+  border: 1.5px solid var(--border); background: transparent; color: var(--text-muted);
+  font: 500 13px 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: all var(--dur-fast);
+}
+.tsd-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* ═══ END DESIGN LAYER ═══ */
