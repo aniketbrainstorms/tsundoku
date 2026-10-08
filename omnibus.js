@@ -145,7 +145,7 @@ window.OM = (function () {
   let _cl = null;
   function openChecklist(b, pend) {
     _cl = { id: b.id, pend: !!pend };
-    drawChecklist(); sheet().classList.add('on');
+    sheet().classList.add('on'); drawChecklist();
   }
   function drawChecklist() {
     const b = books.find(x => x.id === _cl.id); if (!b) return;
