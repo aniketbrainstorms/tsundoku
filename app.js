@@ -1039,10 +1039,11 @@ function readingCardHtml(book, i) {
   const progressHtml = totalPages > 0
     ? `<div class="rc-progress-wrap">
         <div class="rc-progress-meta">
-          <span class="rc-progress-label">${pagesRead} / ${totalPages} pages</span>
+          <span class="rc-progress-label">${(window.OM && OM.is(book)) ? OM.card(book).label : `${pagesRead} / ${totalPages} pages`}</span>
           <span class="rc-progress-pct">${pct}%</span>
         </div>
         <div class="rc-wave-track" data-rc-wave data-percent="${pct}"></div>
+        ${(window.OM && OM.is(book)) ? OM.card(book).segs : ''}
       </div>`
     : `<p class="rc-no-progress">tap ✏️ to track progress</p>`;
   return `<div class="reading-card" data-id="${book.id}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
@@ -1906,6 +1907,7 @@ function openProgressModal(id) {
     : makePlaceholder(book, 26);
   document.getElementById('progressPagesRead').value = book.pages_read || '';
   document.getElementById('progressTotalPages').value = book.total_pages || '';
+  if (window.OM) OM.progressOpen(book);
   updateProgressPreview();
   document.getElementById('progressModal').classList.add('visible');
 }
@@ -1936,8 +1938,10 @@ function updateProgressPreview() {
 
   const btn = document.getElementById('saveProgressBtn');
   btn.textContent = isComplete ? 'finish book' : 'Save Progress';
+  if (window.OM) OM.progressPreview();
 }
 async function confirmProgress() {
+  if (window.OM && OM.hasPm()) return OM.progressSave();
   let pagesRead = Math.max(0, parseInt(document.getElementById('progressPagesRead').value) || 0);
   const totalPages = Math.max(0, parseInt(document.getElementById('progressTotalPages').value) || 0);
   if (totalPages > 0) pagesRead = Math.min(pagesRead, totalPages);
