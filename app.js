@@ -11,7 +11,7 @@ const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelf
 function navPush(prevEl, nextEl) {
   if (prevEl) prevEl.classList.add('nav-behind');
   nextEl.classList.remove('nav-behind');
-  nextEl.classList.add('open');e
+  nextEl.classList.add('open');
 }
 
 function navPop(currentEl, prevEl) {
