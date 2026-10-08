@@ -299,7 +299,7 @@ window.TsundokuSeries = (function () {
     const rawIdx = document.getElementById('srEditIdx').value.trim();
     const cov = document.getElementById('srEditCovers').value.trim().replace(/\s+/g, '');
     if ((name + '|' + rawIdx + '|' + cov) === box.dataset.orig) return {};
-    if (!name) return { series_name: null, series_index: null, series_source: 'none', series_covers: null };
+    if (!name) return { series_name: null, series_index: null, series_source: 'none', series_covers: cov || null };
     const idx = parseFloat(rawIdx);
     return { series_name: name, series_index: isNaN(idx) ? null : idx, series_source: 'manual', series_covers: cov || null };
   }
