@@ -2083,17 +2083,6 @@
   (function(){
     var TSD_ICON_KEY = 'tsundoku_app_icon';
     var TSD_DEFAULT_ICON = 'app_icon1.png';
-    function tsdApplyManifest(file){
-      fetch('manifest.json').then(function(r){ return r.json(); }).then(function(m){
-        m.icons = (m.icons || []).map(function(ic){
-          var copy = {}; for (var k in ic) copy[k] = ic[k];
-          copy.src = file; return copy;
-        });
-        var blob = new Blob([JSON.stringify(m)], {type:'application/json'});
-        var manifestLink = document.getElementById('appManifestLink');
-        if (manifestLink) manifestLink.setAttribute('href', URL.createObjectURL(blob));
-      }).catch(function(){});
-    }
     function tsdSetAppIconUI(file){
       var opts = document.querySelectorAll('.app-icon-opt');
       for (var i = 0; i < opts.length; i++){
@@ -2113,7 +2102,6 @@
       if (touchIcon) touchIcon.setAttribute('href', bustUrl);
       if (favicon) favicon.setAttribute('href', bustUrl);
       tsdSetAppIconUI(file);
-      tsdApplyManifest(file);
     };
     document.addEventListener('DOMContentLoaded', function(){
       var saved = TSD_DEFAULT_ICON;
@@ -2124,7 +2112,6 @@
       if (touchIcon) touchIcon.setAttribute('href', savedBust);
       if (favicon) favicon.setAttribute('href', savedBust);
       tsdSetAppIconUI(saved);
-      tsdApplyManifest(saved);
     });
   })();
 </script>
