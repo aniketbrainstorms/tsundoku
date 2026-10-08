@@ -238,9 +238,13 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
-html, body { 
-  height: 100%; width: 100%; overflow: hidden; 
-  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+html, body {
+  width: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  background: #000;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   overscroll-behavior: none;
 }
 body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
