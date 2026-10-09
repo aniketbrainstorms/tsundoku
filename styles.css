@@ -252,8 +252,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 #app {
   position: relative;
   width: 100%;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  height: 100vh;
+  height: -webkit-fill-available;
+  height: 100dvh;
+  min-height: 0;
   background: var(--bg);
   display: flex;
   flex-direction: column;
@@ -592,6 +594,7 @@ html.standalone-webapp .add-popup {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y;
   scrollbar-width: none;
   padding: 16px max(var(--safe-right),16px) max(calc(var(--safe-bottom) + 92px), 108px) max(var(--safe-left),16px);
   position: relative;
