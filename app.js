@@ -6185,3 +6185,27 @@ function _swipePreRenderAll(force) {
   document.addEventListener('touchcancel', () => { edgeTracking = false; });
 })();
 // ── END ANDROID HARDWARE/GESTURE BACK BUTTON ────────────────────────────
+
+// ── IOS ROTATION SCROLL PIN — stops the header drifting after orientation change ──
+;(function () {
+  function pinScroll() {
+    window.scrollTo(0, 0);
+    ['app', 'appScreen'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && el.scrollTop) el.scrollTop = 0;
+    });
+    var se = document.scrollingElement;
+    if (se && se.scrollTop) se.scrollTop = 0;
+    if (document.body.scrollTop) document.body.scrollTop = 0;
+  }
+  window.addEventListener('orientationchange', function () {
+    pinScroll();
+    setTimeout(pinScroll, 150);
+    setTimeout(pinScroll, 400);
+  });
+  window.addEventListener('resize', pinScroll);
+  window.addEventListener('pageshow', pinScroll);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) setTimeout(pinScroll, 100);
+  });
+})();
