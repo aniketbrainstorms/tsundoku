@@ -16,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="app_icon1.png" id="appTouchIconLink">
+<link rel="apple-touch-icon" href="icons/app_icon1_180.png" id="appTouchIconLink">
 <link rel="manifest" href="manifest.json" id="appManifestLink">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -1499,19 +1499,19 @@
       <p class="profile-section-label">App Icon</p>
       <div id="appIconRow" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
         <button class="app-icon-opt" data-icon="app_icon1.png" onclick="setAppIcon('app_icon1.png')" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
-          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('app_icon1.png');background-size:cover;background-position:center"></div>
+          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('icons/app_icon1_180.png');background-size:cover;background-position:center"></div>
           <span style="font-size:10px;font-weight:500;color:var(--text-muted)">Classic</span>
         </button>
         <button class="app-icon-opt" data-icon="app_icon2.png" onclick="setAppIcon('app_icon2.png')" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
-          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('app_icon2.png');background-size:cover;background-position:center"></div>
+          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('icons/app_icon2.png');background-size:cover;background-position:center"></div>
           <span style="font-size:10px;font-weight:500;color:var(--text-muted)">Forest</span>
         </button>
         <button class="app-icon-opt" data-icon="app_icon3.png" onclick="setAppIcon('app_icon3.png')" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
-          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('app_icon3.png');background-size:cover;background-position:center"></div>
+          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('icons/app_icon3.png');background-size:cover;background-position:center"></div>
           <span style="font-size:10px;font-weight:500;color:var(--text-muted)">Midnight</span>
         </button>
         <button class="app-icon-opt" data-icon="app_icon4.png" onclick="setAppIcon('app_icon4.png')" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">
-          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('app_icon4.png');background-size:cover;background-position:center"></div>
+          <div class="app-icon-swatch" style="width:52px;height:52px;border-radius:13px;background-image:url('icons/app_icon4.png');background-size:cover;background-position:center"></div>
           <span style="font-size:10px;font-weight:500;color:var(--text-muted)">Paper</span>
         </button>
       </div>
@@ -2100,12 +2100,10 @@
       fetch('manifest.json').then(function(r){ return r.json(); }).then(function(m){
         m.start_url = new URL(m.start_url, location.href).href;
         m.scope = new URL(m.scope, location.href).href;
-        m.icons = [{
-          src: new URL(file, location.href).href,
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'any'
-        }];
+        m.icons = [
+          { src: new URL('icons/' + file.replace('.png', '_192.png'), location.href).href, sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: new URL('icons/' + file.replace('.png', '_512.png'), location.href).href, sizes: '512x512', type: 'image/png', purpose: 'any' }
+        ];
         var blob = new Blob([JSON.stringify(m)], { type: 'application/manifest+json' });
         if (tsdManifestBlobUrl) URL.revokeObjectURL(tsdManifestBlobUrl);
         tsdManifestBlobUrl = URL.createObjectURL(blob);
@@ -2115,22 +2113,18 @@
     }
     window.setAppIcon = function(file){
       try { localStorage.setItem(TSD_ICON_KEY, file); } catch(e){}
-      var bustUrl = file + '?v=' + Date.now();
+      var bustUrl = 'icons/' + file.replace('.png', '_180.png') + '?v=' + Date.now();
       var touchIcon = document.getElementById('appTouchIconLink');
-      var favicon = document.getElementById('appFaviconLink');
       if (touchIcon) touchIcon.setAttribute('href', bustUrl);
-      if (favicon) favicon.setAttribute('href', bustUrl);
       tsdSetAppIconUI(file);
       tsdUpdateManifest(file);
     };
     document.addEventListener('DOMContentLoaded', function(){
       var saved = TSD_DEFAULT_ICON;
       try { saved = localStorage.getItem(TSD_ICON_KEY) || saved; } catch(e){}
-      var savedBust = saved + '?v=' + Date.now();
+      var savedBust = 'icons/' + saved.replace('.png', '_180.png') + '?v=' + Date.now();
       var touchIcon = document.getElementById('appTouchIconLink');
-      var favicon = document.getElementById('appFaviconLink');
       if (touchIcon) touchIcon.setAttribute('href', savedBust);
-      if (favicon) favicon.setAttribute('href', savedBust);
       tsdSetAppIconUI(saved);
       tsdUpdateManifest(saved);
     });
