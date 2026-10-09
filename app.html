@@ -2094,6 +2094,24 @@
         if (lbl) { lbl.style.color = active ? 'var(--accent)' : 'var(--text-muted)'; lbl.style.fontWeight = active ? '600' : '500'; }
       }
     }
+    var tsdManifestBlobUrl = null;
+    function tsdUpdateManifest(file){
+      fetch('manifest.json').then(function(r){ return r.json(); }).then(function(m){
+        m.start_url = new URL(m.start_url, location.href).href;
+        m.scope = new URL(m.scope, location.href).href;
+        m.icons = [{
+          src: new URL(file, location.href).href,
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any'
+        }];
+        var blob = new Blob([JSON.stringify(m)], { type: 'application/manifest+json' });
+        if (tsdManifestBlobUrl) URL.revokeObjectURL(tsdManifestBlobUrl);
+        tsdManifestBlobUrl = URL.createObjectURL(blob);
+        var link = document.getElementById('appManifestLink');
+        if (link) link.setAttribute('href', tsdManifestBlobUrl);
+      }).catch(function(){});
+    }
     window.setAppIcon = function(file){
       try { localStorage.setItem(TSD_ICON_KEY, file); } catch(e){}
       var bustUrl = file + '?v=' + Date.now();
@@ -2102,6 +2120,7 @@
       if (touchIcon) touchIcon.setAttribute('href', bustUrl);
       if (favicon) favicon.setAttribute('href', bustUrl);
       tsdSetAppIconUI(file);
+      tsdUpdateManifest(file);
     };
     document.addEventListener('DOMContentLoaded', function(){
       var saved = TSD_DEFAULT_ICON;
@@ -2112,6 +2131,7 @@
       if (touchIcon) touchIcon.setAttribute('href', savedBust);
       if (favicon) favicon.setAttribute('href', savedBust);
       tsdSetAppIconUI(saved);
+      tsdUpdateManifest(saved);
     });
   })();
 </script>
