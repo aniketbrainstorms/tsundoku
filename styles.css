@@ -2453,8 +2453,17 @@ html.standalone-webapp .add-popup {
 .ds-sheet-inner.ds-summary-expanded .summary-scroll { flex: 1 1 auto; min-height: 0; max-height: none; }
 /* While the summary is open the cover tucks down to make room for it. 736px = height of everything else in the sheet
    in a busy case (series line + rating + 2 rows of themes). Bigger screens keep a bigger cover, up to full size. */
+/* Omnibus books add a parts progress bar (~46px) above the summary. --ds-extra is that extra height; both cover
+   formulas below subtract it so the summary box still ends above the CTA. */
+.detail-sheet:has(.om-prog) { --ds-extra: 52px; }
+/* COLLAPSED: cover stays full size (224px) while everything fits, and only shrinks when the sheet would otherwise
+   push the summary header behind the CTA. 600px = height of the rest of the sheet at a 224px cover (busy case),
+   min(640px, 82dvh) = the sheet's own max-height, 0.4107 = how much sheet height each px of cover costs. */
+.detail-sheet {
+  --ds-cover-h: clamp(72px, calc(224px - (600px + var(--ds-extra, 0px) - min(640px, 82dvh)) / 0.4107), 224px);
+}
 .detail-sheet:has(.summary-section.expanded) {
-  --ds-cover-h: clamp(72px, calc(100dvh - max(var(--safe-top), 12px) - 8px - 736px), 224px);
+  --ds-cover-h: clamp(72px, calc(100dvh - max(var(--safe-top), 12px) - 8px - 736px - var(--ds-extra, 0px)), 224px);
 }
 .ds-middle-scroll::-webkit-scrollbar { display: none; }
 
