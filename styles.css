@@ -2217,8 +2217,8 @@ html.standalone-webapp .add-popup {
 .detail-sheet {
   width: 100%;
   height: auto;
-  max-height: 92dvh;
-  max-height: 92vh;
+  max-height: calc(100vh - max(var(--safe-top), 12px) - 8px);
+  max-height: calc(100dvh - max(var(--safe-top), 12px) - 8px);
   transform: translateY(100%);
   will-change: transform;
   touch-action: none;
@@ -2247,15 +2247,17 @@ html.standalone-webapp .add-popup {
   transition: max-height 0.42s cubic-bezier(0.32,0.72,0,1);
 }
 .ds-sheet-inner.ds-summary-expanded {
-  max-height: min(760px, 92dvh);
-  max-height: min(760px, 92vh);
+  /* whole viewport, minus the top safe-area and the part of the cover that overhangs the card (59% of its height) */
+  max-height: calc(100vh - max(var(--safe-top), 12px) - 8px - var(--ds-cover-h, 224px) * 0.5893);
+  max-height: calc(100dvh - max(var(--safe-top), 12px) - 8px - var(--ds-cover-h, 224px) * 0.5893);
 }
 .ds-cover-float {
   position: relative;
   z-index: 2;
   display: flex;
   justify-content: center;
-  margin-bottom: -92px;
+  margin-bottom: calc(var(--ds-cover-h, 224px) * -0.4107); /* = -92px at the default 224px */
+  transition: margin-bottom 0.42s cubic-bezier(0.32,0.72,0,1);
   pointer-events: none;
 }
 .modal-overlay.visible .detail-sheet {
@@ -2283,12 +2285,12 @@ html.standalone-webapp .add-popup {
 .ds-top {
   flex-shrink: 0;
   flex-grow: 0;
-  padding: 108px 20px 0;
+  padding: calc(var(--ds-cover-h, 224px) * 0.4107 + 16px) 20px 0; /* = 108px at the default 224px */
   background: var(--surface);
   position: relative;
   z-index: 1;
   border-bottom: 1px solid transparent;
-  transition: border-color 0.32s cubic-bezier(0.32,0.72,0,1);
+  transition: border-color 0.32s cubic-bezier(0.32,0.72,0,1), padding-top 0.42s cubic-bezier(0.32,0.72,0,1);
 }
 .ds-circle-btn {
   position: absolute;
@@ -2321,8 +2323,8 @@ html.standalone-webapp .add-popup {
 }
 /* NEW */
 .ds-cover {
-  width: 152px;
-  height: 224px;
+  width: calc(var(--ds-cover-h, 224px) * 0.6786); /* = 152px at the default 224px */
+  height: var(--ds-cover-h, 224px);
   border-radius: 18px;
   overflow: hidden;
   background: var(--surface2);
@@ -2335,7 +2337,7 @@ html.standalone-webapp .add-popup {
     0 1px 2px rgba(0,0,0,0.8);
   border: 1px solid rgba(255,255,255,0.09);
   transform: rotate(-0.5deg);
-  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), width 0.42s cubic-bezier(0.32,0.72,0,1), height 0.42s cubic-bezier(0.32,0.72,0,1);
 }
 .ds-cover:hover { transform: rotate(0deg) scale(1.02); }
 .ds-cover img {
@@ -2439,7 +2441,20 @@ html.standalone-webapp .add-popup {
   transition: max-height 0.42s cubic-bezier(0.32,0.72,0,1);
 }
 .ds-sheet-inner.ds-summary-expanded .ds-middle-scroll {
-  max-height: 62vh;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* The summary box takes the room it needs. If the screen is genuinely too short it shrinks and scrolls its own
+   text, so the box itself always ends above the CTA. */
+.ds-sheet-inner.ds-summary-expanded .summary-section { flex: 0 1 auto; min-height: 0; }
+.ds-sheet-inner.ds-summary-expanded .summary-content { display: flex; flex-direction: column; }
+.ds-sheet-inner.ds-summary-expanded .summary-scroll { flex: 1 1 auto; min-height: 0; max-height: none; }
+/* While the summary is open the cover tucks down to make room for it. 736px = height of everything else in the sheet
+   in a busy case (series line + rating + 2 rows of themes). Bigger screens keep a bigger cover, up to full size. */
+.detail-sheet:has(.summary-section.expanded) {
+  --ds-cover-h: clamp(72px, calc(100dvh - max(var(--safe-top), 12px) - 8px - 736px), 224px);
 }
 .ds-middle-scroll::-webkit-scrollbar { display: none; }
 
@@ -2726,7 +2741,7 @@ html.standalone-webapp .add-popup {
 /* NEW — enough headroom for real summaries; ds-middle-scroll (not this box) is now the single scroller if it's ever still too tall */
 /* FIX — cap the card itself so it can never grow past the CTA area; the text inside scrolls instead */
 .summary-section.expanded {
-  max-height: 260px;
+  max-height: 340px;
   border-color: rgba(201,113,74,0.28);
   background: rgba(34,30,26,0.95);
 }
@@ -2964,8 +2979,9 @@ html.standalone-webapp .add-popup {
     width: min(480px, 90vw);
     border-radius: 20px;
     border: 1px solid var(--border);
-    height: 86dvh;
-    height: 86vh;
+    height: auto;
+    min-height: 86vh;
+    min-height: 86dvh;
     box-shadow: 0 24px 80px rgba(0,0,0,0.7);
   }
   .modal-sheet {
