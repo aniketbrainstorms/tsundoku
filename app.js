@@ -5474,7 +5474,7 @@ function _swipePreRenderAll(force) {
     startClientY = e.clientY;
     startPageX   = currentX;
     velHistory   = [{ x: e.clientX, t: performance.now() }];
-    container.setPointerCapture(e.pointerId);
+    // Capture only after the gesture is confirmed horizontal.
   });
 
   container.addEventListener('pointermove', e => {
@@ -5482,11 +5482,20 @@ function _swipePreRenderAll(force) {
     const dx = e.clientX - startClientX;
     const dy = e.clientY - startClientY;
 
-    if (!dirDecided) {
-      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
-      dirDecided = true;
-      isHoriz    = Math.abs(dx) > Math.abs(dy) * 1.1;
+  if (!dirDecided) {
+    if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+  
+    dirDecided = true;
+    isHoriz = Math.abs(dx) > Math.abs(dy) * 1.1;
+  
+    if (isHoriz) {
+      container.setPointerCapture(e.pointerId);
+    } else {
+      // Release the swipe handler so the pane can scroll natively.
+      down = false;
+      return;
     }
+  }
     if (!isHoriz) return;
 
     e.preventDefault();
