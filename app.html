@@ -1188,6 +1188,8 @@
        DETAIL BOTTOM SHEET
        ════════════════════════════════════════ -->
   <div class="modal-overlay" id="detailModal">
+    <!-- scrim is its own layer so its opacity can follow the sheet (see dsApply) -->
+    <div class="ds-scrim" id="dsScrim"></div>
 <!-- NEW -->
     <div class="detail-sheet" id="detailSheet">
 
@@ -2130,6 +2132,7 @@
     });
   })();
 </script>
+<script src="motion.js"></script>
 <script src="app.js"></script>
 <script src="habit_tracker.js"></script>
 <script src="detail_sheet.js"></script>

@@ -1253,6 +1253,8 @@ function renderGrid() {
     if (grid) _renderGridIntoEl(grid, f);
   });
 
+  _gridsReady = true;
+
   // Position strip to current tab instantly (no animation)
   _swipeStripSnapTo(currentFilter, false);
 
@@ -3143,6 +3145,15 @@ function updateDeskHeader() {
 }
 
 function setFilter(filter) {
+  // Mobile: all three panes are already rendered, so a tab tap is just a swipe.
+  // Slide there with the same spring instead of cutting instantly and re-rendering
+  // (a re-render replays every card's entrance animation).
+  if (_gridsReady && window._swipeEngine && !window.matchMedia('(min-width: 1024px)').matches) {
+    document.getElementById('deskNavShelf')?.classList.add('active');
+    document.getElementById('deskNavLists')?.classList.remove('active');
+    document.getElementById('deskNavAuthors')?.classList.remove('active');
+    if (window._swipeEngine.goTo(filter, true)) { updateDeskHeader(); return; }
+  }
   currentFilter = filter;
   document.querySelectorAll('.filter-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
   document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach(el => el.classList.toggle('active', el.dataset.filter === filter));
@@ -5268,7 +5279,10 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
 const _SWIPE_FILTERS = ['reading', 'read', 'unread'];
 let _swipeRendered = false;
 let _swipeDirty = false; // set true whenever book data changes; cleared after pre-render
+let _gridsReady = false; // true once renderGrid() has filled all three panes (mobile)
 function _swipeStripSnapTo(filter, animate) {
+  // The swipe engine owns the strip's position; go through it so its state stays in sync.
+  if (window._swipeEngine && window._swipeEngine.goTo(filter, !!animate)) return;
   const strip = document.getElementById('swipeStrip');
   if (!strip) return;
   const idx = _SWIPE_FILTERS.indexOf(filter);
@@ -5300,11 +5314,12 @@ function _swipePreRenderAll(force) {
 }
 
 ;(function () {
-  const N            = 3;
-  const SETTLE_MS    = 320;
-  const SETTLE_EASE  = 'cubic-bezier(0.25,1,0.5,1)';
-  const FLICK_VEL    = 0.3;   // px/ms
-  const DRAG_PCT     = 0.22;  // fraction of W
+  const N               = 3;
+  const SETTLE_RESPONSE = 0.24;   // spring response in seconds (see motion.js)
+  const FLICK_VEL       = 0.3;    // px/ms
+  const DRAG_PCT        = 0.22;   // fraction of W
+  const MAX_FLING       = 3500;   // px/s cap on the velocity handed to the spring
+  const TAP_KICK        = 8;      // tab-tap lift-off speed, per px of distance (px/s)
 
   const isDesktop = () => window.innerWidth >= 1024;
   const container = document.getElementById('mainGridContainer');
@@ -5320,6 +5335,10 @@ function _swipePreRenderAll(force) {
   let isHoriz       = false;
   let velHistory    = [];
   let _rafPending   = false;
+  let _lastNear     = -1;
+  let _spring       = null;
+  let _springTarget = null;
+  let _strip           = null;
   let _tabBtnsCache    = null;
   let _swipeDotsCache  = null;
   let _sbSubItemsCache = null;
@@ -5330,8 +5349,8 @@ function _swipePreRenderAll(force) {
     _sbSubItemsCache = document.querySelectorAll('#deskShelfSub .sb-sub-item');
   }
 
+  function stripEl() { return _strip || (_strip = document.getElementById('swipeStrip')); }
   function getW() { W = container.offsetWidth || window.innerWidth; }
-
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
   function rubberBand(raw) {
@@ -5343,53 +5362,57 @@ function _swipePreRenderAll(force) {
 
   function currentIdx() { return _SWIPE_FILTERS.indexOf(currentFilter); }
 
-  function _flushSwipeVisuals() {
-    _rafPending = false;
-    const inkBar = document.querySelector('.tab-ink');
-    if (!inkBar) return;
-    const t = W > 0 ? (-currentX / W) : 0;
-    inkBar.style.transform = `translateX(${t * 100}%)`;
-
-    if (!_tabBtnsCache) _refreshSwipeNodeCache();
-
-    _tabBtnsCache.forEach((el, i) => {
-      const d = clamp(1 - Math.abs(t - i), 0, 1);
-      el.classList.toggle('active', d > 0.5);
-    });
-
+  // Light up the tab / dot / sidebar item for whichever page is nearest, while
+  // dragging as well as at rest. Only touches the DOM when that page changes.
+  function syncNearest() {
     const near = Math.round(clamp(W > 0 ? -currentX / W : 0, 0, N - 1));
-    _swipeDotsCache.forEach((el, i) => {
-      el.classList.toggle('active', i === near);
-    });
-    _sbSubItemsCache.forEach(el => {
-      el.classList.toggle('active', el.dataset.filter === _SWIPE_FILTERS[near]);
-    });
+    if (near === _lastNear) return;
+    _lastNear = near;
+    if (!_tabBtnsCache) _refreshSwipeNodeCache();
+    const f = _SWIPE_FILTERS[near];
+    _tabBtnsCache.forEach(el => el.classList.toggle('active', el.dataset.filter === f));
+    _swipeDotsCache.forEach(el => el.classList.toggle('active', el.dataset.filter === f));
+    _sbSubItemsCache.forEach(el => el.classList.toggle('active', el.dataset.filter === f));
   }
 
-  function applyTranslate(x, animate) {
-    const strip  = document.getElementById('swipeStrip');
-    const inkBar = document.querySelector('.tab-ink');
-    if (!strip) return;
+  function paint() {
+    _rafPending = false;
+    const strip = stripEl();
+    if (strip) strip.style.transform = `translate3d(${currentX}px,0,0)`;
+    syncNearest();
+  }
+  // Following the finger: pointer events can outpace frames, so write once per frame.
+  function moveTo(x) {
     currentX = x;
+    if (!_rafPending) { _rafPending = true; requestAnimationFrame(paint); }
+  }
+  // Jumps and spring steps are already frame-aligned: write straight away.
+  function setNow(x) { currentX = x; paint(); }
 
-    strip.style.transition  = animate ? `transform ${SETTLE_MS}ms ${SETTLE_EASE}` : 'none';
-    strip.style.transform   = `translateX(${x}px)`;
-
-    if (inkBar) {
-      inkBar.style.transition = animate ? `transform ${SETTLE_MS}ms ${SETTLE_EASE}` : 'none';
-      if (!_rafPending) {
-        _rafPending = true;
-        requestAnimationFrame(_flushSwipeVisuals);
-      }
-    }
+  function stopSpring() {
+    if (_spring) { _spring.stop(); _spring = null; _springTarget = null; }
   }
 
-  function snapTo(i) {
+  // Spring to targetX, starting at `velocity` px/s so a flick carries straight through.
+  function settle(targetX, velocity) {
+    stopSpring();
+    const h = Motion.spring({
+      from: currentX, to: targetX,
+      velocity: clamp(velocity || 0, -MAX_FLING, MAX_FLING),
+      response: SETTLE_RESPONSE,
+      onUpdate: setNow,
+      onDone: () => { _spring = null; _springTarget = null; }
+    });
+    if (h.running) { _spring = h; _springTarget = targetX; }
+  }
+
+  function snapTo(i, velocity) {
     const idx = clamp(i, 0, N - 1);
     currentFilter = _SWIPE_FILTERS[idx];
     getW();
-    applyTranslate(-idx * W, true);
+    settle(-idx * W, velocity);
     if (!_tabBtnsCache) _refreshSwipeNodeCache();
+    _lastNear = idx;
     _tabBtnsCache.forEach(b =>
       b.classList.toggle('active', b.dataset.filter === currentFilter));
     _swipeDotsCache.forEach(d =>
@@ -5399,9 +5422,30 @@ function _swipePreRenderAll(force) {
     updateHintBar();
     if (typeof updateEnvelopeVisibility === 'function') updateEnvelopeVisibility();
     if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
-    const ib = document.querySelector('.tab-ink');
-    if (ib) setTimeout(() => { ib.style.willChange = ''; }, SETTLE_MS + 30);
   }
+
+  // Put the strip on a page with no animation (renderGrid does this on every re-render).
+  function jumpTo(i) {
+    if (down) return;
+    getW();
+    const tgt = -clamp(i, 0, N - 1) * W;
+    if (_spring && _springTarget === tgt) return;   // already on its way — don't cut it short
+    stopSpring();
+    if (currentX !== tgt) setNow(tgt);
+  }
+
+  // Public hook, so the global tab buttons and renderGrid drive the same engine
+  // (and the same `currentX`) as a finger does.
+  window._swipeEngine = {
+    goTo(filter, animate) {
+      const i = _SWIPE_FILTERS.indexOf(filter);
+      if (i < 0) return false;
+      if (animate) { getW(); snapTo(i, (-i * W - currentX) * TAP_KICK); }
+      else jumpTo(i);
+      return true;
+    },
+    x() { return currentX; }
+  };
 
   // ── Pointer events (mouse + touch + stylus) ──
   container.addEventListener('pointerdown', e => {
@@ -5421,9 +5465,7 @@ function _swipePreRenderAll(force) {
 
     getW();
     _refreshSwipeNodeCache();
-    strip_el().style.transition  = 'none';
-    const ib = document.querySelector('.tab-ink');
-    if (ib) { ib.style.transition = 'none'; ib.style.willChange = 'transform'; }
+    stopSpring();            // grab the strip wherever it is — currentX is always live
 
     down         = true;
     dirDecided   = false;
@@ -5451,13 +5493,13 @@ function _swipePreRenderAll(force) {
     velHistory.push({ x: e.clientX, t: performance.now() });
     if (velHistory.length > 12) velHistory.shift();
 
-    applyTranslate(rubberBand(startPageX + dx), false);
+    moveTo(rubberBand(startPageX + dx));
   });
 
   function onRelease() {
     if (!down) return;
     down = false;
-    if (!isHoriz) { snapTo(currentIdx()); return; }
+    if (!isHoriz) { snapTo(currentIdx(), 0); return; }
 
     const dx  = currentX - startPageX;
     const pct = W > 0 ? dx / W : 0;
@@ -5478,25 +5520,28 @@ function _swipePreRenderAll(force) {
     if      (vel < -FLICK_VEL || pct < -DRAG_PCT) target = Math.min(target + 1, N - 1);
     else if (vel >  FLICK_VEL || pct >  DRAG_PCT) target = Math.max(target - 1, 0);
 
-    snapTo(target);
+    // Hand the finger's speed (px/ms → px/s) to the spring. A finger that has
+    // stopped (vel ~ 0) just settles; one that is still moving carries on.
     // Panes already hold correct data from the last renderGrid()/_swipePreRenderAll() pass —
     // do NOT force a re-render here, that's what caused the post-swipe blink.
+    snapTo(target, vel * 1000);
   }
 
   container.addEventListener('pointerup',     onRelease);
-  container.addEventListener('pointercancel', () => { down = false; snapTo(currentIdx()); });
-
-  function strip_el() { return document.getElementById('swipeStrip') || { style: {} }; }
+  container.addEventListener('pointercancel', () => { down = false; snapTo(currentIdx(), 0); });
 
   // ── Resize: re-snap in px space ──
+  // Only a change in WIDTH moves the page offsets. Height-only resizes (the
+  // container animates its bottom padding when the hint bar comes and goes)
+  // must not cut a settle short.
   function relayout() {
     if (isDesktop() || down) return;
+    const prevW = W;
     getW();
-    const strip = document.getElementById('swipeStrip');
-    if (strip) strip.style.transition = 'none';
-    const ib = document.querySelector('.tab-ink');
-    if (ib) ib.style.transition = 'none';
-    applyTranslate(-currentIdx() * W, false);
+    if (W !== prevW) {
+      stopSpring();
+      setNow(-currentIdx() * W);
+    }
     if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
   }
   window.addEventListener('resize', relayout);
@@ -5505,7 +5550,7 @@ function _swipePreRenderAll(force) {
 
   // ── Init ──
   getW();
-  applyTranslate(-currentIdx() * W, false);
+  setNow(-currentIdx() * W);
 })();
 // ── END SWIPE TAB NAVIGATION ───────────────────────────────────────────────
 

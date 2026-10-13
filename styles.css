@@ -252,8 +252,10 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 #app {
   position: relative;
   width: 100%;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  height: 100vh;
+  height: -webkit-fill-available;
+  height: 100dvh;
+  min-height: 0;
   background: var(--bg);
   display: flex;
   flex-direction: column;
@@ -2198,16 +2200,30 @@ html.standalone-webapp .add-popup {
 #detailModal {
   position: fixed;
   align-items: flex-end;
-  background: rgba(14,12,10,0.88);
-  transition: opacity 0.3s ease, backdrop-filter 0.4s ease;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  opacity: 1;               /* scrim + sheet are driven by JS (dsApply), not a fade */
+  transition: none;
+  visibility: hidden;
   z-index: 90;
 }
-#detailModal.ds-expanded {
+#detailModal.visible { visibility: visible; }
+.ds-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(14,12,10,0.88);
+  opacity: 0;
+  pointer-events: none;     /* taps fall through to #detailModal so tap-outside still closes */
+  will-change: opacity;
+  transition: background-color 0.3s ease;
+}
+#detailModal.ds-expanded .ds-scrim {
   background: rgba(14,12,10,0.94);
 }
 @supports (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none)) {
-  #detailModal { background: rgba(14,12,10,0.72); backdrop-filter: blur(6px); }
-  #detailModal.ds-expanded { background: rgba(14,12,10,0.9); backdrop-filter: blur(16px); }
+  .ds-scrim { background: rgba(14,12,10,0.72); backdrop-filter: blur(6px); }
+  #detailModal.ds-expanded .ds-scrim { background: rgba(14,12,10,0.9); backdrop-filter: blur(16px); }
 }
 
 /* NEW */
@@ -4288,11 +4304,10 @@ html.standalone-webapp .add-popup {
   border-radius: 16px;
   margin: 0 0 14px;
   overflow: hidden;
-  display: grid;
-  grid-template-rows: auto 0fr;
-  transition: grid-template-rows 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.habit-card.expanded { grid-template-rows: auto 1fr; }
+/* Layout flips instantly (.open); habit_tracker.js animates the reveal with
+   transforms + clip-path, so no layout runs per frame. .expanded = intent
+   (chevron, fade); .open = the body is laid out. */
 
 .habit-head {
   display: flex;
@@ -4371,7 +4386,8 @@ html.standalone-webapp .add-popup {
 .habit-btn.yes { background: var(--accent); color: #fff; }
 .habit-btn.no { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
 
-.habit-body { overflow: hidden; min-height: 0; }
+.habit-body { overflow: hidden; height: 0; }
+.habit-card.open .habit-body { height: auto; }
 .habit-body-inner {
   padding: 0 14px 16px;
   opacity: 0;
