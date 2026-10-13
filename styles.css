@@ -11,7 +11,7 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
-  --safe-right: env(safe-area-inset-right, 0px);e
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
 /* ── LIGHT MODE ── */
@@ -258,7 +258,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: 0;
 }
 
 /* ── LOADING ── */
@@ -598,6 +598,9 @@ html.standalone-webapp .add-popup {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-y;
+  padding: 16px max(var(--safe-right), 16px)
+    max(calc(var(--safe-bottom) + 92px), 108px)
+    max(var(--safe-left), 16px);
 }
 .swipe-pane::-webkit-scrollbar { display: none; }
 
