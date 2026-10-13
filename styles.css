@@ -316,7 +316,7 @@ body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--t
 
 /* ── APP SCREEN ── */
 .app-screen {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -558,7 +558,7 @@ html.standalone-webapp .add-popup {
   display: none;
 }
 .main-content-wrap {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -570,38 +570,34 @@ html.standalone-webapp .add-popup {
 
 /* GRID */
 .grid-container {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  transition: padding-bottom 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Three-pane swipe strip */
 .swipe-strip {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   display: flex;
   flex-direction: row;
   width: 300%;
-  height: 100%;
+  height: auto;
   will-change: transform;
 }
 .swipe-pane {
   flex: 0 0 33.3333%;
   min-width: 0;
   min-height: 0;
-  height: 100%;
+  height: auto;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-y;
-  scrollbar-width: none;
-  padding: 16px max(var(--safe-right),16px) max(calc(var(--safe-bottom) + 92px), 108px) max(var(--safe-left),16px);
-  position: relative;
 }
 .swipe-pane::-webkit-scrollbar { display: none; }
 
