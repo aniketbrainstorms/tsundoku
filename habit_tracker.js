@@ -142,18 +142,59 @@ async function habitMarkToday(val) {
   habitRenderCalendarGrid();
   habitUpdateMonthStat();
 
-  if (val) {
-    setTimeout(() => {
-      const card = document.getElementById('habitCard');
-      if (card) card.classList.add('expanded');
-    }, 260);
-  }
+  if (val) setTimeout(() => habitSetExpanded(true), 260);
 }
 
 // ── EXPAND / COLLAPSE ──
+let _habitFx = null;   // in-flight reveal: { cleanup() }
+
+// Expand/collapse as a FLIP: the card's layout changes at once, then we animate
+// a clip on the card and a translate on the list below, both compositor-only.
+// (The old grid-template-rows transition re-ran layout and repainted the whole
+// book list every frame.) Collapse keeps the layout open until the animation
+// ends, then flips it, so the last frame already matches the new layout.
+function habitSetExpanded(next) {
+  const card = document.getElementById('habitCard');
+  if (!card) return;
+  if (_habitFx) _habitFx.cleanup();            // settle any run in progress first
+  if (card.classList.contains('expanded') === next) return;
+
+  const below = document.getElementById('bookGrid-reading');
+  const wasOpen = card.classList.contains('open');
+  card.classList.add('open');
+  const hOpen = card.offsetHeight;
+  card.classList.remove('open');
+  const hClosed = card.offsetHeight;
+  card.classList.toggle('open', wasOpen);
+  const delta = hOpen - hClosed;               // how much taller the open card is
+
+  card.classList.toggle('expanded', next);     // chevron + body fade (CSS)
+  const canAnimate = card.animate && delta > 0 && !(window.Motion && Motion.reduced());
+  if (!canAnimate) { card.classList.toggle('open', next); return; }
+
+  const R = 'round 16px';
+  const clip = px => `inset(0 0 ${px}px 0 ${R})`;
+  const opts = { duration: next ? 420 : 320, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' };
+  const closed = [clip(delta), clip(0)];       // looks closed → looks open
+  const slide  = [`translate3d(0,${-delta}px,0)`, 'translate3d(0,0,0)'];
+  const a = [card.animate({ clipPath: next ? closed : closed.slice().reverse() }, opts)];
+  if (below) a.push(below.animate({ transform: next ? slide : slide.slice().reverse() }, opts));
+
+  card.classList.add('open');                  // layout at the open size for the whole run
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return; cleaned = true;
+    card.classList.toggle('open', next);       // final layout, then drop the animations
+    a.forEach(x => x.cancel());
+    _habitFx = null;
+  };
+  _habitFx = { cleanup };
+  a[0].finished.then(cleanup, () => {});
+}
+
 function habitToggleExpand() {
   const card = document.getElementById('habitCard');
-  if (card) card.classList.toggle('expanded');
+  if (card) habitSetExpanded(!card.classList.contains('expanded'));
 }
 
 // ── CALENDAR ──

@@ -34,22 +34,49 @@ function dsGetFullY() {
   return 0;
 }
 
-function dsSetTranslate(y, animate) {
+// ── Sheet motion ──────────────────────────────────────────────────────────
+// The sheet is driven by a spring (motion.js), so a drag hands its speed
+// straight to the settle, and grabbing it mid-animation just works. The scrim
+// is tied to the sheet's position: it fades as the sheet leaves, not after.
+const DS_RESPONSE = 0.38;   // spring response in seconds
+let _dsSpring = null;
+
+function dsStopSpring() {
+  if (_dsSpring) { _dsSpring.stop(); _dsSpring = null; }
+}
+
+// Distance the sheet must travel from rest to be fully off-screen.
+function dsExitDistance() {
+  const sheet = document.getElementById('detailSheet');
+  if (!sheet) return window.innerHeight;
+  const restTop = sheet.getBoundingClientRect().top - DS.currentTranslate;
+  return Math.max(40, window.innerHeight - restTop);
+}
+
+function dsApply(y) {
   const sheet = document.getElementById('detailSheet');
   if (!sheet) return;
   DS.currentTranslate = y;
-  if (animate) {
-    sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
-  } else {
-    sheet.style.transition = 'none';
-  }
-  sheet.style.setProperty('--ds-current-translate', `${y}px`);
-  sheet.style.transform = `translateY(${y}px)`;
+  sheet.style.transform = `translate3d(0,${y}px,0)`;
+  const scrim = document.getElementById('dsScrim');
+  if (scrim) scrim.style.opacity = Math.max(0, Math.min(1, 1 - y / (DS.exit || window.innerHeight)));
 }
 
-function dsSnapTo(expanded, animate = true) {
+function dsSetTranslate(y, animate, velocity) {
+  dsStopSpring();
+  if (!animate) { dsApply(y); return; }
+  const h = Motion.spring({
+    from: DS.currentTranslate, to: y, velocity: velocity || 0,
+    response: DS_RESPONSE,
+    onUpdate: dsApply,
+    onDone: () => { _dsSpring = null; }
+  });
+  if (h.running) _dsSpring = h;
+}
+
+function dsSnapTo(expanded, animate = true, velocity = 0) {
   const targetY = expanded ? dsGetFullY() : dsGetHalfY();
-  dsSetTranslate(targetY, animate);
+  dsSetTranslate(targetY, animate, velocity);
   DS.isExpanded = expanded;
   const overlay = document.getElementById('detailModal');
   overlay.classList.toggle('ds-expanded', expanded);
@@ -73,50 +100,48 @@ function dsOpen() {
   const overlay = document.getElementById('detailModal');
   const sheet = document.getElementById('detailSheet');
   if (!overlay || !sheet) return;
-  DS.isOpen = false;
+  dsStopSpring();
+  DS.closing = false;
   DS.isExpanded = false;
   DS.isDragging = false;
   _dsOpenTime = Date.now();
-  sheet.style.transition = 'none';
-  const offscreen = window.innerHeight;
-  sheet.style.transform = `translateY(${offscreen}px)`;
-  DS.currentTranslate = offscreen;
+  overlay.style.pointerEvents = '';
+
+  // Measure at rest, park just below the screen, then spring up. The sheet is
+  // live from the first frame: it can be grabbed while it is still arriving.
+  sheet.style.transform = 'translate3d(0,0,0)';
+  DS.currentTranslate = 0;
+  DS.exit = dsExitDistance();
+  dsApply(DS.exit + 120);        // +120 keeps the sheet's shadow off-screen too
   overlay.classList.add('visible');
-  overlay.style.pointerEvents = 'none';
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        try {
-          dsSnapTo(false, true);
-        } catch (e) {
-          console.error('dsSnapTo error:', e);
-        }
-        setTimeout(() => {
-          DS.isOpen = true;
-          overlay.style.pointerEvents = '';
-          const sheetEl2 = document.getElementById('detailSheet');
-          if (sheetEl2) sheetEl2.style.pointerEvents = 'auto';
-        }, 420);
-      }, 32);
-    });
-  });
+  sheet.style.pointerEvents = 'auto';
+  DS.isOpen = true;
+  try {
+    dsSnapTo(false, true, 0);
+  } catch (e) {
+    console.error('dsSnapTo error:', e);
+  }
 }
 
-function dsClose() {
+function dsClose(velocity) {
+  if (DS.closing) return;
   const sheetEl = document.getElementById('detailSheet');
-  const sheetH = sheetEl ? sheetEl.offsetHeight : window.innerHeight * 0.92;
-  dsSetTranslate(sheetH, true);
-  DS.isOpen = false;
-  if (sheetEl) sheetEl.style.pointerEvents = 'none';
   const overlay = document.getElementById('detailModal');
+  DS.closing = true;
+  DS.isOpen = false;
+  DS.isDragging = false;
+  if (sheetEl) sheetEl.style.pointerEvents = 'none';
   overlay.classList.remove('ds-expanded');
   const section = document.getElementById('dsSummarySection');
   if (section) section.classList.remove('expanded');
-  setTimeout(() => {
+
+  function finish() {
+    dsStopSpring();
     overlay.classList.remove('visible');
     overlay.style.pointerEvents = '';
     DS.isOpen = false;
     DS.isExpanded = false;
+    DS.closing = false;
     DS.summaryExpanded = false;
     editingId = null;
     closeEditSheet();
@@ -125,11 +150,63 @@ function dsClose() {
       DS._callerRestore = null;
       fn();
     }
-  }, 380);
+  }
+
+  dsStopSpring();
+  DS.exit = dsExitDistance();
+  const exit = DS.exit;
+  const from = DS.currentTranslate;
+  // Aim past the edge and stop the moment the sheet is fully gone, so there is
+  // no slow tail. A button-close gets a brisk lift-off; a flick keeps its speed.
+  const target = exit + 160;
+  const v = Math.max(velocity || 0, (target - from) * 7);
+  const h = Motion.spring({
+    from, to: target, velocity: v, response: 0.34,
+    onUpdate: y => { dsApply(y); if (y >= exit && _dsSpring) { _dsSpring.stop(); _dsSpring = null; finish(); } },
+    onDone: () => { if (DS.closing) { _dsSpring = null; finish(); } }
+  });
+  if (h.running) _dsSpring = h;
 }
 
 // ── Touch / drag handling ──
-/* NEW — the whole middle area (#dsScroll) can now scroll, not just the summary card, so hand it off the same way */
+// Velocity from the last ~100ms of samples (px/ms, + = downwards).
+function dsTrackVelocity(y, t) {
+  const s = DS._vs || (DS._vs = []);
+  s.push({ y, t });
+  while (s.length > 2 && t - s[0].t > 100) s.shift();
+  const a = s[0], b = s[s.length - 1];
+  DS.velocity = b.t - a.t > 4 ? (b.y - a.y) / (b.t - a.t) : 0;
+}
+
+function dsBeginDrag(y) {
+  dsStopSpring();                 // grab it wherever it is
+  DS.exit = dsExitDistance();
+  DS.isDragging = true;
+  DS.startY = y;
+  DS.startTranslate = DS.currentTranslate;
+  DS.velocity = 0;
+  DS._vs = [{ y, t: performance.now() }];
+}
+
+function dsDragTo(y) {
+  dsTrackVelocity(y, performance.now());
+  let next = DS.startTranslate + (y - DS.startY);
+  if (next < 0) next = 0 - Math.pow(0 - next, 0.6);   // resistance above rest
+  dsApply(next);
+}
+
+function dsEndDrag() {
+  DS.isDragging = false;
+  DS.startY = 0;
+  // Close if dragged far enough down or flicked down
+  if (DS.currentTranslate > dsGetHalfY() + 60 || DS.velocity > 0.8) {
+    dsClose(Math.max(0, DS.velocity) * 1000);
+    return;
+  }
+  dsSnapTo(false, true, DS.velocity * 1000);
+}
+
+/* the whole middle area (#dsScroll) can scroll, not just the summary card, so hand it off the same way */
 function dsOnTouchStart(e) {
   if (!DS.isOpen) return;
   if (DS.animating) return;
@@ -146,102 +223,39 @@ function dsOnTouchStart(e) {
     const scroll = document.getElementById('dsScroll');
     if (scroll.scrollTop > 2) return;
   }
-  DS.isDragging = true;
-  DS.startY = e.touches[0].clientY;
-  DS.lastY = DS.startY;
-  DS.lastTime = Date.now();
-  DS.startTranslate = DS.currentTranslate;
-  DS.velocity = 0;
-  const sheet = document.getElementById('detailSheet');
-  sheet.style.transition = 'none';
+  dsBeginDrag(e.touches[0].clientY);
 }
 
 function dsOnTouchMove(e) {
   if (!DS.isDragging) return;
   const y = e.touches[0].clientY;
-  const now = Date.now();
-  const dt = Math.max(now - DS.lastTime, 1);
-  DS.velocity = (y - DS.lastY) / dt;
-  DS.lastY = y;
-  DS.lastTime = now;
-
-  const delta = y - DS.startY;
-  let newTranslate = DS.startTranslate + delta;
-
-  // Clamp: can't go above full position, slight resistance below half
-  const fullY = dsGetFullY();
-  const halfY = dsGetHalfY();
-  if (newTranslate < 0) {
-    newTranslate = 0 - Math.pow(0 - newTranslate, 0.6);
-  }
-  // No resistance dragging down, let it close smoothly
-  dsSetTranslate(newTranslate, false);
+  dsDragTo(y);
   // Prevent page scroll only if no other modal is on top
-  if (delta !== 0 && !document.getElementById('progressModal').classList.contains('visible')) e.preventDefault();
+  if (y - DS.startY !== 0 && !document.getElementById('progressModal').classList.contains('visible')) e.preventDefault();
 }
 
 function dsOnTouchEnd(e) {
   if (!DS.isDragging) return;
-  DS.isDragging = false;
-  DS.startY = 0;
-
-  const halfY = dsGetHalfY();
-  const fullY = dsGetFullY();
-  const midpoint = (halfY + fullY) / 2;
-
-  // Close if dragged far enough down
-  if (DS.currentTranslate > halfY + 60 || DS.velocity > 0.8) {
-    dsClose();
-    return;
-  }
-  dsSnapTo(false);
+  dsEndDrag();
 }
 
 // Mouse equivalents for desktop
 function dsOnMouseDown(e) {
+  if (!DS.isOpen) return;
   if (DS.isExpanded) {
     const handle = document.getElementById('dsHandleWrap');
     const top = document.getElementById('dsTop');
     if (!handle.contains(e.target) && !top.contains(e.target)) return;
   }
-  DS.isDragging = true;
-  DS.startY = e.clientY;
-  DS.lastY = DS.startY;
-  DS.lastTime = Date.now();
-  DS.startTranslate = DS.currentTranslate;
-  DS.velocity = 0;
-  const sheet = document.getElementById('detailSheet');
-  sheet.style.transition = 'none';
+  dsBeginDrag(e.clientY);
   e.preventDefault();
 
-  function onMouseMove(e) {
-    if (!DS.isDragging) return;
-    const y = e.clientY;
-    const now = Date.now();
-    const dt = Math.max(now - DS.lastTime, 1);
-    DS.velocity = (y - DS.lastY) / dt;
-    DS.lastY = y;
-    DS.lastTime = now;
-
-    const delta = y - DS.startY;
-    let newTranslate = DS.startTranslate + delta;
-    const fullY = dsGetFullY(), halfY = dsGetHalfY();
-    if (newTranslate < fullY) newTranslate = fullY - Math.pow(fullY - newTranslate, 0.6);
-    if (newTranslate > halfY + 80) newTranslate = halfY + 80 + (newTranslate - halfY - 80) * 0.3;
-    dsSetTranslate(newTranslate, false);
-  }
-
+  function onMouseMove(e) { if (DS.isDragging) dsDragTo(e.clientY); }
   function onMouseUp() {
-    if (!DS.isDragging) return;
-    DS.isDragging = false;
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
-
-    const halfY = dsGetHalfY();
-    if (DS.currentTranslate > halfY + 60 || DS.velocity > 0.8) { dsClose(); return; }
-    dsSnapTo(false);
+    if (DS.isDragging) dsEndDrag();
   }
-
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
 }
