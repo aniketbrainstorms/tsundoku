@@ -1,0 +1,843 @@
+diff --git a/app.html b/app.html
+index 2e45cb4..684b71f 100644
+--- a/app.html
++++ b/app.html
+@@ -1188,6 +1188,8 @@
+        DETAIL BOTTOM SHEET
+        ════════════════════════════════════════ -->
+   <div class="modal-overlay" id="detailModal">
++    <!-- scrim is its own layer so its opacity can follow the sheet (see dsApply) -->
++    <div class="ds-scrim" id="dsScrim"></div>
+ <!-- NEW -->
+     <div class="detail-sheet" id="detailSheet">
+ 
+@@ -2130,6 +2132,7 @@
+     });
+   })();
+ </script>
++<script src="motion.js"></script>
+ <script src="app.js"></script>
+ <script src="habit_tracker.js"></script>
+ <script src="detail_sheet.js"></script>
+diff --git a/app.js b/app.js
+index ef3b5cc..88ab6b1 100644
+--- a/app.js
++++ b/app.js
+@@ -1253,6 +1253,8 @@ function renderGrid() {
+     if (grid) _renderGridIntoEl(grid, f);
+   });
+ 
++  _gridsReady = true;
++
+   // Position strip to current tab instantly (no animation)
+   _swipeStripSnapTo(currentFilter, false);
+ 
+@@ -3143,6 +3145,15 @@ function updateDeskHeader() {
+ }
+ 
+ function setFilter(filter) {
++  // Mobile: all three panes are already rendered, so a tab tap is just a swipe.
++  // Slide there with the same spring instead of cutting instantly and re-rendering
++  // (a re-render replays every card's entrance animation).
++  if (_gridsReady && window._swipeEngine && !window.matchMedia('(min-width: 1024px)').matches) {
++    document.getElementById('deskNavShelf')?.classList.add('active');
++    document.getElementById('deskNavLists')?.classList.remove('active');
++    document.getElementById('deskNavAuthors')?.classList.remove('active');
++    if (window._swipeEngine.goTo(filter, true)) { updateDeskHeader(); return; }
++  }
+   currentFilter = filter;
+   document.querySelectorAll('.filter-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+   document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach(el => el.classList.toggle('active', el.dataset.filter === filter));
+@@ -5268,7 +5279,10 @@ document.getElementById('editSheetOverlay').addEventListener('transitionend', fu
+ const _SWIPE_FILTERS = ['reading', 'read', 'unread'];
+ let _swipeRendered = false;
+ let _swipeDirty = false; // set true whenever book data changes; cleared after pre-render
++let _gridsReady = false; // true once renderGrid() has filled all three panes (mobile)
+ function _swipeStripSnapTo(filter, animate) {
++  // The swipe engine owns the strip's position; go through it so its state stays in sync.
++  if (window._swipeEngine && window._swipeEngine.goTo(filter, !!animate)) return;
+   const strip = document.getElementById('swipeStrip');
+   if (!strip) return;
+   const idx = _SWIPE_FILTERS.indexOf(filter);
+@@ -5300,11 +5314,12 @@ function _swipePreRenderAll(force) {
+ }
+ 
+ ;(function () {
+-  const N            = 3;
+-  const SETTLE_MS    = 320;
+-  const SETTLE_EASE  = 'cubic-bezier(0.25,1,0.5,1)';
+-  const FLICK_VEL    = 0.3;   // px/ms
+-  const DRAG_PCT     = 0.22;  // fraction of W
++  const N               = 3;
++  const SETTLE_RESPONSE = 0.24;   // spring response in seconds (see motion.js)
++  const FLICK_VEL       = 0.3;    // px/ms
++  const DRAG_PCT        = 0.22;   // fraction of W
++  const MAX_FLING       = 3500;   // px/s cap on the velocity handed to the spring
++  const TAP_KICK        = 8;      // tab-tap lift-off speed, per px of distance (px/s)
+ 
+   const isDesktop = () => window.innerWidth >= 1024;
+   const container = document.getElementById('mainGridContainer');
+@@ -5320,6 +5335,10 @@ function _swipePreRenderAll(force) {
+   let isHoriz       = false;
+   let velHistory    = [];
+   let _rafPending   = false;
++  let _lastNear     = -1;
++  let _spring       = null;
++  let _springTarget = null;
++  let _strip           = null;
+   let _tabBtnsCache    = null;
+   let _swipeDotsCache  = null;
+   let _sbSubItemsCache = null;
+@@ -5330,8 +5349,8 @@ function _swipePreRenderAll(force) {
+     _sbSubItemsCache = document.querySelectorAll('#deskShelfSub .sb-sub-item');
+   }
+ 
++  function stripEl() { return _strip || (_strip = document.getElementById('swipeStrip')); }
+   function getW() { W = container.offsetWidth || window.innerWidth; }
+-
+   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+ 
+   function rubberBand(raw) {
+@@ -5343,53 +5362,57 @@ function _swipePreRenderAll(force) {
+ 
+   function currentIdx() { return _SWIPE_FILTERS.indexOf(currentFilter); }
+ 
+-  function _flushSwipeVisuals() {
+-    _rafPending = false;
+-    const inkBar = document.querySelector('.tab-ink');
+-    if (!inkBar) return;
+-    const t = W > 0 ? (-currentX / W) : 0;
+-    inkBar.style.transform = `translateX(${t * 100}%)`;
+-
+-    if (!_tabBtnsCache) _refreshSwipeNodeCache();
+-
+-    _tabBtnsCache.forEach((el, i) => {
+-      const d = clamp(1 - Math.abs(t - i), 0, 1);
+-      el.classList.toggle('active', d > 0.5);
+-    });
+-
++  // Light up the tab / dot / sidebar item for whichever page is nearest, while
++  // dragging as well as at rest. Only touches the DOM when that page changes.
++  function syncNearest() {
+     const near = Math.round(clamp(W > 0 ? -currentX / W : 0, 0, N - 1));
+-    _swipeDotsCache.forEach((el, i) => {
+-      el.classList.toggle('active', i === near);
+-    });
+-    _sbSubItemsCache.forEach(el => {
+-      el.classList.toggle('active', el.dataset.filter === _SWIPE_FILTERS[near]);
+-    });
++    if (near === _lastNear) return;
++    _lastNear = near;
++    if (!_tabBtnsCache) _refreshSwipeNodeCache();
++    const f = _SWIPE_FILTERS[near];
++    _tabBtnsCache.forEach(el => el.classList.toggle('active', el.dataset.filter === f));
++    _swipeDotsCache.forEach(el => el.classList.toggle('active', el.dataset.filter === f));
++    _sbSubItemsCache.forEach(el => el.classList.toggle('active', el.dataset.filter === f));
+   }
+ 
+-  function applyTranslate(x, animate) {
+-    const strip  = document.getElementById('swipeStrip');
+-    const inkBar = document.querySelector('.tab-ink');
+-    if (!strip) return;
++  function paint() {
++    _rafPending = false;
++    const strip = stripEl();
++    if (strip) strip.style.transform = `translate3d(${currentX}px,0,0)`;
++    syncNearest();
++  }
++  // Following the finger: pointer events can outpace frames, so write once per frame.
++  function moveTo(x) {
+     currentX = x;
++    if (!_rafPending) { _rafPending = true; requestAnimationFrame(paint); }
++  }
++  // Jumps and spring steps are already frame-aligned: write straight away.
++  function setNow(x) { currentX = x; paint(); }
+ 
+-    strip.style.transition  = animate ? `transform ${SETTLE_MS}ms ${SETTLE_EASE}` : 'none';
+-    strip.style.transform   = `translateX(${x}px)`;
++  function stopSpring() {
++    if (_spring) { _spring.stop(); _spring = null; _springTarget = null; }
++  }
+ 
+-    if (inkBar) {
+-      inkBar.style.transition = animate ? `transform ${SETTLE_MS}ms ${SETTLE_EASE}` : 'none';
+-      if (!_rafPending) {
+-        _rafPending = true;
+-        requestAnimationFrame(_flushSwipeVisuals);
+-      }
+-    }
++  // Spring to targetX, starting at `velocity` px/s so a flick carries straight through.
++  function settle(targetX, velocity) {
++    stopSpring();
++    const h = Motion.spring({
++      from: currentX, to: targetX,
++      velocity: clamp(velocity || 0, -MAX_FLING, MAX_FLING),
++      response: SETTLE_RESPONSE,
++      onUpdate: setNow,
++      onDone: () => { _spring = null; _springTarget = null; }
++    });
++    if (h.running) { _spring = h; _springTarget = targetX; }
+   }
+ 
+-  function snapTo(i) {
++  function snapTo(i, velocity) {
+     const idx = clamp(i, 0, N - 1);
+     currentFilter = _SWIPE_FILTERS[idx];
+     getW();
+-    applyTranslate(-idx * W, true);
++    settle(-idx * W, velocity);
+     if (!_tabBtnsCache) _refreshSwipeNodeCache();
++    _lastNear = idx;
+     _tabBtnsCache.forEach(b =>
+       b.classList.toggle('active', b.dataset.filter === currentFilter));
+     _swipeDotsCache.forEach(d =>
+@@ -5399,10 +5422,31 @@ function _swipePreRenderAll(force) {
+     updateHintBar();
+     if (typeof updateEnvelopeVisibility === 'function') updateEnvelopeVisibility();
+     if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
+-    const ib = document.querySelector('.tab-ink');
+-    if (ib) setTimeout(() => { ib.style.willChange = ''; }, SETTLE_MS + 30);
+   }
+ 
++  // Put the strip on a page with no animation (renderGrid does this on every re-render).
++  function jumpTo(i) {
++    if (down) return;
++    getW();
++    const tgt = -clamp(i, 0, N - 1) * W;
++    if (_spring && _springTarget === tgt) return;   // already on its way — don't cut it short
++    stopSpring();
++    if (currentX !== tgt) setNow(tgt);
++  }
++
++  // Public hook, so the global tab buttons and renderGrid drive the same engine
++  // (and the same `currentX`) as a finger does.
++  window._swipeEngine = {
++    goTo(filter, animate) {
++      const i = _SWIPE_FILTERS.indexOf(filter);
++      if (i < 0) return false;
++      if (animate) { getW(); snapTo(i, (-i * W - currentX) * TAP_KICK); }
++      else jumpTo(i);
++      return true;
++    },
++    x() { return currentX; }
++  };
++
+   // ── Pointer events (mouse + touch + stylus) ──
+   container.addEventListener('pointerdown', e => {
+     if (isDesktop()) return;
+@@ -5421,9 +5465,7 @@ function _swipePreRenderAll(force) {
+ 
+     getW();
+     _refreshSwipeNodeCache();
+-    strip_el().style.transition  = 'none';
+-    const ib = document.querySelector('.tab-ink');
+-    if (ib) { ib.style.transition = 'none'; ib.style.willChange = 'transform'; }
++    stopSpring();            // grab the strip wherever it is — currentX is always live
+ 
+     down         = true;
+     dirDecided   = false;
+@@ -5451,13 +5493,13 @@ function _swipePreRenderAll(force) {
+     velHistory.push({ x: e.clientX, t: performance.now() });
+     if (velHistory.length > 12) velHistory.shift();
+ 
+-    applyTranslate(rubberBand(startPageX + dx), false);
++    moveTo(rubberBand(startPageX + dx));
+   });
+ 
+   function onRelease() {
+     if (!down) return;
+     down = false;
+-    if (!isHoriz) { snapTo(currentIdx()); return; }
++    if (!isHoriz) { snapTo(currentIdx(), 0); return; }
+ 
+     const dx  = currentX - startPageX;
+     const pct = W > 0 ? dx / W : 0;
+@@ -5478,25 +5520,28 @@ function _swipePreRenderAll(force) {
+     if      (vel < -FLICK_VEL || pct < -DRAG_PCT) target = Math.min(target + 1, N - 1);
+     else if (vel >  FLICK_VEL || pct >  DRAG_PCT) target = Math.max(target - 1, 0);
+ 
+-    snapTo(target);
++    // Hand the finger's speed (px/ms → px/s) to the spring. A finger that has
++    // stopped (vel ~ 0) just settles; one that is still moving carries on.
+     // Panes already hold correct data from the last renderGrid()/_swipePreRenderAll() pass —
+     // do NOT force a re-render here, that's what caused the post-swipe blink.
++    snapTo(target, vel * 1000);
+   }
+ 
+   container.addEventListener('pointerup',     onRelease);
+-  container.addEventListener('pointercancel', () => { down = false; snapTo(currentIdx()); });
+-
+-  function strip_el() { return document.getElementById('swipeStrip') || { style: {} }; }
++  container.addEventListener('pointercancel', () => { down = false; snapTo(currentIdx(), 0); });
+ 
+   // ── Resize: re-snap in px space ──
++  // Only a change in WIDTH moves the page offsets. Height-only resizes (the
++  // container animates its bottom padding when the hint bar comes and goes)
++  // must not cut a settle short.
+   function relayout() {
+     if (isDesktop() || down) return;
++    const prevW = W;
+     getW();
+-    const strip = document.getElementById('swipeStrip');
+-    if (strip) strip.style.transition = 'none';
+-    const ib = document.querySelector('.tab-ink');
+-    if (ib) ib.style.transition = 'none';
+-    applyTranslate(-currentIdx() * W, false);
++    if (W !== prevW) {
++      stopSpring();
++      setNow(-currentIdx() * W);
++    }
+     if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
+   }
+   window.addEventListener('resize', relayout);
+@@ -5505,7 +5550,7 @@ function _swipePreRenderAll(force) {
+ 
+   // ── Init ──
+   getW();
+-  applyTranslate(-currentIdx() * W, false);
++  setNow(-currentIdx() * W);
+ })();
+ // ── END SWIPE TAB NAVIGATION ───────────────────────────────────────────────
+ 
+diff --git a/detail_sheet.js b/detail_sheet.js
+index 8acc26b..16a6fa5 100644
+--- a/detail_sheet.js
++++ b/detail_sheet.js
+@@ -34,22 +34,49 @@ function dsGetFullY() {
+   return 0;
+ }
+ 
+-function dsSetTranslate(y, animate) {
++// ── Sheet motion ──────────────────────────────────────────────────────────
++// The sheet is driven by a spring (motion.js), so a drag hands its speed
++// straight to the settle, and grabbing it mid-animation just works. The scrim
++// is tied to the sheet's position: it fades as the sheet leaves, not after.
++const DS_RESPONSE = 0.38;   // spring response in seconds
++let _dsSpring = null;
++
++function dsStopSpring() {
++  if (_dsSpring) { _dsSpring.stop(); _dsSpring = null; }
++}
++
++// Distance the sheet must travel from rest to be fully off-screen.
++function dsExitDistance() {
++  const sheet = document.getElementById('detailSheet');
++  if (!sheet) return window.innerHeight;
++  const restTop = sheet.getBoundingClientRect().top - DS.currentTranslate;
++  return Math.max(40, window.innerHeight - restTop);
++}
++
++function dsApply(y) {
+   const sheet = document.getElementById('detailSheet');
+   if (!sheet) return;
+   DS.currentTranslate = y;
+-  if (animate) {
+-    sheet.style.transition = 'transform 0.38s cubic-bezier(0.32,0.72,0,1)';
+-  } else {
+-    sheet.style.transition = 'none';
+-  }
+-  sheet.style.setProperty('--ds-current-translate', `${y}px`);
+-  sheet.style.transform = `translateY(${y}px)`;
++  sheet.style.transform = `translate3d(0,${y}px,0)`;
++  const scrim = document.getElementById('dsScrim');
++  if (scrim) scrim.style.opacity = Math.max(0, Math.min(1, 1 - y / (DS.exit || window.innerHeight)));
+ }
+ 
+-function dsSnapTo(expanded, animate = true) {
++function dsSetTranslate(y, animate, velocity) {
++  dsStopSpring();
++  if (!animate) { dsApply(y); return; }
++  const h = Motion.spring({
++    from: DS.currentTranslate, to: y, velocity: velocity || 0,
++    response: DS_RESPONSE,
++    onUpdate: dsApply,
++    onDone: () => { _dsSpring = null; }
++  });
++  if (h.running) _dsSpring = h;
++}
++
++function dsSnapTo(expanded, animate = true, velocity = 0) {
+   const targetY = expanded ? dsGetFullY() : dsGetHalfY();
+-  dsSetTranslate(targetY, animate);
++  dsSetTranslate(targetY, animate, velocity);
+   DS.isExpanded = expanded;
+   const overlay = document.getElementById('detailModal');
+   overlay.classList.toggle('ds-expanded', expanded);
+@@ -73,50 +100,48 @@ function dsOpen() {
+   const overlay = document.getElementById('detailModal');
+   const sheet = document.getElementById('detailSheet');
+   if (!overlay || !sheet) return;
+-  DS.isOpen = false;
++  dsStopSpring();
++  DS.closing = false;
+   DS.isExpanded = false;
+   DS.isDragging = false;
+   _dsOpenTime = Date.now();
+-  sheet.style.transition = 'none';
+-  const offscreen = window.innerHeight;
+-  sheet.style.transform = `translateY(${offscreen}px)`;
+-  DS.currentTranslate = offscreen;
++  overlay.style.pointerEvents = '';
++
++  // Measure at rest, park just below the screen, then spring up. The sheet is
++  // live from the first frame: it can be grabbed while it is still arriving.
++  sheet.style.transform = 'translate3d(0,0,0)';
++  DS.currentTranslate = 0;
++  DS.exit = dsExitDistance();
++  dsApply(DS.exit + 120);        // +120 keeps the sheet's shadow off-screen too
+   overlay.classList.add('visible');
+-  overlay.style.pointerEvents = 'none';
+-  requestAnimationFrame(() => {
+-    requestAnimationFrame(() => {
+-      setTimeout(() => {
+-        try {
+-          dsSnapTo(false, true);
+-        } catch (e) {
+-          console.error('dsSnapTo error:', e);
+-        }
+-        setTimeout(() => {
+-          DS.isOpen = true;
+-          overlay.style.pointerEvents = '';
+-          const sheetEl2 = document.getElementById('detailSheet');
+-          if (sheetEl2) sheetEl2.style.pointerEvents = 'auto';
+-        }, 420);
+-      }, 32);
+-    });
+-  });
++  sheet.style.pointerEvents = 'auto';
++  DS.isOpen = true;
++  try {
++    dsSnapTo(false, true, 0);
++  } catch (e) {
++    console.error('dsSnapTo error:', e);
++  }
+ }
+ 
+-function dsClose() {
++function dsClose(velocity) {
++  if (DS.closing) return;
+   const sheetEl = document.getElementById('detailSheet');
+-  const sheetH = sheetEl ? sheetEl.offsetHeight : window.innerHeight * 0.92;
+-  dsSetTranslate(sheetH, true);
++  const overlay = document.getElementById('detailModal');
++  DS.closing = true;
+   DS.isOpen = false;
++  DS.isDragging = false;
+   if (sheetEl) sheetEl.style.pointerEvents = 'none';
+-  const overlay = document.getElementById('detailModal');
+   overlay.classList.remove('ds-expanded');
+   const section = document.getElementById('dsSummarySection');
+   if (section) section.classList.remove('expanded');
+-  setTimeout(() => {
++
++  function finish() {
++    dsStopSpring();
+     overlay.classList.remove('visible');
+     overlay.style.pointerEvents = '';
+     DS.isOpen = false;
+     DS.isExpanded = false;
++    DS.closing = false;
+     DS.summaryExpanded = false;
+     editingId = null;
+     closeEditSheet();
+@@ -125,11 +150,63 @@ function dsClose() {
+       DS._callerRestore = null;
+       fn();
+     }
+-  }, 380);
++  }
++
++  dsStopSpring();
++  DS.exit = dsExitDistance();
++  const exit = DS.exit;
++  const from = DS.currentTranslate;
++  // Aim past the edge and stop the moment the sheet is fully gone, so there is
++  // no slow tail. A button-close gets a brisk lift-off; a flick keeps its speed.
++  const target = exit + 160;
++  const v = Math.max(velocity || 0, (target - from) * 7);
++  const h = Motion.spring({
++    from, to: target, velocity: v, response: 0.34,
++    onUpdate: y => { dsApply(y); if (y >= exit && _dsSpring) { _dsSpring.stop(); _dsSpring = null; finish(); } },
++    onDone: () => { if (DS.closing) { _dsSpring = null; finish(); } }
++  });
++  if (h.running) _dsSpring = h;
+ }
+ 
+ // ── Touch / drag handling ──
+-/* NEW — the whole middle area (#dsScroll) can now scroll, not just the summary card, so hand it off the same way */
++// Velocity from the last ~100ms of samples (px/ms, + = downwards).
++function dsTrackVelocity(y, t) {
++  const s = DS._vs || (DS._vs = []);
++  s.push({ y, t });
++  while (s.length > 2 && t - s[0].t > 100) s.shift();
++  const a = s[0], b = s[s.length - 1];
++  DS.velocity = b.t - a.t > 4 ? (b.y - a.y) / (b.t - a.t) : 0;
++}
++
++function dsBeginDrag(y) {
++  dsStopSpring();                 // grab it wherever it is
++  DS.exit = dsExitDistance();
++  DS.isDragging = true;
++  DS.startY = y;
++  DS.startTranslate = DS.currentTranslate;
++  DS.velocity = 0;
++  DS._vs = [{ y, t: performance.now() }];
++}
++
++function dsDragTo(y) {
++  dsTrackVelocity(y, performance.now());
++  let next = DS.startTranslate + (y - DS.startY);
++  if (next < 0) next = 0 - Math.pow(0 - next, 0.6);   // resistance above rest
++  dsApply(next);
++}
++
++function dsEndDrag() {
++  DS.isDragging = false;
++  DS.startY = 0;
++  // Close if dragged far enough down or flicked down
++  if (DS.currentTranslate > dsGetHalfY() + 60 || DS.velocity > 0.8) {
++    dsClose(Math.max(0, DS.velocity) * 1000);
++    return;
++  }
++  dsSnapTo(false, true, DS.velocity * 1000);
++}
++
++/* the whole middle area (#dsScroll) can scroll, not just the summary card, so hand it off the same way */
+ function dsOnTouchStart(e) {
+   if (!DS.isOpen) return;
+   if (DS.animating) return;
+@@ -146,102 +223,39 @@ function dsOnTouchStart(e) {
+     const scroll = document.getElementById('dsScroll');
+     if (scroll.scrollTop > 2) return;
+   }
+-  DS.isDragging = true;
+-  DS.startY = e.touches[0].clientY;
+-  DS.lastY = DS.startY;
+-  DS.lastTime = Date.now();
+-  DS.startTranslate = DS.currentTranslate;
+-  DS.velocity = 0;
+-  const sheet = document.getElementById('detailSheet');
+-  sheet.style.transition = 'none';
++  dsBeginDrag(e.touches[0].clientY);
+ }
+ 
+ function dsOnTouchMove(e) {
+   if (!DS.isDragging) return;
+   const y = e.touches[0].clientY;
+-  const now = Date.now();
+-  const dt = Math.max(now - DS.lastTime, 1);
+-  DS.velocity = (y - DS.lastY) / dt;
+-  DS.lastY = y;
+-  DS.lastTime = now;
+-
+-  const delta = y - DS.startY;
+-  let newTranslate = DS.startTranslate + delta;
+-
+-  // Clamp: can't go above full position, slight resistance below half
+-  const fullY = dsGetFullY();
+-  const halfY = dsGetHalfY();
+-  if (newTranslate < 0) {
+-    newTranslate = 0 - Math.pow(0 - newTranslate, 0.6);
+-  }
+-  // No resistance dragging down, let it close smoothly
+-  dsSetTranslate(newTranslate, false);
++  dsDragTo(y);
+   // Prevent page scroll only if no other modal is on top
+-  if (delta !== 0 && !document.getElementById('progressModal').classList.contains('visible')) e.preventDefault();
++  if (y - DS.startY !== 0 && !document.getElementById('progressModal').classList.contains('visible')) e.preventDefault();
+ }
+ 
+ function dsOnTouchEnd(e) {
+   if (!DS.isDragging) return;
+-  DS.isDragging = false;
+-  DS.startY = 0;
+-
+-  const halfY = dsGetHalfY();
+-  const fullY = dsGetFullY();
+-  const midpoint = (halfY + fullY) / 2;
+-
+-  // Close if dragged far enough down
+-  if (DS.currentTranslate > halfY + 60 || DS.velocity > 0.8) {
+-    dsClose();
+-    return;
+-  }
+-  dsSnapTo(false);
++  dsEndDrag();
+ }
+ 
+ // Mouse equivalents for desktop
+ function dsOnMouseDown(e) {
++  if (!DS.isOpen) return;
+   if (DS.isExpanded) {
+     const handle = document.getElementById('dsHandleWrap');
+     const top = document.getElementById('dsTop');
+     if (!handle.contains(e.target) && !top.contains(e.target)) return;
+   }
+-  DS.isDragging = true;
+-  DS.startY = e.clientY;
+-  DS.lastY = DS.startY;
+-  DS.lastTime = Date.now();
+-  DS.startTranslate = DS.currentTranslate;
+-  DS.velocity = 0;
+-  const sheet = document.getElementById('detailSheet');
+-  sheet.style.transition = 'none';
++  dsBeginDrag(e.clientY);
+   e.preventDefault();
+ 
+-  function onMouseMove(e) {
+-    if (!DS.isDragging) return;
+-    const y = e.clientY;
+-    const now = Date.now();
+-    const dt = Math.max(now - DS.lastTime, 1);
+-    DS.velocity = (y - DS.lastY) / dt;
+-    DS.lastY = y;
+-    DS.lastTime = now;
+-
+-    const delta = y - DS.startY;
+-    let newTranslate = DS.startTranslate + delta;
+-    const fullY = dsGetFullY(), halfY = dsGetHalfY();
+-    if (newTranslate < fullY) newTranslate = fullY - Math.pow(fullY - newTranslate, 0.6);
+-    if (newTranslate > halfY + 80) newTranslate = halfY + 80 + (newTranslate - halfY - 80) * 0.3;
+-    dsSetTranslate(newTranslate, false);
+-  }
+-
++  function onMouseMove(e) { if (DS.isDragging) dsDragTo(e.clientY); }
+   function onMouseUp() {
+-    if (!DS.isDragging) return;
+-    DS.isDragging = false;
+     window.removeEventListener('mousemove', onMouseMove);
+     window.removeEventListener('mouseup', onMouseUp);
+-
+-    const halfY = dsGetHalfY();
+-    if (DS.currentTranslate > halfY + 60 || DS.velocity > 0.8) { dsClose(); return; }
+-    dsSnapTo(false);
++    if (DS.isDragging) dsEndDrag();
+   }
+-
+   window.addEventListener('mousemove', onMouseMove);
+   window.addEventListener('mouseup', onMouseUp);
+ }
+diff --git a/habit_tracker.js b/habit_tracker.js
+index 2133c40..e5d0ac2 100644
+--- a/habit_tracker.js
++++ b/habit_tracker.js
+@@ -142,18 +142,59 @@ async function habitMarkToday(val) {
+   habitRenderCalendarGrid();
+   habitUpdateMonthStat();
+ 
+-  if (val) {
+-    setTimeout(() => {
+-      const card = document.getElementById('habitCard');
+-      if (card) card.classList.add('expanded');
+-    }, 260);
+-  }
++  if (val) setTimeout(() => habitSetExpanded(true), 260);
+ }
+ 
+ // ── EXPAND / COLLAPSE ──
++let _habitFx = null;   // in-flight reveal: { cleanup() }
++
++// Expand/collapse as a FLIP: the card's layout changes at once, then we animate
++// a clip on the card and a translate on the list below, both compositor-only.
++// (The old grid-template-rows transition re-ran layout and repainted the whole
++// book list every frame.) Collapse keeps the layout open until the animation
++// ends, then flips it, so the last frame already matches the new layout.
++function habitSetExpanded(next) {
++  const card = document.getElementById('habitCard');
++  if (!card) return;
++  if (_habitFx) _habitFx.cleanup();            // settle any run in progress first
++  if (card.classList.contains('expanded') === next) return;
++
++  const below = document.getElementById('bookGrid-reading');
++  const wasOpen = card.classList.contains('open');
++  card.classList.add('open');
++  const hOpen = card.offsetHeight;
++  card.classList.remove('open');
++  const hClosed = card.offsetHeight;
++  card.classList.toggle('open', wasOpen);
++  const delta = hOpen - hClosed;               // how much taller the open card is
++
++  card.classList.toggle('expanded', next);     // chevron + body fade (CSS)
++  const canAnimate = card.animate && delta > 0 && !(window.Motion && Motion.reduced());
++  if (!canAnimate) { card.classList.toggle('open', next); return; }
++
++  const R = 'round 16px';
++  const clip = px => `inset(0 0 ${px}px 0 ${R})`;
++  const opts = { duration: next ? 420 : 320, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' };
++  const closed = [clip(delta), clip(0)];       // looks closed → looks open
++  const slide  = [`translate3d(0,${-delta}px,0)`, 'translate3d(0,0,0)'];
++  const a = [card.animate({ clipPath: next ? closed : closed.slice().reverse() }, opts)];
++  if (below) a.push(below.animate({ transform: next ? slide : slide.slice().reverse() }, opts));
++
++  card.classList.add('open');                  // layout at the open size for the whole run
++  let cleaned = false;
++  const cleanup = () => {
++    if (cleaned) return; cleaned = true;
++    card.classList.toggle('open', next);       // final layout, then drop the animations
++    a.forEach(x => x.cancel());
++    _habitFx = null;
++  };
++  _habitFx = { cleanup };
++  a[0].finished.then(cleanup, () => {});
++}
++
+ function habitToggleExpand() {
+   const card = document.getElementById('habitCard');
+-  if (card) card.classList.toggle('expanded');
++  if (card) habitSetExpanded(!card.classList.contains('expanded'));
+ }
+ 
+ // ── CALENDAR ──
+diff --git a/motion.js b/motion.js
+new file mode 100644
+index 0000000..398dc1e
+--- /dev/null
++++ b/motion.js
+@@ -0,0 +1,82 @@
++// ── MOTION ───────────────────────────────────────────────────────────────
++// Tiny shared spring helper. Load before app.js. Exposes window.Motion.
++//
++// Why a spring: a CSS transition has a fixed curve, so when a finger lets go
++// at some speed the content lurches to whatever speed the curve starts at.
++// A spring begins at the finger's speed and settles from there, so a gesture
++// flows straight into its settle. It is also interruptible: stop() it and
++// read x/v, and the next gesture picks up from where things actually are.
++//
++// Time-based, closed-form (no per-frame integration), so it behaves the same
++// at 60Hz and 120Hz. Units: px and px/s.
++(function () {
++  'use strict';
++
++  const mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
++  const reduced = () => !!(mq && mq.matches);
++
++  // Position/velocity at time t (seconds) for a spring settling on `to`.
++  // d0 = from - to, v0 = initial velocity. ζ is clamped to (0, 1].
++  function solve(d0, v0, w, z, t) {
++    if (z >= 1) {
++      const B = v0 + w * d0, e = Math.exp(-w * t);
++      return { d: (d0 + B * t) * e, v: (v0 - w * B * t) * e };
++    }
++    const a = z * w, wd = w * Math.sqrt(1 - z * z), e = Math.exp(-a * t);
++    const c = Math.cos(wd * t), s = Math.sin(wd * t);
++    return {
++      d: e * (d0 * c + ((v0 + a * d0) / wd) * s),
++      v: e * (v0 * c - ((a * v0 + w * w * d0) / wd) * s)
++    };
++  }
++
++  // Motion.spring({ from, to, velocity, response, damping, overshoot, onUpdate, onDone })
++  //   response  – seconds for one undamped period; ~0.3 snappy, ~0.5 relaxed
++  //   damping   – ratio, 1 = critically damped (no overshoot)
++  //   overshoot – false (default) caps an initial velocity that would carry the
++  //               value past `to`. Set true on gestures where you want the spring.
++  // Returns { stop(), x, v, running }.
++  function spring(o) {
++    const w = (2 * Math.PI) / (o.response || 0.4);
++    const z = Math.min(o.damping == null ? 1 : o.damping, 1);
++    const to = o.to;
++    const d0 = o.from - to;
++    let v0 = o.velocity || 0;
++
++    if (!o.overshoot && z >= 1 && d0 !== 0 && v0 * d0 < 0) {
++      const cap = w * Math.abs(d0);                 // fastest approach with no overshoot
++      if (Math.abs(v0) > cap) v0 = -Math.sign(d0) * cap;
++    }
++
++    const h = { running: true, x: o.from, v: v0, stop() { h.running = false; if (raf) cancelAnimationFrame(raf); raf = 0; } };
++    let raf = 0;
++
++    if (reduced() || d0 === 0 && v0 === 0) {
++      h.running = false; h.x = to; h.v = 0;
++      if (o.onUpdate) o.onUpdate(to, 0);
++      if (o.onDone) o.onDone();
++      return h;
++    }
++
++    const called = performance.now();
++    let t0 = null;
++    function frame(ts) {
++      if (!h.running) return;
++      // First frame: count only the time since the call, and never more than
++      // one frame's worth, so a slow first paint can't swallow the motion.
++      if (t0 === null) t0 = ts - Math.max(0, Math.min(17, ts - called));
++      const t = (ts - t0) / 1000;
++      const s = solve(d0, v0, w, z, t);
++      const x = to + s.d;
++      const done = t > 3 || (Math.abs(s.d) < 0.25 && Math.abs(s.v) < 8);
++      h.x = done ? to : x; h.v = done ? 0 : s.v;
++      if (o.onUpdate) o.onUpdate(h.x, h.v);
++      if (done) { h.running = false; raf = 0; if (o.onDone) o.onDone(); return; }
++      raf = requestAnimationFrame(frame);
++    }
++    raf = requestAnimationFrame(frame);
++    return h;
++  }
++
++  window.Motion = { spring, reduced, solve };
++})();
+diff --git a/styles.css b/styles.css
+index 7fca932..d295a47 100644
+--- a/styles.css
++++ b/styles.css
+@@ -2200,16 +2200,30 @@ html.standalone-webapp .add-popup {
+ #detailModal {
+   position: fixed;
+   align-items: flex-end;
+-  background: rgba(14,12,10,0.88);
+-  transition: opacity 0.3s ease, backdrop-filter 0.4s ease;
++  background: transparent;
++  backdrop-filter: none;
++  -webkit-backdrop-filter: none;
++  opacity: 1;               /* scrim + sheet are driven by JS (dsApply), not a fade */
++  transition: none;
++  visibility: hidden;
+   z-index: 90;
+ }
+-#detailModal.ds-expanded {
++#detailModal.visible { visibility: visible; }
++.ds-scrim {
++  position: absolute;
++  inset: 0;
++  background: rgba(14,12,10,0.88);
++  opacity: 0;
++  pointer-events: none;     /* taps fall through to #detailModal so tap-outside still closes */
++  will-change: opacity;
++  transition: background-color 0.3s ease;
++}
++#detailModal.ds-expanded .ds-scrim {
+   background: rgba(14,12,10,0.94);
+ }
+ @supports (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none)) {
+-  #detailModal { background: rgba(14,12,10,0.72); backdrop-filter: blur(6px); }
+-  #detailModal.ds-expanded { background: rgba(14,12,10,0.9); backdrop-filter: blur(16px); }
++  .ds-scrim { background: rgba(14,12,10,0.72); backdrop-filter: blur(6px); }
++  #detailModal.ds-expanded .ds-scrim { background: rgba(14,12,10,0.9); backdrop-filter: blur(16px); }
+ }
+ 
+ /* NEW */
+@@ -4290,11 +4304,10 @@ html.standalone-webapp .add-popup {
+   border-radius: 16px;
+   margin: 0 0 14px;
+   overflow: hidden;
+-  display: grid;
+-  grid-template-rows: auto 0fr;
+-  transition: grid-template-rows 420ms cubic-bezier(0.16, 1, 0.3, 1);
+ }
+-.habit-card.expanded { grid-template-rows: auto 1fr; }
++/* Layout flips instantly (.open); habit_tracker.js animates the reveal with
++   transforms + clip-path, so no layout runs per frame. .expanded = intent
++   (chevron, fade); .open = the body is laid out. */
+ 
+ .habit-head {
+   display: flex;
+@@ -4373,7 +4386,8 @@ html.standalone-webapp .add-popup {
+ .habit-btn.yes { background: var(--accent); color: #fff; }
+ .habit-btn.no { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+ 
+-.habit-body { overflow: hidden; min-height: 0; }
++.habit-body { overflow: hidden; height: 0; }
++.habit-card.open .habit-body { height: auto; }
+ .habit-body-inner {
+   padding: 0 14px 16px;
+   opacity: 0;
