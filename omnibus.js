@@ -13,9 +13,12 @@ window.OM = (function () {
     const a = +m[1], z = +m[2];
     return z > a && z - a < 12 ? { a, z, n: z - a + 1 } : null;
   }
-  const is = b => !!b && b.status !== 'not-owned' && !!range(b);
+  // A collection is a book of many short pieces (stories, essays). Parts are {n, d} only: no summaries, no per-part pages.
+  const coll = b => !!b && !!b.is_collection && b.status !== 'not-owned';
+  const is = b => coll(b) || (!!b && b.status !== 'not-owned' && !!range(b));
 
   function parts(b) {
+    if (coll(b)) return (Array.isArray(b.parts) ? b.parts : []).map(p => ({ n: String((p && p.n) || ''), s: '', d: p && p.d ? 1 : 0, r: 0, t: 0 }));
     const g = range(b); if (!g) return [];
     const cur = Array.isArray(b.parts) ? b.parts : [];
     return Array.from({ length: g.n }, (_, i) => {
@@ -37,6 +40,20 @@ window.OM = (function () {
   const curIdx = ps => { const i = ps.findIndex(p => !p.d); return i < 0 ? ps.length - 1 : i; };
 
   async function persist(b, ps, status) {
+    if (coll(b)) {
+      const done = ps.filter(p => p.d).length;
+      const u = { parts: ps.map(p => ({ n: p.n, d: p.d ? 1 : 0 })) };
+      let st = status;
+      if (!st) {
+        if (ps.length && done === ps.length) st = 'read';
+        else if (done > 0 && b.status === 'unread') st = 'reading';
+        else if (done < ps.length && b.status === 'read') st = 'reading';
+      }
+      if (st && st !== b.status) { u.status = st; if (st === 'read') u.created_at = new Date().toISOString(); }
+      const ok = await dbUpdate(b.id, u);
+      if (ok && u.status) { b.status = u.status; if (u.created_at) b.created_at = u.created_at; }
+      return ok; // parts are set optimistically by the caller
+    }
     const s = sums(ps);
     const u = { parts: ps, pages_read: s.r, total_pages: s.t };
     if (status) u.status = status;
@@ -70,10 +87,14 @@ window.OM = (function () {
       primary.className = 'ds-primary-btn btn-accent';
       primary.innerHTML = `${IC.book} Move to Reading`;
     }
-    secondary.innerHTML = `${IC.check} ${status === 'read' ? 'Edit Parts' : 'Mark a Part as Read'}`;
+    secondary.innerHTML = `${IC.check} ${coll(b) ? (!parts(b).length ? 'Add Stories' : status === 'read' ? 'Edit Stories' : 'Mark a Story as Read') : (status === 'read' ? 'Edit Parts' : 'Mark a Part as Read')}`;
   }
 
   // ── Detail sheet: progress strip + summary carousel ──
+  function barHtml(ps) {
+    const d = ps.filter(p => p.d).length;
+    return `<div class="om-bar"><i style="width:${ps.length ? Math.round(d / ps.length * 100) : 0}%"></i></div>`;
+  }
   function segsHtml(ps) {
     return `<div class="om-segs">${ps.map((p, i) => `<span class="om-seg${p.d ? ' on' : ''}" style="flex:${p.t || 1}"><i></i>${p.d ? '✓ ' : ''}${i + 1}</span>`).join('')}</div>`;
   }
@@ -81,10 +102,13 @@ window.OM = (function () {
     const old = document.getElementById('omDetailProg'); if (old) old.remove();
     const row = document.querySelector('.ds-status-row');
     const lab = document.querySelector('#dsSummarySection .summary-label');
-    if (!is(b)) {
+    if (!is(b) || coll(b)) {
       if (lab && lab.dataset.om) { lab.textContent = 'SUMMARY'; delete lab.dataset.om; }
       const h = document.getElementById('dsAiLibrarian');
       if (h && !document.getElementById('dsAiSummary')) h.innerHTML = '<p id="dsAiSummary" style="margin-bottom:0;"></p>';
+      if (!is(b)) return;
+      const cp = parts(b), cd = cp.filter(p => p.d).length;
+      if (row) row.insertAdjacentHTML('afterend', `<div class="om-prog" id="omDetailProg">${barHtml(cp)}<div class="om-prog-t">${cp.length ? `${cd} of ${cp.length} read` : 'no stories yet'}</div></div>`);
       return;
     }
     const ps = parts(b), s = sums(ps);
@@ -144,11 +168,13 @@ window.OM = (function () {
   function closeSheet() { const o = document.getElementById('omSheet'); if (o) o.classList.remove('on'); }
   let _cl = null;
   function openChecklist(b, pend) {
-    _cl = { id: b.id, pend: !!pend };
-    sheet().classList.add('on'); drawChecklist();
+    _cl = { id: b.id, pend: !!pend, f: 'all', mode: 'list', tab: 'titles', draft: '', cnt: '', sug: false };
+    sheet().classList.add('on');
+    if (coll(b) && !parts(b).length) editList(); else drawChecklist();
   }
   function drawChecklist() {
     const b = books.find(x => x.id === _cl.id); if (!b) return;
+    if (coll(b)) return drawColl(b);
     const ps = parts(b), s = sums(ps);
     const foot = s.d === ps.length ? `<p class="om-note">All ${ps.length} parts read. Moved to Read.</p>`
       : _cl.pend ? `<p class="om-note">Part finished. Where should the book sit?</p><div class="om-ac"><button class="om-b p" onclick="OM.choose('reading')">Keep in reading</button><button class="om-b" onclick="OM.choose('unread')">Move to unread</button></div>`
@@ -159,6 +185,7 @@ window.OM = (function () {
   }
   async function tick(i) {
     const b = books.find(x => x.id === _cl.id); if (!b) return;
+    if (coll(b)) return tickColl(b, i);
     const ps = parts(b), p = ps[i];
     p.d = p.d ? 0 : 1;
     if (p.d && p.t > 0) p.r = p.t;
@@ -177,8 +204,122 @@ window.OM = (function () {
     closeSheet(); refresh(b);
   }
 
+  // ── Collection checklist (many stories) ──
+  const PH = /^Story \d+$/;
+  function drawColl(b) {
+    const body = document.getElementById('omShBody'), ps = parts(b);
+    if (_cl.mode === 'edit') return drawEdit(b, ps, body);
+    const d = ps.filter(p => p.d).length, f = _cl.f;
+    const old = body.querySelector('.om-list'), top = old ? old.scrollTop : 0;
+    const rows = ps.map((p, i) => ({ p, i })).filter(x => f === 'all' || (f === 'read' ? x.p.d : !x.p.d));
+    body.innerHTML = `<div class="om-h">Mark as read</div><div class="om-sub">${escapeHtml(b.title)} · ${d} of ${ps.length} read</div>`
+      + `<div class="om-chips">${['all', 'unread', 'read'].map(k => `<button type="button" class="${f === k ? 'on' : ''}" onclick="OM.filter('${k}')">${k}</button>`).join('')}</div>`
+      + `<div class="om-list">${rows.length ? rows.map(x => `<button class="om-k${x.p.d ? ' on' : ''}" onclick="OM.tick(${x.i})"><span class="om-bx">${x.p.d ? '✓' : ''}</span>${escapeHtml(x.p.n)}</button>`).join('') : `<p class="om-note">${f === 'read' ? 'nothing read yet' : 'all read'}</p>`}</div>`
+      + (d === ps.length ? '<p class="om-note">All stories read. Moved to Read.</p>' : '')
+      + `<div class="om-ac"><button class="om-b" onclick="OM.editList()">edit list</button><button class="om-b" onclick="OM.closeSheet()">Close</button></div>`;
+    const nl = body.querySelector('.om-list'); if (nl) nl.scrollTop = top;
+  }
+  function filter(k) { _cl.f = k; drawChecklist(); }
+  async function tickColl(b, i) {
+    const ps = parts(b); if (!ps[i]) return;
+    const prev = { parts: b.parts, status: b.status };
+    ps[i].d = ps[i].d ? 0 : 1;
+    b.parts = ps.map(p => ({ n: p.n, d: p.d }));
+    drawChecklist();
+    const ok = await persist(b, ps, null);
+    if (!ok) { b.parts = prev.parts; b.status = prev.status; drawChecklist(); return; }
+    refresh(b);
+    if (ps.every(p => p.d)) setTimeout(closeSheet, 900);
+  }
+  function nextList(ps) {
+    if (_cl.tab === 'titles') {
+      const seen = new Set(), out = []; let dupes = 0;
+      for (const ln of _cl.draft.split(/\r?\n/)) {
+        const n = ln.replace(/^\s*(?:\d+\s*[.)]|[-•*])\s*/, '').trim();
+        if (!n) continue;
+        const k = n.toLowerCase(); if (seen.has(k)) { dupes++; continue; }
+        seen.add(k); out.push(n);
+      }
+      const ph = ps.length && ps.every(p => PH.test(p.n)), old = new Map(ps.map(p => [p.n.toLowerCase(), p.d]));
+      return { dupes, list: out.slice(0, 500).map((n, i) => ({ n, d: ph ? (ps[i] ? ps[i].d : 0) : (old.get(n.toLowerCase()) || 0) })) };
+    }
+    const n = Math.min(500, parseInt(_cl.cnt) || 0);
+    return { dupes: 0, list: Array.from({ length: n }, (_, i) => ps[i] ? { n: ps[i].n, d: ps[i].d } : { n: 'Story ' + (i + 1), d: 0 }) };
+  }
+  function drawEdit(b, ps, body) {
+    const ph = ps.length && ps.every(p => PH.test(p.n)), t = _cl.tab;
+    body.innerHTML = `<div class="om-h">${ps.length ? 'Edit list' : 'Add stories'}</div><div class="om-sub">${escapeHtml(b.title)}</div>`
+      + `<div class="om-chips"><button type="button" class="${t === 'titles' ? 'on' : ''}" onclick="OM.setTab('titles')">paste titles</button><button type="button" class="${t === 'count' ? 'on' : ''}" onclick="OM.setTab('count')">just a number</button></div>`
+      + (t === 'titles'
+        ? `<p class="om-note">One title per line. Numbers and bullets at the start of a line are dropped. ${ph ? 'Your list is numbered placeholders, so ticks stay by position.' : 'Ticked stories stay ticked if their titles still match.'}</p>${_cl.sug ? '<p class="om-note">Suggested list. Check it against your edition before saving.</p>' : ''}<textarea class="om-ta" oninput="OM.draftIn(this.value)" placeholder="The Judgment&#10;The Metamorphosis">${escapeHtml(_cl.draft)}</textarea><button type="button" class="om-b" id="omSug" style="width:100%;margin-top:8px" onclick="OM.suggest()">suggest a list</button>`
+        : `<p class="om-note">Enter how many stories the book has. They are numbered Story 1, Story 2 and so on, and you can rename them later. Ticks are kept.</p><input class="om-in" inputmode="numeric" placeholder="e.g. 78" value="${escapeHtml(_cl.cnt)}" oninput="OM.cntIn(this.value)">`)
+      + `<div class="om-note" id="omRv"></div><div class="om-ac"><button class="om-b" onclick="OM.cancelEdit()">${ps.length ? 'Cancel' : 'Close'}</button><button class="om-b p" id="omSv" onclick="OM.saveList()">Save list</button></div>`;
+    review();
+  }
+  function review() {
+    const b = books.find(x => x.id === _cl.id), rv = document.getElementById('omRv'), sv = document.getElementById('omSv');
+    if (!b || !rv || !sv) return;
+    const ps = parts(b), r = nextList(ps), n = r.list.length;
+    const lost = ps.filter(p => p.d).length - r.list.filter(x => x.d).length;
+    let h = n ? `${n} ${n === 1 ? 'story' : 'stories'}${r.dupes ? ` · ${r.dupes} duplicate${r.dupes > 1 ? 's' : ''} removed` : ''}` : 'nothing to save yet';
+    if (lost > 0) h += `<br>${lost} ticked ${lost === 1 ? 'story' : 'stories'} would be removed${_cl.tab === 'count' ? '. enter a higher number' : ''}`;
+    rv.innerHTML = h; sv.disabled = !n || (_cl.tab === 'count' && lost > 0);
+  }
+  function editList() {
+    const b = books.find(x => x.id === _cl.id); if (!b) return;
+    const ps = parts(b);
+    _cl.mode = 'edit'; _cl.sug = false;
+    _cl.tab = ps.length && ps.every(p => PH.test(p.n)) ? 'count' : 'titles';
+    _cl.draft = ps.map(p => p.n).join('\n'); _cl.cnt = ps.length ? String(ps.length) : '';
+    drawChecklist();
+  }
+  function setTab(t) { _cl.tab = t; drawChecklist(); }
+  function draftIn(v) { _cl.draft = v; _cl.sug = false; review(); }
+  function cntIn(v) { _cl.cnt = v.replace(/\D/g, '').slice(0, 3); review(); }
+  function cancelEdit() {
+    const b = books.find(x => x.id === _cl.id);
+    if (!b || !parts(b).length) return closeSheet();
+    _cl.mode = 'list'; drawChecklist();
+  }
+  async function saveList() {
+    const b = books.find(x => x.id === _cl.id); if (!b) return;
+    const r = nextList(parts(b)); if (!r.list.length) return;
+    const prev = b.parts;
+    b.parts = r.list;
+    const ok = await persist(b, r.list, null);
+    if (!ok) { b.parts = prev; return; }
+    _cl.mode = 'list'; _cl.f = 'all'; drawChecklist(); refresh(b);
+    showToast(`list saved · ${r.list.length} stories`);
+  }
+  async function suggest() {
+    const b = books.find(x => x.id === _cl.id); if (!b) return;
+    const btn = document.getElementById('omSug'); if (btn) { btn.disabled = true; btn.textContent = 'asking…'; }
+    try {
+      const session = (await sb.auth.getSession()).data.session;
+      const prompt = `List the contents of "${b.title}" by ${b.author || 'unknown'}, in table-of-contents order, as story titles. Respond ONLY with a JSON array of strings, no markdown. If you are not certain of the contents, respond with [].`;
+      const res = await fetch('https://rrnryszgvctxainqyuyr.supabase.co/functions/v1/gemini-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ prompt })
+      });
+      if (!res.ok) throw new Error('http ' + res.status);
+      const data = await res.json();
+      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const arr = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1)).filter(x => typeof x === 'string' && x.trim());
+      if (!arr.length) throw new Error('empty');
+      _cl.draft = arr.join('\n'); _cl.tab = 'titles'; _cl.sug = true; drawChecklist();
+    } catch (e) {
+      showToast('Could not suggest a list');
+      if (btn) { btn.disabled = false; btn.textContent = 'suggest a list'; }
+    }
+  }
+
   // ── Reading card ──
   function card(b) {
+    if (coll(b)) {
+      const cp = parts(b), cd = cp.filter(p => p.d).length;
+      return { label: '', segs: `${barHtml(cp)}<div class="om-prog-t">${cp.length ? `${cd} of ${cp.length} stories read` : 'no stories yet'}</div>` };
+    }
     const ps = parts(b), i = curIdx(ps);
     return { label: `Part ${i + 1} of ${ps.length} · ${escapeHtml(ps[i].n)}`, segs: segsHtml(ps) };
   }
@@ -199,7 +340,7 @@ window.OM = (function () {
   function progressOpen(b) {
     const old = document.getElementById('omPmTabs'); if (old) old.remove();
     pm = null;
-    if (!is(b)) return;
+    if (!is(b) || coll(b)) return;
     const ps = parts(b);
     pm = { id: b.id, ps, cur: curIdx(ps), prev: b.pages_read || 0 };
     document.querySelector('#progressModal .progress-inputs-row').insertAdjacentHTML('beforebegin',
@@ -239,5 +380,5 @@ window.OM = (function () {
     else showToast('Progress saved ✓');
   }
 
-  return { range, is, parts, decorateDetail, renderCTA, renderSummary, onScroll, openChecklist, closeSheet, tick, choose, card, progressOpen, pmGo, progressPreview, progressSave, hasPm: () => !!pm };
+  return { range, is, coll, parts, filter, editList, setTab, draftIn, cntIn, cancelEdit, saveList, suggest, decorateDetail, renderCTA, renderSummary, onScroll, openChecklist, closeSheet, tick, choose, card, progressOpen, pmGo, progressPreview, progressSave, hasPm: () => !!pm };
 })();
