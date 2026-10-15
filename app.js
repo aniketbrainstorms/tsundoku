@@ -2918,6 +2918,7 @@ function selectBsResult(title, author, coverUrl, meta) {
   closeBookSearch();
   addCoverFile = null; addCoverUrl = coverUrl || null;
   document.getElementById('addTitle').value = title || '';
+  if (window.TsundokuSeries) TsundokuSeries.refreshAdd();
   document.getElementById('addAuthor').value = author || '';
   document.getElementById('addCoverUrlInput').value = coverUrl || '';
   const addYear = document.getElementById('addYear');
@@ -2982,6 +2983,7 @@ async function confirmAdd() {
     page_count: parseInt(document.getElementById('addPageCount')?.value) || null,
     description: window._pendingDescription || null,
     borrowed_from: borrowedFrom,
+    ...(window.TsundokuSeries ? TsundokuSeries.readAdd() : {}),
   });
   if (newBook) {
     let finalUrl = null;
@@ -3041,7 +3043,7 @@ async function fetchAddIsbn() {
     const data = await res.json();
     const v = data[`ISBN:${isbn}`] || data[Object.keys(data)[0]];
     if (!v) { showToast('No book found for that ISBN'); return; }
-    if (v.title) document.getElementById('addTitle').value = v.title;
+    if (v.title) { document.getElementById('addTitle').value = v.title; if (window.TsundokuSeries) TsundokuSeries.refreshAdd(); }
     if (v.authors?.[0]?.name) document.getElementById('addAuthor').value = v.authors[0].name;
     if (v.publish_date) document.getElementById('addYear').value = v.publish_date.slice(-4);
     if (v.subjects?.[0]?.name) document.getElementById('addGenres').value = v.subjects[0].name;
@@ -3331,6 +3333,7 @@ function resetAddModal() {
   addCoverFile = null; addCoverUrl = null;
   window._pendingDescription = null;
   addStatus = 'unread'; setPillStatus('add', 'unread');
+  if (window.TsundokuSeries) TsundokuSeries.resetAdd();
   addOwnership = 'owned';
   const bfGroup = document.getElementById('borrowedFromGroup');
   if (bfGroup) bfGroup.style.display = 'none';
