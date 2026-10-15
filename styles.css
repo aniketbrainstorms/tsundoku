@@ -4466,6 +4466,20 @@ html.standalone-webapp .add-popup {
 .om-tabs button { flex: 1; padding: 8px 2px; border: 0; border-radius: 10px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; overflow: hidden; }
 .om-tabs button.on { background: var(--accent); color: #fff; }
 
+.om-sh { max-height: 90vh; overflow-y: auto; }
+.om-bar { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.om-bar i { display: block; height: 100%; background: var(--green); border-radius: 3px; transition: width .3s; }
+.reading-card .om-bar { margin-top: 6px; }
+.reading-card .om-prog-t { margin-top: 4px; text-align: left; }
+.om-list { max-height: 44vh; overflow-y: auto; -webkit-overflow-scrolling: touch; margin-top: 4px; }
+.om-chips { display: flex; gap: 6px; margin: 10px 0 2px; }
+.om-chips button { flex: 1; min-height: 40px; border: 1px solid var(--border); border-radius: 12px; background: transparent; color: var(--text-muted); font: inherit; font-size: 13px; }
+.om-chips button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.om-ta, .om-in { width: 100%; box-sizing: border-box; margin-top: 10px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font: inherit; font-size: 16px; padding: 10px 12px; outline: none; }
+.om-ta { min-height: 150px; resize: none; }
+.om-in { min-height: 44px; }
+.om-ta:focus, .om-in:focus { border-color: var(--accent); }
+
 /* ═══════════════════════════════════════════════════════════
    DESIGN LAYER — additive. New features: use tokens + .tsd-* kit.
    z-index scale for new UI: bar 21 · menus 20/101 · sheets 80–90
