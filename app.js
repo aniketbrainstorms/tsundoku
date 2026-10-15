@@ -1039,7 +1039,7 @@ function readingCardHtml(book, i) {
   const progressHtml = totalPages > 0
     ? `<div class="rc-progress-wrap">
         <div class="rc-progress-meta">
-          <span class="rc-progress-label">${(window.OM && OM.is(book)) ? OM.card(book).label : `${pagesRead} / ${totalPages} pages`}</span>
+          <span class="rc-progress-label">${(window.OM && OM.is(book) && !OM.coll(book)) ? OM.card(book).label : `${pagesRead} / ${totalPages} pages`}</span>
           <span class="rc-progress-pct">${pct}%</span>
         </div>
         <div class="rc-wave-track" data-rc-wave data-percent="${pct}"></div>
