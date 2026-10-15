@@ -259,7 +259,102 @@ window.TsundokuSeries = (function () {
     }
   }
 
-  // Edit-sheet fields, injected after the themes field.
+  // ── Book type: single book / omnibus / collection ──
+  const TYPE_HINT = {
+    single: 'A normal book with one page count.',
+    omnibus: 'A few full books bound together. Each part gets a tick and a summary.',
+    collection: 'Many short pieces: stories, essays. You set up the list from the detail sheet.'
+  };
+  const parseRange = s => {
+    const m = /^\s*(\d+)\s*[-–]\s*(\d+)\s*$/.exec(s || '');
+    if (!m) return null;
+    const a = +m[1], z = +m[2];
+    return z > a && z - a < 12 ? { a, z, n: z - a + 1 } : null;
+  };
+
+  // Keyword rules only. A suggestion never changes anything until the user taps yes.
+  function suggestType(title) {
+    const t = (title || '').trim(); if (!t) return null;
+    const p = t.split(/\s\+\s/);
+    if (p.length > 1 && p.length <= 12) return { type: 'omnibus', covers: '1-' + p.length, text: `looks like an omnibus of ${p.length} books. set as omnibus (1-${p.length})?` };
+    if (/\b(omnibus|trilogy|box ?set|books? \d+\s*[-–]\s*\d+)\b/i.test(t)) return { type: 'omnibus', covers: '', text: 'looks like an omnibus. set as omnibus?' };
+    if (/\b(stories|tales|essays|collected)\b/i.test(t)) return { type: 'collection', covers: '', text: 'looks like a collection of stories. set as collection?' };
+    return null;
+  }
+
+  function typeHtml(p) {
+    return `<span class="sr-ty-lab">This book is</span>
+      <div class="sr-ty" id="${p}Ty" role="group" aria-label="book type"><button type="button" data-t="single">single book</button><button type="button" data-t="omnibus">omnibus</button><button type="button" data-t="collection">collection</button></div>
+      <div class="sr-ty-om" id="${p}Om" hidden><input type="text" class="es-input" id="${p}Cov" placeholder="covers books, e.g. 1-2" autocomplete="off" /><div class="sr-ty-hint" id="${p}Parts"></div></div>
+      <div class="sr-ty-hint" id="${p}Hint"></div>`;
+  }
+  const nudgeHtml = p => `<span></span><span style="display:flex;flex:none"><button type="button" id="${p}NuNo">dismiss</button><button type="button" id="${p}NuYes">yes</button></span>`;
+
+  // st = { type, dis }. Returns { draw, nudge } for one selector (prefix p).
+  function makeType(p, st, getTitle, nuEl, onYes, onNo) {
+    const $ = id => document.getElementById(p + id);
+    const nudge = () => {
+      const sg = suggestType(getTitle());
+      nuEl.hidden = !(st.type === 'single' && !st.dis && sg);
+      if (sg) { nuEl.firstElementChild.textContent = sg.text; st.sug = sg; }
+    };
+    const draw = () => {
+      $('Ty').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === st.type));
+      $('Om').hidden = st.type !== 'omnibus';
+      const g = parseRange($('Cov').value);
+      $('Parts').textContent = !$('Cov').value.trim() ? 'Enter a range like 1-2. Each part gets its own tick and summary.' : g ? `${g.n} parts` : 'Use a range of 2 to 12 books, like 1-3.';
+      $('Hint').textContent = TYPE_HINT[st.type];
+      nudge();
+    };
+    $('Ty').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { st.type = b.dataset.t; draw(); } });
+    $('Cov').addEventListener('input', draw);
+    $('NuYes').addEventListener('click', () => {
+      const sg = st.sug; if (!sg) return;
+      st.type = sg.type; if (sg.covers) $('Cov').value = sg.covers;
+      if (onYes) onYes(); draw();
+    });
+    $('NuNo').addEventListener('click', () => { st.dis = true; if (onNo) onNo(); nudge(); });
+    return { draw, nudge };
+  }
+  const covOf = (st, p) => st.type === 'omnibus' && parseRange(document.getElementById(p + 'Cov').value) ? document.getElementById(p + 'Cov').value.trim().replace(/\s+/g, '') : null;
+  const nuKey = id => 'tsundoku_typenudge_' + id;
+
+  // ── Add modal: nudge under Title/Author, selector inside "Add more details" ──
+  const A = { type: 'single', dis: false };
+  let addUI = null;
+  function mountAdd() {
+    const fields = document.getElementById('afDetailsFields'), title = document.getElementById('addTitle');
+    if (!fields || !title || document.getElementById('srAddBox')) return;
+    const card = document.createElement('div');
+    card.id = 'srAddBox'; card.className = 'sr-add add-shelf-only'; card.innerHTML = typeHtml('srAdd');
+    fields.appendChild(card);
+    const nu = document.createElement('div');
+    nu.id = 'srAddNu'; nu.className = 'sr-nudge add-shelf-only'; nu.hidden = true; nu.innerHTML = nudgeHtml('srAdd');
+    const detailsCard = title.parentElement && title.parentElement.parentElement;
+    if (detailsCard) detailsCard.after(nu); else fields.before(nu);
+    addUI = makeType('srAdd', A, () => title.value, nu, () => {
+      const f = document.getElementById('afDetailsFields');
+      if (f && !f.classList.contains('expanded') && typeof afToggleDetails === 'function') afToggleDetails();
+    });
+    title.addEventListener('input', addUI.nudge);
+    addUI.draw();
+  }
+  function refreshAdd() { if (addUI) addUI.nudge(); }
+  function resetAdd() {
+    A.type = 'single'; A.dis = false;
+    const c = document.getElementById('srAddCov'); if (c) c.value = '';
+    if (addUI) addUI.draw();
+  }
+  function readAdd() {
+    if (typeof addContext !== 'undefined' && addContext === 'list') return {};
+    return { series_covers: covOf(A, 'srAdd'), is_collection: A.type === 'collection' };
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountAdd); else mountAdd();
+
+  // ── Edit sheet: series name / number, then the type selector ──
+  const E = { type: 'single', dis: false, id: null };
+  let editUI = null;
+  function editSig() { return E.type + '|' + (covOf(E, 'srEdit') || ''); }
   function mountEdit(book) {
     const themes = document.getElementById('editThemes');
     if (!themes || !book) return;
@@ -272,11 +367,16 @@ window.TsundokuSeries = (function () {
         <div class="sr-edit-row">
           <input type="text" class="es-input" id="srEditName" placeholder="e.g. shiva trilogy" />
           <input type="text" inputmode="decimal" class="es-input" id="srEditIdx" placeholder="#" />
-          <input type="text" class="es-input" id="srEditCovers" placeholder="1-3" title="omnibus covers books, e.g. 1-3" />
-        </div>`;
+        </div>
+        <div class="sr-nudge" id="srEditNu" hidden>${nudgeHtml('srEdit')}</div>
+        <div class="sr-ty-wrap">${typeHtml('srEdit')}</div>`;
       (themes.closest('.es-field-row') || themes.parentElement).after(box);
+      editUI = makeType('srEdit', E, () => (document.getElementById('editTitle') || {}).value || '', document.getElementById('srEditNu'), null, () => {
+        try { localStorage.setItem(nuKey(E.id), '1'); } catch (e) {}
+      });
+      const et = document.getElementById('editTitle'); if (et) et.addEventListener('input', editUI.nudge);
       box.addEventListener('input', () => {
-        const same = (document.getElementById('srEditName').value.trim().toLowerCase() + '|' + document.getElementById('srEditIdx').value.trim() + '|' + document.getElementById('srEditCovers').value.trim().replace(/\s+/g, '')) === box.dataset.orig;
+        const same = (document.getElementById('srEditName').value.trim().toLowerCase() + '|' + document.getElementById('srEditIdx').value.trim()) === box.dataset.origNI;
         document.getElementById('srEditBadge').textContent = same ? (box.dataset.src === 'auto' ? 'auto-detected' : box.dataset.src === 'manual' ? 'set by you' : '') : 'set by you';
       });
     }
@@ -284,10 +384,15 @@ window.TsundokuSeries = (function () {
     const idx = book.series_index != null && book.series_index !== '' ? String(Number(book.series_index)) : '';
     document.getElementById('srEditName').value = name;
     document.getElementById('srEditIdx').value = idx;
-    document.getElementById('srEditCovers').value = book.series_covers || '';
+    document.getElementById('srEditCov').value = book.series_covers || '';
+    E.id = book.id;
+    E.type = book.is_collection ? 'collection' : parseRange(book.series_covers) ? 'omnibus' : 'single';
+    try { E.dis = !!localStorage.getItem(nuKey(book.id)); } catch (e) { E.dis = false; }
     box.dataset.book = String(book.id);
     box.dataset.src = book.series_source || '';
-    box.dataset.orig = name.trim().toLowerCase() + '|' + idx + '|' + (book.series_covers || '');
+    box.dataset.origNI = name.trim().toLowerCase() + '|' + idx;
+    editUI.draw();
+    box.dataset.origT = editSig();
     document.getElementById('srEditBadge').textContent = book.series_source === 'auto' ? 'auto-detected' : book.series_source === 'manual' ? 'set by you' : '';
   }
 
@@ -297,11 +402,15 @@ window.TsundokuSeries = (function () {
     if (!box || box.dataset.book !== String(id)) return {};
     const name = document.getElementById('srEditName').value.trim().toLowerCase();
     const rawIdx = document.getElementById('srEditIdx').value.trim();
-    const cov = document.getElementById('srEditCovers').value.trim().replace(/\s+/g, '');
-    if ((name + '|' + rawIdx + '|' + cov) === box.dataset.orig) return {};
-    if (!name) return { series_name: null, series_index: null, series_source: 'none', series_covers: cov || null };
-    const idx = parseFloat(rawIdx);
-    return { series_name: name, series_index: isNaN(idx) ? null : idx, series_source: 'manual', series_covers: cov || null };
+    const niChanged = (name + '|' + rawIdx) !== box.dataset.origNI;
+    const tyChanged = editSig() !== box.dataset.origT;
+    if (!niChanged && !tyChanged) return {};
+    const out = { series_covers: covOf(E, 'srEdit'), is_collection: E.type === 'collection' };
+    if (niChanged) {
+      if (!name) Object.assign(out, { series_name: null, series_index: null, series_source: 'none' });
+      else { const idx = parseFloat(rawIdx); Object.assign(out, { series_name: name, series_index: isNaN(idx) ? null : idx, series_source: 'manual' }); }
+    }
+    return out;
   }
 
     // ── Bulk detection: Wikipedia evidence → Gemini in batches ──
@@ -369,4 +478,4 @@ ${lines}`;
     return report;
   }
   
-  return { detect, booksIn, keyOf, mount, mountEdit, readEdit, open, close, bulkDetect };})();
+  return { detect, booksIn, keyOf, mount, mountEdit, readEdit, mountAdd, readAdd, resetAdd, refreshAdd, suggestType, open, close, bulkDetect };})();
