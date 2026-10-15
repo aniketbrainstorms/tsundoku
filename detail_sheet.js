@@ -912,7 +912,7 @@ window.openDetailModal = async function openDetailModal(id) {
     // Open sheet
     dsOpen();
 
-    if (window.OM) { OM.decorateDetail(book); if (OM.is(book)) return; }
+    if (window.OM) { OM.decorateDetail(book); if (OM.is(book) && !OM.coll(book)) return; }
 
     // ── Summary — AI-generated via Gemini, with regeneration tracking ──
     const summarySection = document.getElementById('dsSummarySection');
