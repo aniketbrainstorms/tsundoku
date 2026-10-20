@@ -5759,68 +5759,9 @@ function _swipePreRenderAll(force) {
       : makePlaceholder(book, 22);
   }
 
-  // ── Letter: reader note that slides out of the opened envelope ──
-  const LE_LETTER_ONLY_FIRST = false;   // true = show the letter only the first time
-  const LE_LETTER_SEEN_KEY = 'tsundoku_le_letter_seen_v1';
-  const LE_LETTERS = [                  // add more entries to rotate them
-    { quote: 'Now, instead of just skimming, I truly understand <em>challenging concepts</em> and actually use them to make <em>better decisions.</em>', name: 'Jeremy Stinson' },
-  ];
-  let leRun = 0;                        // bumps per open — stale timers bail out
-
-  function leResetLetter() {
-    const el = document.getElementById('leLetter');
-    if (!el) return;
-    el.classList.remove('show');
-    el.setAttribute('aria-hidden', 'true');
-  }
-
-  // Returns true when the letter takes over; leLetterNext() resumes the reveal.
-  function leShowLetter() {
-    const el = document.getElementById('leLetter');
-    if (!el || !LE_LETTERS.length) return false;
-    try { if (LE_LETTER_ONLY_FIRST && localStorage.getItem(LE_LETTER_SEEN_KEY)) return false; } catch (e) {}
-    const letter = LE_LETTERS[Math.floor(Math.random() * LE_LETTERS.length)];
-    document.getElementById('leLetterQuote').innerHTML = letter.quote;
-    document.getElementById('leLetterSign').textContent = letter.name;
-    // peeking covers are other unread books, never the pick itself
-    const others = getUnreadBooks()
-      .filter(b => String(b.id) !== String(currentPick.id))
-      .sort(() => Math.random() - 0.5);
-    ['leLc1', 'leLc2', 'leLc3'].forEach((id, i) => {
-      const c = document.getElementById(id);
-      c.innerHTML = others[i] ? leCoverHtml(others[i]) : '';
-      c.style.display = others[i] ? '' : 'none';
-    });
-    el.setAttribute('aria-hidden', 'false');
-    el.classList.add('show');
-    const run = leRun;
-    setTimeout(() => {
-      if (run === leRun) document.getElementById('leLetterNext').focus({ preventScroll: true });
-    }, 450);
-    return true;
-  }
-
-  window.leLetterNext = function leLetterNext() {
-    const el = document.getElementById('leLetter');
-    if (!el || !el.classList.contains('show')) return;
-    try { localStorage.setItem(LE_LETTER_SEEN_KEY, '1'); } catch (e) {}
-    leResetLetter();
-    const run = leRun;
-    setTimeout(() => { if (run === leRun) leRiseAndFly(); }, 380);
-  };
-
-  // The original book reveal: cover rises out of the envelope, then flies to the card.
-  function leRiseAndFly() {
-    const peek = document.getElementById('lePeekCover');
-    setTimeout(() => { peek.classList.add('rise'); }, 150);
-    setTimeout(() => { leFlyToRevealSlot(); }, 1550);
-  }
-
   window.openLuckyEnvelope = function openLuckyEnvelope() {
     currentPick = pickRandomUnread();
     if (!currentPick) { showToast('No unread books to pick from'); return; }
-    leRun++;
-    leResetLetter();
 
     const modal = document.getElementById('luckyEnvelopeModal');
     const envWrap = document.getElementById('leEnvelopeWrap');
@@ -5847,8 +5788,8 @@ function _swipePreRenderAll(force) {
       setTimeout(() => {
         flap.classList.add('open');
         peek.innerHTML = leCoverHtml(currentPick);
-        if (leShowLetter()) return;   // letter first; its → button calls leRiseAndFly()
-        leRiseAndFly();
+        setTimeout(() => { peek.classList.add('rise'); }, 150);
+        setTimeout(() => { leFlyToRevealSlot(); }, 1550);
       }, 100);
     });
   };
