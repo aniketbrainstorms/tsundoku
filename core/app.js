@@ -3273,6 +3273,10 @@ function setFilter(filter) {
 }
 
 function closeDesktopNavPanels() {
+  if (typeof ldOpenFrame !== 'undefined' && ldOpenFrame !== null) {
+    cancelAnimationFrame(ldOpenFrame);
+    ldOpenFrame = null;
+  }
   [
     'listsOverlay',
     'listDetailOverlay',
@@ -4021,6 +4025,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
   let loSheetEditingId = null;
   let loQMTargetId = null;
   let ldCurrentListId = null;
+  let ldOpenFrame = null;
   let ldCurrentFilter = 'all';
   let ldCurrentSort = 'recent';
   let ldCurrentView = 'list'; // 'list' | 'grid3' | 'grid4'
@@ -4422,7 +4427,11 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
     ldBuildAlphaBar();
 
     const ld = document.getElementById('listDetailOverlay');
-    requestAnimationFrame(() => navPush(null, ld));
+    if (ldOpenFrame !== null) cancelAnimationFrame(ldOpenFrame);
+    ldOpenFrame = requestAnimationFrame(() => {
+      ldOpenFrame = null;
+      if (ldCurrentListId === listId) navPush(null, ld);
+    });
 
     // 2. Background Sync
     await Promise.allSettled([
@@ -4446,6 +4455,10 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
   };
 
   window.closeListDetail = function () {
+    if (ldOpenFrame !== null) {
+      cancelAnimationFrame(ldOpenFrame);
+      ldOpenFrame = null;
+    }
     navPop(document.getElementById('listDetailOverlay'), null);
     ldCloseAddSheet();
     const floatingBar = document.getElementById('floatingBar');
