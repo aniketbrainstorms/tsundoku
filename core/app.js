@@ -1069,6 +1069,16 @@ function readingCardHtml(book, i) {
     </button>
   </div>`;
 }
+function desktopProgressHtml(book) {
+  const pagesRead = Math.max(0, Number(book.pages_read) || 0);
+  const totalPages = Math.max(0, Number(book.total_pages) || 0);
+  const pct = totalPages ? Math.min(100, Math.round((pagesRead / totalPages) * 100)) : 0;
+  const label = totalPages ? `${pagesRead} / ${totalPages} pages` : `${pagesRead} pages read`;
+  return `<div class="book-card-progress" aria-label="${label}">
+    <div class="book-card-progress-meta"><span>${label}</span><strong>${totalPages ? pct + '%' : '—'}</strong></div>
+    <div class="book-card-progress-track"><span style="width:${pct}%"></span></div>
+  </div>`;
+}
 // ── READING PROGRESS WAVEFORM ──
 const RC_WAVE_AMPLITUDE = 3.5;
 const RC_WAVE_LENGTH = 22;
@@ -1218,7 +1228,7 @@ function _renderGridIntoEl(grid, filter) {
     grid.classList.remove('reading-mode');
     grid.innerHTML = filtered.map((b, i) => `
       <div class="book-card" tabindex="0" role="button" aria-label="Open ${escapeAttr(b.title || 'book')}, ${escapeAttr(b.author || 'unknown author')}" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
-        ${coverHtml(b)}<div class="book-card-info"><div class="book-card-title">${escapeHtml(b.title || '')}</div><div class="book-card-author">${escapeHtml(b.author || '')}</div></div><div class="status-dot ${b.status}"></div>
+        ${coverHtml(b)}${filter === 'reading' ? desktopProgressHtml(b) : ''}<div class="book-card-info"><div class="book-card-title">${escapeHtml(b.title || '')}</div><div class="book-card-author">${escapeHtml(b.author || '')}</div></div><div class="status-dot ${b.status}"></div>
         <div class="desk-card-actions">
           <button type="button" data-desktop-card-action="status" title="${b.status === 'read' ? 'Mark unread' : 'Mark read'}" aria-label="${b.status === 'read' ? 'Mark unread' : 'Mark read'}">✓</button>
           <button type="button" data-desktop-card-action="list" title="Add to list" aria-label="Add to list">≡</button>

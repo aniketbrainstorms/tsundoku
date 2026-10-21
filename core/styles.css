@@ -1243,6 +1243,30 @@ html.standalone-webapp .add-popup {
   .book-card-author { color: var(--text-muted); font-size: 11px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .main-content-wrap .book-grid.desk-list-view .status-dot { top: 10px; right: 10px; }
   .main-content-wrap .book-grid.desk-list-view .desk-card-actions { right: 8px; }
+  .main-content-wrap .book-card-progress {
+    display: block;
+    position: absolute;
+    left: 7px;
+    right: 7px;
+    bottom: 7px;
+    padding: 5px 6px;
+    border-radius: 5px;
+    background: rgba(15,13,11,0.82);
+    color: #a09484;
+    font-size: 8px;
+    z-index: 2;
+  }
+  .book-card-progress-meta { display: flex; justify-content: space-between; gap: 5px; margin-bottom: 4px; }
+  .book-card-progress-meta strong { color: #c9714a; font-weight: 600; }
+  .book-card-progress-track { height: 3px; border-radius: 3px; overflow: hidden; background: rgba(255,255,255,0.16); }
+  .book-card-progress-track span { display: block; height: 100%; border-radius: inherit; background: #c9714a; }
+  .main-content-wrap .book-grid.desk-list-view .book-card-progress {
+    position: static;
+    flex: 0 0 150px;
+    padding: 0;
+    background: none;
+    order: 3;
+  }
   #bookGrid.grid-narrow {
     grid-template-columns: repeat(auto-fill, minmax(78px, 96px)) !important;
     gap: 8px;
@@ -1502,6 +1526,7 @@ html.standalone-webapp .add-popup {
 .status-dot.read { background: var(--green); }
 .status-dot.unread { background: var(--text-muted); }
 .book-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.book-card-progress { display: none; }
 
 /* READING LIST */
 .reading-card {
