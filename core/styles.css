@@ -4024,6 +4024,39 @@ html.standalone-webapp .add-popup {
     outline-offset: 2px;
   }
 
+  /* ── SEARCH PALETTE (replaces bottom sheet on desktop) ── */
+  .sbs-backdrop { z-index: 91; }
+  .sbs-sheet {
+    z-index: 92;
+    left: 50%;
+    right: auto;
+    top: 14vh;
+    bottom: auto;
+    width: min(560px, calc(100vw - 48px));
+    max-height: 62vh;
+    border-radius: 14px;
+    border: 1px solid #3a3530;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.65);
+    transform: translate(-50%, -10px) scale(0.97);
+    opacity: 0;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+  .sbs-sheet.open {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+  .sbs-drag-handle-wrap { display: none; }
+  .sbs-input-row {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #2e2a25;
+  }
+  .sbs-result-row:not(.sbs-result-row ~ .sbs-result-row) {
+    background: rgba(201,113,74,0.08);
+    border-radius: 8px;
+    box-shadow: -8px 0 0 rgba(201,113,74,0.08), 8px 0 0 rgba(201,113,74,0.08);
+  }
+
   /* grid compression when panel open */
   #bookGrid.grid-narrow {
     grid-template-columns: repeat(auto-fill, minmax(78px, 96px)) !important;
