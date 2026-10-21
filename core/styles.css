@@ -4006,6 +4006,9 @@ html.standalone-webapp .add-popup {
   .app-screen.desk-sidebar-collapsed .desk-sidebar-toggle svg { transform: rotate(180deg); }
   .app-screen.desk-sidebar-collapsed #profileModal { width: var(--desk-sidebar-w) !important; }
 
+  /* Filters and sorting live in the desktop content toolbar. */
+  #deskShelfSub { display: none !important; }
+
   .search-bar:focus-within,
   .desk-filter-chip:focus-visible,
   .desk-sort-control:focus-visible,
