@@ -1010,6 +1010,12 @@ function getSortedFiltered() {
       if (genreCmp !== 0) return genreCmp;
       return (a.title || '').localeCompare(b.title || '');
     }
+    if (currentSort === 'updated') return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
+    if (currentSort === 'remaining') {
+      const remainingA = Math.max(0, (a.total_pages || 0) - (a.pages_read || 0));
+      const remainingB = Math.max(0, (b.total_pages || 0) - (b.pages_read || 0));
+      return remainingB - remainingA || (a.title || '').localeCompare(b.title || '');
+    }
     return new Date(b.created_at) - new Date(a.created_at);
   });
   return list;
@@ -1662,7 +1668,7 @@ function setSort(sortType) {
   document.querySelectorAll('#sortMenu .qm-item').forEach(btn => btn.classList.toggle('current-status', btn.dataset.sort === sortType));
   
   // Desktop sidebar sort label sync
-  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)' };
+  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)', updated: 'recently updated', remaining: 'pages remaining' };
   const dSortVal = document.getElementById('deskSortVal');
   if (dSortVal) dSortVal.textContent = sortMap[sortType] || sortType;
 
