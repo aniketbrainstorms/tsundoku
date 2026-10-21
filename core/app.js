@@ -1281,6 +1281,55 @@ function sbsClearRecents() {
   renderShelfSearchResults('');
 }
 
+let _sbsActiveIndex = -1;
+
+function _sbsSelectableItems() {
+  return [...document.querySelectorAll('#shelfSearchResults [data-sbs-selectable]')];
+}
+
+function _sbsSetActive(index) {
+  const items = _sbsSelectableItems();
+  if (!items.length) { _sbsActiveIndex = -1; return; }
+  _sbsActiveIndex = (index + items.length) % items.length;
+  items.forEach((item, i) => item.setAttribute('aria-selected', String(i === _sbsActiveIndex)));
+  const active = items[_sbsActiveIndex];
+  active.scrollIntoView({ block: 'nearest' });
+  document.getElementById('shelfSearchInput')?.setAttribute('aria-activedescendant', active.id || '');
+}
+
+function _sbsRunCommand(command) {
+  closeShelfSearch();
+  setTimeout(() => {
+    if (command === 'add') openBookSearch('shelf');
+    if (command === 'lists' && typeof window.openListsOverlay === 'function') window.openListsOverlay();
+    if (command === 'authors' && typeof openAuthorsOverlay === 'function') openAuthorsOverlay();
+    if (command === 'genres' && typeof openGenresOverlay === 'function') openGenresOverlay();
+  }, 140);
+}
+
+function _sbsHandleKeydown(e) {
+  if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return;
+  const input = document.getElementById('shelfSearchInput');
+  const sheet = document.getElementById('shelfSearchOverlay');
+  if (!input || !sheet?.classList.contains('open') || document.activeElement !== input) return;
+
+  const items = _sbsSelectableItems();
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (!items.length) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    _sbsSetActive(_sbsActiveIndex + (e.key === 'ArrowDown' ? 1 : -1));
+  } else if (e.key === 'Enter') {
+    const active = items[_sbsActiveIndex] || items[0];
+    if (!active) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    active.click();
+  }
+}
+
+document.addEventListener('keydown', _sbsHandleKeydown, true);
+
 function openShelfSearch() {
   const sheet = document.getElementById('shelfSearchOverlay');
   const backdrop = document.getElementById('shelfSearchBackdrop');
@@ -1293,7 +1342,12 @@ function openShelfSearch() {
 
   setTimeout(() => {
     const input = document.getElementById('shelfSearchInput');
-    if (input) input.focus();
+    if (input) {
+      input.placeholder = window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+        ? 'Search books, authors, lists, actions…'
+        : 'Search your library…';
+      input.focus();
+    }
   }, window.matchMedia(DESKTOP_MEDIA_QUERY).matches ? 40 : 380);
 }
 
@@ -1308,7 +1362,12 @@ function closeShelfSearch() {
   backdrop.classList.remove('open');
 
   setTimeout(() => {
-    if (input) input.value = '';
+    if (input) {
+      input.value = '';
+      input.placeholder = 'Search your library…';
+      input.removeAttribute('aria-activedescendant');
+    }
+    _sbsActiveIndex = -1;
     const clearBtn = document.getElementById('shelfSearchClearBtn');
     if (clearBtn) { clearBtn.style.opacity = '0'; clearBtn.style.pointerEvents = 'none'; }
     _renderSbsResults('');
@@ -1338,6 +1397,21 @@ function _renderSbsResults(q) {
   if (!el) return;
 
   if (!q) {
+    if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+      el.innerHTML = [
+        ['add', '+', 'Add a book', 'Search, scan, or add manually'],
+        ['lists', '▦', 'Open my lists', 'Browse your custom collections'],
+        ['authors', '◎', 'Browse authors', 'See every author on your shelf'],
+        ['genres', '#', 'Browse genres', 'Explore books by genre']
+      ].map(([command, icon, label, hint], i) => `
+        <button class="sbs-command-row" id="sbsCommand-${command}" data-command="${command}" data-sbs-selectable role="option" aria-selected="${i === 0}">
+          <span class="sbs-command-icon" aria-hidden="true">${icon}</span>
+          <span class="sbs-command-copy"><span class="sbs-command-label">${label}</span><span class="sbs-command-hint">${hint}</span></span>
+        </button>`).join('');
+      _sbsActiveIndex = 0;
+      el.querySelectorAll('[data-command]').forEach(row => row.addEventListener('click', () => _sbsRunCommand(row.dataset.command)));
+      return;
+    }
     el.innerHTML = `<div class="search-library-state">
       <div class="search-library-icon">
         <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1401,7 +1475,7 @@ function _renderSbsResults(q) {
   const _sbsAuthorInitials = authorHit ? authorHit.split(/\s+/).filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('') || '?' : '?';
 
   const authorRowHtml = authorHit ? `
-    <div class="bs-author-row" id="sbsAuthorRow" data-author="${escapeAttr(authorHit)}">
+    <div class="bs-author-row" id="sbsAuthorRow" data-author="${escapeAttr(authorHit)}" data-sbs-selectable role="option" aria-selected="false">
       <div class="bs-author-photo" id="sbsAuthorPhoto">${_sbsAuthorImg ? `<img src="${escapeAttr(_sbsAuthorImg)}" onerror="this.parentElement.innerHTML='<span class=bs-author-initials>${escapeAttr(_sbsAuthorInitials)}</span>'" />` : `<span class="bs-author-initials">${escapeAttr(_sbsAuthorInitials)}</span>`}</div>
       <div class="bs-author-info">
         <div class="bs-author-name">${highlight(authorHit, q)}</div>
@@ -1412,7 +1486,7 @@ function _renderSbsResults(q) {
     <div class="bs-author-sep"></div>` : '';
 
   el.innerHTML = authorRowHtml + results.map((b, i) => `
-    <div class="sbs-result-row" data-id="${b.id}" style="animation-delay:${Math.min(i, 10) * 0.028}s">
+    <div class="sbs-result-row" id="sbsResult-${b.id}" data-id="${b.id}" data-sbs-selectable role="option" aria-selected="false" style="animation-delay:${Math.min(i, 10) * 0.028}s">
       <div class="sbs-result-cover">${coverHtml(b, 10)}</div>
       <div class="sbs-result-info">
         <div class="sbs-result-title">${highlight(b.title || '', q)}</div>
@@ -1451,6 +1525,7 @@ function _renderSbsResults(q) {
       setTimeout(() => openDetailModal(row.dataset.id), 140);
     });
   });
+  _sbsActiveIndex = -1;
 }
 
 // ── DRAG TO DISMISS ──

@@ -749,7 +749,7 @@
 <!-- SHELF SEARCH — backdrop + unified sheet -->
 <div class="sbs-backdrop" id="shelfSearchBackdrop" onclick="closeShelfSearch()"></div>
 
-<div class="sbs-sheet" id="shelfSearchOverlay">
+<div class="sbs-sheet" id="shelfSearchOverlay" role="dialog" aria-modal="true" aria-label="Search library">
   <!-- Drag handle -->
   <div class="sbs-drag-handle-wrap" id="sbsDragHandle">
     <div class="sbs-drag-handle"></div>
@@ -759,7 +759,7 @@
   <div class="sbs-input-row">
     <div class="sbs-input-wrap">
       <svg class="sbs-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" class="sbs-input" id="shelfSearchInput" placeholder="Search your library…" oninput="onShelfOverlaySearch()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="font-size:16px" />
+      <input type="text" class="sbs-input" id="shelfSearchInput" placeholder="Search your library…" oninput="onShelfOverlaySearch()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="shelfSearchResults" style="font-size:16px" />
       <button class="sbs-clear-btn" id="shelfSearchClearBtn" onclick="clearShelfSearch()" style="opacity:0;pointer-events:none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -790,6 +790,11 @@
       <p class="search-library-title">Search books in your library</p>
       <p class="search-library-sub">Find titles, authors, or keywords from your reading, read, and unread lists</p>
     </div>
+  </div>
+  <div class="sbs-palette-footer" aria-hidden="true">
+    <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+    <span><kbd>enter</kbd> open</span>
+    <span><kbd>esc</kbd> close</span>
   </div>
 </div>
   
