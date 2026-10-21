@@ -4146,6 +4146,72 @@ html.standalone-webapp .add-popup {
   }
 
   /* ── SEARCH PALETTE (replaces bottom sheet on desktop) ── */
+  .book-search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 94;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10vh 24px;
+    background: rgba(14,12,10,0.68);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+  }
+  .book-search-overlay.open {
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.18s ease, visibility 0s linear 0s;
+  }
+  .book-search-overlay > .bs-title-row,
+  .book-search-overlay > .bs-header,
+  .book-search-overlay > .bs-borrow-row,
+  .book-search-overlay > .divider,
+  .book-search-overlay > .bs-results {
+    width: min(600px, calc(100vw - 48px));
+    background: #211b16;
+  }
+  .book-search-overlay > .bs-title-row {
+    padding: 14px 16px 10px;
+    border: 1px solid #3a3128;
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+  }
+  .book-search-overlay > .bs-header {
+    padding: 0 16px 14px;
+    border-left: 1px solid #3a3128;
+    border-right: 1px solid #3a3128;
+  }
+  .book-search-overlay > .bs-borrow-row {
+    border-left: 1px solid #3a3128;
+    border-right: 1px solid #3a3128;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .book-search-overlay > .divider {
+    height: 1px;
+    margin: 0;
+    border-left: 1px solid #3a3128;
+    border-right: 1px solid #3a3128;
+  }
+  .book-search-overlay > .bs-results {
+    flex: 0 1 auto;
+    max-height: 56vh;
+    min-height: 150px;
+    padding: 0 16px 16px;
+    border: 1px solid #3a3128;
+    border-top: 0;
+    border-radius: 0 0 14px 14px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.65);
+  }
+  .book-search-overlay .bs-title { font-size: 15px; }
+  .book-search-overlay .bs-input { font-size: 14px; padding: 10px 12px; }
+  .book-search-overlay .bs-state { padding: 34px 0; }
   .sbs-backdrop { z-index: 91; }
   .sbs-sheet {
     z-index: 92;

@@ -2815,7 +2815,7 @@ function openBookSearch(context = 'shelf') {
   _updateAppRecede();
   const bar = document.getElementById('floatingBar');
   if (bar) bar.style.display = 'none';
-  setTimeout(() => document.getElementById('bsInput').focus(), 380);
+  setTimeout(() => document.getElementById('bsInput').focus(), window.matchMedia(DESKTOP_MEDIA_QUERY).matches ? 40 : 380);
 }
 function closeBookSearch() {
   const bsOverlay = document.getElementById('bookSearchOverlay');
