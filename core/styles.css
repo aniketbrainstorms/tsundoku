@@ -1209,8 +1209,14 @@ html.standalone-webapp .add-popup {
     flex-direction: column;
   }
   .main-content-wrap .reading-card {
+    width: 100%;
     min-width: 0;
     min-height: 132px;
+  }
+  .main-content-wrap .reading-card .rc-info { display: flex; }
+  .main-content-wrap .reading-card .rc-desktop-progress {
+    display: block;
+    margin-top: 10px;
   }
   .main-content-wrap .book-grid.desk-list-view .book-card {
     width: 100%;
@@ -1552,6 +1558,9 @@ html.standalone-webapp .add-popup {
 .rc-wave-track { position: relative; width: 100%; height: 16px; }
 .rc-wave-track svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .rc-no-progress { font-size: 11px; color: var(--text-muted); opacity: 0.6; margin-top: 8px; font-style: italic; }
+.rc-desktop-progress { display: none; }
+.rc-desktop-progress-track { height: 4px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.14); }
+.rc-desktop-progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--accent); }
 .rc-edit-btn { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 7px; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; padding: 0; }
 .rc-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
 

@@ -1055,7 +1055,14 @@ function readingCardHtml(book, i) {
         <div class="rc-wave-track" data-rc-wave data-percent="${pct}"></div>
         ${(window.OM && OM.is(book)) ? OM.card(book).segs : ''}
       </div>`
-    : `<p class="rc-no-progress">tap ✏️ to track progress</p>`;
+    : `<p class="rc-no-progress">tap ✏️ to track progress</p>
+      <div class="rc-desktop-progress" aria-label="${pagesRead} pages read">
+        <div class="rc-progress-meta">
+          <span class="rc-progress-label">${pagesRead} pages read</span>
+          <span class="rc-progress-pct">—</span>
+        </div>
+        <div class="rc-desktop-progress-track"><span></span></div>
+      </div>`;
   return `<div class="reading-card" data-id="${book.id}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
     <div class="rc-cover">${coverContent}</div>
     <div class="rc-info">
