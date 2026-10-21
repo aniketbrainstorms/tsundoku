@@ -1179,7 +1179,7 @@ function attachReadingCardEvents(card) {
   card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
   card.addEventListener('click', e => {
     if (e.target.closest('.rc-edit-btn')) return;
-    if (isTouch()) {
+    if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
       openDetailModal(id);
     } else {
       if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
@@ -1216,7 +1216,7 @@ function _renderGridIntoEl(grid, filter) {
       card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
       card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
       card.addEventListener('click', e => {
-        if (isTouch()) { openDetailModal(id); return; }
+        if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) { openDetailModal(id); return; }
         if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
         else openQuickMenu(id, card);
       });
@@ -2457,7 +2457,7 @@ function renderGenreDetailGrid() {
     card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
     card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
     card.addEventListener('click', e => {
-      if (isTouch()) { openDetailModal(id); return; }
+      if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) { openDetailModal(id); return; }
       if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
       else openQuickMenu(id, card);
     });
@@ -2521,7 +2521,7 @@ function renderMyShelfRows(list) {
     el.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, el); });
     el.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(el); });
     el.addEventListener('click', e => {
-      if (isTouch()) { openDetailModal(id); return; }
+      if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) { openDetailModal(id); return; }
       if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
       else openQuickMenu(id, el);
     });
@@ -2743,7 +2743,7 @@ function renderShelfGrid() {
     card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
     card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
     card.addEventListener('click', e => {
-      if (isTouch()) {
+      if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
         openDetailModal(id);
         return;
       }
