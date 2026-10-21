@@ -983,6 +983,18 @@ html.standalone-webapp .add-popup {
     gap: 10px;
     background: #1a1814;
   }
+  .desk-size {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .desk-size input {
+    width: 88px;
+    accent-color: #c9714a;
+    cursor: pointer;
+  }
   .search-bar {
     display: flex;
     align-items: center;
@@ -1050,7 +1062,7 @@ html.standalone-webapp .add-popup {
     display: block;
   }
   .book-grid {
-    grid-template-columns: repeat(auto-fill, minmax(82px, 104px)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(calc(var(--cover-w, 104px) - 22px), var(--cover-w, 104px))) !important;
     justify-content: start;
     align-content: start;
     gap: 9px;
