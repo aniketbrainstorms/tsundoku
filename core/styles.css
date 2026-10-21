@@ -1014,6 +1014,54 @@ html.standalone-webapp .add-popup {
     color: var(--text-muted);
     flex-shrink: 0;
   }
+  .main-content-wrap .desk-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 16px;
+    min-height: 42px;
+    border-bottom: 1px solid #2e2a25;
+    background: #1a1814;
+  }
+  .desk-filter-chips {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+  .desk-filter-chip,
+  .desk-sort-control {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #5a5248;
+    font: inherit;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+  }
+  .desk-filter-chip {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+  .desk-filter-chip:hover,
+  .desk-sort-control:hover {
+    color: #b0a89e;
+    background: rgba(255,255,255,0.04);
+  }
+  .desk-filter-chip.active {
+    color: #c9714a;
+    background: rgba(201,113,74,0.1);
+    border-color: rgba(201,113,74,0.2);
+  }
+  .desk-sort-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+  .desk-sort-control strong { color: #a09284; font-weight: 500; }
   .desk-size input {
     width: 88px;
     accent-color: #c9714a;
@@ -1468,6 +1516,8 @@ html.standalone-webapp .add-popup {
 .sbs-results::-webkit-scrollbar { display: none; }
 
 .sbs-palette-footer { display: none; }
+
+.desk-toolbar { display: none; }
 
 /* ── SHELF SEARCH INPUT ROW (inside sheet) ── */
 .sbs-input-row {
@@ -3897,6 +3947,8 @@ html.standalone-webapp .add-popup {
   .dsb-backdrop { display: none !important; }
 
   .search-bar:focus-within,
+  .desk-filter-chip:focus-visible,
+  .desk-sort-control:focus-visible,
   .add-btn:focus-visible,
   .sb-item:focus-visible,
   .sb-sub-item:focus-visible,

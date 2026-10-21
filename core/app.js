@@ -3221,6 +3221,14 @@ function updateDeskHeader() {
   const n = visible.filter(b => b.status === currentFilter).length;
   titleEl.textContent = currentFilter;
   countEl.textContent = `${n} ${n === 1 ? 'book' : 'books'}`;
+  document.querySelectorAll('[data-desk-filter]').forEach(btn => {
+    const active = btn.dataset.deskFilter === currentFilter;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)' };
+  const toolbarSort = document.getElementById('deskToolbarSortValue');
+  if (toolbarSort) toolbarSort.textContent = sortMap[currentSort] || currentSort;
 }
 
 function setFilter(filter) {
@@ -3298,6 +3306,12 @@ function initDesktopNav() {
   });
 
   bind('deskSortRow', e => openSortMenu(e.currentTarget));
+  bind('deskToolbarSort', e => openSortMenu(e.currentTarget));
+  document.querySelectorAll('[data-desk-filter]').forEach(btn => {
+    if (btn.dataset.bound === 'true') return;
+    btn.dataset.bound = 'true';
+    btn.addEventListener('click', () => setFilter(btn.dataset.deskFilter));
+  });
   bind('deskNavLists', async () => {
     closeDesktopNavPanels();
     setDesktopNavActive('deskNavLists');
