@@ -4084,6 +4084,8 @@ html.standalone-webapp .add-popup {
 
   /* Filters and sorting live in the desktop content toolbar. */
   #deskShelfSub { display: none !important; }
+  #floatingBar,
+  #publicFloatingBar { display: none !important; }
 
   .search-bar:focus-within,
   .desk-filter-chip:focus-visible,
