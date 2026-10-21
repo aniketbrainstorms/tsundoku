@@ -4228,6 +4228,12 @@ html.standalone-webapp .add-popup {
     border-left: 1px solid #2e2a25;
     background: #1a1814 !important;
   }
+  .shelf-overlay.nav-behind,
+  .author-overlay.nav-behind {
+    transform: translateX(-100%) !important;
+    opacity: 0;
+    pointer-events: none;
+  }
   .sbs-backdrop { z-index: 91; }
   .sbs-sheet {
     z-index: 92;
