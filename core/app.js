@@ -3303,6 +3303,17 @@ function setDesktopNavActive(activeId) {
   }
 }
 
+function setDesktopSidebarCollapsed(collapsed) {
+  const appScreen = document.getElementById('appScreen');
+  const toggle = document.getElementById('deskSidebarToggle');
+  if (!appScreen || !toggle) return;
+  appScreen.classList.toggle('desk-sidebar-collapsed', collapsed);
+  toggle.setAttribute('aria-expanded', String(!collapsed));
+  toggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+  toggle.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  localStorage.setItem('tsd_sidebar_collapsed', collapsed ? '1' : '0');
+}
+
 function toggleDeskAccountPanel() {
   const panel = document.getElementById('deskAccountPanel');
   const pill = document.getElementById('deskProfilePill');
@@ -3319,6 +3330,17 @@ function initDesktopNav() {
     node.dataset.bound = 'true';
     node.addEventListener('click', handler);
   };
+
+  const sidebarToggle = document.getElementById('deskSidebarToggle');
+  if (sidebarToggle && sidebarToggle.dataset.bound !== 'true') {
+    sidebarToggle.dataset.bound = 'true';
+    setDesktopSidebarCollapsed(localStorage.getItem('tsd_sidebar_collapsed') === '1');
+    sidebarToggle.addEventListener('click', e => {
+      e.stopPropagation();
+      const collapsed = document.getElementById('appScreen')?.classList.contains('desk-sidebar-collapsed');
+      setDesktopSidebarCollapsed(!collapsed);
+    });
+  }
 
   bind('deskNavShelf', () => {
     closeDesktopNavPanels();

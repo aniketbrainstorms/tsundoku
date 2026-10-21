@@ -231,6 +231,7 @@
 .desk-detail-panel,
 .desk-hamburger,
 .dsb-backdrop { display: none; }
+.desk-sidebar-toggle { display: none; }
 * {
   margin: 0; padding: 0; box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -616,6 +617,7 @@ html.standalone-webapp .add-popup {
 @media (min-width: 900px) and (orientation: landscape) { .book-grid { grid-template-columns: repeat(8, 1fr); } }
 
 @media (min-width: 1024px) {
+  .app-screen { --desk-sidebar-w: 210px; }
   #app {
     flex-direction: row;
   }
@@ -632,8 +634,8 @@ html.standalone-webapp .add-popup {
   /* Desktop Sidebar Layout */
   .sidebar {
     display: flex !important;
-    width: 210px;
-    min-width: 210px;
+    width: var(--desk-sidebar-w);
+    min-width: var(--desk-sidebar-w);
     background: #1e1b17;
     border-right: 1px solid #2e2a25;
     flex-direction: column;
@@ -643,7 +645,19 @@ html.standalone-webapp .add-popup {
     position: sticky;
     top: 0;
     z-index: 28;
+    transition: width 0.22s cubic-bezier(0.32,0.72,0,1), min-width 0.22s cubic-bezier(0.32,0.72,0,1);
   }
+  .sb-brand-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 22px; }
+  .sb-brand-row .sb-logo { margin-bottom: 0; }
+  .desk-sidebar-toggle {
+    display: flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; padding: 0; flex-shrink: 0;
+    border: 1px solid transparent; border-radius: 7px;
+    background: transparent; color: #5a5248; cursor: pointer;
+    transition: color 0.15s, background 0.15s, transform 0.22s;
+  }
+  .desk-sidebar-toggle:hover { color: #b0a89e; background: rgba(255,255,255,0.05); }
+  .desk-sidebar-toggle svg { transition: transform 0.22s; }
   .sb-top {
     padding: 22px 14px 0;
     flex-shrink: 0;
@@ -3947,6 +3961,51 @@ html.standalone-webapp .add-popup {
   .desk-hamburger { display: none !important; }
   .dsb-backdrop { display: none !important; }
 
+  .app-screen.desk-sidebar-collapsed {
+    --desk-sidebar-w: 64px;
+  }
+  .app-screen.desk-sidebar-collapsed .sb-top {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .app-screen.desk-sidebar-collapsed .sb-brand-row { justify-content: center; }
+  .app-screen.desk-sidebar-collapsed .sb-logo,
+  .app-screen.desk-sidebar-collapsed .sb-label,
+  .app-screen.desk-sidebar-collapsed .sb-sub,
+  .app-screen.desk-sidebar-collapsed .sb-profile-name,
+  .app-screen.desk-sidebar-collapsed .sb-profile-chevron,
+  .app-screen.desk-sidebar-collapsed .sb-count,
+  .app-screen.desk-sidebar-collapsed .sb-sort-row {
+    display: none !important;
+  }
+  .app-screen.desk-sidebar-collapsed .sb-item {
+    justify-content: center;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 0;
+  }
+  .app-screen.desk-sidebar-collapsed .sb-item svg { flex-shrink: 0; }
+  .app-screen.desk-sidebar-collapsed .sb-divider { margin-left: 8px; margin-right: 8px; }
+  .app-screen.desk-sidebar-collapsed .sb-share-btn {
+    justify-content: center;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 0;
+  }
+  .app-screen.desk-sidebar-collapsed .sb-profile {
+    justify-content: center;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .app-screen.desk-sidebar-collapsed .sb-account-panel {
+    left: 58px;
+    right: auto;
+    bottom: 8px;
+    width: 190px;
+  }
+  .app-screen.desk-sidebar-collapsed .desk-sidebar-toggle svg { transform: rotate(180deg); }
+  .app-screen.desk-sidebar-collapsed #profileModal { width: var(--desk-sidebar-w) !important; }
+
   .search-bar:focus-within,
   .desk-filter-chip:focus-visible,
   .desk-sort-control:focus-visible,
@@ -4221,7 +4280,7 @@ html.standalone-webapp .add-popup {
   #genreDetailOverlay,
   #listDetailOverlay {
     position: absolute !important;
-    inset: 0 0 0 210px !important;
+    inset: 0 0 0 var(--desk-sidebar-w, 210px) !important;
     width: auto !important;
     height: auto !important;
     min-height: 100%;
