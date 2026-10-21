@@ -1007,10 +1007,6 @@ function getSortedFiltered() {
       if (genreCmp !== 0) return genreCmp;
       return (a.title || '').localeCompare(b.title || '');
     }
-    if (currentSort === 'rating') {
-      const ratingCmp = (b.rating || 0) - (a.rating || 0);
-      if (ratingCmp !== 0) return ratingCmp;
-    }
     return new Date(b.created_at) - new Date(a.created_at);
   });
   return list;
@@ -1569,7 +1565,7 @@ function setSort(sortType) {
   document.querySelectorAll('#sortMenu .qm-item').forEach(btn => btn.classList.toggle('current-status', btn.dataset.sort === sortType));
   
   // Desktop sidebar sort label sync
-  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)', rating: 'rating (high–low)' };
+  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)' };
   const dSortVal = document.getElementById('deskSortVal');
   if (dSortVal) dSortVal.textContent = sortMap[sortType] || sortType;
 
@@ -3674,7 +3670,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
 
     const sort = cfg.getSort();
 
-    if (sort === 'recent' || sort === 'rating') {
+    if (sort === 'recent') {
       bar.classList.remove('visible');
       hideBubble(ctx);
       return;
