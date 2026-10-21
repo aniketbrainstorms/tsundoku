@@ -4228,6 +4228,16 @@ html.standalone-webapp .add-popup {
     border-left: 1px solid #2e2a25;
     background: #1a1814 !important;
   }
+  /* List detail is nested inside the lists panel, so it must fill that
+     already-offset workspace instead of applying the desktop offset twice. */
+  #listsOverlay > #listDetailOverlay {
+    inset: 0 !important;
+    z-index: 90 !important;
+  }
+  #listsOverlay:has(> #listDetailOverlay.open) > :not(#listDetailOverlay) {
+    visibility: hidden;
+    pointer-events: none;
+  }
   .shelf-overlay.nav-behind,
   .author-overlay.nav-behind {
     transform: translateX(-100%) !important;
