@@ -1210,7 +1210,7 @@ function _renderGridIntoEl(grid, filter) {
       <p>Nothing here yet.<br>Tap <strong style="color:var(--accent)">+</strong> to search and add a book.</p></div>`;
     return;
   }
-  if (filter === 'reading' && !useDesktopShelfGrid) {
+  if (filter === 'reading') {
     grid.classList.add('reading-mode');
     grid.innerHTML = filtered.map((b, i) => readingCardHtml(b, i)).join('');
     grid.querySelectorAll('.reading-card').forEach(attachReadingCardEvents);
