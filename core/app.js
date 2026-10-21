@@ -5761,6 +5761,7 @@ function _swipePreRenderAll(force) {
 
     // Open
     panel.classList.add('ddp-open');
+    panel.setAttribute('aria-hidden', 'false');
     if (bookGrid) bookGrid.classList.add('grid-narrow');
     document.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
     const card = bookGrid?.querySelector(`.book-card[data-id="${book.id}"]`);
@@ -5770,6 +5771,7 @@ function _swipePreRenderAll(force) {
   function closeDDP() {
     if (!panel) return;
     panel.classList.remove('ddp-open');
+    panel.setAttribute('aria-hidden', 'true');
     if (bookGrid) bookGrid.classList.remove('grid-narrow');
     document.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
     ddpSelectedId = null;
