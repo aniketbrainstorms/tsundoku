@@ -1518,6 +1518,7 @@ html.standalone-webapp .add-popup {
 .sbs-palette-footer { display: none; }
 
 .desk-toolbar { display: none; }
+.desk-card-actions { display: none; }
 
 /* ── SHELF SEARCH INPUT ROW (inside sheet) ── */
 .sbs-input-row {
@@ -4096,6 +4097,41 @@ html.standalone-webapp .add-popup {
   .book-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+  .book-card:hover .desk-card-actions,
+  .book-card:focus-within .desk-card-actions {
+    display: flex;
+  }
+  .desk-card-actions {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    z-index: 3;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 7px;
+    background: rgba(18,15,12,0.88);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  }
+  .desk-card-actions button {
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #a09284;
+    font: 600 12px/1 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+  .desk-card-actions button:hover {
+    background: rgba(201,113,74,0.18);
+    color: #efe6dc;
   }
   .lo-card:hover,
   .al-author-row:hover,

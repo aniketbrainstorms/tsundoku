@@ -1209,6 +1209,11 @@ function _renderGridIntoEl(grid, filter) {
     grid.innerHTML = filtered.map((b, i) => `
       <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
         ${coverHtml(b)}<div class="status-dot ${b.status}"></div>
+        <div class="desk-card-actions">
+          <button type="button" data-desktop-card-action="status" title="${b.status === 'read' ? 'Mark unread' : 'Mark read'}" aria-label="${b.status === 'read' ? 'Mark unread' : 'Mark read'}">✓</button>
+          <button type="button" data-desktop-card-action="list" title="Add to list" aria-label="Add to list">≡</button>
+          <button type="button" data-desktop-card-action="menu" title="More actions" aria-label="More actions">•••</button>
+        </div>
       </div>`).join('');
     grid.querySelectorAll('.book-card').forEach(card => {
       const id = card.dataset.id;
@@ -1219,6 +1224,18 @@ function _renderGridIntoEl(grid, filter) {
         if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) { openDetailModal(id); return; }
         if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
         else openQuickMenu(id, card);
+      });
+      card.querySelectorAll('[data-desktop-card-action]').forEach(action => {
+        action.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return;
+          qmBookId = id;
+          const nextStatus = books.find(book => book.id === id)?.status === 'read' ? 'unread' : 'read';
+          if (action.dataset.desktopCardAction === 'status') quickSetStatus(nextStatus);
+          if (action.dataset.desktopCardAction === 'list') addToListFromMenu();
+          if (action.dataset.desktopCardAction === 'menu') openQuickMenu(id, card);
+        });
       });
     });
   }
