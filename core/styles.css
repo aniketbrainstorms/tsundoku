@@ -4238,9 +4238,11 @@ html.standalone-webapp .add-popup {
     visibility: hidden;
     pointer-events: none;
   }
-  .shelf-overlay.nav-behind,
-  .author-overlay.nav-behind {
+  /* Desktop pages behave like a workspace stack: only the active page is
+     visible, while the persistent sidebar remains outside this stack. */
+  .nav-panel.nav-behind {
     transform: translateX(-100%) !important;
+    visibility: hidden !important;
     opacity: 0;
     pointer-events: none;
   }
