@@ -4971,7 +4971,7 @@ html.standalone-webapp .add-popup {
     background: rgba(0,0,0,0.68);
   }
   .om-sh {
-    width: min(560px, calc(100vw - 48px));
+    width: min(420px, calc(100vw - 48px));
     max-height: 80vh;
     border: 1px solid var(--border);
     border-radius: 16px;
