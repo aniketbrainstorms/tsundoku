@@ -78,6 +78,8 @@ function setTheme(theme) {
 })();
 
 // ── DEVICE DETECTION ──
+const DESKTOP_MIN_WIDTH = 1024;
+const DESKTOP_MEDIA_QUERY = `(min-width: ${DESKTOP_MIN_WIDTH}px)`;
 const isTouch = () => window.matchMedia('(hover:none)').matches;
 
 function updateHintBar() {
@@ -1186,7 +1188,7 @@ function attachReadingCardEvents(card) {
   });
 }
 function _renderGridIntoEl(grid, filter) {
-  const useDesktopShelfGrid = window.matchMedia('(min-width: 1024px)').matches;
+  const useDesktopShelfGrid = window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
   const savedFilter = currentFilter;
   currentFilter = filter;
   const filtered = getSortedFiltered();
@@ -1226,7 +1228,7 @@ function renderGrid() {
   updateTabCounts();
   updateDeskHeader();
   _swipeDirty = true;
-  const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+  const isDesktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
 
   if (isDesktop) {
     // Desktop: single pane, use legacy #bookGrid alias
@@ -1292,7 +1294,7 @@ function openShelfSearch() {
   setTimeout(() => {
     const input = document.getElementById('shelfSearchInput');
     if (input) input.focus();
-  }, window.matchMedia('(min-width: 1024px)').matches ? 40 : 380);
+  }, window.matchMedia(DESKTOP_MEDIA_QUERY).matches ? 40 : 380);
 }
 
 function closeShelfSearch() {
@@ -3150,7 +3152,7 @@ function setFilter(filter) {
   // Mobile: all three panes are already rendered, so a tab tap is just a swipe.
   // Slide there with the same spring instead of cutting instantly and re-rendering
   // (a re-render replays every card's entrance animation).
-  if (_gridsReady && window._swipeEngine && !window.matchMedia('(min-width: 1024px)').matches) {
+  if (_gridsReady && window._swipeEngine && !window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
     document.getElementById('deskNavShelf')?.classList.add('active');
     document.getElementById('deskNavLists')?.classList.remove('active');
     document.getElementById('deskNavAuthors')?.classList.remove('active');
@@ -3291,7 +3293,7 @@ if (document.readyState === 'loading') {
 
 // ── DESKTOP KEYBOARD SHORTCUTS (additive only — no existing functions modified) ──
 (function () {
-  const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+  const isDesktop = () => window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
   const isTypingTarget = el => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
   const anyOverlayOpen = () => document.querySelector('.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open');
 
@@ -5321,7 +5323,7 @@ function _swipeStripSnapTo(filter, animate) {
 }
 
 function _swipePreRenderAll(force) {
-  if (window.matchMedia('(min-width: 1024px)').matches) return;
+  if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return;
   if (_swipeRendered && !_swipeDirty && !force) return; // nothing changed — skip, no blink
   window._swipeNoStagger = true;
   const strip = document.getElementById('swipeStrip');
@@ -5346,7 +5348,7 @@ function _swipePreRenderAll(force) {
   const MAX_FLING       = 3500;   // px/s cap on the velocity handed to the spring
   const TAP_KICK        = 8;      // tab-tap lift-off speed, per px of distance (px/s)
 
-  const isDesktop = () => window.innerWidth >= 1024;
+  const isDesktop = () => window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
   const container = document.getElementById('mainGridContainer');
   if (!container) return;
 
@@ -5590,7 +5592,7 @@ function _swipePreRenderAll(force) {
 
 // ─── DESKTOP DETAIL PANEL ──────────────────────────────────────────────────
 ;(function () {
-  const isDesktopLayout = () => window.innerWidth >= 1024;
+  const isDesktopLayout = () => window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
   let ddpSelectedId = null;
 
   // ── Hamburger (tablet) ──
