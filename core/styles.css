@@ -1076,6 +1076,24 @@ html.standalone-webapp .add-popup {
     font-size: 10px;
   }
   .desk-sort-control strong { color: #a09284; font-weight: 500; }
+  .desk-view-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #5a5248;
+    font: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+  }
+  .desk-view-control:hover { color: #b0a89e; background: rgba(255,255,255,0.04); }
+  .desk-view-icon-list { display: none; }
+  .desk-view-control[aria-pressed="true"] .desk-view-icon-grid { display: none; }
+  .desk-view-control[aria-pressed="true"] .desk-view-icon-list { display: block; }
   .desk-size input {
     width: 88px;
     accent-color: #c9714a;
@@ -1153,6 +1171,43 @@ html.standalone-webapp .add-popup {
     align-content: start;
     gap: 9px;
   }
+  .main-content-wrap .book-grid.desk-list-view {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .main-content-wrap .book-grid.desk-list-view .book-card {
+    width: 100%;
+    height: 72px;
+    min-height: 72px;
+    aspect-ratio: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 10px 6px 6px;
+    border: 1px solid transparent;
+    background: var(--surface2);
+  }
+  .main-content-wrap .book-grid.desk-list-view .book-card:hover,
+  .main-content-wrap .book-grid.desk-list-view .book-card:focus-visible {
+    border-color: var(--border);
+    outline: none;
+  }
+  .main-content-wrap .book-grid.desk-list-view .book-card > img,
+  .main-content-wrap .book-grid.desk-list-view .book-card > .book-placeholder {
+    width: 44px;
+    height: 60px;
+    flex: 0 0 44px;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+  .book-card-info { display: none; min-width: 0; flex: 1; }
+  .main-content-wrap .book-grid.desk-list-view .book-card-info { display: block; }
+  .book-card-title { color: var(--text); font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .book-card-author { color: var(--text-muted); font-size: 11px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .main-content-wrap .book-grid.desk-list-view .status-dot { top: 10px; right: 10px; }
+  .main-content-wrap .book-grid.desk-list-view .desk-card-actions { right: 8px; }
   #bookGrid.grid-narrow {
     grid-template-columns: repeat(auto-fill, minmax(78px, 96px)) !important;
     gap: 8px;

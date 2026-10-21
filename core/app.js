@@ -30,6 +30,7 @@ function _updateAppRecede() {
 
 // ── STATE ──
 let books = [], currentFilter = 'reading';
+let desktopLibraryView = localStorage.getItem('tsd_library_view') === 'list' ? 'list' : 'grid';
 let addStatus = 'unread', editStatus = 'unread';
 let addOwnership = 'owned';
 let addCoverFile = null, addCoverUrl = null;
@@ -1189,6 +1190,8 @@ function attachReadingCardEvents(card) {
 }
 function _renderGridIntoEl(grid, filter) {
   const useDesktopShelfGrid = window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
+  if (!grid) return;
+  grid.classList.toggle('desk-list-view', useDesktopShelfGrid && desktopLibraryView === 'list');
   const savedFilter = currentFilter;
   currentFilter = filter;
   const filtered = getSortedFiltered();
@@ -1207,8 +1210,8 @@ function _renderGridIntoEl(grid, filter) {
   } else {
     grid.classList.remove('reading-mode');
     grid.innerHTML = filtered.map((b, i) => `
-      <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
-        ${coverHtml(b)}<div class="status-dot ${b.status}"></div>
+      <div class="book-card" tabindex="0" role="button" aria-label="Open ${escapeAttr(b.title || 'book')}, ${escapeAttr(b.author || 'unknown author')}" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
+        ${coverHtml(b)}<div class="book-card-info"><div class="book-card-title">${escapeHtml(b.title || '')}</div><div class="book-card-author">${escapeHtml(b.author || '')}</div></div><div class="status-dot ${b.status}"></div>
         <div class="desk-card-actions">
           <button type="button" data-desktop-card-action="status" title="${b.status === 'read' ? 'Mark unread' : 'Mark read'}" aria-label="${b.status === 'read' ? 'Mark unread' : 'Mark read'}">✓</button>
           <button type="button" data-desktop-card-action="list" title="Add to list" aria-label="Add to list">≡</button>
@@ -3246,6 +3249,22 @@ function updateDeskHeader() {
   const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)' };
   const toolbarSort = document.getElementById('deskToolbarSortValue');
   if (toolbarSort) toolbarSort.textContent = sortMap[currentSort] || currentSort;
+  const viewToggle = document.getElementById('deskViewToggle');
+  const viewLabel = document.getElementById('deskViewToggleLabel');
+  const listView = desktopLibraryView === 'list';
+  if (viewToggle) {
+    viewToggle.setAttribute('aria-pressed', String(listView));
+    viewToggle.setAttribute('aria-label', listView ? 'Use grid view' : 'Use list view');
+    viewToggle.title = listView ? 'Use grid view' : 'Use list view';
+  }
+  if (viewLabel) viewLabel.textContent = listView ? 'grid' : 'list';
+}
+
+function toggleDesktopLibraryView() {
+  desktopLibraryView = desktopLibraryView === 'grid' ? 'list' : 'grid';
+  localStorage.setItem('tsd_library_view', desktopLibraryView);
+  updateDeskHeader();
+  renderGrid();
 }
 
 function setFilter(filter) {
@@ -3360,6 +3379,7 @@ function initDesktopNav() {
 
   bind('deskSortRow', e => openSortMenu(e.currentTarget));
   bind('deskToolbarSort', e => openSortMenu(e.currentTarget));
+  bind('deskViewToggle', toggleDesktopLibraryView);
   document.querySelectorAll('[data-desk-filter]').forEach(btn => {
     if (btn.dataset.bound === 'true') return;
     btn.dataset.bound = 'true';
@@ -3441,6 +3461,39 @@ if (document.readyState === 'loading') {
 
   document.addEventListener('keydown', e => {
     if (!isDesktop()) return;
+
+    if (!isTypingTarget(document.activeElement) && !anyOverlayOpen()) {
+      const cards = Array.from(document.querySelectorAll('.swipe-pane.active .book-card'));
+      const focusedCard = document.activeElement?.classList.contains('book-card') ? document.activeElement : null;
+      if (cards.length && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        const currentIndex = Math.max(0, cards.indexOf(focusedCard));
+        let nextIndex = currentIndex;
+        if (e.key === 'ArrowLeft') nextIndex = Math.max(0, currentIndex - 1);
+        if (e.key === 'ArrowRight') nextIndex = Math.min(cards.length - 1, currentIndex + 1);
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          const firstTop = cards[0].getBoundingClientRect().top;
+          const columns = desktopLibraryView === 'list'
+            ? 1
+            : Math.max(1, cards.filter(card => Math.abs(card.getBoundingClientRect().top - firstTop) < 4).length);
+          nextIndex = e.key === 'ArrowUp'
+            ? Math.max(0, currentIndex - columns)
+            : Math.min(cards.length - 1, currentIndex + columns);
+        }
+        e.preventDefault();
+        cards[nextIndex].focus();
+        return;
+      }
+      if (e.key === 'Enter' && focusedCard) {
+        e.preventDefault();
+        focusedCard.click();
+        return;
+      }
+      if (e.key.toLowerCase() === 'g') {
+        e.preventDefault();
+        toggleDesktopLibraryView();
+        return;
+      }
+    }
 
     // "/" or ⌘K / Ctrl+K → open shelf search
     const wantsSearch = e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k');
