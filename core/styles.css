@@ -4212,6 +4212,22 @@ html.standalone-webapp .add-popup {
   .book-search-overlay .bs-title { font-size: 15px; }
   .book-search-overlay .bs-input { font-size: 14px; padding: 10px 12px; }
   .book-search-overlay .bs-state { padding: 34px 0; }
+
+  /* Keep desktop navigation pages beside the persistent sidebar. */
+  #listsOverlay,
+  #authorsListOverlay,
+  #authorOverlay,
+  #genresListOverlay,
+  #genreDetailOverlay,
+  #listDetailOverlay {
+    position: absolute !important;
+    inset: 0 0 0 210px !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 100%;
+    border-left: 1px solid #2e2a25;
+    background: #1a1814 !important;
+  }
   .sbs-backdrop { z-index: 91; }
   .sbs-sheet {
     z-index: 92;
