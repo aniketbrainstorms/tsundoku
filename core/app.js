@@ -3242,6 +3242,19 @@ function initDesktopNav() {
   });
   bind('deskSearchBar', openShelfSearch);
   bind('deskAddBtn', () => openBookSearch('shelf'));
+
+  const sizeEl = document.getElementById('deskCoverSize');
+  if (sizeEl && sizeEl.dataset.bound !== 'true') {
+    sizeEl.dataset.bound = 'true';
+    const saved = parseInt(localStorage.getItem('tsd_cover_w'), 10);
+    if (saved >= 72 && saved <= 160) sizeEl.value = saved;
+    document.documentElement.style.setProperty('--cover-w', sizeEl.value + 'px');
+    sizeEl.addEventListener('input', () => {
+      document.documentElement.style.setProperty('--cover-w', sizeEl.value + 'px');
+      localStorage.setItem('tsd_cover_w', sizeEl.value);
+      if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
+    });
+  }
   bind('deskProfilePill', () => {});
   bind('deskSettingsRow', () => showToast('Settings coming soon'));
   bind('deskLogoutBtn', signOut);
