@@ -1292,7 +1292,7 @@ function openShelfSearch() {
   setTimeout(() => {
     const input = document.getElementById('shelfSearchInput');
     if (input) input.focus();
-  }, 380);
+  }, window.matchMedia('(min-width: 1024px)').matches ? 40 : 380);
 }
 
 function closeShelfSearch() {
@@ -3308,6 +3308,13 @@ if (document.readyState === 'loading') {
       return;
     }
 
+    // Enter in search → open first book result (or the author row if no book matches)
+    if (e.key === 'Enter' && document.activeElement && document.activeElement.id === 'shelfSearchInput') {
+      const first = document.querySelector('#shelfSearchResults .sbs-result-row') || document.querySelector('#shelfSearchResults .bs-author-row');
+      if (first) { e.preventDefault(); first.click(); }
+      return;
+    }
+
     // Esc → close whatever desktop-only popup is open
     if (e.key === 'Escape') {
       const addPopup = document.getElementById('addPopup');
@@ -3316,6 +3323,8 @@ if (document.readyState === 'loading') {
       if (addPopup && addPopup.classList.contains('open') && typeof closeAddPopup === 'function') closeAddPopup();
       if (quickMenu && quickMenu.classList.contains('visible') && typeof closeQuickMenu === 'function') closeQuickMenu();
       if (sortMenu && sortMenu.classList.contains('visible') && typeof closeSortMenu === 'function') closeSortMenu();
+      const sbs = document.getElementById('shelfSearchOverlay');
+      if (sbs && sbs.classList.contains('open') && typeof closeShelfSearch === 'function') closeShelfSearch();
     }
   });
 })();
