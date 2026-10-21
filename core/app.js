@@ -3253,7 +3253,7 @@ function initDesktopNav() {
       if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
     });
   }
-  bind('deskProfilePill', () => {});
+  bind('deskProfilePill', toggleDeskAccountPanel);
   bind('deskSettingsRow', () => showToast('Settings coming soon'));
   bind('deskLogoutBtn', signOut);
   bind('deskShareShelfRow', e => {
