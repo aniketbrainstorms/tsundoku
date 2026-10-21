@@ -3424,6 +3424,8 @@ function initDesktopNav() {
   bind('deskProfilePill', toggleDeskAccountPanel);
   bind('deskSettingsRow', () => showToast('Settings coming soon'));
   bind('deskLogoutBtn', signOut);
+  bind('deskBackupRow', downloadLibraryBackup);
+  bind('deskImportRow', importLibraryBackup);
   bind('deskShareShelfRow', e => {
     e.stopPropagation();
     const pop = document.getElementById('deskSharePop');
@@ -3667,6 +3669,55 @@ function exportLibraryMarkdown() {
     }
   });
   document.body.appendChild(modal);
+}
+
+function downloadLibraryBackup() {
+  const payload = {
+    format: 'tsundoku-library-backup',
+    version: 1,
+    exported_at: new Date().toISOString(),
+    books: books.filter(b => b.status !== 'not-owned')
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `tsundoku-library-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showToast('Backup downloaded');
+}
+
+function importLibraryBackup() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json,.json';
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const incoming = Array.isArray(parsed) ? parsed : parsed?.books;
+      if (!Array.isArray(incoming)) throw new Error('Invalid backup format');
+      const existing = new Set(books.map(b => `${(b.title || '').trim().toLowerCase()}|${(b.author || '').trim().toLowerCase()}`));
+      const allowed = ['title', 'author', 'cover_url', 'status', 'genre', 'genres', 'primary_genre', 'total_pages', 'pages_read', 'borrowed_from', 'summary', 'series_name', 'series_index', 'is_omnibus'];
+      let added = 0;
+      for (const source of incoming) {
+        if (!source || typeof source.title !== 'string' || !source.title.trim()) continue;
+        const key = `${source.title.trim().toLowerCase()}|${(source.author || '').trim().toLowerCase()}`;
+        if (existing.has(key)) continue;
+        const book = Object.fromEntries(allowed.filter(k => source[k] !== undefined).map(k => [k, source[k]]));
+        if (!['reading', 'read', 'unread', 'not-owned'].includes(book.status)) book.status = 'unread';
+        const saved = await dbAdd(book);
+        if (saved) { books.push(saved); existing.add(key); added++; }
+      }
+      renderGrid();
+      showToast(added ? `${added} books imported` : 'No new books to import');
+    } catch (error) {
+      console.error('import backup error:', error);
+      showToast('Could not read backup');
+    }
+  });
+  input.click();
 }
 
 // ── BOOK PEEK PREVIEW ──────────────────────────────────────────────────────
