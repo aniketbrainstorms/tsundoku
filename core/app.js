@@ -1032,6 +1032,7 @@ function updateTabCounts() {
   if (el('deskCountReading')) el('deskCountReading').textContent = reading;
   if (el('deskCountRead')) el('deskCountRead').textContent = read;
   if (el('deskCountUnread')) el('deskCountUnread').textContent = unread;
+  updateDeskOverview();
 }
 function renderSkeleton() {
   const grid = document.getElementById('bookGrid');
@@ -3264,6 +3265,20 @@ function updateDeskHeader() {
     viewToggle.title = listView ? 'Use grid view' : 'Use list view';
   }
   if (viewLabel) viewLabel.textContent = listView ? 'grid' : 'list';
+}
+
+function updateDeskOverview() {
+  const visible = books.filter(b => !isHiddenFromShelf(b));
+  const values = {
+    deskOverviewTotal: visible.length,
+    deskOverviewReading: visible.filter(b => b.status === 'reading').length,
+    deskOverviewUnread: visible.filter(b => b.status === 'unread').length,
+    deskOverviewRead: visible.filter(b => b.status === 'read').length
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  });
 }
 
 function toggleDesktopLibraryView() {
