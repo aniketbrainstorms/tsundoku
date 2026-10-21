@@ -1312,7 +1312,7 @@ html.standalone-webapp .add-popup {
 
 @media (min-width: 1280px) {
   .book-grid {
-    grid-template-columns: repeat(auto-fill, minmax(86px, 108px)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(calc(var(--cover-w, 104px) - 18px), calc(var(--cover-w, 104px) + 4px))) !important;
   }
 }
 
