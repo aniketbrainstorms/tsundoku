@@ -3273,10 +3273,20 @@ function setFilter(filter) {
 }
 
 function closeDesktopNavPanels() {
-  ['listsOverlay', 'authorsListOverlay', 'genresListOverlay', 'profileModal'].forEach(id => {
+  [
+    'listsOverlay',
+    'listDetailOverlay',
+    'authorsListOverlay',
+    'authorOverlay',
+    'genresListOverlay',
+    'genreDetailOverlay',
+    'profileModal'
+  ].forEach(id => {
     const panel = document.getElementById(id);
     if (panel) panel.classList.remove('open', 'nav-behind');
   });
+  if (typeof ldCloseAddSheet === 'function') ldCloseAddSheet();
+  if (typeof closeQuickMenu === 'function') closeQuickMenu();
   _updateAppRecede();
 }
 
