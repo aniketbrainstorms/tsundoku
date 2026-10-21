@@ -4139,13 +4139,13 @@ html.standalone-webapp .add-popup {
   }
 
   .desk-detail-panel.ddp-open {
-    width: 256px;
-    min-width: 256px;
+    width: min(420px, 42vw);
+    min-width: min(420px, 42vw);
     border-left-width: 1px;
   }
 
   .ddp-inner {
-    width: 256px;
+    width: min(420px, 42vw);
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -4180,13 +4180,13 @@ html.standalone-webapp .add-popup {
   }
 
   .ddp-cover {
-    width: 100%; aspect-ratio: 2/3; border-radius: 9px;
+    width: 180px; height: 270px; aspect-ratio: 2/3; border-radius: 9px;
     overflow: hidden; background: #2c2823;
-    margin-bottom: 12px;
+    margin: 0 auto 16px;
     box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-    max-height: 170px;
+    max-height: none;
   }
-  .ddp-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .ddp-cover img { width: 100%; height: 100%; object-fit: contain; }
 
   .ddp-title { font-size: 14px; font-weight: 700; color: #e8e0d5; line-height: 1.25; letter-spacing: -0.02em; margin-bottom: 2px; }
   .ddp-author { font-size: 11px; color: #4a4540; margin-bottom: 2px; }
