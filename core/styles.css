@@ -4969,6 +4969,26 @@ html.standalone-webapp .add-popup {
 .habit-stats .stat .n { font-size: 15px; font-weight: 700; color: var(--text); }
 .habit-stats .stat .l { font-size: 10px; color: var(--text-muted); }
 
+/* Keep the expanded habit calendar useful on desktop without pushing the
+   reading shelf below the fold. Mobile/tablet retain the full calendar. */
+@media (min-width: 1024px) {
+  .main-content-wrap .habit-card.open .habit-body-inner {
+    max-height: 330px;
+    overflow-y: auto;
+    padding: 0 18px 14px;
+    scrollbar-width: thin;
+  }
+  .main-content-wrap .habit-card.open .cal-grid {
+    max-width: 620px;
+    margin: 0 auto;
+    gap: 5px;
+  }
+  .main-content-wrap .habit-card.open .cal-cell {
+    aspect-ratio: auto;
+    height: 52px;
+  }
+}
+
 
 
 /* ── OMNIBUS ── */
