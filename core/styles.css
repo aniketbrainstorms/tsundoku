@@ -4116,13 +4116,18 @@ html.standalone-webapp .add-popup {
   }
   .app-screen.desk-sidebar-collapsed .sb-brand-row { justify-content: center; }
   .app-screen.desk-sidebar-collapsed .sb-logo,
-  .app-screen.desk-sidebar-collapsed .sb-label,
   .app-screen.desk-sidebar-collapsed .sb-sub,
   .app-screen.desk-sidebar-collapsed .sb-profile-name,
   .app-screen.desk-sidebar-collapsed .sb-profile-chevron,
   .app-screen.desk-sidebar-collapsed .sb-count,
   .app-screen.desk-sidebar-collapsed .sb-sort-row {
     display: none !important;
+  }
+  .app-screen.desk-sidebar-collapsed .sb-label {
+    display: block !important;
+    visibility: hidden;
+    height: 11px;
+    margin-bottom: 4px;
   }
   .app-screen.desk-sidebar-collapsed .sb-item {
     justify-content: center;
