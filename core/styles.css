@@ -607,6 +607,7 @@ html.standalone-webapp .add-popup {
 
 .book-grid { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); }
 .book-grid.reading-mode { display: flex; flex-direction: column; gap: 10px; }
+.desk-overview { display: none; }
 
 @media (orientation: landscape) {
   .book-grid { grid-template-columns: repeat(7, 1fr); gap: 12px; }
