@@ -709,7 +709,6 @@ html.standalone-webapp .add-popup {
   .sb-item.active {
     color: #c9714a;
     background: rgba(201,113,74,0.1);
-    box-shadow: inset 2px 0 0 #c9714a;
   }
   .sb-sub {
     padding-left: 8px;
