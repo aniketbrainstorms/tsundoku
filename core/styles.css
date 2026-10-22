@@ -697,7 +697,11 @@ html.standalone-webapp .add-popup {
     color: #5a5248;
     cursor: pointer;
     flex-shrink: 0;
+    min-height: 34px;
+    box-sizing: border-box;
   }
+  .sb-item-label,
+  .sb-share-label { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sb-item:hover {
     color: #b0a89e;
     background: rgba(255,255,255,0.04);
@@ -804,6 +808,8 @@ html.standalone-webapp .add-popup {
     border: none;
     font-family: inherit;
     text-align: left;
+    min-height: 34px;
+    box-sizing: border-box;
   }
   .sb-share-btn:hover {
     color: #7a7068;
@@ -4105,8 +4111,8 @@ html.standalone-webapp .add-popup {
     --desk-sidebar-w: 64px;
   }
   .app-screen.desk-sidebar-collapsed .sb-top {
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 0;
+    padding-right: 0;
   }
   .app-screen.desk-sidebar-collapsed .sb-brand-row { justify-content: center; }
   .app-screen.desk-sidebar-collapsed .sb-logo,
@@ -4120,17 +4126,19 @@ html.standalone-webapp .add-popup {
   }
   .app-screen.desk-sidebar-collapsed .sb-item {
     justify-content: center;
-    padding-left: 8px;
-    padding-right: 8px;
-    font-size: 0;
+    gap: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
+  .app-screen.desk-sidebar-collapsed .sb-item-label,
+  .app-screen.desk-sidebar-collapsed .sb-share-label { display: none !important; }
   .app-screen.desk-sidebar-collapsed .sb-item svg { flex-shrink: 0; }
   .app-screen.desk-sidebar-collapsed .sb-divider { margin-left: 8px; margin-right: 8px; }
   .app-screen.desk-sidebar-collapsed .sb-share-btn {
     justify-content: center;
-    padding-left: 8px;
-    padding-right: 8px;
-    font-size: 0;
+    gap: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
   .app-screen.desk-sidebar-collapsed .sb-profile {
     justify-content: center;
