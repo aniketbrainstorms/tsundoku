@@ -1479,6 +1479,10 @@
           <input type="number" class="progress-input" id="progressTotalPages" placeholder="0" min="1" oninput="updateProgressPreview()" />
         </div>
       </div>
+      <div class="progress-quick-row" aria-label="Quick page updates">
+        <button type="button" class="progress-quick-btn" onclick="adjustProgress(10)">+10 pages</button>
+        <button type="button" class="progress-quick-btn" onclick="adjustProgress(25)">+25 pages</button>
+      </div>
       <div class="progress-preview">
         <div class="progress-preview-bar-bg">
           <div class="progress-preview-bar" id="progressPreviewBar" style="width:0%"></div>
