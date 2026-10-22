@@ -1209,6 +1209,19 @@ html.standalone-webapp .add-popup {
     display: flex;
     flex-direction: column;
   }
+  /* Reading cards need their own layout; the global cover slider must not
+     collapse them into cover-only tiles at its smallest setting. */
+  #pane-reading #bookGrid-reading {
+    display: grid !important;
+    --reading-card-min: clamp(320px, calc(var(--cover-w, 104px) * 3.25), 460px);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--reading-card-min)), 1fr)) !important;
+    align-content: start;
+    gap: 10px;
+  }
+  #pane-reading #bookGrid-reading .reading-card {
+    width: auto;
+    min-width: 0;
+  }
   .main-content-wrap .reading-card {
     width: 100%;
     min-width: 0;
