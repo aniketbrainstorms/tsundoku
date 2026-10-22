@@ -1200,7 +1200,8 @@ html.standalone-webapp .add-popup {
   }
   .main-content-wrap .book-grid.reading-mode {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    --reading-card-min: clamp(320px, calc(var(--cover-w, 104px) * 3.25), 460px);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--reading-card-min)), 1fr));
     align-content: start;
     gap: 10px;
   }
@@ -1217,6 +1218,14 @@ html.standalone-webapp .add-popup {
   .main-content-wrap .reading-card .rc-desktop-progress {
     display: block;
     margin-top: 10px;
+  }
+  .main-content-wrap .reading-card .rc-page-progress-track {
+    display: block;
+    height: 4px;
+    margin-top: 7px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.14);
   }
   .main-content-wrap .book-grid.desk-list-view .book-card {
     width: 100%;
@@ -1557,6 +1566,8 @@ html.standalone-webapp .add-popup {
 .rc-progress-pct { font-size: 11px; color: var(--accent); font-weight: 500; }
 .rc-wave-track { position: relative; width: 100%; height: 16px; }
 .rc-wave-track svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.rc-page-progress-track { display: none; }
+.rc-page-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
 .rc-no-progress { font-size: 11px; color: var(--text-muted); opacity: 0.6; margin-top: 8px; font-style: italic; }
 .rc-desktop-progress { display: none; }
 .rc-desktop-progress-track { height: 4px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.14); }
