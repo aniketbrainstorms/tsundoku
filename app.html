@@ -401,12 +401,17 @@
     <!-- Desktop Sidebar -->
     <div class="sidebar" id="deskSidebar">
       <div class="sb-top">
-        <span class="sb-logo">tsundoku</span>
+        <div class="sb-brand-row">
+          <span class="sb-logo">tsundoku</span>
+          <button class="desk-sidebar-toggle" id="deskSidebarToggle" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+        </div>
 
         <div class="sb-label" style="margin-bottom:5px">Library</div>
         <div class="sb-item active" id="deskNavShelf">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          my shelf
+          <span class="sb-item-label">my shelf</span>
         </div>
         <div class="sb-sub" id="deskShelfSub">
           <div class="sb-sub-item active" data-filter="reading" id="deskFilterReading">
@@ -429,23 +434,24 @@
 
         <div class="sb-item" id="deskNavLists">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          my lists
+          <span class="sb-item-label">my lists</span>
         </div>
         <div class="sb-item" id="deskNavAuthors">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          authors
+          <span class="sb-item-label">authors</span>
         </div>
         <div class="sb-item" id="deskNavGenres">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor" stroke="none"/></svg>
-          genres
+          <span class="sb-item-label">genres</span>
         </div>
 
+      </div>
       <div class="sb-bottom">
         <div class="sb-divider" style="margin:0 8px 8px"></div>
         <div class="sb-share-wrap">
           <button class="sb-share-btn" id="deskShareBtn" aria-label="Share my shelf">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-            share my shelf
+            <span class="sb-share-label">share my shelf</span>
           </button>
           <div class="share-pop" id="deskSharePop" style="display:none">
             <div class="share-pop-label">public shelf link</div>
@@ -468,7 +474,7 @@
           <svg class="sb-profile-chevron" id="deskProfileChevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
         </div>
 
-        <div class="sb-account-panel open" id="deskAccountPanel">
+        <div class="sb-account-panel" id="deskAccountPanel">
           <div class="sb-account-row" style="cursor:default">
             <span class="sb-account-label">Appearance</span>
             <div class="sb-appearance-seg">
@@ -488,6 +494,14 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             Export library
           </div>
+          <div class="sb-account-row" id="deskBackupRow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>
+            Download backup
+          </div>
+          <div class="sb-account-row" id="deskImportRow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21V9"/><polyline points="7 14 12 9 17 14"/><path d="M5 3h14v4H5z"/></svg>
+            Import backup
+          </div>
           <div class="sb-account-sep"></div>
           <div class="sb-account-row" id="deskSettingsRow">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -499,7 +513,6 @@
           </div>
         </div>
       </div>
-    </div>
     </div>
 
     <!-- Mobile Header -->
@@ -560,6 +573,22 @@
         </div>
       </div>
 
+      <div class="desk-toolbar" id="deskToolbar" aria-label="Library controls">
+        <div class="desk-filter-chips" role="tablist" aria-label="Filter shelf">
+          <button class="desk-filter-chip active" data-desk-filter="reading" role="tab" aria-selected="true"><span>reading</span> <strong id="deskFilterCountReading">0</strong></button>
+          <button class="desk-filter-chip" data-desk-filter="read" role="tab" aria-selected="false"><span>read</span> <strong id="deskFilterCountRead">0</strong></button>
+          <button class="desk-filter-chip" data-desk-filter="unread" role="tab" aria-selected="false"><span>unread</span> <strong id="deskFilterCountUnread">0</strong></button>
+        </div>
+        <button class="desk-sort-control" id="deskToolbarSort" aria-label="Sort library">
+          <span>sort</span><strong id="deskToolbarSortValue">recently added</strong><span aria-hidden="true">⌄</span>
+        </button>
+        <button class="desk-view-control" id="deskViewToggle" type="button" aria-label="Use list view" aria-pressed="false">
+          <svg class="desk-view-icon-grid" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <svg class="desk-view-icon-list" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span id="deskViewToggleLabel">list</span>
+        </button>
+      </div>
+
       <!-- Main grid container -->
       <div class="grid-container" id="mainGridContainer">
         <div class="swipe-strip" id="swipeStrip">
@@ -615,7 +644,7 @@
     </div>
 
     <!-- DESKTOP RIGHT DETAIL PANEL -->
-    <aside class="desk-detail-panel" id="deskDetailPanel">
+    <aside class="desk-detail-panel" id="deskDetailPanel" role="complementary" aria-label="Book details" aria-hidden="true">
       <div class="ddp-inner">
         <button class="ddp-close" id="ddpClose" aria-label="Close detail panel">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -643,6 +672,8 @@
           </div>
           <div class="ddp-sum-label">summary</div>
           <p class="ddp-sum-text" id="ddpSummary">—</p>
+        </div>
+        <div class="ddp-actions">
           <button class="ddp-primary" id="ddpPrimary"></button>
           <button class="ddp-secondary" id="ddpSecondary"></button>
         </div>
@@ -749,7 +780,7 @@
 <!-- SHELF SEARCH — backdrop + unified sheet -->
 <div class="sbs-backdrop" id="shelfSearchBackdrop" onclick="closeShelfSearch()"></div>
 
-<div class="sbs-sheet" id="shelfSearchOverlay">
+<div class="sbs-sheet" id="shelfSearchOverlay" role="dialog" aria-modal="true" aria-label="Search library">
   <!-- Drag handle -->
   <div class="sbs-drag-handle-wrap" id="sbsDragHandle">
     <div class="sbs-drag-handle"></div>
@@ -759,7 +790,7 @@
   <div class="sbs-input-row">
     <div class="sbs-input-wrap">
       <svg class="sbs-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" class="sbs-input" id="shelfSearchInput" placeholder="Search your library…" oninput="onShelfOverlaySearch()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="font-size:16px" />
+      <input type="text" class="sbs-input" id="shelfSearchInput" placeholder="Search your library…" oninput="onShelfOverlaySearch()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="shelfSearchResults" style="font-size:16px" />
       <button class="sbs-clear-btn" id="shelfSearchClearBtn" onclick="clearShelfSearch()" style="opacity:0;pointer-events:none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -790,6 +821,11 @@
       <p class="search-library-title">Search books in your library</p>
       <p class="search-library-sub">Find titles, authors, or keywords from your reading, read, and unread lists</p>
     </div>
+  </div>
+  <div class="sbs-palette-footer" aria-hidden="true">
+    <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+    <span><kbd>enter</kbd> open</span>
+    <span><kbd>esc</kbd> close</span>
   </div>
 </div>
   
@@ -987,6 +1023,8 @@
     <button class="qm-item" data-sort="title" onclick="setSort('title')">Title (A–Z)</button>
     <button class="qm-item" data-sort="author" onclick="setSort('author')">Author (A–Z)</button>
     <button class="qm-item" data-sort="genre" onclick="setSort('genre')">Genre (A–Z)</button>
+    <button class="qm-item" data-sort="updated" onclick="setSort('updated')">Recently Updated</button>
+    <button class="qm-item" data-sort="remaining" onclick="setSort('remaining')">Pages Remaining</button>
   </div>
 
   <!-- SHELF SORT MENU -->

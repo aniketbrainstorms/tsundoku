@@ -30,6 +30,7 @@ function _updateAppRecede() {
 
 // ── STATE ──
 let books = [], currentFilter = 'reading';
+let desktopLibraryView = localStorage.getItem('tsd_library_view') === 'list' ? 'list' : 'grid';
 let addStatus = 'unread', editStatus = 'unread';
 let addOwnership = 'owned';
 let addCoverFile = null, addCoverUrl = null;
@@ -78,6 +79,8 @@ function setTheme(theme) {
 })();
 
 // ── DEVICE DETECTION ──
+const DESKTOP_MIN_WIDTH = 1024;
+const DESKTOP_MEDIA_QUERY = `(min-width: ${DESKTOP_MIN_WIDTH}px)`;
 const isTouch = () => window.matchMedia('(hover:none)').matches;
 
 function updateHintBar() {
@@ -1007,6 +1010,12 @@ function getSortedFiltered() {
       if (genreCmp !== 0) return genreCmp;
       return (a.title || '').localeCompare(b.title || '');
     }
+    if (currentSort === 'updated') return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
+    if (currentSort === 'remaining') {
+      const remainingA = Math.max(0, (a.total_pages || 0) - (a.pages_read || 0));
+      const remainingB = Math.max(0, (b.total_pages || 0) - (b.pages_read || 0));
+      return remainingB - remainingA || (a.title || '').localeCompare(b.title || '');
+    }
     return new Date(b.created_at) - new Date(a.created_at);
   });
   return list;
@@ -1023,6 +1032,7 @@ function updateTabCounts() {
   if (el('deskCountReading')) el('deskCountReading').textContent = reading;
   if (el('deskCountRead')) el('deskCountRead').textContent = read;
   if (el('deskCountUnread')) el('deskCountUnread').textContent = unread;
+  updateDeskOverview();
 }
 function renderSkeleton() {
   const grid = document.getElementById('bookGrid');
@@ -1045,7 +1055,14 @@ function readingCardHtml(book, i) {
         <div class="rc-wave-track" data-rc-wave data-percent="${pct}"></div>
         ${(window.OM && OM.is(book)) ? OM.card(book).segs : ''}
       </div>`
-    : `<p class="rc-no-progress">tap ✏️ to track progress</p>`;
+    : `<p class="rc-no-progress">tap ✏️ to track progress</p>
+      <div class="rc-desktop-progress" aria-label="${pagesRead} pages read">
+        <div class="rc-progress-meta">
+          <span class="rc-progress-label">${pagesRead} pages read</span>
+          <span class="rc-progress-pct">—</span>
+        </div>
+        <div class="rc-desktop-progress-track"><span></span></div>
+      </div>`;
   return `<div class="reading-card" data-id="${book.id}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
     <div class="rc-cover">${coverContent}</div>
     <div class="rc-info">
@@ -1057,6 +1074,16 @@ function readingCardHtml(book, i) {
     <button class="rc-edit-btn" data-id="${book.id}">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>
+  </div>`;
+}
+function desktopProgressHtml(book) {
+  const pagesRead = Math.max(0, Number(book.pages_read) || 0);
+  const totalPages = Math.max(0, Number(book.total_pages) || 0);
+  const pct = totalPages ? Math.min(100, Math.round((pagesRead / totalPages) * 100)) : 0;
+  const label = totalPages ? `${pagesRead} / ${totalPages} pages` : `${pagesRead} pages read`;
+  return `<div class="book-card-progress" aria-label="${label}">
+    <div class="book-card-progress-meta"><span>${label}</span><strong>${totalPages ? pct + '%' : '—'}</strong></div>
+    <div class="book-card-progress-track"><span style="width:${pct}%"></span></div>
   </div>`;
 }
 // ── READING PROGRESS WAVEFORM ──
@@ -1177,7 +1204,7 @@ function attachReadingCardEvents(card) {
   card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
   card.addEventListener('click', e => {
     if (e.target.closest('.rc-edit-btn')) return;
-    if (isTouch()) {
+    if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
       openDetailModal(id);
     } else {
       if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
@@ -1186,7 +1213,9 @@ function attachReadingCardEvents(card) {
   });
 }
 function _renderGridIntoEl(grid, filter) {
-  const useDesktopShelfGrid = window.matchMedia('(min-width: 1024px)').matches;
+  const useDesktopShelfGrid = window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
+  if (!grid) return;
+  grid.classList.toggle('desk-list-view', useDesktopShelfGrid && desktopLibraryView === 'list');
   const savedFilter = currentFilter;
   currentFilter = filter;
   const filtered = getSortedFiltered();
@@ -1198,15 +1227,20 @@ function _renderGridIntoEl(grid, filter) {
       <p>Nothing here yet.<br>Tap <strong style="color:var(--accent)">+</strong> to search and add a book.</p></div>`;
     return;
   }
-  if (filter === 'reading' && !useDesktopShelfGrid) {
+  if (filter === 'reading') {
     grid.classList.add('reading-mode');
     grid.innerHTML = filtered.map((b, i) => readingCardHtml(b, i)).join('');
     grid.querySelectorAll('.reading-card').forEach(attachReadingCardEvents);
   } else {
     grid.classList.remove('reading-mode');
     grid.innerHTML = filtered.map((b, i) => `
-      <div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
-        ${coverHtml(b)}<div class="status-dot ${b.status}"></div>
+      <div class="book-card" tabindex="0" role="button" aria-label="Open ${escapeAttr(b.title || 'book')}, ${escapeAttr(b.author || 'unknown author')}" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
+        ${coverHtml(b)}${filter === 'reading' ? desktopProgressHtml(b) : ''}<div class="book-card-info"><div class="book-card-title">${escapeHtml(b.title || '')}</div><div class="book-card-author">${escapeHtml(b.author || '')}</div></div><div class="status-dot ${b.status}"></div>
+        <div class="desk-card-actions">
+          <button type="button" data-desktop-card-action="status" title="${b.status === 'read' ? 'Mark unread' : 'Mark read'}" aria-label="${b.status === 'read' ? 'Mark unread' : 'Mark read'}">✓</button>
+          <button type="button" data-desktop-card-action="list" title="Add to list" aria-label="Add to list">≡</button>
+          <button type="button" data-desktop-card-action="menu" title="More actions" aria-label="More actions">•••</button>
+        </div>
       </div>`).join('');
     grid.querySelectorAll('.book-card').forEach(card => {
       const id = card.dataset.id;
@@ -1214,9 +1248,21 @@ function _renderGridIntoEl(grid, filter) {
       card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
       card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
       card.addEventListener('click', e => {
-        if (isTouch()) { openDetailModal(id); return; }
+        if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) { openDetailModal(id); return; }
         if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
         else openQuickMenu(id, card);
+      });
+      card.querySelectorAll('[data-desktop-card-action]').forEach(action => {
+        action.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return;
+          qmBookId = id;
+          const nextStatus = books.find(book => book.id === id)?.status === 'read' ? 'unread' : 'read';
+          if (action.dataset.desktopCardAction === 'status') quickSetStatus(nextStatus);
+          if (action.dataset.desktopCardAction === 'list') addToListFromMenu();
+          if (action.dataset.desktopCardAction === 'menu') openQuickMenu(id, card);
+        });
       });
     });
   }
@@ -1226,7 +1272,7 @@ function renderGrid() {
   updateTabCounts();
   updateDeskHeader();
   _swipeDirty = true;
-  const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+  const isDesktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
 
   if (isDesktop) {
     // Desktop: single pane, use legacy #bookGrid alias
@@ -1279,6 +1325,55 @@ function sbsClearRecents() {
   renderShelfSearchResults('');
 }
 
+let _sbsActiveIndex = -1;
+
+function _sbsSelectableItems() {
+  return [...document.querySelectorAll('#shelfSearchResults [data-sbs-selectable]')];
+}
+
+function _sbsSetActive(index) {
+  const items = _sbsSelectableItems();
+  if (!items.length) { _sbsActiveIndex = -1; return; }
+  _sbsActiveIndex = (index + items.length) % items.length;
+  items.forEach((item, i) => item.setAttribute('aria-selected', String(i === _sbsActiveIndex)));
+  const active = items[_sbsActiveIndex];
+  active.scrollIntoView({ block: 'nearest' });
+  document.getElementById('shelfSearchInput')?.setAttribute('aria-activedescendant', active.id || '');
+}
+
+function _sbsRunCommand(command) {
+  closeShelfSearch();
+  setTimeout(() => {
+    if (command === 'add') openBookSearch('shelf');
+    if (command === 'lists' && typeof window.openListsOverlay === 'function') window.openListsOverlay();
+    if (command === 'authors' && typeof openAuthorsOverlay === 'function') openAuthorsOverlay();
+    if (command === 'genres' && typeof openGenresOverlay === 'function') openGenresOverlay();
+  }, 140);
+}
+
+function _sbsHandleKeydown(e) {
+  if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return;
+  const input = document.getElementById('shelfSearchInput');
+  const sheet = document.getElementById('shelfSearchOverlay');
+  if (!input || !sheet?.classList.contains('open') || document.activeElement !== input) return;
+
+  const items = _sbsSelectableItems();
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (!items.length) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    _sbsSetActive(_sbsActiveIndex + (e.key === 'ArrowDown' ? 1 : -1));
+  } else if (e.key === 'Enter') {
+    const active = items[_sbsActiveIndex] || items[0];
+    if (!active) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    active.click();
+  }
+}
+
+document.addEventListener('keydown', _sbsHandleKeydown, true);
+
 function openShelfSearch() {
   const sheet = document.getElementById('shelfSearchOverlay');
   const backdrop = document.getElementById('shelfSearchBackdrop');
@@ -1291,8 +1386,13 @@ function openShelfSearch() {
 
   setTimeout(() => {
     const input = document.getElementById('shelfSearchInput');
-    if (input) input.focus();
-  }, window.matchMedia('(min-width: 1024px)').matches ? 40 : 380);
+    if (input) {
+      input.placeholder = window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+        ? 'Search books, authors, lists, actions…'
+        : 'Search your library…';
+      input.focus();
+    }
+  }, window.matchMedia(DESKTOP_MEDIA_QUERY).matches ? 40 : 380);
 }
 
 function closeShelfSearch() {
@@ -1306,7 +1406,12 @@ function closeShelfSearch() {
   backdrop.classList.remove('open');
 
   setTimeout(() => {
-    if (input) input.value = '';
+    if (input) {
+      input.value = '';
+      input.placeholder = 'Search your library…';
+      input.removeAttribute('aria-activedescendant');
+    }
+    _sbsActiveIndex = -1;
     const clearBtn = document.getElementById('shelfSearchClearBtn');
     if (clearBtn) { clearBtn.style.opacity = '0'; clearBtn.style.pointerEvents = 'none'; }
     _renderSbsResults('');
@@ -1336,6 +1441,21 @@ function _renderSbsResults(q) {
   if (!el) return;
 
   if (!q) {
+    if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+      el.innerHTML = [
+        ['add', '+', 'Add a book', 'Search, scan, or add manually'],
+        ['lists', '▦', 'Open my lists', 'Browse your custom collections'],
+        ['authors', '◎', 'Browse authors', 'See every author on your shelf'],
+        ['genres', '#', 'Browse genres', 'Explore books by genre']
+      ].map(([command, icon, label, hint], i) => `
+        <button class="sbs-command-row" id="sbsCommand-${command}" data-command="${command}" data-sbs-selectable role="option" aria-selected="${i === 0}">
+          <span class="sbs-command-icon" aria-hidden="true">${icon}</span>
+          <span class="sbs-command-copy"><span class="sbs-command-label">${label}</span><span class="sbs-command-hint">${hint}</span></span>
+        </button>`).join('');
+      _sbsActiveIndex = 0;
+      el.querySelectorAll('[data-command]').forEach(row => row.addEventListener('click', () => _sbsRunCommand(row.dataset.command)));
+      return;
+    }
     el.innerHTML = `<div class="search-library-state">
       <div class="search-library-icon">
         <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1399,7 +1519,7 @@ function _renderSbsResults(q) {
   const _sbsAuthorInitials = authorHit ? authorHit.split(/\s+/).filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('') || '?' : '?';
 
   const authorRowHtml = authorHit ? `
-    <div class="bs-author-row" id="sbsAuthorRow" data-author="${escapeAttr(authorHit)}">
+    <div class="bs-author-row" id="sbsAuthorRow" data-author="${escapeAttr(authorHit)}" data-sbs-selectable role="option" aria-selected="false">
       <div class="bs-author-photo" id="sbsAuthorPhoto">${_sbsAuthorImg ? `<img src="${escapeAttr(_sbsAuthorImg)}" onerror="this.parentElement.innerHTML='<span class=bs-author-initials>${escapeAttr(_sbsAuthorInitials)}</span>'" />` : `<span class="bs-author-initials">${escapeAttr(_sbsAuthorInitials)}</span>`}</div>
       <div class="bs-author-info">
         <div class="bs-author-name">${highlight(authorHit, q)}</div>
@@ -1410,7 +1530,7 @@ function _renderSbsResults(q) {
     <div class="bs-author-sep"></div>` : '';
 
   el.innerHTML = authorRowHtml + results.map((b, i) => `
-    <div class="sbs-result-row" data-id="${b.id}" style="animation-delay:${Math.min(i, 10) * 0.028}s">
+    <div class="sbs-result-row" id="sbsResult-${b.id}" data-id="${b.id}" data-sbs-selectable role="option" aria-selected="false" style="animation-delay:${Math.min(i, 10) * 0.028}s">
       <div class="sbs-result-cover">${coverHtml(b, 10)}</div>
       <div class="sbs-result-info">
         <div class="sbs-result-title">${highlight(b.title || '', q)}</div>
@@ -1449,6 +1569,7 @@ function _renderSbsResults(q) {
       setTimeout(() => openDetailModal(row.dataset.id), 140);
     });
   });
+  _sbsActiveIndex = -1;
 }
 
 // ── DRAG TO DISMISS ──
@@ -1565,7 +1686,7 @@ function setSort(sortType) {
   document.querySelectorAll('#sortMenu .qm-item').forEach(btn => btn.classList.toggle('current-status', btn.dataset.sort === sortType));
   
   // Desktop sidebar sort label sync
-  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)' };
+  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)', updated: 'recently updated', remaining: 'pages remaining' };
   const dSortVal = document.getElementById('deskSortVal');
   if (dSortVal) dSortVal.textContent = sortMap[sortType] || sortType;
 
@@ -2380,7 +2501,7 @@ function renderGenreDetailGrid() {
     card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
     card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
     card.addEventListener('click', e => {
-      if (isTouch()) { openDetailModal(id); return; }
+      if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) { openDetailModal(id); return; }
       if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
       else openQuickMenu(id, card);
     });
@@ -2444,7 +2565,7 @@ function renderMyShelfRows(list) {
     el.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, el); });
     el.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(el); });
     el.addEventListener('click', e => {
-      if (isTouch()) { openDetailModal(id); return; }
+      if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) { openDetailModal(id); return; }
       if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
       else openQuickMenu(id, el);
     });
@@ -2666,7 +2787,7 @@ function renderShelfGrid() {
     card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
     card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
     card.addEventListener('click', e => {
-      if (isTouch()) {
+      if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
         openDetailModal(id);
         return;
       }
@@ -2721,7 +2842,7 @@ function openBookSearch(context = 'shelf') {
   _updateAppRecede();
   const bar = document.getElementById('floatingBar');
   if (bar) bar.style.display = 'none';
-  setTimeout(() => document.getElementById('bsInput').focus(), 380);
+  setTimeout(() => document.getElementById('bsInput').focus(), window.matchMedia(DESKTOP_MEDIA_QUERY).matches ? 40 : 380);
 }
 function closeBookSearch() {
   const bsOverlay = document.getElementById('bookSearchOverlay');
@@ -3144,13 +3265,50 @@ function updateDeskHeader() {
   const n = visible.filter(b => b.status === currentFilter).length;
   titleEl.textContent = currentFilter;
   countEl.textContent = `${n} ${n === 1 ? 'book' : 'books'}`;
+  document.querySelectorAll('[data-desk-filter]').forEach(btn => {
+    const active = btn.dataset.deskFilter === currentFilter;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+  const counts = {
+    deskFilterCountReading: visible.filter(b => b.status === 'reading').length,
+    deskFilterCountUnread: visible.filter(b => b.status === 'unread').length,
+    deskFilterCountRead: visible.filter(b => b.status === 'read').length
+  };
+  Object.entries(counts).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  });
+  const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)' };
+  const toolbarSort = document.getElementById('deskToolbarSortValue');
+  if (toolbarSort) toolbarSort.textContent = sortMap[currentSort] || currentSort;
+  const viewToggle = document.getElementById('deskViewToggle');
+  const viewLabel = document.getElementById('deskViewToggleLabel');
+  const listView = desktopLibraryView === 'list';
+  if (viewToggle) {
+    viewToggle.setAttribute('aria-pressed', String(listView));
+    viewToggle.setAttribute('aria-label', listView ? 'Use grid view' : 'Use list view');
+    viewToggle.title = listView ? 'Use grid view' : 'Use list view';
+  }
+  if (viewLabel) viewLabel.textContent = listView ? 'grid' : 'list';
+}
+
+function updateDeskOverview() {
+  // Counts now live inside the desktop filter tabs.
+}
+
+function toggleDesktopLibraryView() {
+  desktopLibraryView = desktopLibraryView === 'grid' ? 'list' : 'grid';
+  localStorage.setItem('tsd_library_view', desktopLibraryView);
+  updateDeskHeader();
+  renderGrid();
 }
 
 function setFilter(filter) {
   // Mobile: all three panes are already rendered, so a tab tap is just a swipe.
   // Slide there with the same spring instead of cutting instantly and re-rendering
   // (a re-render replays every card's entrance animation).
-  if (_gridsReady && window._swipeEngine && !window.matchMedia('(min-width: 1024px)').matches) {
+  if (_gridsReady && window._swipeEngine && !window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
     document.getElementById('deskNavShelf')?.classList.add('active');
     document.getElementById('deskNavLists')?.classList.remove('active');
     document.getElementById('deskNavAuthors')?.classList.remove('active');
@@ -3171,10 +3329,24 @@ function setFilter(filter) {
 }
 
 function closeDesktopNavPanels() {
-  ['listsOverlay', 'authorsListOverlay', 'genresListOverlay', 'profileModal'].forEach(id => {
+  if (typeof ldOpenFrame !== 'undefined' && ldOpenFrame !== null) {
+    cancelAnimationFrame(ldOpenFrame);
+    ldOpenFrame = null;
+  }
+  [
+    'listsOverlay',
+    'listDetailOverlay',
+    'authorsListOverlay',
+    'authorOverlay',
+    'genresListOverlay',
+    'genreDetailOverlay',
+    'profileModal'
+  ].forEach(id => {
     const panel = document.getElementById(id);
     if (panel) panel.classList.remove('open', 'nav-behind');
   });
+  if (typeof ldCloseAddSheet === 'function') ldCloseAddSheet();
+  if (typeof closeQuickMenu === 'function') closeQuickMenu();
   _updateAppRecede();
 }
 
@@ -3185,6 +3357,17 @@ function setDesktopNavActive(activeId) {
   if (activeId !== 'deskNavShelf') {
     document.querySelectorAll('#deskShelfSub .sb-sub-item').forEach(el => el.classList.remove('active'));
   }
+}
+
+function setDesktopSidebarCollapsed(collapsed) {
+  const appScreen = document.getElementById('appScreen');
+  const toggle = document.getElementById('deskSidebarToggle');
+  if (!appScreen || !toggle) return;
+  appScreen.classList.toggle('desk-sidebar-collapsed', collapsed);
+  toggle.setAttribute('aria-expanded', String(!collapsed));
+  toggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+  toggle.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  localStorage.setItem('tsd_sidebar_collapsed', collapsed ? '1' : '0');
 }
 
 function toggleDeskAccountPanel() {
@@ -3204,6 +3387,17 @@ function initDesktopNav() {
     node.addEventListener('click', handler);
   };
 
+  const sidebarToggle = document.getElementById('deskSidebarToggle');
+  if (sidebarToggle && sidebarToggle.dataset.bound !== 'true') {
+    sidebarToggle.dataset.bound = 'true';
+    setDesktopSidebarCollapsed(localStorage.getItem('tsd_sidebar_collapsed') === '1');
+    sidebarToggle.addEventListener('click', e => {
+      e.stopPropagation();
+      const collapsed = document.getElementById('appScreen')?.classList.contains('desk-sidebar-collapsed');
+      setDesktopSidebarCollapsed(!collapsed);
+    });
+  }
+
   bind('deskNavShelf', () => {
     closeDesktopNavPanels();
     setDesktopNavActive('deskNavShelf');
@@ -3221,6 +3415,13 @@ function initDesktopNav() {
   });
 
   bind('deskSortRow', e => openSortMenu(e.currentTarget));
+  bind('deskToolbarSort', e => openSortMenu(e.currentTarget));
+  bind('deskViewToggle', toggleDesktopLibraryView);
+  document.querySelectorAll('[data-desk-filter]').forEach(btn => {
+    if (btn.dataset.bound === 'true') return;
+    btn.dataset.bound = 'true';
+    btn.addEventListener('click', () => setFilter(btn.dataset.deskFilter));
+  });
   bind('deskNavLists', async () => {
     closeDesktopNavPanels();
     setDesktopNavActive('deskNavLists');
@@ -3251,9 +3452,11 @@ function initDesktopNav() {
       if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
     });
   }
-  bind('deskProfilePill', () => {});
+  bind('deskProfilePill', toggleDeskAccountPanel);
   bind('deskSettingsRow', () => showToast('Settings coming soon'));
   bind('deskLogoutBtn', signOut);
+  bind('deskBackupRow', downloadLibraryBackup);
+  bind('deskImportRow', importLibraryBackup);
   bind('deskShareShelfRow', e => {
     e.stopPropagation();
     const pop = document.getElementById('deskSharePop');
@@ -3291,12 +3494,45 @@ if (document.readyState === 'loading') {
 
 // ── DESKTOP KEYBOARD SHORTCUTS (additive only — no existing functions modified) ──
 (function () {
-  const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+  const isDesktop = () => window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
   const isTypingTarget = el => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
   const anyOverlayOpen = () => document.querySelector('.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open');
 
   document.addEventListener('keydown', e => {
     if (!isDesktop()) return;
+
+    if (!isTypingTarget(document.activeElement) && !anyOverlayOpen()) {
+      const cards = Array.from(document.querySelectorAll('.swipe-pane.active .book-card'));
+      const focusedCard = document.activeElement?.classList.contains('book-card') ? document.activeElement : null;
+      if (cards.length && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        const currentIndex = Math.max(0, cards.indexOf(focusedCard));
+        let nextIndex = currentIndex;
+        if (e.key === 'ArrowLeft') nextIndex = Math.max(0, currentIndex - 1);
+        if (e.key === 'ArrowRight') nextIndex = Math.min(cards.length - 1, currentIndex + 1);
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          const firstTop = cards[0].getBoundingClientRect().top;
+          const columns = desktopLibraryView === 'list'
+            ? 1
+            : Math.max(1, cards.filter(card => Math.abs(card.getBoundingClientRect().top - firstTop) < 4).length);
+          nextIndex = e.key === 'ArrowUp'
+            ? Math.max(0, currentIndex - columns)
+            : Math.min(cards.length - 1, currentIndex + columns);
+        }
+        e.preventDefault();
+        cards[nextIndex].focus();
+        return;
+      }
+      if (e.key === 'Enter' && focusedCard) {
+        e.preventDefault();
+        focusedCard.click();
+        return;
+      }
+      if (e.key.toLowerCase() === 'g') {
+        e.preventDefault();
+        toggleDesktopLibraryView();
+        return;
+      }
+    }
 
     // "/" or ⌘K / Ctrl+K → open shelf search
     const wantsSearch = e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k');
@@ -3464,6 +3700,55 @@ function exportLibraryMarkdown() {
     }
   });
   document.body.appendChild(modal);
+}
+
+function downloadLibraryBackup() {
+  const payload = {
+    format: 'tsundoku-library-backup',
+    version: 1,
+    exported_at: new Date().toISOString(),
+    books: books.filter(b => b.status !== 'not-owned')
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `tsundoku-library-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showToast('Backup downloaded');
+}
+
+function importLibraryBackup() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json,.json';
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const incoming = Array.isArray(parsed) ? parsed : parsed?.books;
+      if (!Array.isArray(incoming)) throw new Error('Invalid backup format');
+      const existing = new Set(books.map(b => `${(b.title || '').trim().toLowerCase()}|${(b.author || '').trim().toLowerCase()}`));
+      const allowed = ['title', 'author', 'cover_url', 'status', 'genre', 'genres', 'primary_genre', 'total_pages', 'pages_read', 'borrowed_from', 'summary', 'series_name', 'series_index', 'is_omnibus'];
+      let added = 0;
+      for (const source of incoming) {
+        if (!source || typeof source.title !== 'string' || !source.title.trim()) continue;
+        const key = `${source.title.trim().toLowerCase()}|${(source.author || '').trim().toLowerCase()}`;
+        if (existing.has(key)) continue;
+        const book = Object.fromEntries(allowed.filter(k => source[k] !== undefined).map(k => [k, source[k]]));
+        if (!['reading', 'read', 'unread', 'not-owned'].includes(book.status)) book.status = 'unread';
+        const saved = await dbAdd(book);
+        if (saved) { books.push(saved); existing.add(key); added++; }
+      }
+      renderGrid();
+      showToast(added ? `${added} books imported` : 'No new books to import');
+    } catch (error) {
+      console.error('import backup error:', error);
+      showToast('Could not read backup');
+    }
+  });
+  input.click();
 }
 
 // ── BOOK PEEK PREVIEW ──────────────────────────────────────────────────────
@@ -3903,6 +4188,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
   let loSheetEditingId = null;
   let loQMTargetId = null;
   let ldCurrentListId = null;
+  let ldOpenFrame = null;
   let ldCurrentFilter = 'all';
   let ldCurrentSort = 'recent';
   let ldCurrentView = 'list'; // 'list' | 'grid3' | 'grid4'
@@ -4304,7 +4590,11 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
     ldBuildAlphaBar();
 
     const ld = document.getElementById('listDetailOverlay');
-    requestAnimationFrame(() => navPush(null, ld));
+    if (ldOpenFrame !== null) cancelAnimationFrame(ldOpenFrame);
+    ldOpenFrame = requestAnimationFrame(() => {
+      ldOpenFrame = null;
+      if (ldCurrentListId === listId) navPush(null, ld);
+    });
 
     // 2. Background Sync
     await Promise.allSettled([
@@ -4328,6 +4618,10 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
   };
 
   window.closeListDetail = function () {
+    if (ldOpenFrame !== null) {
+      cancelAnimationFrame(ldOpenFrame);
+      ldOpenFrame = null;
+    }
     navPop(document.getElementById('listDetailOverlay'), null);
     ldCloseAddSheet();
     const floatingBar = document.getElementById('floatingBar');
@@ -5321,7 +5615,7 @@ function _swipeStripSnapTo(filter, animate) {
 }
 
 function _swipePreRenderAll(force) {
-  if (window.matchMedia('(min-width: 1024px)').matches) return;
+  if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return;
   if (_swipeRendered && !_swipeDirty && !force) return; // nothing changed — skip, no blink
   window._swipeNoStagger = true;
   const strip = document.getElementById('swipeStrip');
@@ -5346,7 +5640,7 @@ function _swipePreRenderAll(force) {
   const MAX_FLING       = 3500;   // px/s cap on the velocity handed to the spring
   const TAP_KICK        = 8;      // tab-tap lift-off speed, per px of distance (px/s)
 
-  const isDesktop = () => window.innerWidth >= 1024;
+  const isDesktop = () => window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
   const container = document.getElementById('mainGridContainer');
   if (!container) return;
 
@@ -5590,7 +5884,7 @@ function _swipePreRenderAll(force) {
 
 // ─── DESKTOP DETAIL PANEL ──────────────────────────────────────────────────
 ;(function () {
-  const isDesktopLayout = () => window.innerWidth >= 1024;
+  const isDesktopLayout = () => window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
   let ddpSelectedId = null;
 
   // ── Hamburger (tablet) ──
@@ -5684,6 +5978,7 @@ function _swipePreRenderAll(force) {
 
     // Open
     panel.classList.add('ddp-open');
+    panel.setAttribute('aria-hidden', 'false');
     if (bookGrid) bookGrid.classList.add('grid-narrow');
     document.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
     const card = bookGrid?.querySelector(`.book-card[data-id="${book.id}"]`);
@@ -5693,6 +5988,7 @@ function _swipePreRenderAll(force) {
   function closeDDP() {
     if (!panel) return;
     panel.classList.remove('ddp-open');
+    panel.setAttribute('aria-hidden', 'true');
     if (bookGrid) bookGrid.classList.remove('grid-narrow');
     document.querySelectorAll('.book-card').forEach(c => c.classList.remove('ddp-selected'));
     ddpSelectedId = null;
