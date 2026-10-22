@@ -1080,6 +1080,7 @@ html.standalone-webapp .add-popup {
     padding: 5px 9px;
     font-size: 11px;
   }
+  .desk-filter-chip strong { color: inherit; font-weight: 500; opacity: 0.75; }
   .desk-filter-chip:hover,
   .desk-sort-control:hover {
     color: #b0a89e;

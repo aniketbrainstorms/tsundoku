@@ -575,9 +575,9 @@
 
       <div class="desk-toolbar" id="deskToolbar" aria-label="Library controls">
         <div class="desk-filter-chips" role="tablist" aria-label="Filter shelf">
-          <button class="desk-filter-chip active" data-desk-filter="reading" role="tab" aria-selected="true">reading</button>
-          <button class="desk-filter-chip" data-desk-filter="read" role="tab" aria-selected="false">read</button>
-          <button class="desk-filter-chip" data-desk-filter="unread" role="tab" aria-selected="false">unread</button>
+          <button class="desk-filter-chip active" data-desk-filter="reading" role="tab" aria-selected="true"><span>reading</span> <strong id="deskFilterCountReading">0</strong></button>
+          <button class="desk-filter-chip" data-desk-filter="read" role="tab" aria-selected="false"><span>read</span> <strong id="deskFilterCountRead">0</strong></button>
+          <button class="desk-filter-chip" data-desk-filter="unread" role="tab" aria-selected="false"><span>unread</span> <strong id="deskFilterCountUnread">0</strong></button>
         </div>
         <button class="desk-sort-control" id="deskToolbarSort" aria-label="Sort library">
           <span>sort</span><strong id="deskToolbarSortValue">recently added</strong><span aria-hidden="true">⌄</span>
@@ -587,13 +587,6 @@
           <svg class="desk-view-icon-list" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           <span id="deskViewToggleLabel">list</span>
         </button>
-      </div>
-
-      <div class="desk-overview" id="deskOverview" aria-label="Library overview">
-        <div class="desk-overview-item"><strong id="deskOverviewTotal">0</strong><span>books</span></div>
-        <div class="desk-overview-item"><strong id="deskOverviewReading">0</strong><span>reading</span></div>
-        <div class="desk-overview-item"><strong id="deskOverviewUnread">0</strong><span>unread</span></div>
-        <div class="desk-overview-item"><strong id="deskOverviewRead">0</strong><span>read</span></div>
       </div>
 
       <!-- Main grid container -->

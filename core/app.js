@@ -3270,6 +3270,15 @@ function updateDeskHeader() {
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-selected', String(active));
   });
+  const counts = {
+    deskFilterCountReading: visible.filter(b => b.status === 'reading').length,
+    deskFilterCountUnread: visible.filter(b => b.status === 'unread').length,
+    deskFilterCountRead: visible.filter(b => b.status === 'read').length
+  };
+  Object.entries(counts).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  });
   const sortMap = { recent: 'recently added', title: 'title (a–z)', author: 'author (a–z)', genre: 'genre (a–z)' };
   const toolbarSort = document.getElementById('deskToolbarSortValue');
   if (toolbarSort) toolbarSort.textContent = sortMap[currentSort] || currentSort;
@@ -3285,17 +3294,7 @@ function updateDeskHeader() {
 }
 
 function updateDeskOverview() {
-  const visible = books.filter(b => !isHiddenFromShelf(b));
-  const values = {
-    deskOverviewTotal: visible.length,
-    deskOverviewReading: visible.filter(b => b.status === 'reading').length,
-    deskOverviewUnread: visible.filter(b => b.status === 'unread').length,
-    deskOverviewRead: visible.filter(b => b.status === 'read').length
-  };
-  Object.entries(values).forEach(([id, value]) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value;
-  });
+  // Counts now live inside the desktop filter tabs.
 }
 
 function toggleDesktopLibraryView() {
