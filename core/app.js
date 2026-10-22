@@ -2041,15 +2041,25 @@ function openProgressModal(id) {
   updateProgressPreview();
   document.getElementById('progressModal').classList.add('visible');
 }
-function updateProgressPreview() {
+function adjustProgress(delta) {
+  const pages = document.getElementById('progressPagesRead');
+  if (!pages) return;
+  const total = parseInt(document.getElementById('progressTotalPages')?.value, 10) || 0;
+  const next = Math.max(0, (parseInt(pages.value, 10) || 0) + Number(delta));
+  pages.value = total ? Math.min(next, total) : next;
+  updateProgressPreview(true);
+}
+function updateProgressPreview(animate = false) {
   const pr = parseInt(document.getElementById('progressPagesRead').value) || 0;
   const tp = parseInt(document.getElementById('progressTotalPages').value) || 0;
   const pct = tp > 0 ? Math.min(100, Math.round((pr / tp) * 100)) : 0;
   const isComplete = tp > 0 && pr >= tp;
 
   const bar = document.getElementById('progressPreviewBar');
+  if (!animate) bar.style.transition = 'none';
   bar.style.width = pct + '%';
   bar.style.background = isComplete ? 'var(--green)' : 'var(--accent)';
+  if (!animate) requestAnimationFrame(() => { bar.style.transition = ''; });
 
   const pctEl = document.getElementById('progressPreviewPct');
   pctEl.textContent = pct + '%';

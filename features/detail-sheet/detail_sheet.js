@@ -95,6 +95,30 @@ function dsSnapTo(expanded, animate = true, velocity = 0) {
   }
 }
 
+function dsPlayCoverFly(id) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || window.matchMedia('(min-width: 1024px)').matches) return;
+  const source = Array.from(document.querySelectorAll('[data-id]')).find(el => String(el.dataset.id) === String(id));
+  const target = document.getElementById('detailCoverEl');
+  const sheet = document.getElementById('detailSheet');
+  if (!source || !target || !sheet) return;
+  const sourceCover = source.querySelector('.rc-cover, .book-card-cover, img');
+  if (!sourceCover) return;
+  const from = sourceCover.getBoundingClientRect();
+  const previous = sheet.style.transform;
+  sheet.style.transform = 'translate3d(0,0,0)';
+  const to = target.getBoundingClientRect();
+  sheet.style.transform = previous;
+  if (!from.width || !to.width) return;
+  const clone = sourceCover.cloneNode(true);
+  Object.assign(clone.style, { position:'fixed', left:`${from.left}px`, top:`${from.top}px`, width:`${from.width}px`, height:`${from.height}px`, margin:'0', zIndex:'300', pointerEvents:'none', borderRadius:'8px', objectFit:'cover', boxShadow:'0 2px 8px rgba(0,0,0,.4)' });
+  document.body.appendChild(clone);
+  target.style.opacity = '0';
+  clone.animate([
+    { left:`${from.left}px`, top:`${from.top}px`, width:`${from.width}px`, height:`${from.height}px`, borderRadius:'6px' },
+    { left:`${to.left}px`, top:`${to.top}px`, width:`${to.width}px`, height:`${to.height}px`, borderRadius:'18px', boxShadow:'0 10px 28px rgba(0,0,0,.55)' }
+  ], { duration:520, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards' }).finished.then(() => { clone.remove(); target.style.opacity = ''; }, () => { clone.remove(); target.style.opacity = ''; });
+}
+
 let _dsOpenTime = 0;
 function dsOpen() {
   const overlay = document.getElementById('detailModal');
@@ -911,6 +935,7 @@ window.openDetailModal = async function openDetailModal(id) {
 
     // Open sheet
     dsOpen();
+    requestAnimationFrame(() => dsPlayCoverFly(book.id));
 
     if (window.OM) { OM.decorateDetail(book); if (OM.is(book) && !OM.coll(book)) return; }
 
