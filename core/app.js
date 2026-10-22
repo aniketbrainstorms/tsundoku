@@ -1053,7 +1053,6 @@ function readingCardHtml(book, i) {
           <span class="rc-progress-pct">${pct}%</span>
         </div>
         <div class="rc-wave-track" data-rc-wave data-percent="${pct}"></div>
-        <div class="rc-page-progress-track" aria-hidden="true"><span style="width:${pct}%"></span></div>
         ${(window.OM && OM.is(book)) ? OM.card(book).segs : ''}
       </div>`
     : `<p class="rc-no-progress">tap ✏️ to track progress</p>
