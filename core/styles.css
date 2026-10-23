@@ -4250,6 +4250,25 @@ html.standalone-webapp .add-popup {
   }
 }
 
+/* Touch tablets keep the desktop shell in landscape, but use the same
+   three-pane swipe canvas as mobile for shelf navigation. */
+@media (min-width: 1024px) and (hover: none) and (orientation: landscape) {
+  #mainGridContainer .swipe-strip {
+    display: flex;
+    width: 300%;
+    height: 100%;
+  }
+  #mainGridContainer .swipe-pane,
+  #mainGridContainer .swipe-pane.active {
+    display: block;
+    flex: 0 0 33.3333%;
+    width: auto;
+    min-width: 0;
+    height: 100%;
+    padding: 14px 14px 16px;
+  }
+}
+
 /* ─── DETAIL PANEL — desktop widths ─── */
 @media (min-width: 1024px) {
   /* override the existing center-modal rule for detail */
