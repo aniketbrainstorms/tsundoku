@@ -81,7 +81,9 @@ function setTheme(theme) {
 // ── DEVICE DETECTION ──
 const DESKTOP_MIN_WIDTH = 1024;
 const DESKTOP_MEDIA_QUERY = `(min-width: ${DESKTOP_MIN_WIDTH}px)`;
+const TABLET_DESKTOP_SWIPE_QUERY = '(min-width: 1024px) and (hover: none) and (orientation: landscape)';
 const isTouch = () => window.matchMedia('(hover:none)').matches;
+const isTabletDesktopSwipe = () => window.matchMedia(TABLET_DESKTOP_SWIPE_QUERY).matches;
 
 function updateHintBar() {
   const hint = document.getElementById('hintBar');
@@ -1274,7 +1276,7 @@ function renderGrid() {
   _swipeDirty = true;
   const isDesktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
 
-  if (isDesktop) {
+  if (isDesktop && !isTabletDesktopSwipe()) {
     // Desktop: single pane, use legacy #bookGrid alias
     const grid = document.getElementById('bookGrid');
     _renderGridIntoEl(grid, currentFilter);
@@ -1292,7 +1294,8 @@ function renderGrid() {
     return;
   }
 
-  // Mobile: render all three panes so swipe sees real content
+  // Touch tablets in desktop mode and mobile both render all three panes so
+  // the swipe engine can move between reading, read, and unread.
   const FILTERS = ['reading', 'read', 'unread'];
   FILTERS.forEach(f => {
     const pane = document.getElementById('pane-' + f);
@@ -5634,7 +5637,7 @@ function _swipeStripSnapTo(filter, animate) {
 }
 
 function _swipePreRenderAll(force) {
-  if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return;
+  if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches && !isTabletDesktopSwipe()) return;
   if (_swipeRendered && !_swipeDirty && !force) return; // nothing changed — skip, no blink
   window._swipeNoStagger = true;
   const strip = document.getElementById('swipeStrip');
@@ -5659,7 +5662,7 @@ function _swipePreRenderAll(force) {
   const MAX_FLING       = 3500;   // px/s cap on the velocity handed to the spring
   const TAP_KICK        = 8;      // tab-tap lift-off speed, per px of distance (px/s)
 
-  const isDesktop = () => window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
+  const isDesktop = () => window.matchMedia(DESKTOP_MEDIA_QUERY).matches && !isTabletDesktopSwipe();
   const container = document.getElementById('mainGridContainer');
   if (!container) return;
 
@@ -5678,11 +5681,13 @@ function _swipePreRenderAll(force) {
   let _springTarget = null;
   let _strip           = null;
   let _tabBtnsCache    = null;
+  let _deskFilterBtnsCache = null;
   let _swipeDotsCache  = null;
   let _sbSubItemsCache = null;
 
   function _refreshSwipeNodeCache() {
     _tabBtnsCache    = document.querySelectorAll('.filter-tabs .tab-btn');
+    _deskFilterBtnsCache = document.querySelectorAll('[data-desk-filter]');
     _swipeDotsCache  = document.querySelectorAll('.swipe-dot');
     _sbSubItemsCache = document.querySelectorAll('#deskShelfSub .sb-sub-item');
   }
@@ -5720,6 +5725,11 @@ function _swipePreRenderAll(force) {
     if (!_tabBtnsCache) _refreshSwipeNodeCache();
     const f = _SWIPE_FILTERS[near];
     _tabBtnsCache.forEach(el => el.classList.toggle('active', el.dataset.filter === f));
+    _deskFilterBtnsCache.forEach(el => {
+      const active = el.dataset.deskFilter === f;
+      el.classList.toggle('active', active);
+      el.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
     _swipeDotsCache.forEach(el => el.classList.toggle('active', el.dataset.filter === f));
     _sbSubItemsCache.forEach(el => el.classList.toggle('active', el.dataset.filter === f));
   }
@@ -5768,6 +5778,7 @@ function _swipePreRenderAll(force) {
       d.classList.toggle('active', d.dataset.filter === currentFilter));
     _sbSubItemsCache.forEach(el =>
       el.classList.toggle('active', el.dataset.filter === currentFilter));
+    if (typeof updateDeskHeader === 'function') updateDeskHeader();
     updateHintBar();
     if (typeof updateEnvelopeVisibility === 'function') updateEnvelopeVisibility();
     if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
