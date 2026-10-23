@@ -550,6 +550,8 @@ html.standalone-webapp .add-popup {
 .tab-btn.active .tab-count { opacity: 0.85; }
 .sort-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; min-width: 34px; border-radius: 100px; border: 1.5px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; flex-shrink: 0; transition: all 0.2s; padding: 0; }
 .sort-btn svg { flex-shrink: 0; }
+.tablet-size { display: none; align-items: center; gap: 4px; color: var(--text-muted); flex: 0 0 auto; }
+.tablet-size input { width: 68px; accent-color: var(--accent); cursor: pointer; }
 
 .divider { height: 1px; background: var(--border); flex-shrink: 0; }
 .hint-bar { text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px 0 6px; flex-shrink: 0; opacity: 0.45; letter-spacing: 0.04em; }
@@ -1192,6 +1194,8 @@ html.standalone-webapp .add-popup {
     display: none;
     width: 100%;
     height: 100%;
+    flex: 0 0 100%;
+    min-width: 100%;
     overflow-y: auto;
     padding: 14px 14px 16px;
   }
@@ -1200,7 +1204,7 @@ html.standalone-webapp .add-popup {
   }
   .book-grid {
     grid-template-columns: repeat(auto-fill, minmax(calc(var(--cover-w, 104px) - 22px), var(--cover-w, 104px))) !important;
-    justify-content: start;
+    justify-content: center;
     align-content: start;
     gap: 9px;
   }
@@ -4120,7 +4124,47 @@ html.standalone-webapp .add-popup {
   .app-screen { flex-direction: column !important; }
   .grid-container { padding-left: 16px !important; padding-right: 16px !important; }
   .floating-bar { left: 16px !important; right: 16px !important; }
-  .book-grid { grid-template-columns: repeat(4, 1fr) !important; }
+  .book-grid {
+    grid-template-columns: repeat(auto-fill, minmax(calc(var(--cover-w, 104px) - 22px), var(--cover-w, 104px))) !important;
+    justify-content: center;
+    align-content: start;
+    gap: 9px;
+  }
+
+  /* Portrait tablets keep the shelf header visible so tabs and profile remain
+     available instead of moving the entire header off-canvas. */
+  .header {
+    position: relative !important;
+    top: auto; left: auto; bottom: auto;
+    transform: none !important;
+    transition: none;
+    z-index: auto;
+    border-right: none;
+    border-bottom: 0;
+    height: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+  .header.dsb-open { transform: none; }
+  .desk-hamburger,
+  .dsb-backdrop { display: none !important; }
+
+  /* The tablet detail sheet should not draw the centered desktop card outline
+     around the transparent area above the actual sheet content. */
+  #detailModal .detail-sheet {
+    border: none;
+    box-shadow: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  .book-grid {
+    grid-template-columns: repeat(auto-fill, minmax(calc(var(--cover-w, 104px) - 22px), var(--cover-w, 104px))) !important;
+    justify-content: center;
+    align-content: start;
+    gap: 9px;
+  }
+  .tablet-size { display: flex; }
 }
 
 /* ─── DESKTOP (≥1024px): hide hamburger ─── */
