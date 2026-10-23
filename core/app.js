@@ -1278,6 +1278,8 @@ function renderGrid() {
     // Desktop: single pane, use legacy #bookGrid alias
     const grid = document.getElementById('bookGrid');
     _renderGridIntoEl(grid, currentFilter);
+    const strip = document.getElementById('swipeStrip');
+    if (strip) strip.style.transform = 'none';
     // show only active pane on desktop
     document.querySelectorAll('.swipe-pane').forEach(p => p.classList.remove('active'));
     const activePane = document.getElementById('pane-' + currentFilter);
@@ -3450,18 +3452,25 @@ function initDesktopNav() {
   bind('deskSearchBar', openShelfSearch);
   bind('deskAddBtn', () => openBookSearch('shelf'));
 
-  const sizeEl = document.getElementById('deskCoverSize');
-  if (sizeEl && sizeEl.dataset.bound !== 'true') {
+  const sizeEls = Array.from(document.querySelectorAll('#deskCoverSize, #tabletCoverSize'));
+  const saved = parseInt(localStorage.getItem('tsd_cover_w'), 10);
+  sizeEls.forEach(sizeEl => {
+    const min = parseInt(sizeEl.min, 10) || 72;
+    const max = parseInt(sizeEl.max, 10) || 160;
+    if (saved >= 72 && saved <= 160) sizeEl.value = Math.min(max, Math.max(min, saved));
+    if (sizeEl.dataset.bound === 'true') return;
     sizeEl.dataset.bound = 'true';
-    const saved = parseInt(localStorage.getItem('tsd_cover_w'), 10);
-    if (saved >= 72 && saved <= 160) sizeEl.value = saved;
-    document.documentElement.style.setProperty('--cover-w', sizeEl.value + 'px');
     sizeEl.addEventListener('input', () => {
+      sizeEls.forEach(el => { el.value = sizeEl.value; });
       document.documentElement.style.setProperty('--cover-w', sizeEl.value + 'px');
       localStorage.setItem('tsd_cover_w', sizeEl.value);
       if (typeof alphaBarRefresh === 'function') alphaBarRefresh('main');
     });
-  }
+  });
+  const activeSizeEl = window.matchMedia('(min-width: 768px) and (max-width: 1023px) and (orientation: portrait)').matches
+    ? document.getElementById('tabletCoverSize')
+    : document.getElementById('deskCoverSize');
+  if (activeSizeEl) document.documentElement.style.setProperty('--cover-w', activeSizeEl.value + 'px');
   bind('deskProfilePill', toggleDeskAccountPanel);
   bind('deskSettingsRow', () => showToast('Settings coming soon'));
   bind('deskLogoutBtn', signOut);
@@ -5679,7 +5688,18 @@ function _swipePreRenderAll(force) {
   }
 
   function stripEl() { return _strip || (_strip = document.getElementById('swipeStrip')); }
-  function getW() { W = container.offsetWidth || window.innerWidth; }
+  function getW() {
+    const isTabletPortrait = window.matchMedia(
+      '(min-width: 768px) and (max-width: 1023px) and (orientation: portrait)'
+    ).matches;
+    if (isTabletPortrait) {
+      const styles = getComputedStyle(container);
+      const horizontalPadding = parseFloat(styles.paddingLeft || 0) + parseFloat(styles.paddingRight || 0);
+      W = Math.max(0, (container.offsetWidth || window.innerWidth) - horizontalPadding);
+      return;
+    }
+    W = container.offsetWidth || window.innerWidth;
+  }
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
   function rubberBand(raw) {
@@ -5891,6 +5911,24 @@ function _swipePreRenderAll(force) {
   setNow(-currentIdx() * W);
 })();
 // ── END SWIPE TAB NAVIGATION ───────────────────────────────────────────────
+
+// Rebuild the shelf when rotation crosses the desktop breakpoint. The CSS
+// switches between the desktop single-pane shell and the tablet/mobile swipe
+// canvas, so keeping the previously rendered pane state can leave the grid
+// hidden after rotating back to landscape.
+let _lastDesktopLayout = window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
+function syncShelfLayoutAfterRotation() {
+  const isDesktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
+  if (isDesktop === _lastDesktopLayout) return;
+  _lastDesktopLayout = isDesktop;
+  requestAnimationFrame(() => {
+    if (typeof renderGrid === 'function') renderGrid();
+  });
+}
+window.addEventListener('resize', syncShelfLayoutAfterRotation);
+window.addEventListener('orientationchange', () => {
+  setTimeout(syncShelfLayoutAfterRotation, 80);
+});
 
 // ─── DESKTOP DETAIL PANEL ──────────────────────────────────────────────────
 ;(function () {

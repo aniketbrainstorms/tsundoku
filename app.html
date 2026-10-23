@@ -534,6 +534,11 @@
           <button class="tab-btn" data-filter="read" onclick="setFilter('read')" role="tab" aria-selected="false">read <span class="tab-count" id="count-read">0</span></button>
           <button class="tab-btn" data-filter="unread" onclick="setFilter('unread')" role="tab" aria-selected="false">unread <span class="tab-count" id="count-unread">0</span></button>
         </div>
+        <label class="tablet-size" title="cover size">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="8" y="8" width="8" height="8" rx="1"/></svg>
+          <input type="range" id="tabletCoverSize" min="104" max="140" value="104" aria-label="cover size">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        </label>
         <button class="sort-btn" id="sortToggleBtn" onclick="openSortMenu(this)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
         </button>
