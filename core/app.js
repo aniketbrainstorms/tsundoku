@@ -6620,6 +6620,17 @@ window.addEventListener('orientationchange', () => {
 })();
 // ── END ANDROID HARDWARE/GESTURE BACK BUTTON ────────────────────────────
 
+// ── ANDROID ONLY: status-bar colour follows the theme toggle (first paint is set in app.html <head>) ──
+;(function () {
+  if (!document.documentElement.classList.contains('is-android')) return;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  const COLORS = { dark: '#000000', light: '#f5f0ea' };
+  new MutationObserver(() => meta.setAttribute('content',
+    COLORS[document.documentElement.getAttribute('data-theme')] || COLORS.dark))
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
+
 // ── IOS ROTATION SCROLL PIN — stops the header drifting after orientation change ──
 ;(function () {
   function pinScroll() {
