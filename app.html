@@ -37,6 +37,8 @@
   // Android only: status bar matches the page, and the app shell is cached for fast launches.
   if (/Android/i.test(navigator.userAgent)) {
     document.documentElement.classList.add('is-android');
+    var vp = document.querySelector('meta[name="viewport"]');
+    if (vp && vp.content.indexOf('minimum-scale') === -1) vp.setAttribute('content', vp.content + ', minimum-scale=1');
     var tc = document.querySelector('meta[name="theme-color"]');
     if (tc) tc.setAttribute('content', document.documentElement.getAttribute('data-theme') === 'light' ? '#f5f0ea' : '#000000');
     if ('serviceWorker' in navigator) {
