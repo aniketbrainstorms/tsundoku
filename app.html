@@ -38,7 +38,7 @@
   if (/Android/i.test(navigator.userAgent)) {
     document.documentElement.classList.add('is-android');
     var tc = document.querySelector('meta[name="theme-color"]');
-    if (tc) tc.setAttribute('content', t === 'light' ? '#f5f0ea' : '#000000');
+    if (tc) tc.setAttribute('content', document.documentElement.getAttribute('data-theme') === 'light' ? '#f5f0ea' : '#000000');
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('sw.js').catch(function () {});
