@@ -5300,3 +5300,24 @@ button, [role="tab"], a, label, select { touch-action: manipulation; }
 }
 .tsd-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 /* ═══ END DESIGN LAYER ═══ */
+
+/* ═══ ANDROID ONLY — html.is-android is set in the app.html <head> script; iOS/desktop never get it ═══
+   Chrome-on-Android's GPU compositor drops the content of elements stacked on a backdrop-filter
+   (blurred screen, sheet never appears, glass bar vanishes). No blur on Android, solid surfaces instead. */
+html.is-android *,
+html.is-android *::before,
+html.is-android *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+/* scrims: same values iOS already uses */
+html.is-android:not([data-theme="light"]) .modal-overlay { background: rgba(14,12,10,0.92); }
+html.is-android .ds-scrim { background: rgba(14,12,10,0.88); }
+html.is-android #detailModal.ds-expanded .ds-scrim { background: rgba(14,12,10,0.94); }
+html.is-android #bookPeekOverlay { background: rgba(10,8,6,0.7); }
+
+/* glass surfaces that relied on the blur to be readable → solid theme surfaces */
+html.is-android .floating-search-field,
+html.is-android .envelope-trigger-btn { background: var(--surface2); }
+html.is-android .add-popup,
+html.is-android .ld-add-popup { background: var(--surface); }
+html.is-android .add-popup::after { background: var(--surface); }
+
