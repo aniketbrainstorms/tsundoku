@@ -2212,21 +2212,5 @@
 <div id="dsbBackdrop" class="dsb-backdrop"></div>
   
 <script>
-// TEMP DEBUG — remove after checking
-window.addEventListener('load', function () {
-  var d = document.createElement('div');
-  d.style.cssText = 'position:fixed;top:60px;left:8px;right:8px;z-index:999999;background:#fff;color:#000;font:12px monospace;padding:8px;border:2px solid red;word-break:break-all';
-  var tc = document.querySelector('meta[name="theme-color"]');
-  d.textContent = 'class=' + document.documentElement.className +
-    ' | theme=' + document.documentElement.getAttribute('data-theme') +
-    ' | tc=' + (tc ? tc.content : 'none') +
-    ' | sw=' + ('serviceWorker' in navigator ? (navigator.serviceWorker.controller ? 'active' : 'none') : 'unsupported') +
-    ' | bf=' + getComputedStyle(document.body).backdropFilter +
-    ' | search=' + (function () { var e = document.querySelector('.floating-search-field'); if (!e) return 'missing'; var r = e.getBoundingClientRect(), s = getComputedStyle(e); return Math.round(r.top) + ',' + Math.round(r.height) + ',' + s.display + ',' + s.visibility + ',' + s.opacity + ',bg=' + s.backgroundColor + ',bf=' + s.backdropFilter; })() +
-    ' | css=' + Array.prototype.map.call(document.querySelectorAll('link[rel=stylesheet],script[src]'), function (n) { return (n.getAttribute('href') || n.getAttribute('src')); }).join(' ');
-  d.onclick = function () { d.remove(); };
-  document.body.appendChild(d);
-});
-</script>
 </body>
 </html>
