@@ -195,13 +195,48 @@
         var LAND = [{ delay: 110, rot: -5 }, { delay: 1078, rot: 4 }, { delay: 2046, rot: -3 }];
         var LAND_MS = 900;
         var SAFETY_MS = 6000;           // leave even if the shelf never reports ready (offline / error)
+        var HARD_MS = 15000;            // last resort if frames never arrive (e.g. tab stuck in background)
         var readyFlag = false, landedFlag = false, exiting = false, finished = false;
+
+        // ── stall-proof clock ──
+        // Web Animations and setTimeout both follow wall-clock time. If the main thread is blocked while
+        // app.js parses or the cached shelf renders, the clock jumps ahead and books 2 and 3 pop in
+        // mid-fall (or already landed). So every animation here is paused and scrubbed from this clock,
+        // which moves at most MAX_STEP per frame: a stall makes the sequence wait, never skip.
+        var MAX_STEP = 34, vt = 0, lastTs = null, looping = false;
+        var scrubbed = [], queue = [];
+
+        function loop(ts) {
+          if (finished) { looping = false; return; }
+          if (lastTs === null) lastTs = ts;                  // first frame: nothing has played yet
+          vt += Math.min(ts - lastTs, MAX_STEP);
+          lastTs = ts;
+          scrubbed = scrubbed.filter(function (s) {
+            var t = vt - s.at;
+            s.a.currentTime = t;
+            return t < s.end;                                // done: stays held on its filled end state
+          });
+          for (var i = 0; i < queue.length;) {
+            if (queue[i].t <= vt) queue.splice(i, 1)[0].fn(); else i++;
+          }
+          requestAnimationFrame(loop);
+        }
+        function kick() { if (!looping && !finished) { looping = true; requestAnimationFrame(loop); } }
+        function after(ms, fn) { queue.push({ t: vt + ms, fn: fn }); kick(); }
+        function play(el, frames, opts) {
+          var a = el.animate(frames, opts);
+          a.pause();
+          a.currentTime = 0;
+          scrubbed.push({ a: a, at: vt, end: a.effect.getComputedTiming().endTime });
+          kick();
+          return a;
+        }
 
         function num(el, prop) { return parseFloat(getComputedStyle(el)[prop]) || 0; }
 
         function land(b, i) {
           var pose = 'translateY(-80px) rotate(' + LAND[i].rot + 'deg) scale(1,1)';
-          b.animate([
+          play(b, [
             { opacity: 0, transform: pose, offset: 0 },
             { opacity: 1, transform: pose, offset: .02, easing: 'cubic-bezier(.5,0,.9,.55)' },
             { opacity: 1, transform: 'translateY(0) rotate(0deg) scale(1,1)', offset: .56, easing: 'ease-out' },
@@ -217,16 +252,16 @@
             d.className = 'lx-dust';
             d.style.cssText = 'left:' + (p[0] - p[1]) + 'px;top:' + (bottom - p[1]) + 'px;width:' + (2 * p[1]) + 'px;height:' + (2 * p[1]) + 'px';
             stack.appendChild(d);
-            var a = d.animate([
+            play(d, [
               { opacity: .85, transform: 'translate(0,0) scale(1)' },
               { opacity: 0, transform: 'translate(' + p[2] + 'px,' + p[3] + 'px) scale(.3)' }
             ], { duration: 620, delay: p[4], easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' });
-            a.onfinish = function () { d.remove(); };
+            after(p[4] + 620, function () { d.remove(); });
           });
         }
 
         function rise(el, delay) {
-          el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }],
+          play(el, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }],
             { duration: 900, delay: delay, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' });
         }
 
@@ -238,14 +273,15 @@
         } else {
           books.forEach(function (b, i) {
             land(b, i);
-            setTimeout(function () { if (!finished) puff(b, i); }, LAND[i].delay + LAND_MS * .56);
+            after(LAND[i].delay + LAND_MS * .56, function () { if (!finished) puff(b, i); });
           });
           // wait briefly for Bristol so the wordmark never flashes in a fallback face
           var fontWait = (document.fonts && document.fonts.load) ? document.fonts.load('48px Bristol') : Promise.resolve();
           Promise.race([fontWait, new Promise(function (r) { setTimeout(r, 700); })]).then(function () {
+            if (finished) return;
             rise(title, 0); rise(by, 500);
           });
-          setTimeout(function () { landedFlag = true; maybeExit(); }, LAND[2].delay + LAND_MS + 20);
+          after(LAND[2].delay + LAND_MS + 20, function () { landedFlag = true; maybeExit(); });
         }
 
         // ── exit: books rise one by one, the last stretches into a bar that wipes down ──
@@ -257,8 +293,8 @@
         }
 
         function exitReduced() {
-          var a = screen.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 350, fill: 'forwards' });
-          a.onfinish = finish;
+          play(screen, [{ opacity: 1 }, { opacity: 0 }], { duration: 350, fill: 'forwards' });
+          after(350, finish);
         }
 
         function exitFull() {
@@ -268,18 +304,18 @@
           var k = (W / num(b1, 'width')) * 1.04;     // slight overscan so the rounded ends bleed off-screen
 
           [title, tag, ground].forEach(function (el) {
-            el.animate([{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-6px)' }],
+            play(el, [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-6px)' }],
               { duration: 300, easing: 'ease-out', fill: 'forwards' });
           });
 
           function lift(el, delay, rot) {
             var dist = el.getBoundingClientRect().top - screen.getBoundingClientRect().top + 19.8 + 24;
-            el.animate([
+            play(el, [
               { transform: 'translateY(0) rotate(0deg) scale(1,1)', offset: 0 },
               { transform: 'translateY(3px) rotate(0deg) scale(1.04,.92)', offset: .16, easing: 'cubic-bezier(.5,0,.2,1)' },
               { transform: 'translateY(' + (-dist) + 'px) rotate(' + rot + 'deg) scale(1,1)', offset: 1 }
             ], { duration: 620, delay: delay, fill: 'forwards' });
-            el.animate([{ opacity: 1 }, { opacity: 1, offset: .65 }, { opacity: 0 }], { duration: 620, delay: delay, fill: 'forwards' });
+            play(el, [{ opacity: 1 }, { opacity: 1, offset: .65 }, { opacity: 0 }], { duration: 620, delay: delay, fill: 'forwards' });
           }
           lift(books[2], 0, -3);
           lift(books[1], 120, 3);
@@ -291,21 +327,21 @@
           stack.appendChild(bar);
           b1.style.visibility = 'hidden';
 
-          var move = bar.animate([
+          play(bar, [
             { transform: 'translateY(0) scale(1,1)', offset: 0 },
             { transform: 'translateY(3px) scale(1.04,.92)', offset: .14, easing: 'cubic-bezier(.5,0,.2,1)' },
             { transform: 'translateY(' + (-top) + 'px) scale(' + k + ',1)', offset: 1 }
           ], { duration: 660, delay: 240, fill: 'forwards' });
-          bar.querySelector('.lx-d').animate([{ opacity: 1 }, { opacity: 0 }],
+          play(bar.querySelector('.lx-d'), [{ opacity: 1 }, { opacity: 0 }],
             { duration: 280, delay: 360, easing: 'ease-out', fill: 'forwards' });
 
-          move.onfinish = function () {
+          after(240 + 660, function () {
             // the bar now leads the loader layer down, uncovering the app above it
             screen.style.pointerEvents = 'none';
-            var wipe = screen.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(' + H + 'px)' }],
+            play(screen, [{ transform: 'translateY(0)' }, { transform: 'translateY(' + H + 'px)' }],
               { duration: 720, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' });
-            wipe.onfinish = finish;
-          };
+            after(720, finish);
+          });
         }
 
         function maybeExit() {
@@ -320,6 +356,7 @@
           ready: function () { readyFlag = true; maybeExit(); }
         };
         setTimeout(function () { window.lxLoader.ready(); }, SAFETY_MS);
+        setTimeout(finish, HARD_MS);
       })();
     </script>
   </div>
