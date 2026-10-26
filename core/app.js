@@ -291,6 +291,7 @@ function getShelfParam() {
   const slug = getShelfParam();
   const _loadingStart = Date.now();
   function hideLoadingScreen() {
+    if (window.lxLoader) { window.lxLoader.ready(); return; }   // book-stack loader runs its own exit
     const elapsed = Date.now() - _loadingStart;
     const remaining = Math.max(0, 2800 - elapsed);
     setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), remaining);
@@ -307,7 +308,8 @@ function getShelfParam() {
       await sb.auth.signOut();
       return;
     }
-    hideLoadingScreen();
+    // signed in: loadBooks() tells the loader once the shelf is drawn
+    if (!session || !window.lxLoader) hideLoadingScreen();
     if (session) {
       currentUser = session.user;
       const initials = getUserInitials(currentUser?.email);
@@ -439,6 +441,7 @@ async function loadBooks() {
       if (hasMeta) {
         books = parsed;
         renderGrid();
+        if (window.lxLoader) window.lxLoader.ready();
       } else {
         localStorage.removeItem(cacheKey);
         renderSkeleton();
@@ -448,10 +451,11 @@ async function loadBooks() {
     }
   } catch { renderSkeleton(); }
   const { data, error } = await sb.from('books').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-  if (error) { showToast('Failed to load books'); return; }
+  if (error) { showToast('Failed to load books'); if (window.lxLoader) window.lxLoader.ready(); return; }
   books = data || [];
   try { localStorage.setItem(cacheKey, JSON.stringify(books)); } catch { }
   renderGrid();
+  if (window.lxLoader) window.lxLoader.ready();
   backfillOwnedForShelfBooks();
 }
 
