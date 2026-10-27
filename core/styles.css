@@ -5322,6 +5322,6 @@ html.is-android .ld-add-popup { background: var(--surface); }
 html.is-android .add-popup::after { background: var(--surface); }
 
 /* Android: something is wider than the screen, so Chrome zooms out and pushes fixed elements off-screen. Clip it. */
-html.is-android,
-html.is-android body { overflow-x: clip; max-width: 100vw; }
+html,
+body { overflow-x: clip; max-width: 100vw; }
 
