@@ -35,13 +35,17 @@
     document.documentElement.setAttribute('data-theme', t);
   } catch(e) {}
   // Android only: status bar matches the page, and the app shell is cached for fast launches.
-  if (/Android/i.test(navigator.userAgent)) {
+  var realAndroid = /Android/i.test(navigator.userAgent);
+  // "Desktop site" and DevTools phone emulation drop the Android token but still hit the same Chrome touch bugs
+  var touchChrome = !!window.chrome && !/iPhone|iPad|iPod|CriOS/i.test(navigator.userAgent)
+    && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  if (realAndroid || touchChrome) {
     document.documentElement.classList.add('is-android');
     var vp = document.querySelector('meta[name="viewport"]');
     if (vp && vp.content.indexOf('minimum-scale') === -1) vp.setAttribute('content', vp.content + ', minimum-scale=1');
     var tc = document.querySelector('meta[name="theme-color"]');
     if (tc) tc.setAttribute('content', document.documentElement.getAttribute('data-theme') === 'light' ? '#f5f0ea' : '#000000');
-    if ('serviceWorker' in navigator) {
+    if (realAndroid && 'serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('sw.js').catch(function () {});
       });
