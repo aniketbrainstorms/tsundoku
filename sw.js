@@ -2,7 +2,7 @@
    Stale-while-revalidate: the app opens instantly from cache and refreshes in the background,
    so a new deploy shows up on the launch after the one that downloaded it.
    Only the app's own files plus fonts/Supabase-JS are touched; every API call passes through. */
-const CACHE = 'tsd-android-v2';
+const CACHE = 'tsd-android-v3';
 const CDN_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'];
 
 self.addEventListener('install', () => self.skipWaiting());
