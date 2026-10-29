@@ -5333,3 +5333,24 @@ html.is-android .nav-panel.open:not(.nav-behind) {
   transition: transform 0.3s var(--ease-out), opacity 0.25s ease, visibility 0s linear 0s;
 }
 
+/* ── bs- add-search: shelf tag + spelling note ── */
+.bs-shelf-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 4px; padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 10px; font-weight: 500;
+  background: rgba(90,138,106,0.14); color: var(--green);
+}
+.bs-shelf-tag::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor;
+}
+.bs-shelf-tag--list { background: rgba(122,112,104,0.12); color: var(--text-muted); }
+.bs-correction {
+  padding: 10px 2px 8px; font-size: 12.5px; line-height: 1.5; color: var(--text-muted);
+}
+.bs-correction strong { color: var(--text); font-weight: 500; }
+.bs-correction button {
+  background: none; border: none; margin: 0; padding: 8px 2px;
+  font: inherit; color: var(--accent); cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+}
