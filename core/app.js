@@ -2968,6 +2968,20 @@ function bsRank(list, q, authorQ) {
   }).sort((x, y) => y.s - x.s).slice(0, 40).map(x => x.b);
 }
 
+// No "by"/dash in the query: if the top author's name is inside it, split title from author
+function bsInferAuthor(q, pool) {
+  const freq = {};
+  pool.slice(0, 15).forEach(b => { if (b.author) freq[b.author] = (freq[b.author] || 0) + 1; });
+  const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+  if (!top) return null;
+  const aTok = bsNormTitle(top[0]).split(' ').filter(Boolean);
+  const qTok = bsNormTitle(q).split(' ').filter(Boolean);
+  const hit = [], rest = [];
+  qTok.forEach(t => (t.length >= 3 && aTok.some(a => a.startsWith(t)) ? hit : rest).push(t));
+  if (!hit.length || !rest.length) return null; // all-author or no-author queries stay as they are
+  return { title: rest.join(' '), author: hit.join(' ') };
+}
+
 async function fetchBookSearch(query) {
   const resultsEl = document.getElementById('bsResults');
   const mySeq = ++_bsSeq;
@@ -3039,7 +3053,13 @@ async function fetchBookSearch(query) {
     const g = results.slice(0, gQueries.length).flatMap(r => r.status === 'fulfilled' ? r.value : []);
     const ol = results.slice(gQueries.length).flatMap(r => r.status === 'fulfilled' ? r.value : []);
     if (mySeq !== _bsSeq) return; // a newer search (or closing the overlay) superseded this one
-    const merged = bsRank(bsMerge([...g, ...ol]), parsedQ ? parsedQ.title : query, parsedQ ? parsedQ.author : '');
+    const pool = bsMerge([...g, ...ol]);
+    let rankTitle = parsedQ ? parsedQ.title : query, rankAuthor = parsedQ ? parsedQ.author : '';
+    if (!parsedQ && !isIsbn) {
+      const inf = bsInferAuthor(query, pool);
+      if (inf) { rankTitle = inf.title; rankAuthor = inf.author; }
+    }
+    const merged = bsRank(pool, rankTitle, rankAuthor);
 
     // Extract author hit: use the most common author among top results
     let authorHit = null;
