@@ -483,10 +483,10 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
         </div>
       </div>
       <h1 class="hero-h1 reveal reveal-delay-1">
-        Your library deserves<br>better than a <em>list.</em>
+        you own more books <br>than you've read. <em>good.</em>
       </h1>
       <p class="hero-sub reveal reveal-delay-2">
-        Collect every book you own. Organize beautiful shelves. Track your reading. Rediscover forgotten favorites — <strong>without a single spreadsheet.</strong>
+        add a book in seconds. see your whole shelf. <strong>no streaks, no goals, no guilt.</strong>
       </p>
       <div class="hero-tag reveal reveal-delay-2">
         <span class="hero-tag-rule"></span>
@@ -496,7 +496,10 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
         <a href="https://aniketbrainstorms.github.io/tsundoku/app.html" class="btn-primary" target="_blank">
           Start your library <div class="btn-primary-icon">→</div>
         </a>
-        <a href="#features" class="btn-ghost">See how it works ↓</a>
+        <button type="button" class="btn-ghost btn-install" data-lm-install>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          install
+        </button>
       </div>
       <div class="hero-trust reveal reveal-delay-4">
         <div class="hero-trust-dot"></div>
@@ -505,7 +508,7 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
     </div>
 
     <!-- PHONE: live shelf -->
-    <div class="hero-phone-wrap reveal reveal-delay-2" style="display:flex;justify-content:center;position:relative;padding:0 clamp(38px,10vw,0px)">
+    <div class="hero-phone-wrap reveal reveal-delay-2" data-lm="hero" style="position:relative">
       <div class="phone-outer">
         <div class="phone-device" style="width:240px;height:490px">
           <div class="phone-btn-v" style="top:80px;height:26px"></div>
@@ -561,11 +564,11 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
           </div>
         </div>
         <div class="fl fl-dark float-label fl-hero-r" style="bottom:64px;right:-70px;--fl-dur:3s;--fl-delay:0s">
-          Finished today ✓
+          added just now
           <div style="position:absolute;top:50%;left:-5px;transform:translateY(-50%) rotate(45deg);width:9px;height:9px;background:var(--text)"></div>
         </div>
         <div class="fl fl-warm float-label fl-hero-l" style="top:80px;left:-72px;--fl-dur:3.5s;--fl-delay:1s">
-          68 books on shelf
+          your shelf, your pile
           <div style="position:absolute;top:50%;right:-5px;transform:translateY(-50%) rotate(45deg);width:9px;height:9px;background:rgba(201,113,74,0.15);border-right:1px solid rgba(201,113,74,0.3);border-top:1px solid rgba(201,113,74,0.3)"></div>
         </div>
       </div>
@@ -1090,7 +1093,7 @@ function pal(i){ return PALS[i % PALS.length]; }
 
 /* ── FLOATING BOOK PARTICLES ── */
 const isMob = window.innerWidth <= 768;
-const COUNT = isMob ? 5 : 10;
+const COUNT = isMob ? 3 : 10;
 const container = document.getElementById('particles');
 for(let i=0;i<COUNT;i++){
   const p = pal(i);
@@ -1233,7 +1236,7 @@ window.addEventListener('scroll', ()=>{
 (function(){
   const tabsEl = document.getElementById('heroTabs');
   const booksEl = document.getElementById('heroBooks');
-  if(!tabsEl || !booksEl) return;
+  if(!tabsEl || !booksEl || document.querySelector('[data-lm="hero"]')) return;
 
   const ICO = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
 
@@ -1283,5 +1286,6 @@ window.addEventListener('scroll', ()=>{
 })();
 </script>
 <script src="landing/lm.js" defer></script>
+<script src="landing/hero.js" defer></script>
 </body>
 </html>
