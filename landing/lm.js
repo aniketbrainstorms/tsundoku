@@ -85,7 +85,7 @@ const kill = tok => {
 function helpers(stage, tok) {
   const root = stage.root, scr = stage.screen, fing = stage.fing;
   const h = {
-    root, instant: stage.instant,
+    root, instant: stage.instant, fl: stage.fl,
     q: s => root.querySelector(s),
     qa: s => [...root.querySelectorAll(s)],
     go: p => p.catch(() => {}),
@@ -129,10 +129,10 @@ function helpers(stage, tok) {
       }
       return el;
     },
-    async hold(target, ms = 700) {
+    async hold(target, ms = 700, mv) {
       const el = typeof target === 'string' ? h.q(target) : target;
       const p = h.pos(el);
-      await h.move(p.x, p.y);
+      await h.move(p.x, p.y, mv);
       if (h.instant) return el;
       fing.classList.add('tap'); el.classList.add('lm-hold');
       await h.wait(ms);
@@ -222,12 +222,12 @@ class Stage {
     this.tok = null; this.vis = false; this.paused = false; this.instant = false;
     host.classList.add('lm-host');
     host.innerHTML =
-      `<div class="lm-wrap" role="img" aria-label="${esc(this.def.label)}"><div class="lm-device"><div class="lm-screen" aria-hidden="true"><div class="lm-root"></div><div class="lm-fing"><b></b></div></div></div></div>
+      `<div class="lm-wrap" role="img" aria-label="${esc(this.def.label)}"><div class="lm-device"><div class="lm-screen" aria-hidden="true"><div class="lm-root"></div><div class="lm-fing"><b></b></div></div></div><div class="lm-fl-layer" aria-hidden="true"></div></div>
        <div class="lm-ctl"><div class="lm-cap" aria-hidden="true"></div><button type="button" class="lm-pp"></button></div>
        ${this.defs.length > 1 ? `<div class="lm-dots" aria-hidden="true">${this.defs.map(() => '<i></i>').join('')}</div>` : ''}`;
     const q = s => host.querySelector(s);
     this.wrap = q('.lm-wrap'); this.screen = q('.lm-screen'); this.root = q('.lm-root'); this.fing = q('.lm-fing');
-    this.cap = q('.lm-cap'); this.pp = q('.lm-pp'); this.dots = q('.lm-dots');
+    this.fl = q('.lm-fl-layer'); this.cap = q('.lm-cap'); this.pp = q('.lm-pp'); this.dots = q('.lm-dots');
     this.pp.addEventListener('click', () => this.toggle());
     this.label();
   }
@@ -238,6 +238,7 @@ class Stage {
     r.className = 'lm-root lm-in'; r.innerHTML = SB + d.build();
     this.fing.classList.remove('on', 'tap'); this.fing.style.transform = `translate(${SW + 30}px,${SH - 60}px)`;
     this.cap.textContent = '';
+    this.fl.classList.remove('lm-off'); this.fl.innerHTML = d.float ? d.float() : '';
     this.wrap.setAttribute('aria-label', d.label);
     if (this.dots) [...this.dots.children].forEach((x, i) => x.classList.toggle('on', i === this.i));
   }
@@ -261,7 +262,7 @@ class Stage {
         await this.def.play(h);
         await h.wait(this.def.hold ?? 2400);
         if (once) break;
-        this.root.classList.add('lm-out'); await h.wait(420);
+        this.root.classList.add('lm-out'); this.fl.classList.add('lm-off'); await h.wait(420);
         this.i = (this.i + 1) % this.defs.length; this.def = this.defs[this.i];
       }
     } catch (e) { if (e !== ABORT) console.error('[lm]', e); }
@@ -584,6 +585,70 @@ scene('share', {
     sb.textContent = 'sort by author';
     const grid = $('.lm-pB .lm-grid');
     await h.flip(grid, () => pubOrder('a').forEach(k => grid.appendChild(grid.querySelector(`[data-k="${k}"]`))), { d: 850 });
+  },
+});
+
+/* ── hero: the ~10s reel — add a book, send it to reading, the shelf settles ──
+   `float()` returns badges drawn OUTSIDE the phone (on the .lm-fl-layer); the scene switches them on/off with h.fl. */
+const ARR_L = '<div style="position:absolute;top:50%;left:-5px;transform:translateY(-50%) rotate(45deg);width:9px;height:9px;background:var(--text)"></div>';
+const ARR_R = '<div style="position:absolute;top:50%;right:-5px;transform:translateY(-50%) rotate(45deg);width:9px;height:9px;background:#f0dccf;border-right:1px solid rgba(201,113,74,.3);border-top:1px solid rgba(201,113,74,.3)"></div>';
+scene('hero', {
+  label: 'Animation: adding a book to your shelf and moving it to reading',
+  pre: 500, hold: 1800,
+  float: () =>
+    `<div class="lm-fl lm-fl-l"><div class="fl fl-warm float-label" style="--fl-dur:3.4s">your shelf, your pile${ARR_R}</div></div>` +
+    `<div class="lm-fl lm-fl-r"><div class="fl fl-dark float-label" style="--fl-dur:3s">added just now${ARR_L}</div></div>`,
+  build: () =>
+    shelf('unread', { unread: 41, reading: 3, read: 24 }, ['pachinko', 'demon', 'hail', 'little', 'klara', 'yellowface', 'tomorrow', 'piranesi'].map(k => book(k)).join('')) +
+    `<div class="lm-scrim"></div>
+     <div class="lm-sheet lm-ssh"><i class="lm-hdl"></i><div class="lm-sh-t">Add a book</div>
+       <div class="lm-inp">${I.search}<span class="lm-t" data-ph="Title, author or ISBN"></span></div>
+       <div class="lm-res"><div class="lm-row" data-r="0">${cv('babel', 'lm-th')}<div><div class="lm-rt">Babel</div><div class="lm-ra">R.F. Kuang</div><div class="lm-rm">2022 · hardcover</div></div></div></div>
+       <div class="lm-cta">Add to Shelf</div></div>`,
+  async play(h) {
+    const $ = h.q, grid = $('.lm-grid'), B = s => h.fl.querySelector(s);
+    B('.lm-fl-l').classList.add('on');
+    h.say('add a book in seconds');
+    await h.tap('.lm-addb', { ms: 460, hold: 110 });
+    $('.lm-scrim').classList.add('on'); $('.lm-ssh').classList.add('on');
+    await h.wait(500);
+    $('.lm-inp').classList.add('on');
+    await h.type($('.lm-t'), 'babel', 14);
+    $('.lm-row').classList.add('on');
+    await h.wait(220);
+    const row = await h.tap('.lm-row', { ms: 400, hold: 110 });
+    row.classList.add('sel'); $('.lm-cta').classList.add('on');
+    await h.wait(260);
+    await h.tap('.lm-cta', { ms: 320, hold: 110 });
+    $('.lm-cta').classList.add('done'); $('.lm-cta').textContent = 'Added ✓';
+    await h.wait(350);
+    $('.lm-ssh').classList.remove('on'); $('.lm-scrim').classList.remove('on');
+    await h.wait(380);
+    const nb = $html(book('babel', 'un', null, { fresh: true })), nu = $('[data-n="unread"]');
+    h.say('on your shelf');
+    nu.textContent = 42; h.bump(nu); B('.lm-fl-r').classList.add('on');
+    await h.flip(grid, () => grid.prepend(nb), { d: 560 });
+    await h.wait(350);
+    h.say('start reading');
+    await h.hold(nb, 420, 420);
+    const b = h.box(nb), m = $html(qmHtml('unread'));
+    m.style.left = Math.max(12, Math.min(SW - 190, b.x + b.w / 2 - 89)) + 'px';
+    m.style.top = Math.min(b.y + b.h + 8, SH - 290) + 'px';
+    h.root.appendChild(m); void m.offsetWidth; m.classList.add('on');
+    await h.wait(380);
+    await h.tap('.lm-qi[data-s="reading"]', { ms: 340, hold: 110 });
+    m.classList.remove('on'); h.later(() => m.remove(), 400);
+    B('.lm-fl-r').classList.remove('on');
+    const tab = $('.lm-tab[data-t="reading"]'), nr = $('[data-n="reading"]');
+    await Promise.all([h.fly(nb, tab, { d: 640 }), h.flip(grid, () => nb.remove(), { d: 560 })]);
+    nu.textContent = 41; nr.textContent = 4; h.bump(nr); tab.classList.add('lm-pulse');
+    await h.wait(250);
+    await h.tap(tab, { ms: 380, hold: 110 });
+    h.qa('.lm-tab').forEach(t => t.classList.toggle('on', t === tab));
+    h.say('your whole shelf');
+    await h.swap(grid, () => { grid.innerHTML = STATUS_GRID.reading('babel'); });
+    await h.wait(120);
+    const pg = $('.lm-bk[data-k="babel"] .lm-pg i'); if (pg) pg.style.setProperty('--p', '12%');
   },
 });
 
