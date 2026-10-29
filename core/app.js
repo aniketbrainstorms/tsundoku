@@ -2895,7 +2895,7 @@ function onBsInput() {
   if (!q) { document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>'; return; }
   if (q.length < 3) { document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Keep typing…</p></div>'; return; }
   const _bsHit = bsCacheGet(q);
-  if (_bsHit) { renderBsResults(_bsHit.merged, _bsHit.authorHit); return; }
+  if (_bsHit) { renderBsResults(_bsHit.merged, _bsHit.authorHit, _bsHit.note); return; }
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><div class="loading-spinner"></div></div>';
   bookSearchTimer = setTimeout(() => fetchBookSearch(q), 320);
 }
@@ -2944,6 +2944,71 @@ function bsMerge(list) {
   return out;
 }
 
+// ── typo tolerance ──
+function bsTol(len) { return len <= 3 ? 0 : (len <= 6 ? 1 : 2); }
+
+// edit distance with adjacent-swap support ("teh" -> "the" = 1)
+function bsEdit(a, b, max) {
+  if (a === b) return 0;
+  const la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > max) return max + 1;
+  let p2 = null, p1 = Array.from({ length: lb + 1 }, (_, j) => j);
+  for (let i = 1; i <= la; i++) {
+    const cur = [i];
+    for (let j = 1; j <= lb; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let v = Math.min(p1[j] + 1, cur[j - 1] + 1, p1[j - 1] + cost);
+      if (p2 && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) v = Math.min(v, p2[j - 2] + 1);
+      cur[j] = v;
+    }
+    p2 = p1; p1 = cur;
+  }
+  return p1[lb];
+}
+
+// 1 = exact/substring (covers half-typed words), 0.75 = within typo tolerance, 0 = no match
+function bsTokScore(t, str) {
+  if (!t) return 0;
+  if (str.includes(t)) return 1;
+  const tol = bsTol(t.length);
+  if (!tol || /\d/.test(t)) return 0;
+  return str.split(' ').some(w => bsEdit(t, w, tol) <= tol) ? 0.75 : 0;
+}
+
+// does any top result contain every (4+ letter) word of the query?
+function bsFullyCovered(query, items) {
+  const qt = bsNormTitle(query).split(' ').filter(t => t.length >= 4);
+  if (!qt.length) return true;
+  return items.slice(0, 10).some(b => {
+    const hay = bsNormTitle((b.title || '') + ' ' + (b.author || ''));
+    return qt.every(t => hay.includes(t));
+  });
+}
+
+// corrected query built from words in the results + your own shelf; null if nothing to fix
+function bsSuggest(query, items) {
+  const vocab = new Map();
+  const add = (s, w) => bsNormTitle(s).split(' ').forEach(x => { if (x.length >= 3) vocab.set(x, (vocab.get(x) || 0) + w); });
+  items.slice(0, 20).forEach(b => { add(b.title, 3); add(b.author, 3); });
+  books.forEach(b => { add(b.title, 1); add(b.author, 1); });
+  const toks = bsNormTitle(query).split(' ').filter(Boolean);
+  let changed = false;
+  const out = toks.map((t, i) => {
+    if (t.length < 4 || /\d/.test(t) || vocab.has(t)) return t;
+    // a half-typed last word is not a typo
+    if (i === toks.length - 1 && [...vocab.keys()].some(w => w.startsWith(t))) return t;
+    const tol = bsTol(t.length);
+    let best = null, bestD = tol + 1, bestW = -1;
+    vocab.forEach((wt, w) => {
+      const d = bsEdit(t, w, tol);
+      if (d < bestD || (d === bestD && wt > bestW)) { best = w; bestD = d; bestW = wt; }
+    });
+    if (best && bestD <= tol) { changed = true; return best; }
+    return t;
+  });
+  return changed ? out.join(' ') : null;
+}
+
 function bsRank(list, q, authorQ) {
   const JUNK = /\b(summary|study guide|analysis|workbook|sparknotes|cliffsnotes|cliff'?s notes|box(ed)? set|complete collection|companion|trivia|journal|notebook|coloring book|lesson plan|teacher'?s guide)\b/i;
   const tok = s => bsNormTitle(s).split(' ').filter(t => t && t !== 'by');
@@ -2956,8 +3021,8 @@ function bsRank(list, q, authorQ) {
     let s = 0;
     if (qn && tn === qn) s += 100;
     else if (qn && tn.startsWith(qn)) s += 60;
-    if (qt.length) s += 40 * qt.filter(t => hay.includes(t)).length / qt.length;
-    if (at.length) s += 30 * at.filter(t => an.includes(t)).length / at.length;
+    if (qt.length) s += 40 * qt.reduce((n, t) => n + bsTokScore(t, hay), 0) / qt.length;
+    if (at.length) s += 30 * at.reduce((n, t) => n + bsTokScore(t, an), 0) / at.length;
     if (b.cover) s += 12;
     if (b.pageCount) s += 4;
     if (b.year) s += 2;
@@ -2982,9 +3047,9 @@ function bsInferAuthor(q, pool) {
   return { title: rest.join(' '), author: hit.join(' ') };
 }
 
-async function fetchBookSearch(query) {
+async function fetchBookSearch(query, opts) {
   const resultsEl = document.getElementById('bsResults');
-  const mySeq = ++_bsSeq;
+  const mySeq = (opts && opts.seq != null) ? opts.seq : ++_bsSeq;
   const isbnClean = query.replace(/[\s\-]/g, '');
   const isIsbn = /^(\d{9}[\dXx]|\d{12,13})$/.test(isbnClean);
   const parsedQ = isIsbn ? null : bsParseQuery(query);
@@ -3095,15 +3160,45 @@ async function fetchBookSearch(query) {
       }
     }
     if (mySeq !== _bsSeq) return;
-    if (merged.length) bsCacheSet(query, { merged, authorHit });
-    renderBsResults(merged, authorHit);
+    // typo tolerance: no top result contains every query word -> retry once with a corrected spelling
+    if (!(opts && opts.noCorrect) && !bsFullyCovered(query, merged)) {
+      const fixed = bsSuggest(query, merged);
+      if (fixed) return fetchBookSearch(fixed, { seq: mySeq, noCorrect: true, note: { shown: fixed, original: query }, fallback: { merged, authorHit } });
+    }
+    // corrected spelling found nothing: show what the original spelling returned
+    if (!merged.length && opts && opts.fallback) {
+      renderBsResults(opts.fallback.merged, opts.fallback.authorHit);
+      return;
+    }
+    const note = (opts && opts.note) || null;
+    if (merged.length) bsCacheSet(note ? note.original : query, { merged, authorHit, note });
+    renderBsResults(merged, authorHit, note);
   } catch (e) {
     if (mySeq !== _bsSeq) return;
     resultsEl.innerHTML = '<div class="bs-state"><p>Search failed.<br>Check your connection or add manually.</p></div>';
   }
 }
 
-function renderBsResults(items, authorHit) {
+// ── "on your shelf" tag ──
+function bsShelfKey(title, author) {
+  const nt = bsNormTitle(title);
+  const last = bsNormTitle(author).split(' ').filter(Boolean).pop() || '';
+  return nt ? nt + '|' + last : '';
+}
+function bsBuildShelfIndex() {
+  const idx = new Map();
+  books.forEach(b => {
+    const k = bsShelfKey(b.title, b.author);
+    if (!k) return;
+    if (idx.get(k) !== 'shelf') idx.set(k, b.status === 'not-owned' ? 'list' : 'shelf');
+  });
+  return idx;
+}
+function bsShelfState(book, idx) {
+  return idx.get(bsShelfKey(book.title, book.author)) || null;
+}
+
+function renderBsResults(items, authorHit, note) {
   const el = document.getElementById('bsResults');
   const manualLink = `<div class="bs-manual-link" id="bsManualLink">Can't find it? Add manually</div>`;
   if (!items.length && !authorHit) {
@@ -3123,18 +3218,27 @@ function renderBsResults(items, authorHit) {
     </div>
     <div class="bs-author-sep"></div>` : '';
 
-  el.innerHTML = authorRow + items.map((book, i) => {
+  const _bsIdx = bsBuildShelfIndex();
+  const noteHtml = note ? `<div class="bs-correction">showing results for <strong>${escapeHtml(note.shown)}</strong> · <button type="button" id="bsCorrectionUndo">search instead for “${escapeHtml(note.original)}”</button></div>` : '';
+  el.innerHTML = noteHtml + authorRow + items.map((book, i) => {
     const coverContent = book.cover ? `<img src="${escapeAttr(book.cover)}" alt="" onerror="this.parentElement.innerHTML=''">` : '';
+    const _bsOwn = bsShelfState(book, _bsIdx);
     return `<div class="bs-result" data-bs-index="${i}">
       <div class="bs-result-cover">${coverContent}</div>
       <div class="bs-result-info">
         <div class="bs-result-title">${escapeHtml(book.title || 'Unknown Title')}</div>
         <div class="bs-result-author">${escapeHtml(book.author || 'Unknown Author')}</div>
+        ${_bsOwn ? `<span class="bs-shelf-tag${_bsOwn === 'list' ? ' bs-shelf-tag--list' : ''}">${_bsOwn === 'list' ? 'in your lists' : 'on your shelf'}</span>` : ''}
       </div>
       <span class="bs-result-add">+</span>
     </div>`;
   }).join('') + manualLink;
   el._bsResults = items;
+  el.querySelector('#bsCorrectionUndo')?.addEventListener('click', () => {
+    const orig = note.original;
+    el.innerHTML = '<div class="bs-state"><div class="loading-spinner"></div></div>';
+    fetchBookSearch(orig, { noCorrect: true });
+  });
   document.getElementById('bsManualLink')?.addEventListener('click', () => openManualAdd(addContext));
   el.querySelectorAll('.bs-result').forEach(row => {
     row.addEventListener('click', () => {
