@@ -225,6 +225,47 @@ section{padding:clamp(72px,12vw,140px) max(clamp(20px,5vw,60px),var(--safe-l)) c
 .proof-grid-shelf{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;padding:24px;background:#1a1814}
 .proof-grid-shelf .pcov{aspect-ratio:2/3;border-radius:6px;position:relative;animation:shelfSlide var(--ease-out) both;animation-duration:.5s}
 
+/* ══ PROOF: app mockups (desktop window / phone) ══ */
+.pf-app{display:grid;grid-template-columns:168px 1fr;height:420px;background:#1a1814;text-align:left;font-family:var(--fb)}
+.pf-side{background:#16140f;border-right:1px solid #2c2823;padding:18px 12px;display:flex;flex-direction:column;gap:3px}
+.pf-logo{font-family:var(--fd);font-size:13px;color:#e8e0d5;padding:0 8px;margin-bottom:20px}
+.pf-label{font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#5c544c;padding:0 8px;margin-bottom:5px}
+.pf-nav{display:flex;align-items:center;gap:9px;font-size:11px;color:#8d8479;padding:8px 10px;border-radius:8px}
+.pf-nav.on{background:#262119;color:#e0935f}
+.pf-side-foot{margin-top:auto;display:flex;flex-direction:column;gap:12px;padding:0 8px;font-size:10px;color:#7a7068}
+.pf-user{display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #2c2823}
+.pf-ava{width:18px;height:18px;border-radius:50%;background:linear-gradient(160deg,#4a2818,#c9714a);flex-shrink:0}
+.pf-main{display:flex;flex-direction:column;min-width:0;position:relative;overflow:hidden}
+.pf-main::after,.pf-phone::after{content:'';position:absolute;left:0;right:0;bottom:0;height:64px;background:linear-gradient(transparent,#1a1814);pointer-events:none}
+.pf-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px 4px}
+.pf-title{font-size:14px;font-weight:600;color:#e8e0d5;display:flex;align-items:center;gap:8px}
+.pf-count{font-size:8px;font-weight:400;color:#7a7068;background:#262119;border-radius:100px;padding:3px 8px}
+.pf-top-r{display:flex;align-items:center;gap:12px}
+.pf-slider{width:64px;height:2px;background:#3a3530;border-radius:2px;position:relative}
+.pf-slider::after{content:'';position:absolute;left:2px;top:-5px;width:12px;height:12px;border-radius:50%;background:#e8e0d5}
+.pf-search{width:92px;height:24px;border-radius:8px;background:#221f1b;border:1px solid #2c2823;font-size:9px;color:#6a6159;display:flex;align-items:center;padding:0 9px}
+.pf-add{background:var(--accent);color:#fff;font-size:10px;font-weight:500;border-radius:8px;padding:6px 12px;white-space:nowrap}
+.pf-tabs{display:flex;align-items:center;gap:4px;padding:8px 20px 4px}
+.pf-tab{font-size:9.5px;color:#7a7068;padding:5px 10px;border-radius:7px;border:1px solid transparent}
+.pf-tab.on{color:#e0935f;border-color:#3a2a20;background:#221a14}
+.pf-sort{margin-left:auto;font-size:9px;color:#6a6159}
+.pf-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;padding:12px 20px 0;flex:1;overflow:hidden;align-content:start}
+.pf-grid .pcov{aspect-ratio:2/3;border-radius:5px;position:relative;overflow:hidden;animation:shelfSlide var(--ease-out) both;animation-duration:.5s}
+.pf-grid .pcov::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:rgba(0,0,0,.28)}
+.pf-phone{display:none;position:relative;width:220px;height:449px;margin:0 auto;background:#1a1814;border-radius:36px;border:1px solid rgba(255,255,255,.12);box-shadow:0 0 0 1px rgba(0,0,0,.8),0 40px 80px rgba(28,25,21,.35),inset 0 0 0 1px rgba(255,255,255,.06);overflow:hidden;text-align:left}
+.pf-phone .pf-grid{grid-template-columns:repeat(3,1fr);gap:6px;padding:0}
+@media(max-width:1024px){
+  .pf-app{grid-template-columns:1fr}
+  .pf-side{display:none}
+  .pf-grid{grid-template-columns:repeat(6,1fr)}
+}
+@media(max-width:768px){
+  .proof-frame{background:none;box-shadow:none;padding:0;margin-top:40px}
+  .proof-frame-inner{background:none;border:0;border-radius:0;overflow:visible}
+  .proof-bar,.pf-app{display:none}
+  .pf-phone{display:block}
+}
+
 /* ══ BOOKSHELF STRIP ══ */
 .shelf-strip{background:var(--text);padding:40px 0 0;overflow:hidden}
 .shelf-scene{position:relative;padding:24px 0 0;display:flex;flex-direction:column;gap:0}
@@ -607,7 +648,42 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
           <div class="proof-dot" style="background:#3a3530"></div>
           <span style="margin-left:10px;font-size:11px;color:#7a7068;font-family:'DM Sans',sans-serif">aniketbrainstorms.github.io/tsundoku</span>
         </div>
-        <div class="proof-grid-shelf" id="proofGrid"></div>
+        <div class="pf-app" aria-hidden="true">
+          <aside class="pf-side">
+            <div class="pf-logo">tsundoku</div>
+            <div class="pf-label">library</div>
+            <div class="pf-nav on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>my shelf</div>
+            <div class="pf-nav"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>my lists</div>
+            <div class="pf-nav"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>authors</div>
+            <div class="pf-nav"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.2"/></svg>genres</div>
+            <div class="pf-side-foot">
+              <span>share my shelf</span>
+              <div class="pf-user"><span class="pf-ava"></span>you@mail.com</div>
+            </div>
+          </aside>
+          <div class="pf-main">
+            <div class="pf-top">
+              <div class="pf-title">unread <span class="pf-count">216 books</span></div>
+              <div class="pf-top-r"><div class="pf-slider"></div><div class="pf-search">Search…</div><div class="pf-add">+ add book</div></div>
+            </div>
+            <div class="pf-tabs">
+              <span class="pf-tab">reading 3</span><span class="pf-tab">read 107</span><span class="pf-tab on">unread 216</span>
+              <span class="pf-sort">sort recently added ⌄</span>
+            </div>
+            <div class="pf-grid" id="proofGrid"></div>
+          </div>
+        </div>
+        <div class="pf-phone" aria-hidden="true">
+          <div class="app-sim">
+            <div class="app-notch"></div>
+            <div class="app-inner">
+              <div class="app-hdr"><span style="font-family:'Playfair Display',serif;font-size:14px">tsundoku</span><div class="app-ava">A</div></div>
+              <div class="app-search"><div class="app-search-ico"></div><span style="font-size:9px;color:#7a7068">Search your library…</span></div>
+              <div class="app-tabs"><div class="app-tab">reading 3</div><div class="app-tab">read 107</div><div class="app-tab active">unread 216</div></div>
+              <div class="pf-grid" id="proofGridM"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1177,7 +1253,21 @@ function fillCoverGrid(id, count, withDot){
     g.appendChild(d);
   }
 }
-fillCoverGrid('proofGrid', 16, true);
+function fillProofCovers(id, count, cols){
+  const g = document.getElementById(id); if(!g) return;
+  for(let i=0;i<count;i++){
+    const c = pal(i*7 + Math.floor(i/cols)*5); // varied colours, no obvious repeating columns
+    const d = document.createElement('div');
+    d.className = 'pcov';
+    d.style.cssText = `background:linear-gradient(160deg,${c[0]},${c[1]});animation-delay:${i*0.02}s`;
+    const dot = document.createElement('div');
+    dot.style.cssText = 'position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:#7a7068;border:1px solid rgba(0,0,0,.4)';
+    d.appendChild(dot);
+    g.appendChild(d);
+  }
+}
+fillProofCovers('proofGrid', 40, 8);
+fillProofCovers('proofGridM', 15, 3);
 fillCoverGrid('shareGrid', 15, false);
 
 /* ── FEATURE TABS ── */
