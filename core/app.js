@@ -2868,6 +2868,7 @@ function closeBookSearch() {
   navPop(bsOverlay, null);
   _updateAppRecede();
   if (addContext !== 'list') document.getElementById('floatingBar').style.display = '';
+  _bsSeq++;
   document.getElementById('bsInput').value = '';
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>';
   clearTimeout(bookSearchTimer);
@@ -2889,16 +2890,90 @@ function bsToggleBorrow() {
 }
 function onBsInput() {
   clearTimeout(bookSearchTimer);
+  _bsSeq++;
   const q = document.getElementById('bsInput').value.trim();
   if (!q) { document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>'; return; }
   if (q.length < 3) { document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Keep typing…</p></div>'; return; }
+  const _bsHit = bsCacheGet(q);
+  if (_bsHit) { renderBsResults(_bsHit.merged, _bsHit.authorHit); return; }
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><div class="loading-spinner"></div></div>';
-  bookSearchTimer = setTimeout(() => fetchBookSearch(q), 500);
+  bookSearchTimer = setTimeout(() => fetchBookSearch(q), 320);
+}
+
+// ── BOOK SEARCH ENGINE (bs-) ──
+let _bsSeq = 0;
+const _bsCache = new Map();
+function bsCacheGet(q) { return _bsCache.get(q.toLowerCase()) || null; }
+function bsCacheSet(q, v) {
+  if (_bsCache.size >= 30) _bsCache.delete(_bsCache.keys().next().value);
+  _bsCache.set(q.toLowerCase(), v);
+}
+
+// "title by author" / "title - author"
+function bsParseQuery(q) {
+  const m = q.match(/^(.{2,}?)\s+(?:by|[-–—])\s+(.{2,})$/i);
+  return m ? { title: m[1].trim(), author: m[2].trim() } : null;
+}
+
+// lowercase, strip diacritics / apostrophes / punctuation / (parentheticals) / leading article / trailing "a novel"
+function bsNormTitle(t) {
+  return (t || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\(.*?\)/g, ' ')
+    .replace(/['’]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ').trim()
+    .replace(/^(a|an|the)\s+/, '')
+    .replace(/\s+(a\s+)?novel$/, '');
+}
+
+// collapse editions of the same book; first record wins, gaps are filled from later ones
+function bsMerge(list) {
+  const seen = new Map(), out = [];
+  list.forEach(b => {
+    if (!b.title) return;
+    const last = (b.author || '').trim().toLowerCase().split(/\s+/).pop();
+    const nt = bsNormTitle(b.title);
+    const key = nt ? nt + '|' + last : '';
+    const prev = key ? seen.get(key) : null;
+    if (!prev) { out.push(b); if (key) seen.set(key, b); return; }
+    ['cover', 'year', 'publisher', 'genre', 'pageCount', '_description'].forEach(k => {
+      if (!prev[k] && b[k]) prev[k] = b[k];
+    });
+  });
+  return out;
+}
+
+function bsRank(list, q, authorQ) {
+  const JUNK = /\b(summary|study guide|analysis|workbook|sparknotes|cliffsnotes|cliff'?s notes|box(ed)? set|complete collection|companion|trivia|journal|notebook|coloring book|lesson plan|teacher'?s guide)\b/i;
+  const tok = s => bsNormTitle(s).split(' ').filter(t => t && t !== 'by');
+  const qn = bsNormTitle(q);
+  const qt = tok(q), at = authorQ ? tok(authorQ) : [];
+  const wantsJunk = JUNK.test(q);
+  return list.map((b, i) => {
+    const tn = bsNormTitle(b.title), an = bsNormTitle(b.author);
+    const hay = authorQ ? tn : tn + ' ' + an;
+    let s = 0;
+    if (qn && tn === qn) s += 100;
+    else if (qn && tn.startsWith(qn)) s += 60;
+    if (qt.length) s += 40 * qt.filter(t => hay.includes(t)).length / qt.length;
+    if (at.length) s += 30 * at.filter(t => an.includes(t)).length / at.length;
+    if (b.cover) s += 12;
+    if (b.pageCount) s += 4;
+    if (b.year) s += 2;
+    if (b._description) s += 3;
+    if (!wantsJunk && JUNK.test(b.title || '')) s -= 60;
+    if ((b.title || '').length > 90) s -= 10;
+    return { b, s: s - i * 0.05 }; // original API order breaks ties
+  }).sort((x, y) => y.s - x.s).slice(0, 40).map(x => x.b);
 }
 
 async function fetchBookSearch(query) {
   const resultsEl = document.getElementById('bsResults');
-  const isIsbn = /^[\d\-]{9,17}$/.test(query.replace(/\s/g, ''));
+  const mySeq = ++_bsSeq;
+  const isbnClean = query.replace(/[\s\-]/g, '');
+  const isIsbn = /^(\d{9}[\dXx]|\d{12,13})$/.test(isbnClean);
+  const parsedQ = isIsbn ? null : bsParseQuery(query);
 
   async function searchGoogle(qParam) {
     const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${qParam}&maxResults=40&langRestrict=en&key=${window.BOOKS_API_KEY}`);
@@ -2946,8 +3021,15 @@ async function fetchBookSearch(query) {
   try {
     let gQueries, olQueries;
     if (isIsbn) {
-      gQueries = [searchGoogle(`isbn:${encodeURIComponent(query)}`)];
-      olQueries = [searchOpenLibrary('isbn', query)];
+      gQueries = [searchGoogle(`isbn:${isbnClean}`)];
+      olQueries = [searchOpenLibrary('isbn', isbnClean)];
+    } else if (parsedQ) {
+      // "title by author": scoped query first, original text as fallback
+      gQueries = [
+        searchGoogle(`intitle:${encodeURIComponent(parsedQ.title)}+inauthor:${encodeURIComponent(parsedQ.author)}`),
+        searchGoogle(encodeURIComponent(query))
+      ];
+      olQueries = [searchOpenLibrary('q', query)];
     } else {
       // Silent parallel general + author-scoped queries, merged — same pattern as the Google+OpenLibrary merge
       gQueries = [searchGoogle(encodeURIComponent(query)), searchGoogle(`inauthor:${encodeURIComponent(query)}`)];
@@ -2956,14 +3038,8 @@ async function fetchBookSearch(query) {
     const results = await Promise.allSettled([...gQueries, ...olQueries]);
     const g = results.slice(0, gQueries.length).flatMap(r => r.status === 'fulfilled' ? r.value : []);
     const ol = results.slice(gQueries.length).flatMap(r => r.status === 'fulfilled' ? r.value : []);
-    const gDeduped = dedupe(g);
-    const seenKeys = new Set(gDeduped.map(b => (b.title + b.author).toLowerCase().replace(/\s/g, '')));
-    const olDeduped = dedupe(ol).filter(b => {
-      const key = (b.title + b.author).toLowerCase().replace(/\s/g, '');
-      if (seenKeys.has(key)) return false;
-      seenKeys.add(key); return true;
-    });
-    const merged = [...gDeduped, ...olDeduped];
+    if (mySeq !== _bsSeq) return; // a newer search (or closing the overlay) superseded this one
+    const merged = bsRank(bsMerge([...g, ...ol]), parsedQ ? parsedQ.title : query, parsedQ ? parsedQ.author : '');
 
     // Extract author hit: use the most common author among top results
     let authorHit = null;
@@ -2998,8 +3074,11 @@ async function fetchBookSearch(query) {
         })();
       }
     }
+    if (mySeq !== _bsSeq) return;
+    if (merged.length) bsCacheSet(query, { merged, authorHit });
     renderBsResults(merged, authorHit);
   } catch (e) {
+    if (mySeq !== _bsSeq) return;
     resultsEl.innerHTML = '<div class="bs-state"><p>Search failed.<br>Check your connection or add manually.</p></div>';
   }
 }
