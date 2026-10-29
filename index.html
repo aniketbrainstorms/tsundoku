@@ -490,6 +490,7 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
 }
 </style>
 <link rel="stylesheet" href="landing/lm.css">
+<link rel="stylesheet" href="landing/demo.css">
 </head>
 <body>
 
@@ -648,7 +649,7 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
           <div class="proof-dot" style="background:#3a3530"></div>
           <span style="margin-left:10px;font-size:11px;color:#7a7068;font-family:'DM Sans',sans-serif">aniketbrainstorms.github.io/tsundoku</span>
         </div>
-        <div class="pf-app" aria-hidden="true">
+        <div class="pf-app" data-pf="desktop" role="region" aria-label="Interactive preview of the Tsundoku app">
           <aside class="pf-side">
             <div class="pf-logo">tsundoku</div>
             <div class="pf-label">library</div>
@@ -673,7 +674,7 @@ footer{background:var(--text);padding:40px clamp(20px,5vw,60px) calc(40px + var(
             <div class="pf-grid" id="proofGrid"></div>
           </div>
         </div>
-        <div class="pf-phone" aria-hidden="true">
+        <div class="pf-phone" data-pf="phone" role="region" aria-label="Interactive preview of the Tsundoku app on a phone">
           <div class="app-sim">
             <div class="app-notch"></div>
             <div class="app-inner">
@@ -1377,5 +1378,6 @@ window.addEventListener('scroll', ()=>{
 </script>
 <script src="landing/lm.js" defer></script>
 <script src="landing/hero.js" defer></script>
+<script src="landing/demo.js" defer></script>
 </body>
 </html>
