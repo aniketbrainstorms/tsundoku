@@ -1,0 +1,120 @@
+/* ═══════════ tsundoku — landing demo (proof section) ═══════════
+   Additive. Everything is `pf-` namespaced. Load AFTER the page's inline <style> (and after lm.css).
+   Builds on the .pf-* base rules already in the page (window layout, sidebar, tabs, phone frame).
+   This file also fixes the overlapping covers: a grid with a fixed height squeezes auto rows,
+   so rows are now `max-content` and covers hold their 2:3 ratio with padding instead of aspect-ratio. */
+
+.pf-app{position:relative}
+.pf-app button,.pf-phone button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.pf-app input,.pf-phone input{font-family:inherit}
+.pf-app :focus-visible,.pf-phone :focus-visible{outline:2px solid var(--accent-light);outline-offset:2px}
+.pf-app input[type=search]::-webkit-search-cancel-button,.pf-phone input[type=search]::-webkit-search-cancel-button{display:none}
+
+/* ── sidebar ── */
+.pf-nav{width:100%;border:0;background:none;text-align:left;transition:background .2s,color .2s}
+.pf-nav:not(.on):hover{color:#e8e0d5;background:rgba(255,255,255,.03)}
+.pf-share{background:none;border:0;color:inherit;font-size:10px;text-align:left;padding:0}
+.pf-share:hover{color:#e8e0d5}
+
+/* ── header, tabs, controls ── */
+.pf-title{text-transform:none}
+.pf-chip{background:#221a14;border:1px solid #3a2a20;color:#e0935f;font-size:8px;border-radius:100px;padding:3px 8px}
+.pf-chip[hidden]{display:none}
+.pf-tab{background:none;transition:color .2s,background .2s}
+.pf-tab:not(.on):hover{color:#e8e0d5}
+.pf-sort{background:none;border:0;color:#6a6159;font-size:9px}
+.pf-sort:hover{color:#a89e94}
+.pf-add{border:0;transition:background .2s,transform .2s var(--ease-spring)}
+.pf-add:hover{background:var(--accent-dark)}
+.pf-add:active,.pf-plus:active{transform:scale(.96)}
+.pf-search{width:128px;gap:6px;transition:border-color .2s}
+.pf-search:focus-within{border-color:var(--accent)}
+.pf-search input,.app-search input{flex:1;min-width:0;width:100%;background:none;border:0;outline:none;color:#e8e0d5;font-size:9.5px}
+.app-search input{font-size:9px}
+.pf-search input::placeholder,.app-search input::placeholder{color:#6a6159}
+.pf-hdr-r{display:flex;align-items:center;gap:6px}
+.pf-plus{width:22px;height:22px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0 0 1px}
+.app-tab{cursor:pointer}
+
+/* range inputs (cover size, progress) */
+.pf-app input[type=range],.pf-phone input[type=range]{-webkit-appearance:none;appearance:none;box-sizing:content-box;height:2px;padding:9px 0;background:#3a3530;background-clip:content-box;border-radius:2px;outline:none;cursor:pointer}
+.pf-app input[type=range]::-webkit-slider-thumb,.pf-phone input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#e8e0d5;border:0}
+.pf-app input[type=range]::-moz-range-thumb,.pf-phone input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#e8e0d5;border:0}
+.pf-app input[type=range]::-moz-range-track,.pf-phone input[type=range]::-moz-range-track{background:transparent}
+.pf-size{width:64px}
+
+/* ── cover grid ── */
+.pf-app .pf-grid,.pf-phone .pf-grid{display:grid;grid-auto-rows:max-content;align-content:start;flex:1;min-height:0;overflow-y:auto;scrollbar-width:none}
+.pf-grid::-webkit-scrollbar{display:none}
+.pf-app .pf-grid{grid-template-columns:repeat(auto-fill,minmax(var(--pf-min,78px),1fr));gap:10px;padding:12px 20px 72px}
+.pf-phone .pf-grid{grid-template-columns:repeat(3,1fr);gap:6px;padding:0 0 64px}
+.pf-empty{grid-column:1/-1;text-align:center;font-size:10px;color:#6a6159;padding:36px 0}
+.pf-cov{position:relative;display:block;width:100%;height:0;padding:0 0 150%;border:0;border-radius:5px;background:linear-gradient(160deg,var(--a),var(--b));overflow:hidden;container-type:inline-size;animation:shelfSlide .5s var(--ease-out) backwards;transition:transform .25s var(--ease-out),filter .25s}
+.pf-cov::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:rgba(0,0,0,.28);z-index:1}
+.pf-cov:active{transform:scale(.97)}
+.pf-cov-in{position:absolute;inset:0;padding:12% 8% 8% 14%;display:flex;flex-direction:column;justify-content:space-between;text-align:left;color:rgba(255,255,255,.92)}
+.pf-cov-t{font-family:var(--fd);font-size:9px;font-size:max(7px,11cqw);line-height:1.15;font-weight:600;text-wrap:balance}
+.pf-cov-a{font-size:6px;font-size:max(5px,7cqw);letter-spacing:.06em;text-transform:uppercase;opacity:.7;line-height:1.2}
+.pf-dot{position:absolute;top:5px;right:5px;width:5px;height:5px;border-radius:50%;background:#7a7068;border:1px solid rgba(0,0,0,.4);z-index:1}
+.pf-dot.reading{background:#c9714a}
+.pf-dot.read{background:#5a8a6a}
+@media(hover:hover){.pf-cov:hover{transform:translateY(-3px);filter:brightness(1.12)}}
+
+/* ── lists / authors / genres ── */
+.pf-rows{display:flex;flex-direction:column;gap:7px;padding:12px 20px 72px;overflow-y:auto;scrollbar-width:none;flex:1;min-height:0}
+.pf-rows::-webkit-scrollbar{display:none}
+.pf-row{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:#221f1b;border:1px solid #2c2823;border-radius:10px;padding:9px 12px;color:#e8e0d5;flex-shrink:0;transition:background .2s,border-color .2s}
+.pf-row:hover{background:#27231e;border-color:#3a3530}
+.pf-row b{display:block;font-size:11px;font-weight:500}
+.pf-row small{display:block;font-size:8.5px;color:#7a7068;margin-top:1px}
+.pf-emoji,.pf-av{width:26px;height:26px;border-radius:8px;background:#2c2823;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.pf-av{border-radius:50%;font-size:9px;color:#b0a89e;letter-spacing:.04em}
+.pf-stack{margin-left:auto;display:flex}
+.pf-mini{display:block;width:14px;height:20px;border-radius:2px;margin-left:-7px;border:1.5px solid #221f1b;background:linear-gradient(160deg,var(--a),var(--b));flex-shrink:0}
+.pf-mini:first-child{margin-left:0}
+.pf-pills{display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px}
+.pf-pill{display:flex;align-items:center;gap:8px;background:#221f1b;border:1px solid #2c2823;border-radius:100px;padding:8px 14px;color:#e8e0d5;font-size:11px;transition:background .2s,border-color .2s}
+.pf-pill:hover{background:#27231e;border-color:#c9714a}
+.pf-pill small{font-size:9px;color:#7a7068}
+
+/* ── sheet: book detail / add book ── */
+.pf-ov{position:absolute;inset:0;z-index:20;display:flex;opacity:0;transition:opacity .25s var(--ease-out)}
+.pf-ov[hidden]{display:none}
+.pf-ov.on{opacity:1}
+.pf-scrim{position:absolute;inset:0;background:rgba(10,9,7,.62)}
+.pf-panel{position:relative;margin:auto;width:min(320px,calc(100% - 32px));background:#1f1c17;border:1px solid #2c2823;border-radius:14px;padding:18px;color:#e8e0d5;text-align:left;box-shadow:0 24px 60px rgba(0,0,0,.5);transform:translateY(10px) scale(.98);transition:transform .3s var(--ease-out);outline:none}
+.pf-ov.on .pf-panel{transform:none}
+.pf-phone .pf-panel{margin:auto 0 0;width:100%;border-radius:18px 18px 0 0;border-width:1px 0 0;padding:16px 16px 20px;transform:translateY(40px)}
+.pf-phone .pf-ov.on .pf-panel{transform:none}
+.pf-x{position:absolute;top:10px;right:12px;width:26px;height:26px;border-radius:50%;border:0;background:#2a2620;color:#a89e94;font-size:16px;line-height:1;padding:0 0 1px}
+.pf-x:hover{color:#e8e0d5}
+.pf-bk{display:flex;gap:12px;margin-bottom:14px;padding-right:26px}
+.pf-bk-cov{width:48px;height:72px;flex-shrink:0;border-radius:4px;background:linear-gradient(160deg,var(--a),var(--b));box-shadow:inset 3px 0 0 rgba(0,0,0,.28)}
+.pf-bk-i h3,.pf-add-h{font-family:var(--fd);font-size:15px;font-weight:600;line-height:1.2;margin:0}
+.pf-bk-i p{font-size:11px;color:#a89e94;margin-top:3px}
+.pf-bk-i small{font-size:9px;color:#7a7068}
+.pf-seg{display:flex;gap:3px;background:#16140f;border:1px solid #2c2823;border-radius:9px;padding:3px}
+.pf-seg button{flex:1;border:0;background:none;color:#8d8479;font-size:10px;padding:8px 0;border-radius:6px;transition:background .2s,color .2s}
+.pf-seg button.on{background:var(--accent);color:#fff}
+.pf-prog{display:block;margin-top:12px;font-size:9.5px;color:#a89e94}
+.pf-prog b{color:#e8e0d5;font-weight:500}
+.pf-prog input{display:block;width:100%}
+.pf-addq{display:block;width:100%;margin:12px 0 10px;background:#16140f;border:1.5px solid var(--accent);border-radius:9px;color:#e8e0d5;font-size:12px;padding:10px 12px;outline:none}
+.pf-addq::placeholder{color:#6a6159}
+.pf-res{display:flex;flex-direction:column;gap:6px;min-height:156px}
+.pf-hint{font-size:9.5px;color:#7a7068;line-height:1.5}
+.pf-rr{display:flex;align-items:center;gap:10px;padding:7px;border-radius:8px;background:#221f1b}
+.pf-rr b{display:block;font-size:10.5px;font-weight:500}
+.pf-rr small{display:block;font-size:8.5px;color:#7a7068}
+.pf-rr .pf-mini{width:22px;height:32px;margin:0;border-color:#2c2823}
+.pf-rr button{margin-left:auto;background:var(--accent);color:#fff;border:0;border-radius:100px;font-size:9.5px;padding:7px 14px}
+.pf-own{margin-left:auto;font-style:normal;font-size:8.5px;line-height:1.4;color:#7eb38e;text-align:right}
+
+/* ── toast ── */
+.pf-toast{position:absolute;left:50%;bottom:16px;z-index:30;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--bg);color:var(--text);font-size:10.5px;font-weight:500;padding:8px 14px;border-radius:100px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transform:translate(-50%,12px);pointer-events:none;transition:opacity .25s var(--ease-out),transform .25s var(--ease-out)}
+.pf-toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* iOS zooms the page when a focused input is under 16px */
+@media(hover:none) and (pointer:coarse){
+  .pf-phone input[type=search]{font-size:16px}
+}
