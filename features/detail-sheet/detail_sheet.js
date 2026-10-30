@@ -329,28 +329,26 @@ function dsRenderCTA(status, notOwned) {
       book.status = newStatus;
       book.borrowed_from = null;
       await dbUpdate(editingId, { status: newStatus, borrowed_from: null });
-      const allLists = window._getLoLists ? window._getLoLists() : [];
-      for (const l of allLists) {
-        if ((l._books || []).some(b => String(b.id) === String(editingId))) {
-          await sb.from('list_books').update({ owned: true }).eq('list_id', l.id).eq('book_id', editingId);
-          if (window._ldSetOwned && window._ldGetOwned) {
-            const arr = window._ldGetOwned(l.id);
-            if (!arr.includes(String(editingId))) { arr.push(String(editingId)); window._ldSetOwned(l.id, arr); }
-          }
-          break;
-        }
-      }
+      // ownership follows the shelf: keep the stored flag in step for every list that holds this book
+      await sb.from('list_books').update({ owned: true }).eq('book_id', editingId);
       renderGrid();
       dsClose();
       showToast('Marked as owned — added to shelf ✓');
     };
     secondary.className = 'ds-secondary-btn';
-    secondary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Remove from List`;
+    secondary.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> ${book && book.borrowed_from != null ? 'Remove' : 'Remove from wishlist'}`;
     secondary.onclick = async () => {
       if (!book) return;
+      const id = editingId;
       dsClose();
-      await removeOrHideBook(editingId);
-      showToast('Removed from list');
+      // delete the wanted book everywhere: drop it from every list, then the row itself
+      await sb.from('list_books').delete().eq('book_id', id);
+      if (!(await dbDelete(id))) return;
+      (window._getLoLists ? window._getLoLists() : []).forEach(l => { l._books = (l._books || []).filter(b => String(b.id) !== String(id)); });
+      books = books.filter(b => String(b.id) !== String(id));
+      renderGrid();
+      if (typeof renderShelfGrid === 'function') renderShelfGrid();
+      showToast('Removed');
     };
     return;
   }
