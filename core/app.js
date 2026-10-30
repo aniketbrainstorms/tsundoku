@@ -4632,6 +4632,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
   window.openListsOverlay = async function () {
     document.getElementById('loSearchInput').value = '';
     navPush(document.getElementById('profileModal'), document.getElementById('listsOverlay'));
+    if (window.wlRender) window.wlRender();
     await loLoadLists();
     updateListsCount();
     loRenderLists();
@@ -4642,6 +4643,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
   };
 
   function loRenderLists() {
+    if (window.wlRender) window.wlRender();
     const q = (document.getElementById('loSearchInput').value || '').toLowerCase().trim();
     const scroll = document.getElementById('loScroll');
     const filtered = q ? loLists.filter(l => l.name.toLowerCase().includes(q)) : loLists;
@@ -4736,6 +4738,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
     document.getElementById('loDim').classList.add('on');
   }
   function loCloseQM() { document.getElementById('loQM').classList.remove('visible'); loQMTargetId = null; }
+  window.loOpenQM = loOpenQM;
 
   window.loCloseDim = function () { loCloseQM(); document.getElementById('loDim').classList.remove('on'); };
   window.loQMOpen = function () {
@@ -6875,5 +6878,119 @@ window.addEventListener('orientationchange', () => {
   window.addEventListener('pageshow', pinScroll);
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) setTimeout(pinScroll, 100);
+  });
+})();
+
+// ── WANTED BOOKS (wl-) — My Lists screen: list chips + grid ───────────────
+;(function () {
+  const WL_COLORS = ['#c9714a', '#5a8fa8', '#6a9a72', '#9a6ac0', '#c0814a', '#6a72c0', '#c06a6a', '#6ac0b8', '#b0963c', '#a06ab8'];
+  let wlFilter = 'all';
+  let wlDidLong = false, wlLongTimer = null, wlT0 = null;
+
+  function wlLists() {
+    const arr = (window._getLoLists ? window._getLoLists() : []).slice();
+    arr.sort((a, b) => (a.position ?? 1e9) - (b.position ?? 1e9) || new Date(b.created_at) - new Date(a.created_at));
+    return arr;
+  }
+  function wlColor(list, i) { return list.color || WL_COLORS[i % WL_COLORS.length]; }
+  function wlIsWanted(b) { return b.status === 'not-owned' && b.borrowed_from == null; }
+  function wlInList(list, b) { return (list._books || []).some(x => String(x.id) === String(b.id)); }
+
+  window.wlRender = function () {
+    const chips = document.getElementById('wlChips');
+    const grid = document.getElementById('wlGrid');
+    const bar = document.getElementById('wlListBar');
+    if (!chips || !grid || !bar) return;
+    const lists = wlLists();
+    if (wlFilter !== 'all' && !lists.some(l => String(l.id) === String(wlFilter))) wlFilter = 'all';
+    const wanted = books.filter(wlIsWanted);
+    const cur = lists.find(l => String(l.id) === String(wlFilter)) || null;
+
+    chips.innerHTML =
+      `<button class="wl-chip${cur ? '' : ' active'}" data-f="all" role="tab" aria-selected="${!cur}">all <span class="wl-chip-n">${wanted.length}</span></button>`
+      + lists.map((l, i) => {
+        const on = cur && String(l.id) === String(cur.id);
+        const id = escapeAttr(String(l.id));
+        return `<button class="wl-chip${on ? ' active' : ''}" data-id="${id}" data-f="${id}" style="--wl-c:${wlColor(l, i)}" role="tab" aria-selected="${!!on}">${escapeHtml(l.emoji || '')} ${escapeHtml(l.name)} <span class="wl-chip-n">${(l._books || []).length}</span></button>`;
+      }).join('')
+      + `<button class="wl-chip wl-chip--new" data-f="new">+ new list</button>`;
+
+    if (cur) {
+      const n = (cur._books || []).length;
+      bar.innerHTML = `<span>${escapeHtml(cur.emoji || '')} ${escapeHtml(cur.name)} · ${n} ${n === 1 ? 'book' : 'books'}</span><button type="button" data-wl="open">open list ›</button>`;
+      bar.classList.add('on');
+    } else {
+      bar.innerHTML = '';
+      bar.classList.remove('on');
+    }
+
+    const items = cur ? books.filter(b => wlInList(cur, b)) : wanted;
+    if (!items.length) {
+      grid.innerHTML = `<div class="wl-empty">${cur ? 'nothing in ' + escapeHtml(cur.name) + ' yet.' : 'no wanted books yet.'}</div>`;
+      return;
+    }
+    const colorOf = new Map(lists.map((l, i) => [String(l.id), wlColor(l, i)]));
+    grid.innerHTML = items.map((b, i) => {
+      const dots = cur ? '' : lists.filter(l => wlInList(l, b)).slice(0, 3).map(l => `<i style="background:${colorOf.get(String(l.id))}"></i>`).join('');
+      return `<div class="book-card" role="button" tabindex="0" aria-label="Open ${escapeAttr(b.title || 'book')}" data-id="${b.id}" style="animation-delay:${Math.min(i, 12) * 0.035}s">${coverHtml(b)}${b.status !== 'not-owned' ? '<span class="wl-own" title="on your shelf"></span>' : ''}${dots ? `<span class="wl-dots">${dots}</span>` : ''}</div>`;
+    }).join('');
+  };
+
+  const chipsEl = document.getElementById('wlChips');
+  const gridEl = document.getElementById('wlGrid');
+  const barEl = document.getElementById('wlListBar');
+  if (!chipsEl || !gridEl || !barEl) return;
+
+  chipsEl.addEventListener('click', e => {
+    const chip = e.target.closest('.wl-chip');
+    if (!chip) return;
+    if (wlDidLong) { wlDidLong = false; return; }
+    const f = chip.dataset.f;
+    if (f === 'new') { document.getElementById('loNewBtn')?.click(); return; }
+    wlFilter = f;
+    window.wlRender();
+    document.querySelector('#wlChips .wl-chip.active')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  });
+  chipsEl.addEventListener('touchstart', e => {
+    const chip = e.target.closest('.wl-chip[data-id]');
+    if (!chip) return;
+    wlDidLong = false;
+    wlT0 = [e.touches[0].clientX, e.touches[0].clientY];
+    wlLongTimer = setTimeout(() => {
+      wlDidLong = true;
+      if (navigator.vibrate) navigator.vibrate(10);
+      if (window.loOpenQM) window.loOpenQM(chip.dataset.id, chip);
+    }, 480);
+  }, { passive: true });
+  chipsEl.addEventListener('touchmove', e => {
+    if (!wlT0) return;
+    if (Math.abs(e.touches[0].clientX - wlT0[0]) > 8 || Math.abs(e.touches[0].clientY - wlT0[1]) > 8) clearTimeout(wlLongTimer);
+  }, { passive: true });
+  ['touchend', 'touchcancel'].forEach(t => chipsEl.addEventListener(t, () => clearTimeout(wlLongTimer)));
+  chipsEl.addEventListener('contextmenu', e => {
+    const chip = e.target.closest('.wl-chip[data-id]');
+    if (!chip) return;
+    e.preventDefault();
+    if (window.loOpenQM) window.loOpenQM(chip.dataset.id, chip);
+  });
+
+  barEl.addEventListener('click', e => {
+    if (e.target.closest('[data-wl="open"]') && typeof window.openListDetail === 'function') window.openListDetail(wlFilter);
+  });
+
+  gridEl.addEventListener('touchstart', e => { const c = e.target.closest('.book-card'); if (c) startPress(e, c.dataset.id, c); }, { passive: true });
+  gridEl.addEventListener('touchend', e => { const c = e.target.closest('.book-card'); if (c) { e.stopPropagation(); endPress(e, c.dataset.id, c); } });
+  gridEl.addEventListener('touchcancel', e => { const c = e.target.closest('.book-card'); if (c && !didLongPress) cancelPress(c); });
+  gridEl.addEventListener('click', e => { const c = e.target.closest('.book-card'); if (c) openDetailModal(c.dataset.id); });
+  gridEl.addEventListener('keydown', e => { if (e.key === 'Enter') e.target.closest('.book-card')?.click(); });
+
+  window.addEventListener('load', () => {
+    const _rg = window.renderGrid;
+    if (typeof _rg === 'function') {
+      window.renderGrid = function () {
+        _rg.apply(this, arguments);
+        if (document.getElementById('listsOverlay')?.classList.contains('open')) window.wlRender();
+      };
+    }
   });
 })();
