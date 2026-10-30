@@ -3302,6 +3302,11 @@ function openManualAdd(context = 'shelf') {
   setTimeout(() => document.getElementById('addModal').classList.add('visible'), 80);
 }
 
+function wlFindWanted(title, author) {
+  const key = bsShelfKey(title, author);
+  if (!key) return null;
+  return books.find(b => b.status === 'not-owned' && b.borrowed_from == null && bsShelfKey(b.title, b.author) === key) || null;
+}
 async function confirmAdd() {
   const title = document.getElementById('addTitle').value.trim();
   if (!title) { document.getElementById('addTitle').style.borderColor = 'var(--accent)'; return; }
@@ -3311,7 +3316,7 @@ async function confirmAdd() {
   const borrowedFrom = isBorrowed ? (document.getElementById('borrowedFromInput')?.value.trim() || '') : null;
   const _addGenresArr = (document.getElementById('addGenres')?.value || '').split(',').map(s => s.trim()).filter(Boolean);
   const _addThemesArr = (document.getElementById('addThemes')?.value || '').split(',').map(s => s.trim()).filter(Boolean);
-  const newBook = await dbAdd({
+  const _addPayload = {
     title,
     author: document.getElementById('addAuthor').value.trim() || '',
     status: isListAdd ? 'not-owned' : (isBorrowed ? 'reading' : addStatus),
@@ -3327,17 +3332,31 @@ async function confirmAdd() {
     description: window._pendingDescription || null,
     borrowed_from: borrowedFrom,
     ...(window.TsundokuSeries ? TsundokuSeries.readAdd() : {}),
-  });
+  };
+  // a wanted copy is already in your lists: move that one to the shelf instead of adding a second row
+  const _wanted = isListAdd ? null : wlFindWanted(title, _addPayload.author);
+  let newBook;
+  if (_wanted) {
+    const promote = { status: _addPayload.status, pages_read: 0, total_pages: 0, borrowed_from: _addPayload.borrowed_from };
+    ['year', 'page_count', 'description'].forEach(k => { if (_addPayload[k]) promote[k] = _addPayload[k]; });
+    if (_addPayload.genres.length) { promote.genres = _addPayload.genres; promote.genre = _addPayload.genre; promote.primary_genre = _addPayload.primary_genre; }
+    if (_addPayload.themes.length) promote.themes = _addPayload.themes;
+    const ok = await dbUpdate(_wanted.id, promote);
+    newBook = ok ? Object.assign(_wanted, promote) : null;
+    if (ok) sb.from('list_books').update({ owned: true }).eq('book_id', _wanted.id).then(() => {}).catch(() => {});
+  } else {
+    newBook = await dbAdd(_addPayload);
+  }
   if (newBook) {
     let finalUrl = null;
     if (addCoverFile) finalUrl = await uploadCover(addCoverFile, newBook.id);
     else if (addCoverUrl) finalUrl = addCoverUrl;
     if (finalUrl) { await dbUpdate(newBook.id, { cover_url: finalUrl }); newBook.cover_url = finalUrl; }
-    books.unshift(newBook);
+    if (!_wanted) books.unshift(newBook);
     try {
       const _ck = 'tsundoku_books_' + currentUser.id;
       const _cc = localStorage.getItem(_ck);
-      if (_cc) { const _cp = JSON.parse(_cc); _cp.unshift(newBook); localStorage.setItem(_ck, JSON.stringify(_cp)); }
+      if (_cc && !_wanted) { const _cp = JSON.parse(_cc); _cp.unshift(newBook); localStorage.setItem(_ck, JSON.stringify(_cp)); }
     } catch {}
     if (isListAdd && window.ldAddBookToCurrentList) {
       const ok = await window.ldAddBookToCurrentList(newBook, false);
@@ -3346,7 +3365,7 @@ async function confirmAdd() {
         return;
       }
     }
-    closeModal('addModal'); renderGrid(); showToast('Book added ✓');
+    closeModal('addModal'); renderGrid(); showToast(_wanted ? 'Moved from your lists to the shelf ✓' : 'Book added ✓');
   }
   btn.disabled = false; btn.textContent = addContext === 'list' ? 'Add to List' : 'Add to Shelf';
 }
@@ -4564,8 +4583,9 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
       try { _ownedCache[listId] = new Set(JSON.parse(localStorage.getItem('tsundoku_owned_' + listId) || '[]')); } catch { _ownedCache[listId] = new Set(); }
     }
   }
+  // ownership follows the shelf: a book is owned when it is on the shelf, the same in every list
   function ldGetOwned(listId) {
-    return _ownedCache[listId] ? Array.from(_ownedCache[listId]) : [];
+    return books.filter(b => b.status !== 'not-owned').map(b => String(b.id));
   }
   window._ldGetOwned = ldGetOwned;
   function ldSetOwned(listId, arr) {
@@ -4575,14 +4595,15 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
   }
   window._ldSetOwned = ldSetOwned;
   function ldIsOwned(listId, bookId) {
-    return (_ownedCache[listId] || new Set()).has(String(bookId));
+    const b = books.find(x => String(x.id) === String(bookId));
+    return !!b && b.status !== 'not-owned';
   }
   window._ldIsOwned = ldIsOwned;
 
   async function ldToggleOwned(listId, bookId) {
     const id = String(bookId);
     const set = _ownedCache[listId] || new Set();
-    const nowOwned = !set.has(id);
+    const nowOwned = !ldIsOwned(listId, bookId);
     if (nowOwned) set.add(id); else set.delete(id);
     _ownedCache[listId] = set;
     ldSetOwned(listId, Array.from(set));
@@ -4603,7 +4624,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
     if (typeof renderShelfGrid === 'function') renderShelfGrid();
 
     // try to persist to DB
-    await sb.from('list_books').update({ owned: nowOwned }).eq('list_id', listId).eq('book_id', bookId);
+    await sb.from('list_books').update({ owned: nowOwned }).eq('book_id', bookId);
     return nowOwned;
   }
 
@@ -5432,13 +5453,8 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
         showToast('Book not found on shelf');
         return;
       }
-      // Mark owned in list
-      const ownedArr = ldGetOwned(ldCurrentListId);
-      if (!ownedArr.includes(String(id))) {
-        ownedArr.push(String(id));
-        ldSetOwned(ldCurrentListId, ownedArr);
-        await sb.from('list_books').update({ owned: true }).eq('list_id', ldCurrentListId).eq('book_id', id);
-      }
+      // keep the stored flag in step for every list that holds this book
+      await sb.from('list_books').update({ owned: true }).eq('book_id', id);
       renderGrid();
       ldUpdateProgress();
       ldRenderList();
