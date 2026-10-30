@@ -6249,8 +6249,8 @@ window.addEventListener('orientationchange', () => {
     // CTAs
     const primary   = document.getElementById('ddpPrimary');
     const secondary = document.getElementById('ddpSecondary');
-    const statusNext = { reading: ['read', 'Mark as read'], unread: ['reading', 'Start reading'], read: ['reading', 'Re-read'] };
-    const statusSec  = { reading: ['unread', 'Move to unread'], unread: ['read', 'Mark as read'], read: ['unread', 'Move to unread'] };
+    const statusNext = { reading: ['read', 'Mark as read'], unread: ['reading', 'Start reading'], read: ['reading', 'Re-read'], 'not-owned': ['unread', 'Mark as owned'] };
+    const statusSec  = { reading: ['unread', 'Move to unread'], unread: ['read', 'Mark as read'], read: ['unread', 'Move to unread'], 'not-owned': ['reading', 'Start reading'] };
     const [pStatus, pLabel] = statusNext[book.status] || ['reading', 'Start reading'];
     const [sStatus, sLabel] = statusSec[book.status]  || ['unread', 'Move to unread'];
     primary.textContent   = pLabel;
