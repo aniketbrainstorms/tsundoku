@@ -1811,7 +1811,13 @@
     <div class="lo-hint">Hold to rename or delete</div>
     <div class="lo-scroll" id="loScroll"></div>
 
-    <div id="loDim" onclick="loCloseDim()"></div>
+    <div class="wl-fab-wrap">
+          <button class="wl-fab" id="wlFab" type="button" aria-label="Add a book">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span class="wl-fab-label">add book</span>
+          </button>
+        </div>
+        <div id="loDim" onclick="loCloseDim()"></div>
     <div class="quick-menu" id="loQM">
       <span class="qm-label">List options</span>
       <button class="qm-item" onclick="loQMOpen()">
