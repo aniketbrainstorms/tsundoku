@@ -2867,7 +2867,8 @@ function closeBookSearch() {
   const bsOverlay = document.getElementById('bookSearchOverlay');
   navPop(bsOverlay, null);
   _updateAppRecede();
-  if (addContext !== 'list') document.getElementById('floatingBar').style.display = '';
+  if (addContext !== 'list' || window.wlAddMode) document.getElementById('floatingBar').style.display = '';
+  window.wlAddMode = false;
   _bsSeq++;
   document.getElementById('bsInput').value = '';
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>';
@@ -3254,8 +3255,8 @@ function renderBsResults(items, authorHit, note) {
     });
   }
 }
-
 function selectBsResult(title, author, coverUrl, meta) {
+  if (window.wlAddMode && window.wlPick) { window.wlPick(title, author, coverUrl, meta); return; }
   window._pendingDescription = meta?._description || null;
   const wasBorrowed = bsBorrowed && addContext === 'shelf';
   closeBookSearch();
@@ -3288,8 +3289,10 @@ function selectBsResult(title, author, coverUrl, meta) {
 
 function openManualAdd(context = 'shelf') {
   const wasBorrowed = bsBorrowed && context === 'shelf';
+  const _wlKeep = window.wlAddMode;
   setAddContext(context);
   closeBookSearch();
+  window.wlAddMode = _wlKeep;
   const bar = document.getElementById('floatingBar');
   if (bar) bar.style.display = 'none';
   if (wasBorrowed) {
@@ -3358,7 +3361,8 @@ async function confirmAdd() {
       const _cc = localStorage.getItem(_ck);
       if (_cc && !_wanted) { const _cp = JSON.parse(_cc); _cp.unshift(newBook); localStorage.setItem(_ck, JSON.stringify(_cp)); }
     } catch {}
-    if (isListAdd && window.ldAddBookToCurrentList) {
+    const _wlManual = isListAdd && !!window.wlAddMode;
+    if (isListAdd && !_wlManual && window.ldAddBookToCurrentList) {
       const ok = await window.ldAddBookToCurrentList(newBook, false);
       if (!ok) {
         btn.disabled = false; btn.textContent = 'Add to List';
@@ -3366,6 +3370,7 @@ async function confirmAdd() {
       }
     }
     closeModal('addModal'); renderGrid(); showToast(_wanted ? 'Moved from your lists to the shelf ✓' : 'Book added ✓');
+    if (_wlManual && window.wlAfterManual) window.wlAfterManual(newBook);
   }
   btn.disabled = false; btn.textContent = addContext === 'list' ? 'Add to List' : 'Add to Shelf';
 }
@@ -3462,7 +3467,8 @@ function closeModal(id) {
     _updateAppRecede();
   }
   if (id === 'addModal') {
-    const wasListAdd = addContext === 'list';
+    const wasListAdd = addContext === 'list' && !window.wlAddMode;
+    window.wlAddMode = false;
     resetAddModal();
     setAddContext('shelf');
     if (!wasListAdd) document.getElementById('floatingBar').style.display = '';
@@ -6896,6 +6902,7 @@ window.addEventListener('orientationchange', () => {
   function wlIsWanted(b) { return b.status === 'not-owned' && b.borrowed_from == null; }
   function wlInList(list, b) { return (list._books || []).some(x => String(x.id) === String(b.id)); }
 
+  window._wl = { lists: wlLists, color: wlColor };
   window.wlRender = function () {
     const chips = document.getElementById('wlChips');
     const grid = document.getElementById('wlGrid');
@@ -6992,5 +6999,176 @@ window.addEventListener('orientationchange', () => {
         if (document.getElementById('listsOverlay')?.classList.contains('open')) window.wlRender();
       };
     }
+  });
+})();
+
+// ── WANTED BOOKS (wl-) — add flow: plus button + compact picker ────────────
+;(function () {
+  let cand = null, sel = [], lockedIds = [], busy = false, toastTimer = null;
+
+  const lists = () => (window._wl ? window._wl.lists() : (window._getLoLists ? window._getLoLists() : []));
+  const colorOf = (l, i) => (window._wl ? window._wl.color(l, i) : '#c9714a');
+  const inList = (l, bookId) => (l._books || []).some(b => String(b.id) === String(bookId));
+  const activeListId = () => {
+    const f = document.querySelector('#wlChips .wl-chip.active')?.dataset.f;
+    return f && f !== 'all' && f !== 'new' ? f : null;
+  };
+
+  function toast(msg) {
+    let t = document.getElementById('wlToast');
+    if (!t) { t = document.createElement('div'); t.id = 'wlToast'; t.className = 'wl-toast'; document.body.appendChild(t); }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function ensurePicker() {
+    let p = document.getElementById('wlPicker');
+    if (p) return p;
+    p = document.createElement('div');
+    p.className = 'modal-overlay';
+    p.id = 'wlPicker';
+    p.style.zIndex = '150';
+    p.innerHTML = '<div class="modal-sheet"><div class="modal-handle"></div><div id="wlPickerBody"></div></div>';
+    p.addEventListener('click', e => {
+      if (e.target === p) { close(); return; }
+      const chip = e.target.closest('.wl-pk-chip');
+      if (chip && !chip.disabled) {
+        const id = chip.dataset.id;
+        sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.concat(id);
+        render();
+        return;
+      }
+      if (e.target.closest('#wlPickerGo')) go();
+    });
+    document.body.appendChild(p);
+    return p;
+  }
+
+  function render() {
+    const body = document.getElementById('wlPickerBody');
+    if (!body || !cand) return;
+    const ls = lists();
+    const dup = !!cand.existing && !cand.fresh;
+    const chips = ls.map((l, i) => {
+      const id = String(l.id);
+      const locked = lockedIds.includes(id);
+      const on = locked || sel.includes(id);
+      return `<button type="button" class="wl-pk-chip${on ? ' on' : ''}${locked ? ' locked' : ''}" data-id="${escapeAttr(id)}" style="--wl-c:${colorOf(l, i)}" aria-pressed="${on}"${locked ? ' disabled' : ''}>${escapeHtml(l.emoji || '')} ${escapeHtml(l.name)}${on ? ' ✓' : ''}</button>`;
+    }).join('');
+    const label = cand.existing ? (sel.length ? 'add to lists' : 'done') : 'add';
+    body.innerHTML = `
+      <div class="wl-pk-head">
+        <div class="wl-pk-cover">${cand.cover ? `<img src="${escapeAttr(cand.cover)}" alt="" onerror="this.remove()">` : ''}</div>
+        <div style="min-width:0">
+          <div class="wl-pk-title">${escapeHtml(cand.title)}</div>
+          <div class="wl-pk-author">${escapeHtml(cand.author || 'Unknown author')}</div>
+          ${dup ? '<div class="wl-pk-author" style="color:var(--accent)">already in your wanted books</div>' : ''}
+        </div>
+      </div>
+      ${ls.length
+        ? `<p class="wl-pk-note">also put it in</p><div class="wl-pk-chips">${chips}</div><p class="wl-pk-note">every book is always in all. pick none to keep it unsorted.</p>`
+        : '<p class="wl-pk-note">no lists yet. it will be saved to all.</p>'}
+      <button type="button" class="modal-btn" id="wlPickerGo" style="margin:6px 0 0">${label}</button>`;
+  }
+
+  function open() {
+    ensurePicker();
+    render();
+    document.getElementById('bsInput')?.blur();
+    document.getElementById('wlPicker').classList.add('visible');
+  }
+  function close() { document.getElementById('wlPicker')?.classList.remove('visible'); }
+
+  // a search result was tapped while adding from My Lists
+  window.wlPick = function (title, author, cover, meta) {
+    const t = (title || '').trim();
+    const key = bsShelfKey(t, author);
+    const hits = key ? books.filter(b => bsShelfKey(b.title, b.author) === key) : [];
+    if (hits.some(b => b.status !== 'not-owned')) { toast('already on your shelf'); return; }
+    const hit = hits.find(b => b.borrowed_from == null) || null;
+    if (!hit && hits.length) { toast('already in your read but not owned'); return; }
+    const resEl = document.getElementById('bsResults');
+    const idx = resEl && resEl._bsResults ? resEl._bsResults.indexOf(meta) : -1;
+    cand = {
+      title: t, author: (author || '').trim(), cover: cover || '', meta: meta || {},
+      existing: hit, fresh: false,
+      row: idx > -1 ? resEl.querySelector('.bs-result[data-bs-index="' + idx + '"]') : null
+    };
+    lockedIds = hit ? lists().filter(l => inList(l, hit.id)).map(l => String(l.id)) : [];
+    const a = activeListId();
+    sel = a && !lockedIds.includes(a) ? [a] : [];
+    open();
+  };
+
+  // a book was just created through the manual form: only the lists are left to choose
+  window.wlAfterManual = function (book) {
+    if (!book) return;
+    cand = { title: book.title, author: book.author || '', cover: book.cover_url || '', meta: {}, existing: book, fresh: true, row: null };
+    lockedIds = [];
+    const a = activeListId();
+    sel = a ? [a] : [];
+    setTimeout(open, 200);
+  };
+
+  async function go() {
+    if (!cand || busy) return;
+    busy = true;
+    const btn = document.getElementById('wlPickerGo');
+    if (btn) { btn.disabled = true; btn.textContent = 'adding…'; }
+
+    let book = cand.existing, created = false;
+    if (!book) {
+      const m = cand.meta || {};
+      const genresArr = m.genre ? String(m.genre).split(',').map(s => s.trim()).filter(Boolean) : [];
+      book = await dbAdd({
+        title: cand.title, author: cand.author, status: 'not-owned',
+        cover_url: cand.cover || null, pages_read: 0, total_pages: null,
+        year: m.year || null, genres: genresArr, themes: [],
+        primary_genre: genresArr[0] || null, genre: genresArr.length ? genresArr.join(', ') : null,
+        page_count: parseInt(m.pageCount) || null, description: m._description || null,
+        borrowed_from: null
+      });
+      if (!book) { busy = false; if (btn) { btn.disabled = false; btn.textContent = 'add'; } return; }
+      created = true;
+      books.unshift(book);
+      try {
+        const k = 'tsundoku_books_' + currentUser.id;
+        const c = localStorage.getItem(k);
+        if (c) { const p = JSON.parse(c); p.unshift(book); localStorage.setItem(k, JSON.stringify(p)); }
+      } catch {}
+    }
+
+    const ids = sel.filter(id => !lockedIds.includes(id));
+    let linked = [];
+    if (ids.length) {
+      const { error } = await sb.from('list_books').insert(ids.map(id => ({ list_id: id, book_id: book.id, owned: false })));
+      if (!error) linked = ids;
+    }
+    const ls = lists();
+    ls.forEach(l => {
+      if (linked.includes(String(l.id))) { l._books = (l._books || []).concat(book); l.updated_at = new Date().toISOString(); }
+    });
+
+    if (cand.row) {
+      const mark = cand.row.querySelector('.bs-result-add');
+      if (mark) { mark.textContent = '✓'; mark.classList.add('wl-added'); }
+    }
+    if (window.wlRender) window.wlRender();
+    if (typeof window.updateListsCount === 'function') window.updateListsCount();
+
+    const names = ls.filter(l => linked.includes(String(l.id))).map(l => l.name);
+    const msg = ids.length && !linked.length ? 'saved to all, could not add to lists'
+      : names.length ? 'added to ' + names.join(' and ')
+      : (created ? 'added to all' : 'saved');
+    busy = false;
+    close();
+    toast(msg);
+  }
+
+  document.getElementById('wlFab')?.addEventListener('click', () => {
+    window.wlAddMode = true;
+    openBookSearch('list');
   });
 })();
