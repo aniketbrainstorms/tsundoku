@@ -5458,3 +5458,69 @@ html.is-android .nav-panel.open:not(.nav-behind) {
   opacity: 0; transition: all 0.3s ease; pointer-events: none;
 }
 .wl-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── wl- paste a list: entry link, form, filling in, summary ── */
+.wl-paste-link {
+  display: flex; align-items: center; gap: 8px; width: calc(100% - max(var(--safe-left), 16px) - max(var(--safe-right), 16px));
+  min-height: 44px; margin: 0 max(var(--safe-right), 16px) 4px max(var(--safe-left), 16px); padding: 0 2px;
+  background: none; border: none; color: var(--accent); text-align: left;
+  font: 500 13px 'DM Sans', sans-serif; cursor: pointer;
+}
+.wl-paste-link:active { opacity: 0.7; }
+
+.wl-paste-scroll {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  padding: 4px max(var(--safe-right), 16px) max(calc(var(--safe-bottom) + 28px), 40px) max(var(--safe-left), 16px);
+}
+.wl-paste-scroll::-webkit-scrollbar { display: none; }
+
+.wl-paste-sub { font-size: 12px; color: var(--text-muted); margin: 6px 0 10px; }
+/* the app sets user-select:none on everything; a textarea needs it back or iOS won't let you type */
+.wl-paste-ta {
+  width: 100%; min-height: 180px; box-sizing: border-box; resize: none; outline: none;
+  background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px;
+  color: var(--text); padding: 12px; font: 16px/1.5 'DM Sans', sans-serif;
+  user-select: text; -webkit-user-select: text; -webkit-touch-callout: default;
+}
+.wl-paste-ta:focus { border-color: var(--accent); }
+.wl-paste-ta::placeholder { color: var(--text-muted); }
+
+.wl-paste-prev { min-height: 34px; padding: 8px 2px 0; font-size: 12px; line-height: 1.9; color: var(--text-muted); }
+.wl-paste-prev strong { color: var(--text); font-weight: 500; }
+.wl-paste-note { font-size: 11px; line-height: 1.5; color: var(--text-muted); margin: 8px 0 10px; }
+.wl-paste-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.wl-paste-err { min-height: 16px; margin-bottom: 6px; font-size: 12px; color: #c06060; }
+
+/* destination pills (form preview and summary rows) */
+.wl-paste-tag {
+  display: inline-flex; align-items: center; gap: 5px; margin: 4px 4px 0 0; padding: 2px 8px;
+  border-radius: 10px; font-size: 11px; background: var(--surface2); color: var(--text-dim);
+}
+.wl-paste-tag i { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
+
+/* filling in + summary */
+.wl-paste-bar { height: 5px; border-radius: 3px; background: var(--surface2); overflow: hidden; }
+.wl-paste-bar span { display: block; height: 100%; width: 0; background: var(--accent); }
+.wl-paste-count { font-size: 11px; color: var(--text-muted); margin: 6px 0 10px; }
+.wl-paste-sumline { font-size: 14px; line-height: 1.7; margin: 2px 0 8px; }
+
+.wl-paste-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+.wl-paste-cov {
+  width: 34px; height: 50px; flex: 0 0 auto; border-radius: 5px; overflow: hidden; background: var(--surface2);
+}
+.wl-paste-cov img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wl-paste-info { flex: 1; min-width: 0; }
+.wl-paste-t { font-size: 14px; font-weight: 500; color: var(--text); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.wl-paste-a { font-size: 12px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.wl-paste-st { flex: 0 0 auto; font-size: 12px; color: var(--text-muted); }
+.wl-paste-st--ok { color: var(--green); }
+.wl-paste-st--shelf { color: var(--text-dim); }
+.wl-paste-st--look { color: #d9a441; }
+.wl-paste-fix {
+  flex: 0 0 auto; min-height: 36px; padding: 0 12px; border-radius: 10px;
+  border: 1px solid var(--accent); background: none; color: var(--accent);
+  font: 500 12px 'DM Sans', sans-serif; cursor: pointer;
+}
+.wl-paste-fix:active { opacity: 0.7; }
+.wl-paste-done { padding-top: 12px; }
