@@ -6,7 +6,7 @@ const sb = createClient(
 );
 
 // ── NAV STACK ──
-const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay', 'readNotOwnedOverlay', 'listsOverlay', 'authorsListOverlay', 'authorOverlay', 'listDetailOverlay', 'genresListOverlay', 'genreDetailOverlay'];
+const _LAYER2_IDS = ['profileModal', 'shelfOverlay', 'bookSearchOverlay', 'shelfSearchOverlay', 'readNotOwnedOverlay', 'listsOverlay', 'authorsListOverlay', 'authorOverlay', 'listDetailOverlay', 'genresListOverlay', 'genreDetailOverlay', 'wlPasteOverlay'];
 
 function navPush(prevEl, nextEl) {
   if (prevEl) prevEl.classList.add('nav-behind');
@@ -2843,6 +2843,7 @@ function setAddContext(context) {
   addContext = context === 'list' ? 'list' : 'shelf';
   const app = document.getElementById('app');
   if (app) app.classList.toggle('list-add-context', addContext === 'list');
+  if (window.wlPasteLinkSync) window.wlPasteLinkSync();
   const modal = document.getElementById('addModal');
   if (!modal) return;
   modal.classList.toggle('list-add-mode', addContext === 'list');
@@ -4437,6 +4438,12 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
   ];
   let loLists = [];
   window._getLoLists = () => loLists;
+  window._wlNewList = async function (name, emoji) {
+    const l = await loCreateList(name, emoji || '📚');
+    if (l) { loLists.unshift(l); updateListsCount(); }
+    return l;
+  };
+  window._wlCurrentListId = () => ldCurrentListId;
   let ldBooks = [];
   let loSelectedEmoji = LO_EMOJIS[0];
   let loSheetEditingId = null;
@@ -6735,6 +6742,7 @@ window.addEventListener('orientationchange', () => {
     listDetailOverlay: () => window.closeListDetail?.(),
     genresListOverlay: () => window.closeGenresOverlay?.(),
     genreDetailOverlay: () => window.closeGenreDetail?.(),
+    wlPasteOverlay: () => window.wlPasteBack?.(),
   };
 
   function pwaCountOpen() {
@@ -6757,6 +6765,9 @@ window.addEventListener('orientationchange', () => {
       top.classList.remove('visible');
       return true;
     }
+    // Paste-a-list overlay sits above the add-book search and whatever opened it
+    const wlp = document.getElementById('wlPasteOverlay');
+    if (wlp && wlp.classList.contains('open')) { window.wlPasteBack?.(); return true; }
     // Shelf search bottom sheet
     const sbs = document.getElementById('shelfSearchOverlay');
     if (sbs && sbs.classList.contains('open')) {
@@ -7171,4 +7182,251 @@ window.addEventListener('orientationchange', () => {
     window.wlAddMode = true;
     openBookSearch('list');
   });
+})();
+
+// ── PASTE A LIST (wl-) — parser + header resolver (pure logic, no DOM) ──────
+;(function () {
+  const WL_PASTE_MAX = 50;
+  const WL_NAME_MAX = 40;   // same limit as the list name input
+
+  // "Sci-Fi", "#scifi", "sci fi!" all become "scifi"
+  function headKey(name) {
+    return (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\p{L}\p{N}]+/gu, '');
+  }
+
+  // text -> { rows, total, truncated }
+  // row: { title, author, heads: [typed header names], plain: true if it appeared with no header, line }
+  function parse(text) {
+    let cur = null;
+    const byTitle = new Map(), order = [];
+    String(text || '').split(/\r?\n/).forEach(raw => {
+      let s = raw.trim();
+      if (!s) return;
+      if (s.charAt(0) === '#') {
+        const nm = s.replace(/^#+\s*/, '').trim().slice(0, WL_NAME_MAX);
+        if (nm && headKey(nm)) cur = nm;   // a bare "#" or symbols-only header changes nothing
+        return;
+      }
+      s = s.replace(/^(?:[-*•]|\d+[.)])\s+/, '').trim();
+      if (!s) return;
+      const m = s.match(/^(.+?)\s+(?:by|[-–—])\s+(.+)$/i);
+      const title = (m ? m[1] : s).trim(), author = m ? m[2].trim() : '';
+      const tk = bsNormTitle(title) || title.toLowerCase(), ak = bsNormTitle(author);
+      const same = byTitle.get(tk) || [];
+      // same book: titles match and the authors agree, or one side has no author
+      let row = same.find(r => !ak || !r.author || bsNormTitle(r.author) === ak);
+      if (row) { if (ak && !row.author) row.author = author; }
+      else { row = { title, author, heads: [], plain: false, line: s }; same.push(row); byTitle.set(tk, same); order.push(row); }
+      if (cur) { if (!row.heads.some(h => headKey(h) === headKey(cur))) row.heads.push(cur); }
+      else row.plain = true;
+    });
+    return { rows: order.slice(0, WL_PASTE_MAX), total: order.length, truncated: order.length > WL_PASTE_MAX };
+  }
+
+  // rows -> { found: Map(headKey -> existing list), fresh: [{ key, name }] }
+  // fresh = headers that match no list yet (created on save, option A)
+  function resolve(rows) {
+    const lists = window._wl ? window._wl.lists() : (window._getLoLists ? window._getLoLists() : []);
+    const byKey = new Map();
+    lists.forEach(l => { const k = headKey(l.name); if (k && !byKey.has(k)) byKey.set(k, l); });
+    const found = new Map(), fresh = [], seen = new Set();
+    rows.forEach(r => r.heads.forEach(h => {
+      const k = headKey(h);
+      if (!k || seen.has(k)) return;
+      seen.add(k);
+      if (byKey.has(k)) found.set(k, byKey.get(k)); else fresh.push({ key: k, name: h });
+    }));
+    return { found, fresh };
+  }
+
+  window._wlPaste = { parse, headKey, resolve, MAX: WL_PASTE_MAX };
+})();
+
+// ── PASTE A LIST (wl-) — entry link, form stage, list creation ──────────────
+;(function () {
+  const P = window._wlPaste;
+  const ov = document.getElementById('wlPasteOverlay');
+  const ta = document.getElementById('wlPasteTa');
+  if (!P || !ov || !ta) return;
+  const prev = document.getElementById('wlPastePrev');
+  const chips = document.getElementById('wlPasteChips');
+  const errEl = document.getElementById('wlPasteErr');
+  const go = document.getElementById('wlPasteGo');
+  const titleEl = document.getElementById('wlPasteTitle');
+  const stages = {
+    form: document.getElementById('wlPasteForm'),
+    fill: document.getElementById('wlPasteFill'),
+    sum: document.getElementById('wlPasteSum')
+  };
+  const S = { sel: [], stage: 'form', busy: false };
+
+  const lists = () => (window._wl ? window._wl.lists() : []);
+  function listColor(l) {
+    const i = lists().findIndex(x => String(x.id) === String(l.id));
+    return window._wl ? window._wl.color(l, Math.max(0, i)) : '#c9714a';
+  }
+  function setErr(m) { errEl.textContent = m || ''; }
+
+  // the list this paste starts from: the active chip on My Lists, or the open list on list detail
+  function defaultListId() {
+    let id = null;
+    if (window.wlAddMode) {
+      const f = document.querySelector('#wlChips .wl-chip.active')?.dataset.f;
+      id = f && f !== 'all' && f !== 'new' ? f : null;
+    } else {
+      const ld = document.getElementById('listDetailOverlay');
+      if (ld && ld.classList.contains('open') && window._wlCurrentListId) {
+        const cur = window._wlCurrentListId();
+        id = cur == null ? null : String(cur);
+      }
+    }
+    return id && lists().some(l => String(l.id) === id) ? id : null;
+  }
+
+  // where one row will land: its # headers, plus the ticked chips if it appeared without a header
+  function dests(row, res) {
+    const out = [];
+    row.heads.forEach(h => {
+      const l = res.found.get(P.headKey(h));
+      out.push(l
+        ? { key: 'l' + l.id, name: l.name, color: listColor(l) }
+        : { key: 'n' + P.headKey(h), name: h, color: 'var(--text-muted)', isNew: true });
+    });
+    if (row.plain) {
+      S.sel.forEach(id => {
+        const l = lists().find(x => String(x.id) === id);
+        if (l && !out.some(d => d.key === 'l' + l.id)) out.push({ key: 'l' + l.id, name: l.name, color: listColor(l) });
+      });
+    }
+    return out;
+  }
+
+  function tagHtml(d, n) {
+    return '<span class="wl-paste-tag"><i style="background:' + escapeAttr(d.color) + '"></i>'
+      + escapeHtml(d.name) + (d.isNew ? ' (new list)' : '') + ' ' + n + '</span>';
+  }
+
+  function chipsHtml() {
+    const ls = lists();
+    if (!ls.length) return '<span class="wl-paste-note" style="margin:0">no lists yet. start a line with # to create one.</span>';
+    return ls.map((l, i) => {
+      const id = String(l.id), on = S.sel.includes(id);
+      return '<button type="button" class="wl-pk-chip' + (on ? ' on' : '') + '" data-id="' + escapeAttr(id)
+        + '" style="--wl-c:' + escapeAttr(listColor(l)) + '" aria-pressed="' + on + '">'
+        + escapeHtml(l.emoji || '') + ' ' + escapeHtml(l.name) + (on ? ' ✓' : '') + '</button>';
+    }).join('');
+  }
+
+  function refresh() {
+    const p = P.parse(ta.value), res = P.resolve(p.rows);
+    chips.innerHTML = chipsHtml();
+    if (!p.rows.length) {
+      prev.textContent = 'nothing to add yet';
+    } else {
+      const counts = new Map();
+      p.rows.forEach(r => {
+        const ds = dests(r, res);
+        (ds.length ? ds : [{ key: 'all', name: 'all only', color: 'var(--text-muted)' }]).forEach(d => {
+          const c = counts.get(d.key) || { d, n: 0 };
+          c.n++; counts.set(d.key, c);
+        });
+      });
+      prev.innerHTML = '<strong>' + p.rows.length + (p.rows.length === 1 ? ' book' : ' books') + '</strong> '
+        + [...counts.values()].map(c => tagHtml(c.d, c.n)).join('')
+        + (p.truncated ? ' <span class="wl-paste-note" style="margin:0">first ' + P.MAX + ' of ' + p.total + ' lines</span>' : '');
+    }
+    if (!S.busy) go.textContent = 'add ' + p.rows.length + (p.rows.length === 1 ? ' book' : ' books');
+  }
+
+  function show(stage) {
+    S.stage = stage;
+    Object.keys(stages).forEach(k => { if (stages[k]) stages[k].style.display = k === stage ? '' : 'none'; });
+    if (stage === 'form') titleEl.textContent = 'paste a list';
+  }
+
+  // creates headers that match no list, then works out the list ids for every row
+  async function buildPlan(rows) {
+    const res = P.resolve(rows);
+    const made = new Map(), created = [], failedHeads = [];
+    for (const f of res.fresh) {
+      const l = window._wlNewList ? await window._wlNewList(f.name) : null;
+      if (l) { made.set(f.key, l); created.push(l); } else failedHeads.push(f.name);
+    }
+    const targets = rows.map(row => {
+      const ids = [];
+      const add = id => { id = String(id); if (!ids.includes(id)) ids.push(id); };
+      row.heads.forEach(h => {
+        const k = P.headKey(h), l = res.found.get(k) || made.get(k);
+        if (l) add(l.id);
+      });
+      if (row.plain) S.sel.forEach(add);
+      return ids;
+    });
+    return { targets, created, failedHeads };
+  }
+
+  window.wlPasteLinkSync = function () {
+    const el = document.getElementById('wlPasteLink');
+    if (el) el.style.display = addContext === 'list' ? '' : 'none';
+  };
+
+  window.wlPasteOpen = function () {
+    document.getElementById('bsInput')?.blur();
+    if (S.stage === 'form' && !ta.value.trim()) {
+      const d = defaultListId();
+      S.sel = d ? [d] : [];
+    }
+    setErr('');
+    show('form');
+    refresh();
+    navPush(document.getElementById('bookSearchOverlay'), ov);
+    _updateAppRecede();
+  };
+
+  // everything is saved by now: close this screen and the search under it
+  window.wlPasteFinish = function () {
+    ta.value = ''; S.sel = []; S.busy = false; setErr('');
+    show('form');
+    navPop(ov, document.getElementById('bookSearchOverlay'));
+    closeBookSearch();
+    _updateAppRecede();
+  };
+
+  window.wlPasteBack = function () {
+    if (S.stage === 'form') {
+      // back to the search; the pasted text stays for next time
+      navPop(ov, document.getElementById('bookSearchOverlay'));
+      _updateAppRecede();
+    } else {
+      window.wlPasteFinish();
+    }
+  };
+
+  window.wlPasteGo = async function () {
+    if (S.busy) return;
+    const p = P.parse(ta.value);
+    if (!p.rows.length) { setErr('add at least one title first'); return; }
+    if (typeof window.wlPasteRun !== 'function') { setErr('saving is not installed yet'); return; }
+    S.busy = true; go.disabled = true; go.textContent = 'saving…'; setErr('');
+    try {
+      const plan = await buildPlan(p.rows);
+      await window.wlPasteRun(p.rows, plan);   // diff 3: save rows, switch to the filling-in stage
+    } catch (e) {
+      console.error('paste a list:', e);
+      setErr('could not save. check your connection and try again');
+    } finally {
+      S.busy = false; go.disabled = false; refresh();
+    }
+  };
+
+  ta.addEventListener('input', () => { setErr(''); refresh(); });
+  chips.addEventListener('click', e => {
+    const c = e.target.closest('.wl-pk-chip');
+    if (!c) return;
+    const id = c.dataset.id;
+    S.sel = S.sel.includes(id) ? S.sel.filter(x => x !== id) : S.sel.concat(id);
+    refresh();
+  });
+
+  Object.assign(P, { show, state: S });
 })();
