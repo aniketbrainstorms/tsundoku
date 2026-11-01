@@ -7367,7 +7367,7 @@ window.addEventListener('orientationchange', () => {
 
   window.wlPasteLinkSync = function () {
     const el = document.getElementById('wlPasteLink');
-    if (el) el.style.display = addContext === 'list' ? '' : 'none';
+    if (el) el.style.display = '';
   };
 
   window.wlPasteOpen = function () {
