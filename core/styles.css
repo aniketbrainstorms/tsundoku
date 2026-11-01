@@ -5461,12 +5461,13 @@ html.is-android .nav-panel.open:not(.nav-behind) {
 
 /* ── wl- paste a list: entry link, form, filling in, summary ── */
 .wl-paste-link {
-  display: flex; align-items: center; gap: 8px; width: calc(100% - max(var(--safe-left), 16px) - max(var(--safe-right), 16px));
+  display: none; align-items: center; gap: 8px; width: calc(100% - max(var(--safe-left), 16px) - max(var(--safe-right), 16px));
   min-height: 44px; margin: 0 max(var(--safe-right), 16px) 4px max(var(--safe-left), 16px); padding: 0 2px;
   background: none; border: none; color: var(--accent); text-align: left;
   font: 500 13px 'DM Sans', sans-serif; cursor: pointer;
 }
 .wl-paste-link:active { opacity: 0.7; }
+#app.list-add-context .wl-paste-link { display: flex; }
 
 .wl-paste-scroll {
   flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
