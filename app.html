@@ -888,6 +888,10 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M16 7v10"/></svg>
       </button>
     </div>
+    <button type="button" class="wl-paste-link" id="wlPasteLink" style="display:none" onclick="wlPasteOpen()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      paste a list
+    </button>
     <div class="bs-borrow-row add-shelf-only" id="bsBorrowRow" onclick="bsToggleBorrow()">
       <div class="bs-borrow-track" id="bsBorrowTrack"><div class="bs-borrow-knob"></div></div>
       <span>I'm borrowing this book</span>
@@ -895,6 +899,35 @@
     <div class="divider"></div>
     <div class="bs-results" id="bsResults" ontouchstart="if(document.activeElement) document.activeElement.blur();">
       <div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>
+    </div>
+  </div>
+  <!-- PASTE A LIST OVERLAY (wl-) -->
+  <div class="shelf-overlay nav-panel" id="wlPasteOverlay">
+    <div class="shelf-header">
+      <button class="shelf-back-btn" id="wlPasteBack" onclick="wlPasteBack()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back
+      </button>
+      <span class="shelf-header-title" id="wlPasteTitle">paste a list</span>
+    </div>
+    <div class="divider"></div>
+    <div class="wl-paste-scroll" id="wlPasteScroll">
+      <!-- stage 1: form -->
+      <div id="wlPasteForm">
+        <p class="wl-paste-sub">one book per line</p>
+        <textarea class="wl-paste-ta" id="wlPasteTa" rows="9" aria-label="books to add" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Dune by Frank Herbert&#10;Solaris&#10;The Dispossessed - Ursula K. Le Guin"></textarea>
+        <div class="wl-paste-prev" id="wlPastePrev"></div>
+        <p class="wl-paste-note">tip: a line starting with # and a list name sends the books below it to that list. a new name creates a new list.</p>
+        <p class="wl-paste-note">books without a # header also go in</p>
+        <div class="wl-paste-chips" id="wlPasteChips"></div>
+        <p class="wl-paste-note">every book is always in all. up to 50 lines at a time.</p>
+        <div class="wl-paste-err" id="wlPasteErr" role="alert"></div>
+        <button type="button" class="modal-btn" id="wlPasteGo" onclick="wlPasteGo()">add 0 books</button>
+      </div>
+      <!-- stage 2: filling in -->
+      <div id="wlPasteFill" style="display:none"></div>
+      <!-- stage 3: summary -->
+      <div id="wlPasteSum" style="display:none"></div>
     </div>
   </div>
 
