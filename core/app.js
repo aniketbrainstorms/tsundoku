@@ -7430,3 +7430,302 @@ window.addEventListener('orientationchange', () => {
 
   Object.assign(P, { show, state: S });
 })();
+
+// ── PASTE A LIST (wl-) — save, match, summary ───────────────────────────────
+;(function () {
+  const P = window._wlPaste;
+  const ov = document.getElementById('wlPasteOverlay');
+  const fillEl = document.getElementById('wlPasteFill');
+  const sumEl = document.getElementById('wlPasteSum');
+  const titleEl = document.getElementById('wlPasteTitle');
+  if (!P || !P.state || !ov || !fillEl || !sumEl) return;
+  const S = P.state;
+  const CONCURRENCY = 3;
+  let gCool = 0;          // Google Books back-off: skip Google until this time (ms)
+  let cur = null;         // { items, plan, fix }
+
+  const norm = s => bsNormTitle(s);
+  const last = s => norm(s).split(' ').filter(Boolean).pop() || '';
+  const lists = () => (window._wl ? window._wl.lists() : []);
+  const listById = id => lists().find(l => String(l.id) === String(id));
+  const rank = b => (b.status !== 'not-owned' ? 3 : (b.borrowed_from != null ? 2 : 1));
+  const kindOf = b => (b.status !== 'not-owned' ? 'shelf' : (b.borrowed_from != null ? 'rno' : 'wanted'));
+
+  // surnames agree (a blank author on either side counts as agreeing)
+  function sameAuthor(a, b) {
+    const x = last(a), y = last(b);
+    if (!x || !y) return true;
+    const tol = bsTol(Math.min(x.length, y.length));
+    return x === y || bsEdit(x, y, tol) <= tol;
+  }
+  // clear title match only: exact, "Title: Subtitle", or a small typo in a longer title
+  function sameTitle(typed, cand) {
+    const x = norm(typed), y = norm(cand);
+    if (!x || !y) return false;
+    if (x === y) return true;
+    const a = (typed || '').trim().toLowerCase(), c = (cand || '').trim().toLowerCase();
+    if (c.startsWith(a + ':') || a.startsWith(c + ':')) return true;
+    const L = Math.min(x.length, y.length);
+    const tol = L >= 6 ? bsTol(L) : 0;
+    return tol > 0 && bsEdit(x, y, tol) <= tol;
+  }
+  // a book you already have; also tries "Author - Title" typed backwards
+  function findExisting(title, author, skip) {
+    const tries = [[title, author]];
+    if (author) tries.push([author, title]);
+    let best = null;
+    for (const b of books) {
+      if (skip && b === skip) continue;
+      for (const [t, a] of tries) {
+        if (norm(b.title) === norm(t) && sameAuthor(b.author, a) && (!best || rank(b) > rank(best))) best = b;
+      }
+    }
+    return best;
+  }
+
+  // ── lookups ──
+  async function google(t, a) {
+    if (Date.now() < gCool) return [];
+    const q = a ? 'intitle:' + encodeURIComponent(t) + '+inauthor:' + encodeURIComponent(a) : encodeURIComponent(t);
+    try {
+      const res = await fetch('https://www.googleapis.com/books/v1/volumes?q=' + q + '&maxResults=10&langRestrict=en&key=' + window.BOOKS_API_KEY);
+      if (res.status === 429) { gCool = Date.now() + 60000; return []; }
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.items || []).map(item => {
+        const v = item.volumeInfo || {};
+        let cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || '';
+        if (cover) cover = cover.replace(/^http:/, 'https:').replace('zoom=1', 'zoom=2').replace('&edge=curl', '');
+        return {
+          title: v.title || '', author: (v.authors || [])[0] || '', cover, source: 'google',
+          year: v.publishedDate ? v.publishedDate.slice(0, 4) : '', genre: (v.categories || [])[0] || '',
+          pageCount: v.pageCount ? String(v.pageCount) : '', _description: v.description || ''
+        };
+      });
+    } catch { return []; }
+  }
+  async function ol(t, a) {
+    try {
+      const qs = a ? 'title=' + encodeURIComponent(t) + '&author=' + encodeURIComponent(a) : 'q=' + encodeURIComponent(t);
+      const res = await fetch('https://openlibrary.org/search.json?' + qs + '&limit=8&fields=title,author_name,cover_i,first_publish_year,number_of_pages_median');
+      if (!res.ok) return [];
+      const d = await res.json();
+      return (d.docs || []).filter(x => x.title).map(x => ({
+        title: x.title, author: (x.author_name || [])[0] || '',
+        cover: x.cover_i ? 'https://covers.openlibrary.org/b/id/' + x.cover_i + '-M.jpg' : '', source: 'ol',
+        year: x.first_publish_year ? String(x.first_publish_year) : '', genre: '',
+        pageCount: x.number_of_pages_median ? String(x.number_of_pages_median) : '', _description: ''
+      }));
+    } catch { return []; }
+  }
+  function pickBest(cands, at) {
+    if (!cands.length) return null;
+    const ranked = bsRank(bsMerge(cands), at.t, at.a);
+    return ranked.find(c => sameTitle(at.t, c.title) && (!at.a || sameAuthor(at.a, c.author))) || null;
+  }
+
+  // ── rows ──
+  const STATE_TXT = { new: 'looking up…', matched: 'matched', shelf: 'already on your shelf', rno: 'already in read but not owned', wanted: 'already in your wishlist', look: 'needs a look', fail: 'could not save' };
+  const STATE_CLS = { matched: 'ok', shelf: 'shelf', rno: 'shelf', wanted: 'shelf', look: 'look', fail: 'look' };
+  function rowHtml(it, withTags) {
+    const b = it.book || { id: it.row.title };
+    const c = STATE_CLS[it.state];
+    let tags = '';
+    if (withTags && it.book && (it.state === 'matched' || it.state === 'wanted' || it.state === 'look')) {
+      tags = it.ids.map(id => listById(id)).filter(Boolean).map(l => {
+        const i = lists().findIndex(x => String(x.id) === String(l.id));
+        return '<span class="wl-paste-tag"><i style="background:' + escapeAttr(window._wl.color(l, Math.max(0, i))) + '"></i>' + escapeHtml(l.name) + '</span>';
+      }).join('');
+    }
+    const note = withTags && it.state === 'look' ? '<div class="wl-paste-a">kept as you typed it</div>' : '';
+    const fix = withTags && it.state === 'look' && it.book ? '<button type="button" class="wl-paste-fix" onclick="wlPasteFix(' + it.i + ')">fix</button>' : '';
+    return '<div class="wl-paste-row" id="wlPf-' + it.i + '"><div class="wl-paste-cov">' + coverHtml(b, 10) + '</div>'
+      + '<div class="wl-paste-info"><div class="wl-paste-t">' + escapeHtml((it.book && it.book.title) || it.row.title) + '</div>'
+      + '<div class="wl-paste-a">' + escapeHtml((it.book && it.book.author) || it.row.author || '') + '</div>' + tags + note + '</div>'
+      + '<span class="wl-paste-st' + (c ? ' wl-paste-st--' + c : '') + '">' + STATE_TXT[it.state] + '</span>' + fix + '</div>';
+  }
+  function paintProgress(done, total) {
+    const bar = document.getElementById('wlPfBar'), cnt = document.getElementById('wlPfCount');
+    if (bar) bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+    if (cnt) cnt.textContent = done + ' of ' + total + ' done';
+  }
+
+  function renderSummary(plan, linkFailed) {
+    const items = cur.items;
+    const n = (...s) => items.filter(it => s.includes(it.state)).length;
+    const parts = [n('matched') + ' matched', n('shelf', 'rno') + ' already on your shelf'];
+    if (n('wanted')) parts.push(n('wanted') + ' already in your wishlist');
+    parts.push(n('look', 'fail') + ' need a look');
+    const notes = [];
+    if (plan.created.length) notes.push('created ' + plan.created.length + ' new ' + (plan.created.length === 1 ? 'list' : 'lists') + ': ' + plan.created.map(l => escapeHtml(l.name)).join(', '));
+    if (plan.failedHeads.length) notes.push('could not create: ' + plan.failedHeads.map(escapeHtml).join(', ') + ' (saved to all)');
+    if (linkFailed) notes.push('some books could not be added to their lists');
+    sumEl.innerHTML = '<p class="wl-paste-sumline">' + parts.join(' · ') + '</p>'
+      + notes.map(t => '<p class="wl-paste-note">' + t + '</p>').join('')
+      + items.map(it => rowHtml(it, true)).join('')
+      + '<div class="wl-paste-done"><button type="button" class="modal-btn" onclick="wlPasteFinish()">done</button></div>';
+    P.show('sum');
+    titleEl.textContent = 'summary';
+  }
+
+  // a new row turned out to be a book you already have: remove it, link the existing one instead
+  async function dropRow(it, dup) {
+    const gone = it.book, id = gone.id;
+    const ix = books.indexOf(gone); if (ix > -1) books.splice(ix, 1);
+    lists().forEach(l => { l._books = (l._books || []).filter(x => String(x.id) !== String(id)); });
+    await sb.from('list_books').delete().eq('book_id', id);
+    await sb.from('books').delete().eq('id', id);
+    it.book = dup;
+    it.state = kindOf(dup);
+    if (it.state === 'wanted') {
+      const rows = [];
+      it.ids.forEach(lid => {
+        const l = listById(lid);
+        if (l && !(l._books || []).some(x => String(x.id) === String(dup.id))) rows.push({ l, row: { list_id: l.id, book_id: dup.id, owned: false } });
+      });
+      if (rows.length) {
+        const { error } = await sb.from('list_books').insert(rows.map(r => r.row));
+        if (!error) rows.forEach(r => { r.l._books = (r.l._books || []).concat(dup); });
+      }
+    }
+  }
+
+  async function apply(it, c, at) {
+    const b = it.book;
+    if (!c.cover) {   // Google had no cover: try Open Library for one
+      const o = pickBest(await ol(at.t, at.a), at);
+      if (o && o.cover) c = Object.assign({}, c, { cover: o.cover });
+    }
+    const up = {};
+    if ((at.swap || at.whole || norm(c.title) === norm(b.title)) && c.title) up.title = c.title;
+    if ((!b.author || at.swap || at.whole) && c.author) up.author = c.author;
+    if (c.cover) up.cover_url = c.cover;
+    if (c.year) up.year = c.year;
+    if (c.pageCount) up.page_count = parseInt(c.pageCount) || null;
+    if (c.genre) { up.genres = [c.genre]; up.genre = c.genre; up.primary_genre = c.genre; }
+    if (c._description) up.description = c._description;
+    // no await between this check and the assign below, so two lookups can't both claim one book
+    const t = up.title || b.title, a = up.author || b.author;
+    const dup = findExisting(t, a, b);
+    if (dup) { await dropRow(it, dup); return; }
+    Object.assign(b, up);
+    it.state = (await dbUpdate(b.id, up)) ? 'matched' : 'look';
+  }
+
+  async function fillOne(it) {
+    const { title, author, line } = it.row;
+    const attempts = [{ t: title, a: author }];
+    if (author) attempts.push({ t: author, a: title, swap: true });       // "Author - Title" typed backwards
+    if (line !== title) attempts.push({ t: line, a: '', whole: true });   // "Death by Chocolate" is a title, not an author split
+    for (const at of attempts) {
+      for (const src of [google, ol]) {
+        const best = pickBest(await src(at.t, at.a), at);
+        if (best) { await apply(it, best, at); return; }
+      }
+    }
+    it.state = 'look';
+  }
+
+  // rows: from P.parse. plan: { targets: [[listId…] per row], created, failedHeads }
+  window.wlPasteRun = async function (rows, plan) {
+    const items = rows.map((r, i) => ({ i, row: r, ids: plan.targets[i] || [], state: 'new', book: null }));
+    cur = { items, plan, fix: null };
+
+    // 1. books you already have (checked before anything is saved)
+    items.forEach(it => {
+      const hit = findExisting(it.row.title, it.row.author);
+      if (hit) { it.book = hit; it.state = kindOf(hit); }
+    });
+
+    // 2. save the new rows in one request, with what you typed
+    const fresh = items.filter(it => it.state === 'new');
+    if (fresh.length) {
+      const payload = fresh.map(it => ({ user_id: currentUser.id, title: it.row.title, author: it.row.author || '', status: 'not-owned', cover_url: null, pages_read: 0, total_pages: null, borrowed_from: null }));
+      const { data, error } = await sb.from('books').insert(payload).select();
+      if (error) throw error;
+      const byKey = new Map((data || []).map(d => [d.title + '\u0000' + (d.author || ''), d]));
+      fresh.forEach(it => { it.book = byKey.get(it.row.title + '\u0000' + (it.row.author || '')) || null; if (!it.book) it.state = 'fail'; });
+      fresh.slice().reverse().forEach(it => { if (it.book) books.unshift(it.book); });
+    }
+
+    // 3. link new and already-wanted books to their lists
+    const links = [];
+    items.forEach(it => {
+      if (!it.book || (it.state !== 'new' && it.state !== 'wanted')) return;
+      it.ids.forEach(id => {
+        const l = listById(id);
+        if (l && !(l._books || []).some(b => String(b.id) === String(it.book.id))) links.push({ l, b: it.book, row: { list_id: l.id, book_id: it.book.id, owned: false } });
+      });
+    });
+    let linkFailed = false;
+    if (links.length) {
+      const { error } = await sb.from('list_books').insert(links.map(x => x.row));
+      if (error) linkFailed = true;
+      else links.forEach(x => { x.l._books = (x.l._books || []).concat(x.b); x.l.updated_at = new Date().toISOString(); });
+    }
+    if (window.wlRender) window.wlRender();
+    if (typeof window.updateListsCount === 'function') window.updateListsCount();
+
+    // 4. filling in: look each new row up, a few at a time
+    P.show('fill');
+    titleEl.textContent = 'filling in';
+    fillEl.innerHTML = '<div class="wl-paste-bar"><span id="wlPfBar"></span></div><div class="wl-paste-count" id="wlPfCount"></div>' + items.map(it => rowHtml(it)).join('');
+    const todo = items.filter(it => it.state === 'new' && it.book);
+    let done = items.length - todo.length, next = 0;
+    paintProgress(done, items.length);
+    const worker = async () => {
+      while (next < todo.length) {
+        const it = todo[next++];
+        try { await fillOne(it); } catch (e) { console.warn('paste a list: lookup failed', e); it.state = 'look'; }
+        const el = document.getElementById('wlPf-' + it.i);
+        if (el) el.outerHTML = rowHtml(it);
+        paintProgress(++done, items.length);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, todo.length) }, worker));
+
+    // 5. keep the offline copy in step, then show the summary
+    try { localStorage.setItem('tsundoku_books_' + currentUser.id, JSON.stringify(books)); } catch {}
+    if (window.wlRender) window.wlRender();
+    renderSummary(plan, linkFailed);
+  };
+
+  // "fix": hand the line to the normal search; the next pick replaces the typed row
+  window.wlPasteFix = function (i) {
+    const it = cur && cur.items.find(x => x.i === i);
+    if (!it || !it.book) return;
+    cur.fix = it;
+    navPop(ov, document.getElementById('bookSearchOverlay'));
+    _updateAppRecede();
+    window.wlAddMode = true;
+    const inp = document.getElementById('bsInput');
+    inp.value = [it.row.title, it.row.author].filter(Boolean).join(' ');
+    onBsInput();
+  };
+
+  // leaving the search without picking must not leave "fix" armed for the next pick
+  const origClose = window.closeBookSearch;
+  window.closeBookSearch = function () { if (cur) cur.fix = null; return origClose.apply(this, arguments); };
+
+  const origPick = window.wlPick;
+  window.wlPick = function (title, author, cover, meta) {
+    const it = cur && cur.fix;
+    if (!it) return origPick && origPick.apply(this, arguments);
+    cur.fix = null;
+    const m = meta || {};
+    const up = { title: (title || '').trim() || it.book.title, author: (author || '').trim() };
+    if (cover) up.cover_url = cover;
+    if (m.year) up.year = m.year;
+    if (m.pageCount) up.page_count = parseInt(m.pageCount) || null;
+    if (m.genre) { up.genres = [m.genre]; up.genre = m.genre; up.primary_genre = m.genre; }
+    if (m._description) up.description = m._description;
+    Object.assign(it.book, up);
+    dbUpdate(it.book.id, up);
+    it.state = 'matched';
+    closeBookSearch();
+    renderSummary(cur.plan, false);
+    navPush(null, ov);
+    _updateAppRecede();
+    if (window.wlRender) window.wlRender();
+  };
+})();
