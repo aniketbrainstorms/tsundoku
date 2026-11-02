@@ -7259,7 +7259,14 @@ window.addEventListener('orientationchange', () => {
     fill: document.getElementById('wlPasteFill'),
     sum: document.getElementById('wlPasteSum')
   };
-  const S = { sel: [], stage: 'form', busy: false };
+  const S = { sel: [], stage: 'form', busy: false, status: 'unread' };
+  const shelfMode = () => addContext !== 'list';   // pasting onto the shelf: # headers set the status, no lists
+  const SHELF_HEADS = { reading: 'reading', currentlyreading: 'reading', read: 'read', finished: 'read', unread: 'unread', toread: 'unread', tbr: 'unread' };
+  // a line's status: the first recognised # header above it, else the one picked in the form
+  function rowStatus(row) {
+    for (const h of row.heads) { const s = SHELF_HEADS[P.headKey(h)]; if (s) return s; }
+    return S.status;
+  }
 
   const lists = () => (window._wl ? window._wl.lists() : []);
   function listColor(l) {
@@ -7308,6 +7315,13 @@ window.addEventListener('orientationchange', () => {
   }
 
   function chipsHtml() {
+    if (shelfMode()) {
+      return ['reading', 'read', 'unread'].map(v => {
+        const on = S.status === v;
+        return '<button type="button" class="wl-pk-chip' + (on ? ' on' : '') + '" data-status="' + v
+          + '" style="--wl-c:var(--accent)" aria-pressed="' + on + '">' + v + (on ? ' ✓' : '') + '</button>';
+      }).join('');
+    }
     const ls = lists();
     if (!ls.length) return '<span class="wl-paste-note" style="margin:0">no lists yet. start a line with # to create one.</span>';
     return ls.map((l, i) => {
@@ -7321,6 +7335,19 @@ window.addEventListener('orientationchange', () => {
   function refresh() {
     const p = P.parse(ta.value), res = P.resolve(p.rows);
     chips.innerHTML = chipsHtml();
+    if (shelfMode()) {
+      // shelf: # headers (#reading, #read, #unread) set the status; other lines use the chip
+      const by = { reading: 0, read: 0, unread: 0 };
+      p.rows.forEach(r => { by[rowStatus(r)]++; });
+      prev.innerHTML = p.rows.length
+        ? '<strong>' + p.rows.length + (p.rows.length === 1 ? ' book' : ' books') + '</strong> '
+          + ['reading', 'read', 'unread'].filter(k => by[k]).map(k => '<span class="wl-paste-tag"><i style="background:var(--accent)"></i>' + k + ' ' + by[k] + '</span>').join('')
+          + (p.rows.some(r => r.heads.some(h => !SHELF_HEADS[P.headKey(h)])) ? ' <span class="wl-paste-note" style="margin:0">only #reading, #read and #unread work on the shelf</span>' : '')
+          + (p.truncated ? ' <span class="wl-paste-note" style="margin:0">first ' + P.MAX + ' of ' + p.total + ' lines</span>' : '')
+        : 'nothing to add yet';
+      if (!S.busy) go.textContent = 'add ' + p.rows.length + (p.rows.length === 1 ? ' book' : ' books');
+      return;
+    }
     if (!p.rows.length) {
       prev.textContent = 'nothing to add yet';
     } else {
@@ -7347,6 +7374,7 @@ window.addEventListener('orientationchange', () => {
 
   // creates headers that match no list, then works out the list ids for every row
   async function buildPlan(rows) {
+    if (shelfMode()) return { targets: rows.map(() => []), created: [], failedHeads: [] };   // shelf: no lists, no new lists
     const res = P.resolve(rows);
     const made = new Map(), created = [], failedHeads = [];
     for (const f of res.fresh) {
@@ -7374,7 +7402,7 @@ window.addEventListener('orientationchange', () => {
   window.wlPasteOpen = function () {
     document.getElementById('bsInput')?.blur();
     if (S.stage === 'form' && !ta.value.trim()) {
-      const d = defaultListId();
+      const d = shelfMode() ? null : defaultListId();
       S.sel = d ? [d] : [];
     }
     setErr('');
@@ -7386,7 +7414,7 @@ window.addEventListener('orientationchange', () => {
 
   // everything is saved by now: close this screen and the search under it
   window.wlPasteFinish = function () {
-    ta.value = ''; S.sel = []; S.busy = false; setErr('');
+    ta.value = ''; S.sel = []; S.status = 'unread'; S.busy = false; setErr('');
     show('form');
     navPop(ov, document.getElementById('bookSearchOverlay'));
     closeBookSearch();
@@ -7424,12 +7452,13 @@ window.addEventListener('orientationchange', () => {
   chips.addEventListener('click', e => {
     const c = e.target.closest('.wl-pk-chip');
     if (!c) return;
+    if (c.dataset.status) { S.status = c.dataset.status; refresh(); return; }   // shelf: pick the one status
     const id = c.dataset.id;
     S.sel = S.sel.includes(id) ? S.sel.filter(x => x !== id) : S.sel.concat(id);
     refresh();
   });
 
-  Object.assign(P, { show, state: S });
+  Object.assign(P, { show, state: S, rowStatus });
 })();
 
 // ── PASTE A LIST (wl-) — save, match, summary ───────────────────────────────
@@ -7526,8 +7555,8 @@ window.addEventListener('orientationchange', () => {
   }
 
   // ── rows ──
-  const STATE_TXT = { new: 'looking up…', matched: 'matched', shelf: 'already on your shelf', rno: 'already in read but not owned', wanted: 'already in your wishlist', look: 'needs a look', fail: 'could not save' };
-  const STATE_CLS = { matched: 'ok', shelf: 'shelf', rno: 'shelf', wanted: 'shelf', look: 'look', fail: 'look' };
+  const STATE_TXT = { new: 'looking up…', matched: 'matched', moved: 'moved to your shelf', shelf: 'already on your shelf', rno: 'already in read but not owned', wanted: 'already in your wishlist', look: 'needs a look', fail: 'could not save' };
+  const STATE_CLS = { matched: 'ok', moved: 'ok', shelf: 'shelf', rno: 'shelf', wanted: 'shelf', look: 'look', fail: 'look' };
   function rowHtml(it, withTags) {
     const b = it.book || { id: it.row.title };
     const c = STATE_CLS[it.state];
@@ -7555,6 +7584,7 @@ window.addEventListener('orientationchange', () => {
     const items = cur.items;
     const n = (...s) => items.filter(it => s.includes(it.state)).length;
     const parts = [n('matched') + ' matched', n('shelf', 'rno') + ' already on your shelf'];
+    if (n('moved')) parts.push(n('moved') + ' moved from your lists');
     if (n('wanted')) parts.push(n('wanted') + ' already in your wishlist');
     parts.push(n('look', 'fail') + ' need a look');
     const notes = [];
@@ -7627,6 +7657,20 @@ window.addEventListener('orientationchange', () => {
     it.state = 'look';
   }
 
+  // shelf paste: a book that was only in your lists moves to the shelf with its line's status
+  async function promoteWanted(items) {
+    if (addContext === 'list') return;
+    for (const it of items) {
+      if (it.state !== 'wanted' || !it.book) continue;
+      const up = { status: P.rowStatus(it.row), pages_read: 0, total_pages: 0 };
+      if (await dbUpdate(it.book.id, up)) {
+        Object.assign(it.book, up);
+        it.state = 'moved';
+        sb.from('list_books').update({ owned: true }).eq('book_id', it.book.id).then(() => {}).catch(() => {});
+      }
+    }
+  }
+
   // rows: from P.parse. plan: { targets: [[listId…] per row], created, failedHeads }
   window.wlPasteRun = async function (rows, plan) {
     const items = rows.map((r, i) => ({ i, row: r, ids: plan.targets[i] || [], state: 'new', book: null }));
@@ -7638,10 +7682,13 @@ window.addEventListener('orientationchange', () => {
       if (hit) { it.book = hit; it.state = kindOf(hit); }
     });
 
+    await promoteWanted(items);
+
     // 2. save the new rows in one request, with what you typed
     const fresh = items.filter(it => it.state === 'new');
     if (fresh.length) {
-      const payload = fresh.map(it => ({ user_id: currentUser.id, title: it.row.title, author: it.row.author || '', status: 'not-owned', cover_url: null, pages_read: 0, total_pages: null, borrowed_from: null }));
+      const shelf = addContext !== 'list';
+      const payload = fresh.map(it => ({ user_id: currentUser.id, title: it.row.title, author: it.row.author || '', status: shelf ? P.rowStatus(it.row) : 'not-owned', cover_url: null, pages_read: 0, total_pages: shelf ? 0 : null, borrowed_from: null }));
       const { data, error } = await sb.from('books').insert(payload).select();
       if (error) throw error;
       const byKey = new Map((data || []).map(d => [d.title + '\u0000' + (d.author || ''), d]));
@@ -7685,8 +7732,10 @@ window.addEventListener('orientationchange', () => {
     };
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, todo.length) }, worker));
 
+    await promoteWanted(items);   // wishlist books only found while filling in
     // 5. keep the offline copy in step, then show the summary
     try { localStorage.setItem('tsundoku_books_' + currentUser.id, JSON.stringify(books)); } catch {}
+    if (addContext !== 'list') renderGrid();   // shelf: show the new books
     if (window.wlRender) window.wlRender();
     renderSummary(plan, linkFailed);
   };
@@ -7723,6 +7772,7 @@ window.addEventListener('orientationchange', () => {
     Object.assign(it.book, up);
     dbUpdate(it.book.id, up);
     it.state = 'matched';
+    if (addContext !== 'list') renderGrid();
     closeBookSearch();
     renderSummary(cur.plan, false);
     navPush(null, ov);
