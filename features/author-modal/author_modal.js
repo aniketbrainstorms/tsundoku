@@ -181,9 +181,25 @@ function authorInitials(name) {
   return (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') || '?';
 }
 
+// "J.R.R. Tolkien", "J R R Tolkien" and "JRR Tolkien" all become "jrr tolkien"
+function authorMatchKey(str) {
+  return normalizeAuthorText(str).replace(/\b([a-z]) (?=[a-z]\b)/g, '$1').replace(/\b([a-z]) (?=[a-z]\b)/g, '$1');
+}
+
+// same author: identical keys, or same surname with an initial standing in for the first name ("F. Herbert" / "Frank Herbert")
+function authorsLikelySame(a, b) {
+  const ka = authorMatchKey(a), kb = authorMatchKey(b);
+  if (!ka || !kb) return false;
+  if (ka === kb) return true;
+  const ta = ka.split(' '), tb = kb.split(' ');
+  if (ta.length < 2 || tb.length < 2) return false;
+  if (ta[ta.length - 1] !== tb[tb.length - 1]) return false;
+  const x = ta[0], y = tb[0];
+  return x === y || (x.length === 1 && y.startsWith(x)) || (y.length === 1 && x.startsWith(y));
+}
+
 function getLocalAuthorBooks(authorName) {
-  const key = normalizeAuthorText(authorName);
-  return books.filter(b => normalizeAuthorText(b.author) === key);
+  return books.filter(b => authorsLikelySame(b.author, authorName));
 }
 
 function authorFallback(authorName) {
@@ -337,6 +353,7 @@ function buildAuthorRows(authorName) {
       description: book.description || '',
       genre: cleanGenre(book.genre || 'Novel'),
       owned: !notOwned,
+      borrowed: notOwned && book.borrowed_from != null,
       status: notOwned ? 'not-owned' : (book.status || 'unread'),
       bookId: book.id,
       source: 'local'
@@ -654,7 +671,7 @@ async function _fetchOpenLibraryWorks(authorName) {
 function getVisibleAuthorRows() {
   let rows = [..._authorRows];
   if (_authorFilter === 'wishlist') {
-    rows = rows.filter(row => row.status === 'not-owned');
+    rows = rows.filter(row => row.status === 'not-owned' && !row.borrowed);
     // Wikipedia rows first (unowned/undiscovered), then manually added not-owned
     rows.sort((a, b) => {
       if (a.source === 'wikipedia' && b.source !== 'wikipedia') return 1;
@@ -665,7 +682,7 @@ function getVisibleAuthorRows() {
     rows = rows.filter(row => row.status !== 'not-owned');
     rows.sort((a, b) => (a.year || '9999').localeCompare(b.year || '9999'));
   } else {
-    rows = rows.filter(row => row.status === _authorFilter);
+    rows = rows.filter(row => row.status === _authorFilter || (_authorFilter === 'read' && row.borrowed));
     rows.sort((a, b) => (a.year || '9999').localeCompare(b.year || '9999'));
   }
   return rows;
@@ -711,10 +728,10 @@ function renderAuthorRows(rows) {
 
   timeline.innerHTML = dedupedRows.map((row, i) => {
     const isWikiEntry = row.source === 'wikipedia';
-    const statusClass = row.status === 'not-owned' ? 'not-owned' : (row.status || 'unread');
+    const statusClass = row.borrowed ? 'read' : row.status === 'not-owned' ? 'not-owned' : (row.status || 'unread');
     // In wishlist view the pill is redundant — only show it in 'all' view
     const showPill = !isWishlistView;
-    const statusText = isWikiEntry ? 'Wishlist' : (row.status === 'not-owned' ? 'Wishlist' : (STATUS_LABELS[row.status] || 'unread'));
+    const statusText = row.borrowed ? 'Read' : isWikiEntry ? 'Wishlist' : (row.status === 'not-owned' ? 'Wishlist' : (STATUS_LABELS[row.status] || 'unread'));
     const cover = row.cover
       ? `<img src="${escapeAttr(row.cover)}" alt="" onerror="this.parentElement.innerHTML=''">`
       : makePlaceholder({ id: row.title }, 16);
@@ -744,6 +761,12 @@ function renderAuthorRows(rows) {
       // Wikipedia-sourced wishlist entry — offer to add to shelf
       if (!id && wikiTitle) {
         const authorName = _activeAuthorName;
+        const wikiRow = _authorRows.find(r => r.source === 'wikipedia' && r.title === wikiTitle);
+        if (typeof window.wlPick === 'function') {
+          // same picker as My Lists: choose lists, skips books you already have, a double tap can't make two rows
+          window.wlPick(wikiTitle, authorName, (wikiRow && wikiRow.cover) || '', { year: (wikiRow && wikiRow.year) || '' });
+          return;
+        }
         showToast(`Adding "${wikiTitle}" to wishlist…`);
         dbAdd({
           title: wikiTitle,
@@ -985,6 +1008,19 @@ function setAuthorFilter(filter) {
 document.querySelectorAll('[data-author-filter]').forEach(btn => {
   btn.addEventListener('click', () => setAuthorFilter(btn.dataset.authorFilter));
 });
+
+// called by the My Lists picker (app.js) once a book has been saved from here
+window.wlOnPicked = function (book) {
+  if (!document.getElementById('authorOverlay')?.classList.contains('open')) return;
+  if (!_activeAuthorName || !authorsLikelySame(book.author, _activeAuthorName)) return;
+  const updated = buildAuthorRows(_activeAuthorName);
+  const have = updated.map(r => r.title);
+  _authorRows.forEach(r => {
+    if (r.source === 'wikipedia' && !have.some(t => titlesLikelySame(t, r.title))) updated.push(r);
+  });
+  _authorRows = updated;
+  renderAuthorRows(getVisibleAuthorRows());
+};
 
 // ── AUTHOR PHOTO EDIT MODAL ──────────────────────────────────────────────
 function openAuthorPhotoModal() {
