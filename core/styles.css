@@ -4581,6 +4581,11 @@ html.standalone-webapp .add-popup {
   .book-search-overlay .bs-title { font-size: 15px; }
   .book-search-overlay .bs-input { font-size: 14px; padding: 10px 12px; }
   .book-search-overlay .bs-state { padding: 34px 0; }
+  .book-search-overlay > .bs-qa-grid {
+    width: min(600px, calc(100vw - 48px)); box-sizing: border-box; background: #211b16;
+    border-left: 1px solid #3a3128; border-right: 1px solid #3a3128;
+    padding-left: 16px; padding-right: 16px;
+  }
 
   /* Keep desktop navigation pages beside the persistent sidebar. */
   #listsOverlay,
@@ -4957,6 +4962,39 @@ html.standalone-webapp .add-popup {
   transition: transform 0.2s, background 0.2s;
 }
 .bs-borrow-track.on .bs-borrow-knob { transform: translateX(13px); background: #fff; }
+
+/* ── add-book sheet: quick actions + borrowing switch (bs-qa) ── */
+.bs-qa-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+  padding: 2px max(var(--safe-right),16px) 12px max(var(--safe-left),16px); flex-shrink: 0;
+}
+.bs-qa {
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 12px;
+  border-radius: 14px; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font: 600 13.5px 'DM Sans', sans-serif; text-align: left; cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.bs-qa:active { transform: scale(0.98); }
+.bs-qa-grid .bs-qa:last-child:nth-child(odd) { grid-column: 1 / -1; }   /* an odd last tile takes the full row */
+.bs-qa-ico {
+  width: 30px; height: 30px; flex: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--border); color: var(--text-dim);
+}
+.bs-qa--main .bs-qa-ico { background: rgba(201,113,74,0.16); color: var(--accent); }
+
+.bs-borrow-row { gap: 12px; min-height: 56px; }
+.bs-borrow-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.bs-borrow-row .bs-borrow-t { font-size: 14px; font-weight: 600; color: var(--text); }
+.bs-borrow-row .bs-borrow-sub { font-size: 12px; color: var(--text-muted); font-weight: 400; }
+.bs-borrow-track { order: 3; width: 44px; height: 26px; }
+.bs-borrow-knob { width: 20px; height: 20px; top: 3px; left: 3px; }
+.bs-borrow-track.on .bs-borrow-knob { transform: translateX(18px); }
+
+/* typing: tiles step aside so results get the room; the borrowing row stays, one line */
+.book-search-overlay.bs-typing .bs-qa-grid,
+.book-search-overlay.bs-typing .bs-borrow-sub { display: none; }
+.book-search-overlay.bs-typing .bs-borrow-row { min-height: 44px; padding-top: 6px; padding-bottom: 6px; }
 
 .bs-manual-link {
   text-align: center; padding: 18px 0 8px;
