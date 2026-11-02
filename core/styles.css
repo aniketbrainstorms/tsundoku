@@ -5526,3 +5526,6 @@ html.is-android .nav-panel.open:not(.nav-behind) {
 }
 .wl-paste-fix:active { opacity: 0.7; }
 .wl-paste-done { padding-top: 12px; }
+
+/* adding to a list: no borrowing, so no "I'm borrowing this book" toggle */
+#app.list-add-context .bs-borrow-row { display: none; }
