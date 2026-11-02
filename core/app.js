@@ -2877,6 +2877,7 @@ function closeBookSearch() {
   window.wlAddMode = false;
   _bsSeq++;
   document.getElementById('bsInput').value = '';
+  bsOverlay.classList.remove('bs-typing');
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>';
   clearTimeout(bookSearchTimer);
 }
@@ -2951,6 +2952,7 @@ function onBsInput() {
   clearTimeout(bookSearchTimer);
   _bsSeq++;
   const q = document.getElementById('bsInput').value.trim();
+  document.getElementById('bookSearchOverlay').classList.toggle('bs-typing', !!q);
   if (!q) { document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>'; return; }
   if (q.length < 3) { document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Keep typing…</p></div>'; return; }
   const _bsHit = bsCacheGet(q);
