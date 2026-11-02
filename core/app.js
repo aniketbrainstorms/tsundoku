@@ -7334,6 +7334,18 @@ window.addEventListener('orientationchange', () => {
 
   function refresh() {
     const p = P.parse(ta.value), res = P.resolve(p.rows);
+    {
+      // the form's wording follows where you opened it: lists or shelf
+      const shelf = shelfMode();
+      const tipEl = document.getElementById('wlPasteTip'), lblEl = document.getElementById('wlPasteChipsLabel'), footEl = document.getElementById('wlPasteFoot');
+      if (tipEl) tipEl.textContent = shelf
+        ? 'tip: a line starting with #reading, #read or #unread sets the status of the books below it.'
+        : 'tip: a line starting with # and a list name sends the books below it to that list. a new name creates a new list.';
+      if (lblEl) lblEl.textContent = shelf ? 'books without a # header go in as' : 'books without a # header also go in';
+      if (footEl) footEl.textContent = shelf ? 'up to 50 lines at a time.' : 'every book is always in all. up to 50 lines at a time.';
+      if (!ta.dataset.ph) ta.dataset.ph = ta.placeholder;
+      ta.placeholder = shelf ? '#reading\nDune by Frank Herbert\n#read\nSolaris' : ta.dataset.ph;
+    }
     chips.innerHTML = chipsHtml();
     if (shelfMode()) {
       // shelf: # headers (#reading, #read, #unread) set the status; other lines use the chip
