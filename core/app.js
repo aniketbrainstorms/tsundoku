@@ -2859,6 +2859,8 @@ function openBookSearch(context = 'shelf') {
   if (bsBorrowTrack) bsBorrowTrack.classList.remove('on');
   const bsOverlay = document.getElementById('bookSearchOverlay');
   navPush(null, bsOverlay);
+  clearTimeout(window._bsKbTimer);
+  if (window.bsKbSync) window.bsKbSync();   // pick up the keyboard height if it is already up
   _updateAppRecede();
   const bar = document.getElementById('floatingBar');
   if (bar) bar.style.display = 'none';
@@ -2867,6 +2869,9 @@ function openBookSearch(context = 'shelf') {
 function closeBookSearch() {
   const bsOverlay = document.getElementById('bookSearchOverlay');
   navPop(bsOverlay, null);
+  document.getElementById('bsInput').blur();   // drops the keyboard with the sheet
+  clearTimeout(window._bsKbTimer);             // --bs-kb stays frozen while the sheet slides out, then resets
+  window._bsKbTimer = setTimeout(() => bsOverlay.style.setProperty('--bs-kb', '0px'), 450);
   _updateAppRecede();
   if (addContext !== 'list' || window.wlAddMode) document.getElementById('floatingBar').style.display = '';
   window.wlAddMode = false;
@@ -2875,6 +2880,58 @@ function closeBookSearch() {
   document.getElementById('bsResults').innerHTML = '<div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>';
   clearTimeout(bookSearchTimer);
 }
+// ── ADD-BOOK SHEET (phones/tablets) — keyboard lift + drag to dismiss ──
+(function () {
+  const ov = document.getElementById('bookSearchOverlay');
+  if (!ov) return;
+
+  // keep the sheet above the keyboard: --bs-kb feeds `bottom` in styles.css
+  const vv = window.visualViewport;
+  if (vv) {
+    const sync = () => {
+      if (!ov.classList.contains('open')) return;   // frozen while the sheet slides out
+      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      ov.style.setProperty('--bs-kb', (kb > 80 ? kb : 0) + 'px');
+    };
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    window.bsKbSync = sync;
+  }
+
+  // drag the grabber or the title row down to dismiss
+  const zones = [document.getElementById('bsGrabber'), ov.querySelector('.bs-title-row')].filter(Boolean);
+  let startY = 0, startT = 0, dy = 0, tracking = false, moved = false;
+  const onEnd = cancel => {
+    if (!tracking) return;
+    tracking = false;
+    if (!moved) return;                                          // a plain tap on the chevron
+    const v = dy / Math.max(1, performance.now() - startT);      // px per ms
+    if (!cancel && (dy > 110 || v > 0.5)) {
+      ov.style.transition = ''; ov.style.transform = '';         // hand back to the CSS close animation
+      closeBookSearch();
+    } else {
+      ov.style.transition = 'transform 0.3s cubic-bezier(0.25,1,0.5,1)';
+      ov.style.transform = 'translateY(0)';
+      setTimeout(() => { ov.style.transition = ''; ov.style.transform = ''; }, 320);
+    }
+  };
+  zones.forEach(z => {
+    z.addEventListener('touchstart', e => {
+      if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches || !ov.classList.contains('open') || e.touches.length > 1) return;
+      tracking = true; moved = false; dy = 0;
+      startY = e.touches[0].clientY; startT = performance.now();
+    }, { passive: true });
+    z.addEventListener('touchmove', e => {
+      if (!tracking) return;
+      dy = Math.max(0, e.touches[0].clientY - startY);
+      if (!moved) { if (dy < 6) return; moved = true; ov.style.transition = 'none'; }
+      ov.style.transform = 'translateY(' + dy + 'px)';
+    }, { passive: true });
+    z.addEventListener('touchend', () => onEnd(false), { passive: true });
+    z.addEventListener('touchcancel', () => onEnd(true), { passive: true });
+  });
+})();
+
 function openAuthorPageFromSearch(authorName) {
   if (typeof openAuthorPage === 'function') openAuthorPage(authorName, document.getElementById('bookSearchOverlay'));
 }
