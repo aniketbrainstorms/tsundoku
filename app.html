@@ -917,10 +917,10 @@
         <p class="wl-paste-sub">one book per line</p>
         <textarea class="wl-paste-ta" id="wlPasteTa" rows="9" aria-label="books to add" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Dune by Frank Herbert&#10;Solaris&#10;The Dispossessed - Ursula K. Le Guin"></textarea>
         <div class="wl-paste-prev" id="wlPastePrev"></div>
-        <p class="wl-paste-note">tip: a line starting with # and a list name sends the books below it to that list. a new name creates a new list.</p>
-        <p class="wl-paste-note">books without a # header also go in</p>
+        <p class="wl-paste-note" id="wlPasteTip">tip: a line starting with # and a list name sends the books below it to that list. a new name creates a new list.</p>
+        <p class="wl-paste-note" id="wlPasteChipsLabel">books without a # header also go in</p>
         <div class="wl-paste-chips" id="wlPasteChips"></div>
-        <p class="wl-paste-note">every book is always in all. up to 50 lines at a time.</p>
+        <p class="wl-paste-note" id="wlPasteFoot">every book is always in all. up to 50 lines at a time.</p>
         <div class="wl-paste-err" id="wlPasteErr" role="alert"></div>
         <button type="button" class="modal-btn" id="wlPasteGo" onclick="wlPasteGo()">add 0 books</button>
       </div>
