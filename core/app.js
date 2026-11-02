@@ -7584,7 +7584,7 @@ window.addEventListener('orientationchange', () => {
         if (l && !(l._books || []).some(x => String(x.id) === String(dup.id))) rows.push({ l, row: { list_id: l.id, book_id: dup.id, owned: false } });
       });
       if (rows.length) {
-        const { error } = await sb.from('list_books').insert(rows.map(r => r.row));
+        const { error } = await sb.from('list_books').upsert(rows.map(r => r.row), { onConflict: 'list_id,book_id', ignoreDuplicates: true });
         if (!error) rows.forEach(r => { r.l._books = (r.l._books || []).concat(dup); });
       }
     }
@@ -7659,7 +7659,7 @@ window.addEventListener('orientationchange', () => {
     });
     let linkFailed = false;
     if (links.length) {
-      const { error } = await sb.from('list_books').insert(links.map(x => x.row));
+      const { error } = await sb.from('list_books').upsert(links.map(x => x.row), { onConflict: 'list_id,book_id', ignoreDuplicates: true });
       if (error) linkFailed = true;
       else links.forEach(x => { x.l._books = (x.l._books || []).concat(x.b); x.l.updated_at = new Date().toISOString(); });
     }
