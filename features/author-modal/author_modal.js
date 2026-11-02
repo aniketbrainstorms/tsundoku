@@ -1115,7 +1115,7 @@ async function apUploadFile(e) {
     showToast('Uploading photo…');
     try {
       const ext = file.name.split('.').pop() || 'jpg';
-      const path = `authors/${cacheKey}.${ext}`;
+      const path = `${currentUser.id}/author-${cacheKey}.${ext}`;
       const { error } = await sb.storage.from('covers').upload(path, file, { upsert: true, contentType: file.type });
       if (error) throw error;
       const { data: { publicUrl } } = sb.storage.from('covers').getPublicUrl(path);
