@@ -873,9 +873,11 @@
   
   <!-- BOOK SEARCH OVERLAY -->
   <div class="book-search-overlay nav-panel" id="bookSearchOverlay">
+    <div class="bs-grabber" id="bsGrabber" aria-hidden="true"><span></span></div>
     <div class="bs-title-row">
-      <button class="bs-back" onclick="closeBookSearch()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      <button class="bs-back" onclick="closeBookSearch()" aria-label="close">
+        <svg class="bs-ico-back" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        <svg class="bs-ico-down" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
       </button>
       <span class="bs-title">Add a book</span>
       <div class="bs-title-spacer"></div>
@@ -901,6 +903,7 @@
       <div class="bs-state"><p>Type a title, author, or ISBN to search</p></div>
     </div>
   </div>
+  <div class="bs-scrim" id="bsScrim" onclick="closeBookSearch()"></div>
   <!-- PASTE A LIST OVERLAY (wl-) -->
   <div class="shelf-overlay nav-panel" id="wlPasteOverlay">
     <div class="shelf-header">
