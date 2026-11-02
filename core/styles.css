@@ -1626,7 +1626,7 @@ html.standalone-webapp .add-popup {
     border-top: 1px solid rgba(201,113,74,0.18);
     box-shadow: 0 -24px 60px rgba(0,0,0,0.5);
     overflow: hidden;
-    transform: translateY(100%);
+    transform: translateY(calc(100% + var(--bs-kb, 0px)));
     transition: transform 0.3s cubic-bezier(0.25,1,0.5,1), bottom 0.22s ease, visibility 0s linear 0.3s;
   }
   .book-search-overlay.nav-panel.open,
