@@ -7176,6 +7176,7 @@ window.addEventListener('orientationchange', () => {
     busy = false;
     close();
     toast(msg);
+    if (typeof window.wlOnPicked === 'function') window.wlOnPicked(book);
   }
 
   document.getElementById('wlFab')?.addEventListener('click', () => {
