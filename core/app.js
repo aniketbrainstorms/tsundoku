@@ -4123,9 +4123,16 @@ function closePeek() {
 // ── AI LIBRARIAN — combined summary + genre/theme tagging ──
 const aiCache = new Map();
 
+// Google/Open Library often return only a broad category; treat those as "no genre yet"
+const GENERIC_GENRES = new Set(['fiction', 'nonfiction', 'non-fiction', 'general', 'juvenile fiction', 'juvenile nonfiction', 'young adult fiction', 'young adult nonfiction', 'literary collections', 'literature', 'books', 'novel', 'novels', 'stories', 'american fiction', 'english fiction']);
+function genresAreGeneric(book) {
+  const g = getBookGenres(book);
+  return !g.length || g.every(x => GENERIC_GENRES.has(x.toLowerCase()));
+}
+
 function buildAiContentPrompt(title, author, rawDescription, needGenreThemes) {
   const genreThemeKeys = needGenreThemes ? `
-- "genres": array of 1-2 specific sub-genres (e.g. "Magical Realism", not just "Fiction")
+- "genres": array of 1-2 specific sub-genres (e.g. "Magical Realism", "Gothic Horror", "Space Opera", "Narrative Nonfiction"). NEVER answer with only "Fiction", "Nonfiction" or "Novel" — always name the specific sub-genre.
 - "themes": array of 2-4 short thematic keywords` : '';
   return `You are a librarian writing concise book blurbs. Given this book, respond ONLY with valid JSON (no markdown, no backticks) with exactly these keys:
 - "summary": a neutral 2-3 sentence description (40-70 words) of the book's premise and setup only. No spoilers about the ending or major twists. NEVER mention awards, prizes, bestseller status, review quotes, or marketing language — describe only the story/content itself.${genreThemeKeys}
@@ -6642,7 +6649,7 @@ window.addEventListener('orientationchange', () => {
 
     for (let i = 0; i < remaining.length; i++) {
       const book = remaining[i];
-      const needsGenres = !(Array.isArray(book.genres) && book.genres.length);
+      const needsGenres = genresAreGeneric(book);
       const needsThemes = !(Array.isArray(book.themes) && book.themes.length);
       const needGenreThemes = needsGenres || needsThemes;
       const prompt = buildAiContentPrompt(book.title, book.author, book.description || '', needGenreThemes);
