@@ -4127,12 +4127,14 @@ const aiCache = new Map();
 const GENERIC_GENRES = new Set(['fiction', 'nonfiction', 'non-fiction', 'general', 'juvenile fiction', 'juvenile nonfiction', 'young adult fiction', 'young adult nonfiction', 'literary collections', 'literature', 'books', 'novel', 'novels', 'stories', 'american fiction', 'english fiction']);
 function genresAreGeneric(book) {
   const g = getBookGenres(book);
-  return !g.length || g.every(x => GENERIC_GENRES.has(x.toLowerCase()));
+  return !g.length || !gtResolve(g[0]);
 }
 
 function buildAiContentPrompt(title, author, rawDescription, needGenreThemes) {
   const genreThemeKeys = needGenreThemes ? `
-- "genres": array of 1-2 specific sub-genres (e.g. "Magical Realism", "Gothic Horror", "Space Opera", "Narrative Nonfiction"). NEVER answer with only "Fiction", "Nonfiction" or "Novel" — always name the specific sub-genre.
+- "genres": array of 2-3 items. Item 1 MUST be exactly one main genre copied verbatim from the list below. Items 2-3 are specific sub-genres: prefer the hints after that genre, or use another short, well-known sub-genre. Never use a topic or subject heading (like "Aging") as a genre. Use "Other" only if nothing fits.
+Main genres, with sub-genre hints after the colon:
+${gtPromptLines()}
 - "themes": array of 2-4 short thematic keywords` : '';
   return `You are a librarian writing concise book blurbs. Given this book, respond ONLY with valid JSON (no markdown, no backticks) with exactly these keys:
 - "summary": a neutral 2-3 sentence description (40-70 words) of the book's premise and setup only. No spoilers about the ending or major twists. NEVER mention awards, prizes, bestseller status, review quotes, or marketing language — describe only the story/content itself.${genreThemeKeys}
@@ -4190,6 +4192,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
     const data = await res.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    if (Array.isArray(parsed.genres)) parsed.genres = gtNormalize(parsed.genres);
     aiCache.set(cacheKey, parsed);
     return parsed;
   } catch { return null; }
@@ -6668,7 +6671,7 @@ window.addEventListener('orientationchange', () => {
           const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
           const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
           const summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : '';
-          const genres = Array.isArray(parsed.genres) ? parsed.genres.filter(Boolean) : [];
+          const genres = needsGenres ? gtNormalize(parsed.genres) : [];
           const themes = Array.isArray(parsed.themes) ? parsed.themes.filter(Boolean) : [];
           if (!summary) break;
           const updates = { description: summary };
