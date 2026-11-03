@@ -6979,6 +6979,45 @@ window.addEventListener('orientationchange', () => {
   function wlIsWanted(b) { return b.status === 'not-owned' && b.borrowed_from == null; }
   function wlInList(list, b) { return (list._books || []).some(x => String(x.id) === String(b.id)); }
 
+  const WL_SORTS = { recent: 'recently added', title: 'title (A–Z)', author: 'author (A–Z)', genre: 'genre (A–Z)' };
+  let wlSort = 'recent', wlView = 'grid';
+  try {
+    wlSort = localStorage.getItem('tsundoku_wl_sort') || 'recent';
+    wlView = localStorage.getItem('tsundoku_wl_view') === 'list' ? 'list' : 'grid';
+  } catch {}
+  if (!WL_SORTS[wlSort]) wlSort = 'recent';
+
+  const WL_ICON_LIST = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+  const WL_ICON_GRID = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
+
+  function wlSortItems(arr) {
+    const a = arr.slice();   // "recent" keeps the books order (newest first)
+    const byTitle = (x, y) => (x.title || '').localeCompare(y.title || '');
+    if (wlSort === 'title') a.sort(byTitle);
+    else if (wlSort === 'author') a.sort((x, y) => (x.author || '').localeCompare(y.author || '') || byTitle(x, y));
+    else if (wlSort === 'genre') {
+      const g = b => (getBookGenres(b)[0] || '').toLowerCase();
+      a.sort((x, y) => {
+        const gx = g(x), gy = g(y);
+        if (!gx !== !gy) return gx ? -1 : 1;   // books without a genre go last
+        return gx.localeCompare(gy) || byTitle(x, y);
+      });
+    }
+    return a;
+  }
+
+  function wlSyncToolbar() {
+    const lbl = document.getElementById('wlSortLabel');
+    if (lbl) lbl.textContent = WL_SORTS[wlSort];
+    document.querySelectorAll('#wlSortMenu .qm-item').forEach(i => i.classList.toggle('current-status', i.dataset.wlsort === wlSort));
+    const vb = document.getElementById('wlViewBtn');
+    if (vb) {
+      vb.innerHTML = wlView === 'list' ? WL_ICON_GRID : WL_ICON_LIST;
+      vb.setAttribute('aria-label', wlView === 'list' ? 'Switch to grid view' : 'Switch to list view');
+    }
+    document.getElementById('wlSortMenu')?.classList.remove('visible');
+  }
+
   window._wl = { lists: wlLists, color: wlColor };
   window.wlRender = function () {
     const chips = document.getElementById('wlChips');
@@ -7008,7 +7047,9 @@ window.addEventListener('orientationchange', () => {
       bar.classList.remove('on');
     }
 
-    const items = cur ? books.filter(b => wlInList(cur, b)) : wanted;
+    const items = wlSortItems(cur ? books.filter(b => wlInList(cur, b)) : wanted);
+    grid.classList.toggle('wl-list', wlView === 'list');
+    wlSyncToolbar();
     if (!items.length) {
       grid.innerHTML = `<div class="wl-empty">${cur ? 'nothing in ' + escapeHtml(cur.name) + ' yet.' : 'no wanted books yet.'}</div>`;
       return;
@@ -7016,7 +7057,12 @@ window.addEventListener('orientationchange', () => {
     const colorOf = new Map(lists.map((l, i) => [String(l.id), wlColor(l, i)]));
     grid.innerHTML = items.map((b, i) => {
       const dots = cur ? '' : lists.filter(l => wlInList(l, b)).slice(0, 3).map(l => `<i style="background:${colorOf.get(String(l.id))}"></i>`).join('');
-      return `<div class="book-card" role="button" tabindex="0" aria-label="Open ${escapeAttr(b.title || 'book')}" data-id="${b.id}" style="animation-delay:${Math.min(i, 12) * 0.035}s">${coverHtml(b)}${b.status !== 'not-owned' ? '<span class="wl-own" title="on your shelf"></span>' : ''}${dots ? `<span class="wl-dots">${dots}</span>` : ''}</div>`;
+      const own = b.status !== 'not-owned' ? '<span class="wl-own" title="on your shelf"></span>' : '';
+      if (wlView === 'list') {
+        const g = getBookGenres(b)[0] || '';
+        return `<div class="book-card wl-row" role="button" tabindex="0" aria-label="Open ${escapeAttr(b.title || 'book')}" data-id="${b.id}" style="animation-delay:${Math.min(i, 12) * 0.035}s">${coverHtml(b)}<div class="wl-info"><div class="wl-t">${escapeHtml(b.title || '')}</div><div class="wl-a">${escapeHtml(b.author || '')}</div>${g ? `<span class="wl-g">${escapeHtml(g)}</span>` : ''}${dots ? `<span class="wl-dots">${dots}</span>` : ''}</div>${own}</div>`;
+      }
+      return `<div class="book-card" role="button" tabindex="0" aria-label="Open ${escapeAttr(b.title || 'book')}" data-id="${b.id}" style="animation-delay:${Math.min(i, 12) * 0.035}s">${coverHtml(b)}${own}${dots ? `<span class="wl-dots">${dots}</span>` : ''}</div>`;
     }).join('');
   };
 
@@ -7024,6 +7070,35 @@ window.addEventListener('orientationchange', () => {
   const gridEl = document.getElementById('wlGrid');
   const barEl = document.getElementById('wlListBar');
   if (!chipsEl || !gridEl || !barEl) return;
+
+  // sort menu + list/grid switch
+  const wlSortBtn = document.getElementById('wlSortBtn');
+  const wlSortMenu = document.getElementById('wlSortMenu');
+  const wlViewBtn = document.getElementById('wlViewBtn');
+  wlSortBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    if (wlSortMenu.classList.contains('visible')) { wlSortMenu.classList.remove('visible'); return; }
+    const or = document.getElementById('listsOverlay').getBoundingClientRect();
+    const br = wlSortBtn.getBoundingClientRect();
+    wlSortMenu.style.top = (br.bottom - or.top + 6) + 'px';
+    wlSortMenu.style.left = Math.max(8, br.left - or.left) + 'px';
+    wlSortMenu.classList.add('visible');
+  });
+  wlSortMenu?.addEventListener('click', e => {
+    const b = e.target.closest('[data-wlsort]');
+    if (!b) return;
+    wlSort = b.dataset.wlsort;
+    try { localStorage.setItem('tsundoku_wl_sort', wlSort); } catch {}
+    window.wlRender();
+  });
+  document.addEventListener('pointerdown', e => {
+    if (!e.target.closest('#wlSortMenu') && !e.target.closest('#wlSortBtn')) wlSortMenu?.classList.remove('visible');
+  });
+  wlViewBtn?.addEventListener('click', () => {
+    wlView = wlView === 'list' ? 'grid' : 'list';
+    try { localStorage.setItem('tsundoku_wl_view', wlView); } catch {}
+    window.wlRender();
+  });
 
   chipsEl.addEventListener('click', e => {
     const chip = e.target.closest('.wl-chip');
