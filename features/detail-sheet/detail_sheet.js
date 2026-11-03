@@ -944,7 +944,7 @@ window.openDetailModal = async function openDetailModal(id) {
 
     if (summarySection) summarySection.style.display = 'flex';
 
-    if (aiSummaryIsRegenerated(book.id)) {
+    if (aiSummaryIsRegenerated(book.id) && !genresAreGeneric(book)) {
       if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
       if (summaryEl) summaryEl.textContent = book.description || 'No summary available.';
       DS.summaryExpanded = false;
@@ -959,7 +959,7 @@ window.openDetailModal = async function openDetailModal(id) {
         if (meta?.year && !book.year) { book.year = meta.year; apiUpdates.year = meta.year; }
         if (meta?.pageCount && !book.page_count) { book.page_count = parseInt(meta.pageCount) || 0; apiUpdates.page_count = book.page_count; }
 
-        const needsGenres = !(Array.isArray(book.genres) && book.genres.length);
+        const needsGenres = genresAreGeneric(book);
         const needsThemes = !(Array.isArray(book.themes) && book.themes.length);
         const needGenreThemes = needsGenres || needsThemes;
         const rawDescription = meta?.description || book.description || '';
