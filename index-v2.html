@@ -574,7 +574,6 @@ footer{background:var(--text);padding:40px max(clamp(20px,5vw,60px),var(--safe-l
     <div class="faq-list rv d2">
       <details class="faq-item"><summary>Is Tsundoku only for physical books?</summary><p>No. Organize physical books, ebooks, audiobooks, and even books you've read but don't own — borrowed, library or lent.</p></details>
       <details class="faq-item"><summary>Do I have to add my books one by one?</summary><p>No. Search, scan the ISBN barcode, type one in by hand — or paste a whole list of titles, one per line, and add them all at once.</p></details>
-      <details class="faq-item"><summary>What about omnibus editions and story collections?</summary><p>Tag a book as an omnibus and each part gets its own summary and tick. Tag it as a collection and the list of stories appears automatically, so you can tick off a story at a time.</p></details>
       <details class="faq-item"><summary>Do I have to track my reading?</summary><p>Never. The reading log is off by default. Switch it on if you like seeing your pages and days; switch it off and it disappears. There are no streaks and no goals either way.</p></details>
       <details class="faq-item"><summary>What are “my lists” for?</summary><p>They're for books you don't own yet — a buy list, a borrow list, gift ideas. Tick a book off when you get it and it moves onto your shelf, so you stop buying duplicates.</p></details>
       <details class="faq-item"><summary>Can I share my library?</summary><p>Yes. Make your shelf public and share one link. Friends can browse and search it without an account.</p></details>
@@ -793,7 +792,6 @@ function shelfPhoto(el, rows, width) {
 /* ═══ 5 · TOUR — chapters ═══ */
 const PASTE = [['Piranesi — Susanna Clarke','piranesi','susanna clarke',0],['babel','babel','r.f. kuang',2],['the secret history, donna tartt','the secret history','donna tartt',9],['pachinko (min jin lee)','pachinko','min jin lee',3],['normal people - rooney','normal people','sally rooney',4],['project hail mary','project hail mary','andy weir',11],['a little life','a little life','hanya yanagihara',6],['klara & the sun','klara and the sun','kazuo ishiguro',7]];
 const GEN = [['literary',38,'#c9714a'],['fantasy',26,'#9a6ac0'],['sci-fi',18,'#5a8fa8'],['historical',14,'#b0963c'],['mystery',11,'#5a8a6a'],['memoir',8,'#c06a6a']];
-const KS = ['before the law','an imperial message','description of a struggle','wedding preparations in the country','the judgement','the metamorphosis','in the penal colony'];
 const TAGS = [1,0,2,0,3,4,1,5,3,0,3,2];   /* index into GEN per cover */
 
 const CHAPTERS = [
@@ -966,93 +964,7 @@ const CHAPTERS = [
      await flash(r, live, 'link copied — happy sharing', 2400);
    } },
 
-{ id:'omnibus', chip:'omnibus', n:'08 — omnibus editions', h:'one cover, <em>every part.</em>',
-   p:'got a “complete trilogy” on the shelf? tag it as an omnibus and each part gets its own summary and its own tick — so a big bound-together book still has a middle.',
-   li:['swipe between a summary for every part','tick parts off as you finish them','the progress bar fills part by part, not all at once'],
-   screen:() => `
-     <div class="pn on" data-e>
-       <div class="ed-hd"><span>‹ back</span><b>edit book</b><em data-save>save changes</em></div>
-       <div class="fld"><small>title</small><div class="v">dune &amp; dune messiah</div></div>
-       <div class="fld"><small>this book is</small></div>
-       <div class="seg" style="margin-top:6px"><b class="on">single book</b><b>omnibus</b><b>collection</b></div>
-       <div class="fld rvl" data-parts><small>parts</small><div class="v" data-pv></div></div>
-       <p class="hint rvl" data-hint>a few full books bound together. each part gets a tick and a summary.</p>
-     </div>
-     <div class="pn" data-d>
-       <div class="om-top"><div class="cell">${cv(0, 'dune &amp; dune messiah', 'frank herbert')}</div><h5>dune &amp; dune messiah</h5><p>frank herbert</p><span class="stp">● unread</span></div>
-       <div class="segbar"><i></i><i></i></div><div class="segl"><span>part 1</span><span>part 2</span></div>
-       <p class="segc"><b data-rc>0</b> of 2 read</p>
-       <div class="sumcard"><h6>summary · <b data-n>1</b>/2</h6>
-         <div class="slides">
-           <div class="slide"><div class="sh"><b>1 · dune</b><em>unread</em></div><p>on the desert planet arrakis, young paul atreides watches his family fall to betrayal — and finds a destiny waiting among the fremen and the spice they guard.</p></div>
-           <div class="slide"><div class="sh"><b>2 · dune messiah</b><em>unread</em></div><p>years into his reign, paul rules an empire stretched thin by his own legend. old enemies plot quietly, and the foresight that made him a god starts to feel like a trap.</p></div>
-         </div><div class="sdots"><i class="on"></i><i></i></div></div>
-       <div class="om-btn"><button class="btn-app">✓ mark a part as read</button></div>
-     </div><div class="toast"></div>`,
-   scene: async (r, live) => {
-     const E = $('[data-e]', r), D = $('[data-d]', r), sg = $$('.seg b', r), parts = $('[data-parts]', r), hint = $('[data-hint]', r), pv = $('[data-pv]', r), sv = $('[data-save]', r);
-     const sl = $('.slides', r), dots = $$('.sdots i', r), n = $('[data-n]', r), segs = $$('.segbar i', r), rc = $('[data-rc]', r), tg = $$('.sh em', r), btn = $('.btn-app', r);
-     const go = i => { sl.style.transform = `translateX(${-100 * i}%)`; dots.forEach((d, j) => d.classList.toggle('on', j === i)); n.textContent = i + 1; };
-     E.classList.add('on'); D.classList.remove('on'); sg.forEach((b, j) => b.classList.toggle('on', j === 0)); parts.classList.remove('on'); hint.classList.remove('on'); pv.textContent = ''; sv.classList.remove('press');
-     go(0); segs.forEach(s => s.classList.remove('on')); rc.textContent = '0'; tg.forEach(t => { t.textContent = 'unread'; t.classList.remove('ok'); }); btn.classList.remove('press'); $('.toast', r).classList.remove('on');
-     if (!await W(live, 900)) return;
-     sg[0].classList.remove('on'); sg[1].classList.add('on');
-     if (!await W(live, 500)) return;
-     parts.classList.add('on'); hint.classList.add('on');
-     if (!await type(pv, '1–2  ·  2 parts', live, 80)) return;
-     if (!await W(live, 1000)) return;
-     sv.classList.add('press'); if (!await W(live, 260)) return;
-     E.classList.remove('on'); D.classList.add('on');
-     if (!await W(live, 1400)) return;
-     go(1); if (!await W(live, 1900)) return;
-     go(0); if (!await W(live, 1000)) return;
-     btn.classList.add('press'); if (!await W(live, 260)) return; btn.classList.remove('press');
-     segs[0].classList.add('on'); rc.textContent = '1'; tg[0].textContent = 'read'; tg[0].classList.add('ok');
-     await flash(r, live, 'part 1 ticked — part 2 whenever', 2800);
-   } },
-
- { id:'collection', chip:'collections', n:'09 — short story collections', h:'tag a collection. <em>the stories appear.</em>',
-   p:'mark a book as a short story collection and tsundoku lists every story inside it for you. tick the ones you’ve read — even if it’s story 3 of 78.',
-   li:['the story list builds itself','tick stories one at a time, filter by unread or read','“0 of 78 read” is a fact, not a target'],
-   screen:() => `
-     <div class="pn on" data-e>
-       <div class="ed-hd"><span>‹ back</span><b>edit book</b><em data-save>save changes</em></div>
-       <div class="fld"><small>title</small><div class="v">complete short stories</div></div>
-       <div class="fld"><small>this book is</small></div>
-       <div class="seg" style="margin-top:6px"><b class="on">single book</b><b>omnibus</b><b>collection</b></div>
-       <div class="fld rvl" data-found><small>stories found</small><div class="v"><span data-fc>0</span>&nbsp;stories ✓</div></div>
-       <div class="auto">${KS.slice(0, 5).map(s => `<div class="ar">${s}</div>`).join('')}</div>
-     </div>
-     <div class="pn" data-m>
-       <div class="sc-top"><h4>mark as read</h4><p>complete short stories · <b data-mc>0</b> of 78 read</p></div>
-       <div class="pills" style="padding-top:16px"><span class="pill on">all</span><span class="pill">unread</span><span class="pill">read</span></div>
-       <div class="mrows">${KS.map(s => `<div class="mrow"><i class="cbx">✓</i>${s}</div>`).join('')}</div>
-     </div><div class="toast"></div>`,
-   scene: async (r, live) => {
-     const E = $('[data-e]', r), M = $('[data-m]', r), sg = $$('.seg b', r), f = $('[data-found]', r), fc = $('[data-fc]', r), ar = $$('.ar', r), sv = $('[data-save]', r), pl = $$('.pill', r), rows = $$('.mrow', r), mc = $('[data-mc]', r);
-     const pill = i => pl.forEach((p, j) => p.classList.toggle('on', j === i));
-     E.classList.add('on'); M.classList.remove('on'); sg.forEach((b, j) => b.classList.toggle('on', j === 0)); f.classList.remove('on'); fc.textContent = '0'; ar.forEach(a => a.classList.remove('on')); sv.classList.remove('press');
-     pill(0); rows.forEach(x => x.classList.remove('ok', 'hide')); mc.textContent = '0'; $('.toast', r).classList.remove('on');
-     if (!await W(live, 900)) return;
-     sg[0].classList.remove('on'); sg[2].classList.add('on');
-     if (!await W(live, 600)) return;
-     f.classList.add('on');
-     for (let i = 0; i <= 6; i++) { fc.textContent = Math.round(78 * i / 6); if (!await W(live, 90)) return; }
-     for (const a of ar) { a.classList.add('on'); if (!await W(live, 160)) return; }
-     if (!await W(live, 1200)) return;
-     sv.classList.add('press'); if (!await W(live, 260)) return;
-     E.classList.remove('on'); M.classList.add('on');
-     if (!await W(live, 1100)) return;
-     let k = 0;
-     for (const i of [0, 1, 4]) { rows[i].classList.add('ok'); mc.textContent = ++k; if (!await W(live, 650)) return; }
-     if (!await W(live, 700)) return;
-     pill(2); rows.forEach(x => x.classList.toggle('hide', !x.classList.contains('ok')));
-     if (!await W(live, 1900)) return;
-     pill(0); rows.forEach(x => x.classList.remove('hide'));
-     await flash(r, live, '3 of 78 read — no pressure', 2400);
-   } },
-
- { id:'habit', chip:'reading log', n:'10 — reading log', h:'a reading log — <em>only if you want one.</em>',
+ { id:'habit', chip:'reading log', n:'08 — reading log', h:'a reading log — <em>only if you want one.</em>',
    p:'some readers like to see their reading. switch the tracker on and a quiet heatmap appears. switch it off and it’s gone. there are no streaks either way.',
    li:['off by default','pages and days — never goals or guilt','toggle it on and off whenever you like'],
    screen:() => { const hc = Array.from({ length:105 }, (_, i) => { const v = rnd(); return `<i style="--d:${(i % 15) * .03}s;background:${v < .4 ? 'rgba(255,255,255,.05)' : v < .65 ? 'rgba(201,113,74,.3)' : v < .88 ? 'rgba(201,113,74,.6)' : '#c9714a'}"></i>`; }).join('');
@@ -1107,37 +1019,7 @@ const CHAPTERS = [
   fitPhone(); setActive(0);
 })();
 
-/* ── tour: omnibus + collection screens ── */
-.pn{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .5s var(--ease-out)}.pn.on{opacity:1}
-.ed-hd{display:flex;justify-content:space-between;align-items:center;padding:64px 22px 4px;font-size:14px}
-.ed-hd b{font-size:16px;font-weight:600;text-transform:capitalize}.ed-hd span{color:var(--accent-light)}
-.ed-hd em{font-style:normal;color:var(--accent-light);font-weight:600;text-transform:capitalize;transition:opacity .2s}.ed-hd em.press{opacity:.35}
-.rvl{opacity:0;transform:translateY(8px);transition:opacity .45s var(--ease-out),transform .45s var(--ease-out)}.rvl.on{opacity:1;transform:none}
-.hint{margin:12px 22px 0;font-size:13px;color:var(--app-muted);line-height:1.5}
-.om-top{padding-top:64px;display:flex;flex-direction:column;align-items:center;text-align:center}.om-top .cell{width:96px}
-.om-top h5{font-family:var(--fd);font-size:22px;font-weight:600;margin-top:16px;text-transform:capitalize}
-.om-top p{font-size:13.5px;color:var(--app-muted);margin-top:2px;text-transform:capitalize}
-.stp{margin-top:12px;font-size:12.5px;color:var(--app-dim);background:var(--app-card);border:1px solid var(--app-border);border-radius:100px;padding:5px 14px}
-.segbar{display:flex;gap:6px;margin:18px 40px 0}.segbar i{flex:1;height:6px;border-radius:3px;background:#3a3530;transition:background .5s}.segbar i.on{background:var(--green)}
-.segl{display:flex;gap:6px;margin:6px 40px 0;font-size:11px;color:var(--app-muted)}.segl span{flex:1;text-align:center}
-.segc{text-align:center;font-size:13px;color:var(--app-muted);margin-top:8px}.segc b{color:var(--app-text);font-weight:500}
-.sumcard{margin:20px 22px 0;background:var(--app-card);border:1px solid rgba(201,113,74,.35);border-radius:16px;padding:14px 16px;overflow:hidden}
-.sumcard h6{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-light);font-weight:600;margin-bottom:10px}
-.slides{display:flex;transition:transform .55s var(--ease-spring)}.slide{flex:0 0 100%;min-width:0}
-.sh{display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px}.sh b{font-weight:600;text-transform:capitalize}
-.sh em{font-style:normal;font-size:12px;color:var(--app-muted);transition:color .3s}.sh em.ok{color:var(--green)}
-.slide p{font-size:13.5px;line-height:1.55;color:var(--app-dim)}
-.sdots{display:flex;gap:6px;justify-content:center;margin-top:12px}.sdots i{width:6px;height:6px;border-radius:50%;background:#3a3530;transition:.3s}.sdots i.on{background:var(--accent);transform:scale(1.25)}
-.om-btn{position:absolute;left:0;right:0;bottom:36px}
-.auto{margin:12px 22px 0;display:flex;flex-direction:column;gap:7px}
-.ar{background:var(--app-card);border:1px solid var(--app-border);border-radius:11px;padding:11px 14px;font-size:14px;opacity:0;transform:translateY(8px);transition:opacity .4s var(--ease-out),transform .4s var(--ease-out);text-transform:capitalize}.ar.on{opacity:1;transform:none}
-.mrows{margin-top:2px}
-.mrow{display:flex;align-items:center;gap:12px;margin:0 22px 8px;padding:13px 14px;background:var(--app-card);border:1px solid var(--app-border);border-radius:12px;font-size:14px;max-height:52px;overflow:hidden;text-transform:capitalize;transition:max-height .5s var(--ease-out),margin .5s,padding .5s,opacity .4s,border-width .5s,background .3s}
-.mrow.hide{max-height:0;margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0;opacity:0;border-width:0}
-.cbx{width:20px;height:20px;border:2px solid #4a443d;border-radius:6px;color:transparent;font-style:normal;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none;transition:.3s}
-.mrow.ok{background:rgba(90,138,106,.12)}.mrow.ok .cbx{background:var(--green);border-color:var(--green);color:#fff}
-
-/* ── desktop tour ── */
+/* ═══ 6 · DESKTOP TOUR ═══ */
 (() => {
   const wrap = $('#dkWrap'), main = $('#dkMain'), grid = $('#dkGrid'), cursor = $('#dkCursor'), addBtn = $('#dkAdd'), sheet = $('#dkSheet'), res = $('#dkRes'), toast = $('#dkToast');
   const T = [...BOOKS, ['the poppy war','r.f. kuang'],['braiding sweetgrass','robin wall kimmerer'],['the familiar','leigh bardugo'],['wandering stars','tommy orange']];
