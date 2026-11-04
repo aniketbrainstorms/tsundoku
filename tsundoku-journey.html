@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tsundoku — your pile, understood</title>
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  tsundoku · "the journey" — a from-scratch landing concept
+  ───────────────────────────────────────────────────────────────────
+  a scroll-driven story in eight chapters:
+
+    01 hero        — a real book breathes; the word 積ん読 arrives
+    02 meaning     — what tsundoku actually means (no guilt, ever)
+    03 photograph  — real covers fly off the pile into the phone
+    04 know        — detail sheet: summary, tags, page progress
+    05 grow        — three ways in: search · manual · isbn
+    06 organize    — lists (incl. the buy list) · paste-many · genres
+    07 glance      — stats, habit tracker, share — the gentle numbers
+    08 home        — the physical shelf stays the hero. the app bows.
+
+  real book covers are hotlinked for this preview; swap the COVERS
+  map for local files before shipping. everything is j-* namespaced,
+  transform/opacity only, honors prefers-reduced-motion.
+  ═══════════════════════════════════════════════════════════════════
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F0E8;--surface:#EDE8DC;--surface2:#E4DDD0;
+  --accent:#c9714a;--accent-light:#d98b6a;--accent-dark:#a05535;
+  --green:#5a8a6a;--text:#1C1915;--text-muted:#7a6f65;--text-dim:#5c5249;
+  --border:rgba(28,25,21,.1);--border-strong:rgba(28,25,21,.18);
+  --fd:'Playfair Display',Georgia,serif;--fb:'DM Sans',sans-serif;
+  --ease-out:cubic-bezier(.22,1,.36,1);--ease-spring:cubic-bezier(.25,1,.5,1);
+  --app-bg:#1a1814;--app-card:#221f1b;--app-border:#2c2823;
+  --app-text:#e8e0d5;--app-muted:#7a7068;--app-dim:#a89e94;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);overflow-x:hidden;font-size:16px;line-height:1.6}
+img{display:block;max-width:100%}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* ── nav ── */
+.j-nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:16px;
+  background:rgba(245,240,232,.9);backdrop-filter:blur(18px);border:1px solid var(--border-strong);
+  border-radius:100px;padding:7px 8px 7px 18px;box-shadow:0 2px 20px rgba(28,25,21,.1);max-width:calc(100vw - 20px)}
+.j-logo{font-family:var(--fd);font-weight:700;font-size:15px;white-space:nowrap}
+.j-logo span{color:var(--accent)}
+.j-nav a{font-size:12px;color:var(--text-muted);text-decoration:none;padding:6px 9px;border-radius:100px;transition:color .2s,background .2s;white-space:nowrap}
+.j-nav a:hover{color:var(--text);background:rgba(28,25,21,.05)}
+@media(max-width:700px){.j-nav a{display:none}}
+.j-cta{background:var(--text);color:var(--bg)!important;padding:8px 15px!important;font-weight:500}
+.j-cta:hover{background:var(--accent)!important}
+#jProg{position:fixed;top:0;left:0;height:2px;background:var(--accent);z-index:300;width:0}
+
+/* ── shared ── */
+section.j{position:relative;padding:clamp(80px,12vw,150px) clamp(20px,5vw,64px);overflow:hidden}
+.j-in{max-width:1180px;margin:0 auto;position:relative;z-index:2}
+.j-eyebrow{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.2em;font-weight:500;color:var(--accent);margin-bottom:16px}
+.j-h2{font-family:var(--fd);font-size:clamp(30px,4.8vw,56px);font-weight:700;line-height:1.1;letter-spacing:-.02em;margin-bottom:18px;text-wrap:balance}
+.j-h2 em{font-style:italic;color:var(--accent)}
+.j-sub{font-size:clamp(15px,1.8vw,17px);color:var(--text-muted);line-height:1.7;max-width:540px;font-weight:300}
+.j-rv{opacity:0;transform:translateY(26px);transition:opacity .8s var(--ease-out),transform .8s var(--ease-out)}
+.j-rv.in{opacity:1;transform:none}
+.j-cap{font-size:11px;color:var(--text-muted);letter-spacing:.04em}
+.j-cap b{color:var(--text-dim);font-weight:600}
+
+/* ── phone shell ── */
+.j-phone{width:264px;height:556px;background:#100e0b;border-radius:42px;border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 0 0 1px rgba(0,0,0,.75),0 50px 90px rgba(28,25,21,.35),inset 0 0 0 2px rgba(255,255,255,.05);padding:10px;position:relative;flex:none}
+.j-screen{position:relative;width:244px;height:536px;border-radius:33px;overflow:hidden;background:var(--app-bg);display:flex;flex-direction:column}
+.j-notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:74px;height:19px;border-radius:100px;background:#100e0b;z-index:9}
+
+/* ── app bits ── */
+.j-a-hdr{padding:38px 13px 0;font-family:var(--fd);font-size:16px;color:var(--app-text);display:flex;justify-content:space-between;align-items:baseline}
+.j-a-hdr small{font-family:var(--fb);font-size:8px;color:var(--app-muted)}
+.j-a-pills{display:flex;gap:4px;padding:10px 12px 8px}
+.j-a-pill{font-size:8px;padding:4px 9px;border-radius:100px;border:1px solid var(--app-border);color:var(--app-muted)}
+.j-a-pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.j-a-grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 10px 10px;align-content:start}
+.j-cell{position:relative;border-radius:6px;overflow:hidden;aspect-ratio:2/3;background:var(--app-card);border:1px solid var(--app-border)}
+.j-cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.j-dot{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:#7a7068;border:1px solid rgba(0,0,0,.4);z-index:2}
+.j-dot.reading{background:#c9714a}.j-dot.read{background:#5a8a6a}
+.j-toast{position:absolute;left:50%;bottom:14px;transform:translate(-50%,14px);opacity:0;z-index:12;
+  background:#0f0d0b;border:1px solid var(--app-border);color:var(--app-text);font-size:9.5px;font-weight:500;
+  padding:7px 13px;border-radius:100px;white-space:nowrap;box-shadow:0 10px 30px rgba(0,0,0,.5);
+  transition:opacity .35s var(--ease-out),transform .35s var(--ease-out);pointer-events:none}
+.j-toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ═══ 01 · hero ═══ */
+.j-hero{min-height:100dvh;display:flex;align-items:center;padding-top:110px}
+.j-hero .j-in{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,72px);align-items:center;width:100%}
+@media(max-width:900px){.j-hero .j-in{grid-template-columns:1fr}}
+.j-label{display:inline-flex;align-items:center;gap:8px;background:rgba(201,113,74,.1);border:1px solid rgba(201,113,74,.25);
+  border-radius:100px;padding:5px 13px 5px 8px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:22px;font-weight:500}
+.j-label i{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:jPulse 2.2s ease-in-out infinite}
+@keyframes jPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+.j-h1{font-family:var(--fd);font-size:clamp(40px,6.4vw,76px);font-weight:700;line-height:1.04;letter-spacing:-.025em;margin-bottom:20px;text-wrap:balance}
+.j-h1 em{font-style:italic;color:var(--accent)}
+.j-hero .j-sub{margin-bottom:34px}
+.j-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.j-btn{display:inline-flex;align-items:center;gap:8px;background:var(--text);color:var(--bg);padding:15px 26px;border-radius:100px;
+  font-size:14px;font-weight:500;text-decoration:none;transition:background .2s,transform .25s var(--ease-spring)}
+.j-btn:hover{background:var(--accent);transform:scale(1.02)}
+.j-btn i{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.15);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-style:normal}
+.j-ghost{font-size:13px;color:var(--text-muted);text-decoration:none;display:inline-flex;align-items:center;gap:5px;padding:12px 4px;transition:color .2s}
+.j-ghost:hover{color:var(--text)}
+.j-scrollhint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-muted);display:flex;flex-direction:column;align-items:center;gap:8px}
+.j-scrollhint::after{content:'';width:1px;height:34px;background:linear-gradient(var(--accent),transparent);animation:jDrop 1.8s var(--ease-out) infinite}
+@keyframes jDrop{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* the living book */
+.j-book-scene{position:relative;display:flex;justify-content:center;perspective:1500px}
+.j-book-float{position:relative;transform-style:preserve-3d;animation:jFloat 7s ease-in-out infinite}
+@keyframes jFloat{0%,100%{transform:rotateY(-16deg) rotateX(4deg) translateY(0)}50%{transform:rotateY(-11deg) rotateX(2deg) translateY(-14px)}}
+.j-book{position:relative;width:min(300px,64vw);aspect-ratio:2/3;transform-style:preserve-3d}
+.j-bf{position:absolute;inset:0;backface-visibility:hidden}
+.j-bf-front{transform:translateZ(19px);border-radius:3px 10px 10px 3px;overflow:hidden;
+  box-shadow:inset 7px 0 16px rgba(0,0,0,.3),inset -1px 0 0 rgba(255,255,255,.12)}
+.j-bf-front img{width:100%;height:100%;object-fit:cover}
+.j-bf-back{transform:rotateY(180deg) translateZ(19px);border-radius:10px 3px 3px 10px;background:#141210}
+.j-bf-spine{width:38px;height:100%;left:50%;margin-left:-19px;transform:rotateY(-90deg) translateZ(150px);
+  background:linear-gradient(180deg,#0d0b09,#241f1a);display:flex;align-items:center;justify-content:center;border-radius:3px}
+.j-bf-spine span{writing-mode:vertical-rl;font-family:var(--fd);font-size:11px;letter-spacing:.3em;color:#cdbba4;white-space:nowrap}
+.j-bf-pages{width:38px;height:98%;left:50%;margin-left:-19px;top:1%;transform:rotateY(90deg) translateZ(150px);
+  background:repeating-linear-gradient(90deg,#f2ecdf 0 2px,#d8cfbc 2px 3px);border-radius:2px}
+.j-bf-top{width:100%;height:38px;top:50%;margin-top:-19px;transform:rotateX(90deg) translateZ(calc(min(300px,64vw)/2 - 1px));
+  background:repeating-linear-gradient(0deg,#f2ecdf 0 2px,#d8cfbc 2px 3px)}
+.j-bf-bot{width:100%;height:38px;top:50%;margin-top:-19px;transform:rotateX(-90deg) translateZ(calc(min(300px,64vw)/2 - 1px));background:#141210}
+.j-book-shadow{position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);width:64%;height:30px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(28,25,21,.28),transparent 70%);filter:blur(4px);animation:jSh 7s ease-in-out infinite}
+@keyframes jSh{0%,100%{transform:translateX(-50%) scale(1);opacity:1}50%{transform:translateX(-50%) scale(.88);opacity:.7}}
+.j-kanji-big{position:absolute;right:-6%;top:-12%;font-family:var(--fd);font-size:clamp(120px,18vw,220px);color:rgba(28,25,21,.05);line-height:1;pointer-events:none;user-select:none}
+.j-hero-note{position:absolute;left:50%;bottom:-58px;transform:translateX(-50%);white-space:nowrap}
+</style>
+<style>
+/* ═══ 02 · meaning ═══ */
+.j-mean{background:var(--text);color:rgba(245,240,232,.85)}
+.j-mean .j-eyebrow{color:var(--accent-light)}
+.j-mean .j-h2{color:#f5f0e8}
+.j-mean .j-h2 em{color:var(--accent-light)}
+.j-mean .j-sub{color:rgba(245,240,232,.6)}
+.j-mean-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,72px);align-items:center}
+@media(max-width:860px){.j-mean-grid{grid-template-columns:1fr}}
+.j-kanji-card{position:relative;aspect-ratio:1;max-width:460px;display:flex;align-items:center;justify-content:center;margin:0 auto}
+.j-kanji-card svg{position:absolute;inset:0;width:100%;height:100%}
+.j-kanji-word{font-family:var(--fd);font-size:clamp(64px,9vw,110px);color:#f5f0e8;line-height:1.1;position:relative;z-index:2}
+.j-kanji-word small{display:block;font-family:var(--fb);font-size:11px;letter-spacing:.34em;color:var(--accent-light);margin-top:10px;text-transform:uppercase}
+.j-def{font-family:var(--fd);font-size:clamp(19px,2.6vw,26px);line-height:1.6;font-style:italic;color:rgba(245,240,232,.78)}
+.j-def .hl{color:var(--accent-light);font-style:normal;font-weight:500}
+.j-mean-list{margin-top:30px;display:flex;flex-direction:column;gap:12px}
+.j-mean-list div{display:flex;gap:12px;align-items:baseline;font-size:14px;color:rgba(245,240,232,.62)}
+.j-mean-list b{font-family:var(--fd);color:var(--accent-light);font-weight:600;min-width:22px}
+.j-noguilt{margin-top:34px;display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(217,139,106,.4);
+  background:rgba(201,113,74,.12);border-radius:100px;padding:10px 18px;font-size:13px;color:var(--accent-light);font-weight:500}
+
+/* ═══ 03 · photograph ═══ */
+.j-photo{background:linear-gradient(180deg,var(--surface) 0%,var(--bg) 100%)}
+.j-photo .j-in{display:grid;grid-template-columns:1fr auto;gap:clamp(24px,4vw,64px);align-items:center}
+@media(max-width:900px){.j-photo .j-in{grid-template-columns:1fr}}
+.j-stage-wrap{position:relative;width:100%;overflow-x:auto;scrollbar-width:none}
+.j-stage-wrap::-webkit-scrollbar{display:none}
+.j-stage{position:relative;width:980px;height:620px;transform-origin:top left;flex:none}
+@media(min-width:1061px){.j-stage-wrap{overflow:visible}}
+.j-scene{position:absolute;inset:0;border-radius:26px;overflow:hidden;border:1px solid var(--border-strong);
+  background:radial-gradient(560px 340px at 76% 16%,rgba(201,113,74,.12),transparent 70%),
+             radial-gradient(480px 380px at 10% 88%,rgba(90,138,106,.09),transparent 70%),
+             linear-gradient(160deg,#efe9dd,#e7dfcf);
+  box-shadow:0 30px 80px rgba(28,25,21,.1),inset 0 1px 0 rgba(255,255,255,.6)}
+.j-scene::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.j-scene-kanji{position:absolute;right:-10px;top:-34px;font-family:var(--fd);font-size:190px;color:rgba(28,25,21,.045);pointer-events:none;line-height:1}
+.j-desk{position:absolute;left:56px;top:150px;width:400px;height:400px;perspective:1300px;pointer-events:none}
+.j-desk-shadow{position:absolute;left:96px;top:428px;width:320px;height:42px;border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(28,25,21,.22),transparent 68%);filter:blur(3px)}
+.j-pbook{position:absolute;width:176px;height:264px;transform-style:preserve-3d;will-change:transform,opacity}
+.j-pbook .f{position:absolute;backface-visibility:hidden}
+.j-pb-front{width:176px;height:264px;border-radius:3px 9px 9px 3px;transform:translateZ(12px);overflow:hidden;
+  box-shadow:inset 7px 0 14px rgba(0,0,0,.3)}
+.j-pb-front img{width:100%;height:100%;object-fit:cover}
+.j-pb-back{width:176px;height:264px;border-radius:9px 3px 3px 9px;transform:rotateY(180deg) translateZ(12px);background:#171310}
+.j-pb-spine{width:24px;height:264px;left:50%;margin-left:-12px;transform:rotateY(-90deg) translateZ(88px);background:linear-gradient(180deg,#221c16,#3a2c22);border-radius:3px}
+.j-pb-pages{width:24px;height:258px;left:50%;margin-left:-12px;top:3px;transform:rotateY(90deg) translateZ(88px);
+  background:repeating-linear-gradient(90deg,#f2ecdf 0 2px,#d8cfbc 2px 3px);border-radius:2px}
+.j-pb-top{width:176px;height:24px;top:50%;margin-top:-12px;transform:rotateX(90deg) translateZ(132px);
+  background:repeating-linear-gradient(0deg,#f2ecdf 0 2px,#d8cfbc 2px 3px)}
+.j-pb-bot{width:176px;height:24px;top:50%;margin-top:-12px;transform:rotateX(-90deg) translateZ(132px);background:#171310}
+.j-photo-cap{position:absolute;left:60px;top:96px;max-width:210px}
+.j-photo-cap b{display:block;font-family:var(--fd);font-size:19px;font-weight:700;margin-bottom:5px}
+.j-photo-cap span{font-size:11.5px;color:var(--text-muted);line-height:1.55}
+.j-photo .j-phone{position:absolute;left:600px;top:32px;margin:0}
+.j-photo .j-screen .j-cell img{opacity:0;transform:scale(.5);transition:opacity .38s cubic-bezier(.25,1,.5,1),transform .38s cubic-bezier(.25,1,.5,1)}
+.j-photo .j-screen .j-cell.static img{opacity:1;transform:none}
+.j-photo .j-screen .j-cell img.landed{opacity:1;transform:scale(1)}
+.j-photo .j-cell.static img{transition:none}
+
+/* ═══ 04 · know ═══ */
+.j-know{background:var(--bg)}
+.j-know .j-in{display:grid;grid-template-columns:auto 1fr;gap:clamp(28px,5vw,84px);align-items:center}
+@media(max-width:900px){.j-know .j-in{grid-template-columns:1fr}}
+.j-know .j-phone{margin:0 auto}
+.j-sheet{position:absolute;left:8px;right:8px;bottom:8px;z-index:10;background:#1f1b16;border:1px solid var(--app-border);
+  border-radius:18px 18px 26px 26px;padding:12px 12px 14px;box-shadow:0 -14px 44px rgba(0,0,0,.5);
+  transform:translateY(112%);transition:transform .7s var(--ease-spring)}
+.j-sheet.on{transform:none}
+.j-sheet-grip{width:38px;height:4px;border-radius:2px;background:var(--app-border);margin:0 auto 10px}
+.j-sheet-top{display:flex;gap:10px;margin-bottom:10px}
+.j-sheet-cov{width:44px;height:66px;border-radius:4px;overflow:hidden;flex-shrink:0;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.j-sheet-cov img{width:100%;height:100%;object-fit:cover}
+.j-sheet-t{flex:1;min-width:0}
+.j-sheet-t b{display:block;font-family:var(--fd);font-size:13px;color:var(--app-text);line-height:1.2}
+.j-sheet-t span{display:block;font-size:9px;color:var(--app-muted);margin-top:2px}
+.j-sheet-sum{font-size:9.5px;color:var(--app-dim);line-height:1.55;background:var(--app-card);border:1px solid var(--app-border);
+  border-radius:10px;padding:8px 10px;margin-bottom:10px}
+.j-sheet-sum b{color:var(--app-text);font-weight:600;font-size:8px;letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:4px}
+.j-seg{display:flex;gap:3px;background:#16140f;border:1px solid var(--app-border);border-radius:9px;padding:3px}
+.j-seg button{flex:1;border:0;background:none;color:var(--app-muted);font-size:9px;padding:7px 0;border-radius:6px;
+  font-family:var(--fb);transition:background .25s,color .25s}
+.j-seg button.on{background:var(--accent);color:#fff}
+.j-prog{margin-top:10px}
+.j-prog-row{display:flex;justify-content:space-between;font-size:8px;color:var(--app-muted);margin-bottom:4px}
+.j-prog-row b{color:var(--accent-light);font-weight:600}
+.j-prog-tr{height:4px;border-radius:2px;background:var(--app-card);overflow:hidden}
+.j-prog-fl{height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,#c9714a,#e08060);transition:width 1.1s var(--ease-out)}
+.j-know-feats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:30px}
+@media(max-width:560px){.j-know-feats{grid-template-columns:1fr}}
+.j-feat{background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px;transition:transform .3s var(--ease-spring),box-shadow .3s}
+.j-feat:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(28,25,21,.1)}
+.j-feat i{display:inline-flex;width:30px;height:30px;border-radius:9px;background:rgba(201,113,74,.12);color:var(--accent);
+  align-items:center;justify-content:center;font-style:normal;margin-bottom:10px}
+.j-feat b{display:block;font-size:14px;font-weight:600;margin-bottom:4px}
+.j-feat span{font-size:12px;color:var(--text-muted);line-height:1.5}
+</style>
+<style>
+/* ═══ 05 · grow ═══ */
+.j-grow{background:var(--surface)}
+.j-grow-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.5vw,30px);margin-top:clamp(36px,5vw,60px)}
+@media(max-width:900px){.j-grow-cards{grid-template-columns:1fr;max-width:420px;margin-left:auto;margin-right:auto}}
+.j-gcard{background:#fff;border:1px solid var(--border);border-radius:20px;padding:22px;position:relative;overflow:hidden;
+  transition:transform .35s var(--ease-spring),box-shadow .35s}
+.j-gcard:hover{transform:translateY(-6px);box-shadow:0 22px 54px rgba(28,25,21,.12)}
+.j-gcard h3{font-family:var(--fd);font-size:18px;font-weight:600;margin-bottom:6px}
+.j-gcard>p{font-size:12.5px;color:var(--text-muted);line-height:1.55;margin-bottom:16px}
+.j-gnum{position:absolute;top:14px;right:18px;font-family:var(--fd);font-size:15px;color:rgba(28,25,21,.16);font-weight:700}
+/* mini search demo */
+.j-minisrch{display:flex;align-items:center;gap:7px;background:var(--app-card);border:1px solid var(--app-border);border-radius:100px;padding:8px 12px;font-size:10px;color:var(--app-muted)}
+.j-minisrch .caret{width:1.5px;height:11px;background:var(--accent-light);animation:jCaret 1.1s steps(1) infinite}
+@keyframes jCaret{50%{opacity:0}}
+.j-minires{margin-top:10px;display:flex;flex-direction:column;gap:6px;min-height:118px}
+.j-minires .row{display:flex;align-items:center;gap:9px;background:var(--app-card);border:1px solid var(--app-border);
+  border-radius:10px;padding:6px 8px;opacity:0;transform:translateY(7px);transition:opacity .45s var(--ease-out),transform .45s var(--ease-out)}
+.j-minires .row.on{opacity:1;transform:none}
+.j-minires .row img{width:20px;height:30px;border-radius:2px;object-fit:cover}
+.j-minires .row b{display:block;font-size:9px;font-weight:500;color:var(--app-text)}
+.j-minires .row span{display:block;font-size:7.5px;color:var(--app-muted)}
+.j-minires .row button{margin-left:auto;background:var(--accent);border:0;color:#fff;font-size:8px;font-weight:600;border-radius:100px;padding:5px 10px;font-family:var(--fb)}
+/* manual form */
+.j-manual{background:var(--app-card);border:1px solid var(--app-border);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.j-manual .fld{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--app-muted)}
+.j-manual .inp{background:#16140f;border:1px solid var(--app-border);border-radius:8px;font-size:10px;color:var(--app-text);padding:8px 10px;min-height:31px}
+.j-manual .inp.typing::after{content:'';display:inline-block;width:1.5px;height:10px;background:var(--accent-light);margin-left:2px;animation:jCaret 1.1s steps(1) infinite}
+.j-manual .btnrow{display:flex;gap:6px;margin-top:2px}
+.j-manual .btnrow button{flex:1;border:0;border-radius:8px;font-size:9px;padding:8px 0;font-family:var(--fb);font-weight:600}
+.j-manual .btnrow .ghost{background:none;border:1px solid var(--app-border);color:var(--app-muted)}
+.j-manual .btnrow .solid{background:var(--accent);color:#fff}
+/* isbn */
+.j-isbn{background:var(--app-card);border:1px solid var(--app-border);border-radius:14px;padding:12px;text-align:center}
+.j-isbn-view{position:relative;height:96px;border-radius:10px;overflow:hidden;margin-bottom:10px;
+  background:linear-gradient(160deg,#241f19,#171310)}
+.j-isbn-scan{position:absolute;left:8%;right:8%;top:50%;height:2px;background:rgba(201,113,74,.9);box-shadow:0 0 14px rgba(201,113,74,.8);
+  animation:jScan 2.4s var(--ease-out) infinite}
+@keyframes jScan{0%,100%{transform:translateY(-34px)}50%{transform:translateY(34px)}}
+.j-isbn-corners i{position:absolute;width:14px;height:14px;border:2px solid rgba(232,224,213,.7)}
+.j-isbn-corners i:nth-child(1){left:8px;top:8px;border-right:0;border-bottom:0}
+.j-isbn-corners i:nth-child(2){right:8px;top:8px;border-left:0;border-bottom:0}
+.j-isbn-corners i:nth-child(3){left:8px;bottom:8px;border-right:0;border-top:0}
+.j-isbn-corners i:nth-child(4){right:8px;bottom:8px;border-left:0;border-top:0}
+.j-isbn-code{font-size:9px;color:var(--app-muted);letter-spacing:.14em}
+.j-isbn-code b{color:var(--app-text);font-weight:600}
+.j-isbn-found{display:flex;align-items:center;gap:9px;background:var(--app-card);border:1px solid var(--app-border);border-radius:10px;padding:7px 9px;margin-top:10px;opacity:0;transform:translateY(6px);transition:opacity .5s var(--ease-out) .9s,transform .5s var(--ease-out) .9s}
+.j-isbn.on .j-isbn-found{opacity:1;transform:none}
+.j-isbn-found img{width:22px;height:33px;border-radius:2px;object-fit:cover}
+.j-isbn-found b{display:block;font-size:9px;color:var(--app-text);font-weight:500}
+.j-isbn-found span{display:block;font-size:7.5px;color:var(--app-muted)}
+
+/* ═══ 06 · organize ═══ */
+.j-org{background:var(--bg)}
+.j-org-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,44px);margin-top:clamp(36px,5vw,60px);align-items:stretch}
+@media(max-width:900px){.j-org-grid{grid-template-columns:1fr}}
+.j-org-card{background:#fff;border:1px solid var(--border);border-radius:20px;padding:22px;position:relative;overflow:hidden}
+.j-org-card h3{font-family:var(--fd);font-size:18px;font-weight:600;margin-bottom:4px}
+.j-org-card>p{font-size:12.5px;color:var(--text-muted);margin-bottom:16px;line-height:1.55}
+.j-org-card.wide{grid-column:1/-1}
+@media(max-width:900px){.j-org-card.wide{grid-column:auto}}
+/* lists */
+.j-listdemo{background:var(--app-card);border:1px solid var(--app-border);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:7px}
+.j-lrow{display:flex;align-items:center;gap:10px;background:#1b1813;border:1px solid var(--app-border);border-radius:10px;padding:8px 10px;
+  opacity:0;transform:translateX(-14px);transition:opacity .5s var(--ease-out),transform .5s var(--ease-out)}
+.j-lrow.on{opacity:1;transform:none}
+.j-lemoji{width:26px;height:26px;border-radius:8px;background:#26211b;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.j-lrow b{display:block;font-size:10px;color:var(--app-text);font-weight:500}
+.j-lrow span{display:block;font-size:8px;color:var(--app-muted)}
+.j-lrow .n{margin-left:auto;font-size:8px;color:var(--app-dim);background:#26211b;border-radius:100px;padding:3px 8px}
+.j-lrow.buy{border-color:rgba(201,113,74,.4)}
+.j-lrow.buy .n{color:var(--accent-light)}
+/* paste */
+.j-paste{background:var(--app-card);border:1px solid var(--app-border);border-radius:14px;padding:12px}
+.j-paste-area{background:#16140f;border:1px dashed var(--app-border);border-radius:10px;padding:10px;font-size:9px;color:var(--app-dim);
+  line-height:1.8;min-height:96px;font-family:ui-monospace,Menlo,monospace}
+.j-paste-area .ln{opacity:0;transform:translateY(4px);transition:opacity .4s,transform .4s;display:block}
+.j-paste-area .ln.on{opacity:1;transform:none}
+.j-paste-bar{display:flex;align-items:center;gap:8px;margin-top:10px}
+.j-paste-bar .cnt{font-size:8.5px;color:var(--app-muted);margin-right:auto}
+.j-paste-bar button{border:0;background:var(--accent);color:#fff;font-size:9px;font-weight:600;border-radius:100px;padding:7px 14px;font-family:var(--fb)}
+.j-paste-done{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
+.j-paste-done i{width:22px;height:33px;border-radius:2px;background-size:cover;background-position:center;opacity:0;transform:scale(.4);transition:opacity .4s var(--ease-spring),transform .4s var(--ease-spring)}
+.j-paste-done i.on{opacity:1;transform:scale(1)}
+/* genres */
+.j-gendemo{background:var(--app-card);border:1px solid var(--app-border);border-radius:14px;padding:12px}
+.j-gencloud{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.j-gen{font-size:9px;padding:5px 11px;border-radius:100px;border:1px solid var(--app-border);color:var(--app-muted);
+  opacity:0;transform:scale(.6);transition:opacity .45s var(--ease-spring),transform .45s var(--ease-spring),background .25s,color .25s,border-color .25s;cursor:default}
+.j-gen.on{opacity:1;transform:scale(1)}
+.j-gen.hot{background:rgba(201,113,74,.16);border-color:rgba(201,113,74,.5);color:var(--accent-light)}
+.j-genmap{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.j-genmap i{display:block;aspect-ratio:2/3;border-radius:3px;background-size:cover;background-position:center;opacity:0;transform:scale(.5);transition:opacity .4s var(--ease-spring),transform .4s var(--ease-spring)}
+.j-genmap i.on{opacity:1;transform:scale(1)}
+
+/* ═══ 07 · glance ═══ */
+.j-glance{background:var(--text);color:rgba(245,240,232,.85)}
+.j-glance .j-h2{color:#f5f0e8}.j-glance .j-h2 em{color:var(--accent-light)}
+.j-glance .j-sub{color:rgba(245,240,232,.6)}
+.j-glance .j-eyebrow{color:var(--accent-light)}
+.j-glance-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.5vw,30px);margin-top:clamp(36px,5vw,60px)}
+@media(max-width:960px){.j-glance-grid{grid-template-columns:1fr;max-width:380px;margin-left:auto;margin-right:auto}}
+.j-gcard2{background:#171410;border:1px solid rgba(245,240,232,.1);border-radius:20px;padding:20px;color:var(--app-text)}
+.j-gcard2 h3{font-family:var(--fd);font-size:17px;font-weight:600;color:#f5f0e8;margin-bottom:4px}
+.j-gcard2>p{font-size:12px;color:rgba(245,240,232,.55);line-height:1.55;margin-bottom:16px}
+/* heatmap */
+.j-heat{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-bottom:10px}
+.j-heat i{aspect-ratio:1;border-radius:3px;background:rgba(255,255,255,.06);opacity:0;transform:scale(.4);transition:opacity .35s var(--ease-spring),transform .35s var(--ease-spring)}
+.j-heat i.on{opacity:1;transform:scale(1)}
+.j-heat i.l1{background:rgba(201,113,74,.28)}.j-heat i.l2{background:rgba(201,113,74,.55)}.j-heat i.l3{background:var(--accent)}
+.j-heat-cap{font-size:9px;color:rgba(245,240,232,.45);letter-spacing:.06em}
+/* mini pie */
+.j-minipie{display:flex;align-items:center;gap:14px}
+.j-minipie svg{width:110px;height:110px;transform:rotate(-90deg)}
+.j-minipie circle{fill:none;stroke-width:14;stroke-dasharray:0 999;transition:stroke-dasharray 1s var(--ease-out)}
+.j-minipie-leg{display:flex;flex-direction:column;gap:6px}
+.j-minipie-leg div{display:flex;align-items:center;gap:7px;font-size:9.5px;color:rgba(245,240,232,.6)}
+.j-minipie-leg i{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+/* share */
+.j-sharecard{background:#1f1b16;border:1px solid rgba(245,240,232,.12);border-radius:16px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.j-sharecard-h{padding:12px 14px 8px;display:flex;justify-content:space-between;align-items:center}
+.j-sharecard-h b{font-family:var(--fd);font-size:12.5px;color:#f5f0e8;font-weight:600}
+.j-sharecard-h span{font-size:7.5px;color:rgba(245,240,232,.45);letter-spacing:.1em;text-transform:uppercase}
+.j-sharecard-g{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:0 12px}
+.j-sharecard-g i{display:block;aspect-ratio:2/3;border-radius:3px;background-size:cover;background-position:center;transform:scale(0);transition:transform .45s var(--ease-spring)}
+.j-sharecard-g i.on{transform:scale(1)}
+.j-sharecard-f{display:flex;align-items:center;gap:6px;margin:11px;padding:7px 10px;border-radius:100px;background:#171410;border:1px solid rgba(245,240,232,.1)}
+.j-sharecard-f span{flex:1;font-size:8px;color:rgba(245,240,232,.45);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.j-sharecard-f button{background:none;border:0;color:var(--accent-light);font-size:8px;font-weight:600;font-family:var(--fb)}
+
+/* ═══ 08 · home ═══ */
+.j-home{background:linear-gradient(180deg,var(--bg) 0%,var(--surface) 100%);text-align:center}
+.j-home .j-h2{margin-left:auto;margin-right:auto}
+.j-home .j-sub{margin:0 auto 40px}
+.j-shelf{position:relative;max-width:900px;margin:0 auto 46px;height:230px;perspective:900px}
+.j-shelf-board{position:absolute;left:4%;right:4%;bottom:26px;height:12px;border-radius:3px;
+  background:linear-gradient(180deg,#d9cfbc,#c4b89f);box-shadow:0 14px 30px rgba(28,25,21,.18)}
+.j-shelf-books{position:absolute;left:6%;right:6%;bottom:38px;display:flex;align-items:flex-end;justify-content:center;gap:7px}
+.j-sb{position:relative;border-radius:3px 5px 5px 3px;transform-origin:bottom center;transform-style:preserve-3d;
+  box-shadow:inset -4px 0 8px rgba(0,0,0,.22),2px 3px 8px rgba(28,25,21,.2);transition:transform .35s var(--ease-spring)}
+.j-sb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.j-sb:hover{transform:translateY(-10px) rotate(-2deg)}
+.j-shelf-note{margin-top:14px}
+.j-final-cta{display:inline-flex;align-items:center;gap:10px;background:var(--text);color:var(--bg);padding:17px 30px;border-radius:100px;
+  font-size:15px;font-weight:500;text-decoration:none;transition:background .2s,transform .25s var(--ease-spring)}
+.j-final-cta:hover{background:var(--accent);transform:scale(1.03)}
+.j-final-cta i{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.15);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-style:normal}
+.j-home-fine{margin-top:18px;font-size:12px;color:var(--text-muted)}
+footer.j{padding:34px 24px;text-align:center;font-size:12px;color:var(--text-muted);background:var(--surface)}
+</style>
+<base target="_blank">
+</head>
+<body>
+<div id="jProg"></div>
+<nav class="j-nav">
+  <span class="j-logo">tsundoku<span>.</span></span>
+  <a href="#meaning">the word</a>
+  <a href="#photograph">the shelf</a>
+  <a href="#know">know your books</a>
+  <a href="#grow">grow it</a>
+  <a href="#organize">organize</a>
+  <a class="j-cta" href="#home">start your shelf</a>
+</nav>
+
+<!-- ═══ 01 · hero ═══ -->
+<section class="j j-hero" id="top">
+  <div class="j-in">
+    <div class="j-rv">
+      <span class="j-label"><i></i>a bookshelf app for collectors</span>
+      <h1 class="j-h1">your pile of unread books is <em>not a problem.</em></h1>
+      <p class="j-sub">it's a collection. tsundoku is a quiet home for it — a photograph of every book you own,
+      so you can remember why you bought each one. no streaks, no guilt, no rush.</p>
+      <div class="j-actions">
+        <a class="j-btn" href="#home">start your shelf <i>→</i></a>
+        <a class="j-ghost" href="#meaning">what does tsundoku mean? ↓</a>
+      </div>
+    </div>
+    <div class="j-book-scene j-rv">
+      <div class="j-kanji-big">積</div>
+      <div class="j-book-float">
+        <div class="j-book" id="jHeroBook">
+          <div class="j-bf j-bf-front"><img src="https://kimi-web-img.kimi.ai/img/m.media-amazon.com/0b1015f8cb265b29c787c58f971fe70e1b531e69.jpg" alt="piranesi"></div>
+          <div class="j-bf j-bf-back"></div>
+          <div class="j-bf j-bf-spine"><span>piranesi — susanna clarke</span></div>
+          <div class="j-bf j-bf-pages"></div>
+          <div class="j-bf j-bf-top"></div>
+          <div class="j-bf j-bf-bot"></div>
+        </div>
+        <div class="j-book-shadow"></div>
+      </div>
+      <div class="j-hero-note j-cap"><b>a real book.</b> piranesi, still unread. that's allowed here.</div>
+    </div>
+  </div>
+  <div class="j-scrollhint">scroll</div>
+</section>
+
+<!-- ═══ 02 · meaning ═══ -->
+<section class="j j-mean" id="meaning">
+  <div class="j-in j-mean-grid">
+    <div class="j-kanji-card j-rv">
+      <svg viewBox="0 0 100 100" fill="none">
+        <circle id="jK1" cx="50" cy="50" r="46" stroke="rgba(217,139,106,.5)" stroke-width="1.4" stroke-dasharray="290" stroke-dashoffset="290"/>
+        <circle id="jK2" cx="50" cy="50" r="38" stroke="rgba(245,240,232,.16)" stroke-width="1" stroke-dasharray="240" stroke-dashoffset="240"/>
+      </svg>
+      <div class="j-kanji-word">積ん読<small>tsun · do · ku</small></div>
+    </div>
+    <div class="j-rv">
+      <span class="j-eyebrow">chapter 01 — the word</span>
+      <h2 class="j-h2">a japanese word for a <em>very good habit.</em></h2>
+      <p class="j-def">tsundoku is what happens when <span class="hl">積む</span> — to pile up — meets
+      <span class="hl">読む</span> — to read. it means owning more books than you've read.
+      and here's the secret: <span class="hl">that's not failure. that's a library in progress.</span></p>
+      <div class="j-mean-list">
+        <div><b>01</b><span>buying books and reading books are two different hobbies — and both are wonderful.</span></div>
+        <div><b>02</b><span>an unread book is a promise, not a debt. it will wait for you. they always do.</span></div>
+        <div><b>03</b><span>the pile by your bed says you believe in a future where you have time to read. keep believing.</span></div>
+      </div>
+      <div class="j-noguilt">✓ no guilt. ever. that's a design rule, not a slogan.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 03 · photograph ═══ -->
+<section class="j j-photo" id="photograph">
+  <div class="j-in">
+    <div class="j-rv" style="max-width:560px">
+      <span class="j-eyebrow">chapter 02 — the idea</span>
+      <h2 class="j-h2">the app is just a <em>photograph</em> of your shelf.</h2>
+      <p class="j-sub">your physical collection stays the hero — the real thing, on a real shelf, in your real home.
+      tsundoku simply keeps a quiet copy: every cover, every status, every reason you bought it. watch the pile move in.</p>
+    </div>
+    <div class="j-stage-wrap j-rv" style="margin-top:36px">
+      <div class="j-stage" id="jStage">
+        <div class="j-scene">
+          <div class="j-scene-kanji">積ん読</div>
+          <div class="j-photo-cap"><b>the physical pile</b><span>untidy, unfinished, entirely yours. it stays exactly where it is.</span></div>
+          <div class="j-desk">
+            <div class="j-desk-shadow"></div>
+            <div class="j-pbook" data-b="0">
+              <div class="f j-pb-front"><img src="https://kimi-web-img.kimi.ai/img/m.media-amazon.com/0a8a7f6f262a48181075a477fbe131934bd8f372.jpg" alt="babel"></div>
+              <div class="f j-pb-back"></div><div class="f j-pb-spine"></div><div class="f j-pb-pages"></div><div class="f j-pb-top"></div><div class="f j-pb-bot"></div>
+            </div>
+            <div class="j-pbook" data-b="1">
+              <div class="f j-pb-front"><img src="https://kimi-web-img.kimi.ai/img/m.media-amazon.com/4f8ed0a0d981b03ab0a4e0d819140a8d78b58a7f.jpg" alt="the midnight library"></div>
+              <div class="f j-pb-back"></div><div class="f j-pb-spine"></div><div class="f j-pb-pages"></div><div class="f j-pb-top"></div><div class="f j-pb-bot"></div>
+            </div>
+            <div class="j-pbook" data-b="2">
+              <div class="f j-pb-front"><img src="https://kimi-web-img.kimi.ai/img/m.media-amazon.com/81acfe7a3eb59e829442cd0344ae390133a8a6c.jpg" alt="pachinko"></div>
+              <div class="f j-pb-back"></div><div class="f j-pb-spine"></div><div class="f j-pb-pages"></div><div class="f j-pb-top"></div><div class="f j-pb-bot"></div>
+            </div>
+            <div class="j-pbook" data-b="3">
+              <div class="f j-pb-front"><img src="https://kimi-web-img.kimi.ai/img/m.media-amazon.com/0b1015f8cb265b29c787c58f971fe70e1b531e69.jpg" alt="piranesi"></div>
+              <div class="f j-pb-back"></div><div class="f j-pb-spine"></div><div class="f j-pb-pages"></div><div class="f j-pb-top"></div><div class="f j-pb-bot"></div>
+            </div>
+          </div>
+          <div class="j-phone">
+            <div class="j-screen">
+              <div class="j-notch"></div>
+              <div class="j-a-hdr">your shelf <small>7 books</small></div>
+              <div class="j-a-pills"><span class="j-a-pill on">all</span><span class="j-a-pill">unread</span><span class="j-a-pill">reading</span><span class="j-a-pill">read</span></div>
+              <div class="j-a-grid" id="jShelfGrid"></div>
+              <div class="j-toast" id="jPhotoToast">7 books kept — the pile stays with you.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="j-cap j-rv" style="margin-top:14px">the app never replaces the shelf. it just remembers it for you.</p>
+  </div>
+</section>
+
+<!-- ═══ 04 · know ═══ -->
+<section class="j j-know" id="know">
+  <div class="j-in">
+    <div class="j-phone j-rv">
+      <div class="j-screen">
+        <div class="j-notch"></div>
+        <div class="j-a-hdr">your shelf <small>tap a cover</small></div>
+        <div class="j-a-pills"><span class="j-a-pill on">all</span><span class="j-a-pill">unread</span><span class="j-a-pill">reading</span><span class="j-a-pill">read</span></div>
+        <div class="j-a-grid" id="jKnowGrid"></div>
+        <div class="j-sheet" id="jSheet">
+          <div class="j-sheet-grip"></div>
+          <div class="j-sheet-top">
+            <div class="j-sheet-cov"><img src="https://kimi-web-img.kimi.ai/img/m.media-amazon.com/0a8a7f6f262a48181075a477fbe131934bd8f372.jpg" alt=""></div>
+            <div class="j-sheet-t"><b>babel</b><span>r.f. kuang · 545 pages · on your shelf since march</span></div>
+          </div>
+          <div class="j-sheet-sum"><b>why you picked it up</b>a dark academia epic about language, empire, and translation — bought after three friends wouldn't stop talking about it.</div>
+          <div class="j-seg" id="jSeg">
+            <button data-s="unread">unread</button>
+            <button data-s="reading" class="on">reading</button>
+            <button data-s="read">read</button>
+          </div>
+          <div class="j-prog">
+            <div class="j-prog-row"><span>page progress</span><b id="jProgTxt">0 / 545</b></div>
+            <div class="j-prog-tr"><div class="j-prog-fl" id="jProgFl"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="j-rv">
+      <span class="j-eyebrow">chapter 03 — know your books</span>
+      <h2 class="j-h2">every book remembers<br><em>why it's there.</em></h2>
+      <p class="j-sub">tap any cover and the detail sheet rises — a summary in your own words, the status,
+      and exactly how far you've wandered into it. no star ratings. no reviews to write. just the facts that matter to you.</p>
+      <div class="j-know-feats">
+        <div class="j-feat"><i>◱</i><b>detail sheet</b><span>summary, notes, cover, and the story of how it joined your shelf.</span></div>
+        <div class="j-feat"><i>●</i><b>three gentle tags</b><span>unread · reading · read. that's the whole system. it won't judge you.</span></div>
+        <div class="j-feat"><i>↦</i><b>page progress</b><span>"i'm on page 212" — pick up exactly where you left off, months later.</span></div>
+        <div class="j-feat"><i>✎</i><b>your own summary</b><span>what it's about, and why you bought it. for future-you.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 · grow ═══ -->
+<section class="j j-grow" id="grow">
+  <div class="j-in">
+    <div class="j-rv" style="max-width:620px">
+      <span class="j-eyebrow">chapter 04 — grow the pile</span>
+      <h2 class="j-h2">adding books feels like<br><em>buying them.</em></h2>
+      <p class="j-sub">three ways in, all fast. search the world's library, type one in by hand, or point your camera at the barcode on the back cover.</p>
+    </div>
+    <div class="j-grow-cards">
+      <div class="j-gcard j-rv">
+        <span class="j-gnum">01</span>
+        <h3>search</h3>
+        <p>type a title. covers, authors and years arrive instantly — tap add and it's on your shelf.</p>
+        <div class="j-minisrch"><span id="jSrchTxt">the poppy war</span><span class="caret"></span></div>
+        <div class="j-minires" id="jSrchRes"></div>
+      </div>
+      <div class="j-gcard j-rv">
+        <span class="j-gnum">02</span>
+        <h3>by hand</h3>
+        <p>found something obscure? a zine, an old paperback, a gift with no barcode? type it in. it counts.</p>
+        <div class="j-manual">
+          <span class="fld">title</span><div class="inp" id="jManT"></div>
+          <span class="fld">author</span><div class="inp" id="jManA"></div>
+          <div class="btnrow"><button class="ghost">scan cover</button><button class="solid">add to shelf</button></div>
+        </div>
+      </div>
+      <div class="j-gcard j-rv">
+        <span class="j-gnum">03</span>
+        <h3>isbn scan</h3>
+        <p>point the camera at the barcode on the back. the book finds itself.</p>
+        <div class="j-isbn" id="jIsbn">
+          <div class="j-isbn-view">
+            <div class="j-isbn-scan"></div>
+            <div class="j-isbn-corners"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="j-isbn-code">isbn <b>978-0-06-266258-0</b></div>
+          <div class="j-isbn-found">
+            <img src="https://kimi-web-img.kimi.ai/img/m.media-amazon.com/5f8270ed0931ec744dac1f22a582644a4e8a0102.jpg" alt="">
+            <span style="min-width:0"><b>the poppy war</b><span>r.f. kuang · found in 0.8s</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 · organize ═══ -->
+<section class="j j-org" id="organize">
+  <div class="j-in">
+    <div class="j-rv" style="max-width:620px">
+      <span class="j-eyebrow">chapter 05 — organize, lightly</span>
+      <h2 class="j-h2">lists for the books you have.<br><em>and the ones you're eyeing.</em></h2>
+      <p class="j-sub">"my lists" holds whatever you want — favorites, borrowed, the buy list for your next bookshop raid. and if someone sends you a reading list, paste it in and add all of them at once.</p>
+    </div>
+    <div class="j-org-grid">
+      <div class="j-org-card j-rv">
+        <h3>my lists</h3>
+        <p>a shelf inside your shelf. including the important one: <b style="color:var(--accent)">the buy list.</b></p>
+        <div class="j-listdemo" id="jListDemo">
+          <div class="j-lrow buy"><span class="j-lemoji">🛍</span><span><b>the buy list</b><span>next bookshop raid</span></span><span class="n">7 waiting</span></div>
+          <div class="j-lrow"><span class="j-lemoji">♥</span><span><b>favorites</b><span>the keepers</span></span><span class="n">12 books</span></div>
+          <div class="j-lrow"><span class="j-lemoji">🌙</span><span><b>bedside pile</b><span>the current tsundoku</span></span><span class="n">5 books</span></div>
+          <div class="j-lrow"><span class="j-lemoji">🤝</span><span><b>borrowed</b><span>return these eventually</span></span><span class="n">3 books</span></div>
+        </div>
+      </div>
+      <div class="j-org-card j-rv">
+        <h3>paste a whole list</h3>
+        <p>someone sent you "20 books you must read"? paste them all in — one tap adds every one.</p>
+        <div class="j-paste" id="jPaste">
+          <div class="j-paste-area" id="jPasteArea">
+            <span class="ln">the poppy war — r.f. kuang</span>
+            <span class="ln">piranesi — susanna clarke</span>
+            <span class="ln">the secret history — donna tartt</span>
+            <span class="ln">klara and the sun — kazuo ishiguro</span>
+          </div>
+          <div class="j-paste-bar"><span class="cnt" id="jPasteCnt">0 / 4 found</span><button id="jPasteBtn">add all 4</button></div>
+          <div class="j-paste-done" id="jPasteDone"></div>
+        </div>
+      </div>
+      <div class="j-org-card wide j-rv">
+        <h3>genres, at a glance</h3>
+        <p>every book quietly learns its genres — and your whole collection arranges itself so you can see the shape of your taste. dark academia here, a little sci-fi there, and a suspicious amount of fantasy.</p>
+        <div class="j-gendemo">
+          <div class="j-gencloud" id="jGenCloud"></div>
+          <div class="j-genmap" id="jGenMap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 · glance ═══ -->
+<section class="j j-glance" id="glance">
+  <div class="j-in">
+    <div class="j-rv" style="max-width:600px">
+      <span class="j-eyebrow">chapter 06 — the gentle numbers</span>
+      <h2 class="j-h2">stats that <em>never</em><br>make you feel behind.</h2>
+      <p class="j-sub">a reading habit tracker for those who want one — and only ever the kind of numbers a collector enjoys: books kept, worlds explored, taste taking shape.</p>
+    </div>
+    <div class="j-glance-grid">
+      <div class="j-gcard2 j-rv">
+        <h3>habit tracker</h3>
+        <p>for the days you read. optional, quiet, and proud of you either way.</p>
+        <div class="j-heat" id="jHeat"></div>
+        <div class="j-heat-cap">last few weeks · no targets · no broken-streak badges</div>
+      </div>
+      <div class="j-gcard2 j-rv">
+        <h3>your library, at a glance</h3>
+        <p>the shape of your collection — the good numbers only.</p>
+        <div class="j-minipie">
+          <svg viewBox="0 0 120 120" id="jMiniPie"></svg>
+          <div class="j-minipie-leg" id="jMiniPieLeg"></div>
+        </div>
+      </div>
+      <div class="j-gcard2 j-rv">
+        <h3>share your shelf</h3>
+        <p>a beautiful card of your collection for anyone curious. no account needed to look.</p>
+        <div class="j-sharecard">
+          <div class="j-sharecard-h"><b>aniket's shelf</b><span>7 books</span></div>
+          <div class="j-sharecard-g" id="jShareG"></div>
+          <div class="j-sharecard-f"><span>tsundoku.app/?shelf=aniket</span><button id="jShareCopy">copy</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 · home ═══ -->
+<section class="j j-home" id="home">
+  <div class="j-in">
+    <span class="j-eyebrow j-rv">chapter 07 — where it lives</span>
+    <h2 class="j-h2 j-rv">the shelf stays <em>physical.</em><br>the app just keeps the memory.</h2>
+    <p class="j-sub j-rv">tsundoku will never ask you to read faster, catch up, or clear the pile.
+    it holds the photograph so you can keep the real thing — dusty, loved, and entirely yours.</p>
+    <div class="j-shelf j-rv">
+      <div class="j-shelf-board"></div>
+      <div class="j-shelf-books" id="jShelfBooks"></div>
+    </div>
+    <p class="j-shelf-note j-cap j-rv">some of these are unread. all of them are yours. that's the whole point.</p>
+    <div style="margin-top:34px" class="j-rv">
+      <a class="j-final-cta" href="#">start your shelf — it's free <i>→</i></a>
+      <p class="j-home-fine">no streaks · no guilt · your pile is safe here</p>
+    </div>
+  </div>
+</section>
+
+<footer class="j">tsundoku · 積ん読 · a calm home for unread books · made for collectors, by a collector</footer>
+<script>
+/* ═══════════ tsundoku · the journey — motion engine ═══════════ */
+(() => {
+'use strict';
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const anim = (el, frames, opts) => el.animate(frames, Object.assign({ fill:'forwards' }, opts)).finished.catch(() => {});
+const stopAnims = el => el.getAnimations().forEach(a => a.cancel());
+const ok = (g, gen) => g === gen;
+
+/* real covers (hotlinked for preview — swap for local files) */
+const C = {
+  piranesi:'https://kimi-web-img.kimi.ai/img/m.media-amazon.com/0b1015f8cb265b29c787c58f971fe70e1b531e69.jpg',
+  midnight:'https://kimi-web-img.kimi.ai/img/m.media-amazon.com/4f8ed0a0d981b03ab0a4e0d819140a8d78b58a7f.jpg',
+  pachinko:'https://kimi-web-img.kimi.ai/img/m.media-amazon.com/81acfe7a3eb59e829442cd0344ae390133a8a6c.jpg',
+  klara:'https://kimi-web-img.kimi.ai/img/upload.wikimedia.org/21184f495007fb113c71202e51f9831483d0e733.png',
+  secret:'https://kimi-web-img.kimi.ai/img/m.media-amazon.com/44de19786db01dcd1cd8547c4d38e7816b6fb664.jpg',
+  babel:'https://kimi-web-img.kimi.ai/img/m.media-amazon.com/0a8a7f6f262a48181075a477fbe131934bd8f372.jpg',
+  poppy:'https://kimi-web-img.kimi.ai/img/m.media-amazon.com/5f8270ed0931ec744dac1f22a582644a4e8a0102.jpg'
+};
+const SHELF = [
+  [C.piranesi,'read'],[C.babel,'reading'],[C.pachinko,''],[C.midnight,''],
+  [C.secret,'read'],[C.poppy,'reading'],[C.klara,'']
+];
+
+/* ── scroll progress + reveal ── */
+addEventListener('scroll', () => {
+  const h = document.documentElement;
+  $('#jProg').style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
+}, { passive:true });
+const rvObs = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting){ e.target.classList.add('in'); rvObs.unobserve(e.target); }
+}), { threshold:.12 });
+$$('.j-rv').forEach(el => rvObs.observe(el));
+
+/* ── loop guard ── */
+function guard(el, body){
+  let gen = 0, vis = false, timer = null, running = false;
+  const canRun = () => vis && !document.hidden && !REDUCE;
+  async function loop(){
+    running = true;
+    const g = gen;
+    await body(g, gen);
+    running = false;
+    if (g !== gen) return;
+    timer = setTimeout(loop, 60);
+  }
+  function sync(){
+    if (canRun() && !running){ gen++; clearTimeout(timer); loop(); }
+    else if (!canRun() && running){ gen++; }
+    else if (!canRun()){ clearTimeout(timer); timer = null; }
+  }
+  new IntersectionObserver(([e]) => { vis = e.isIntersecting; sync(); }, { threshold:.1 }).observe(el);
+  document.addEventListener('visibilitychange', sync);
+  return { restart(){ gen++; clearTimeout(timer); if (canRun() && !running) loop(); } };
+}
+
+/* ═══ 03 · photograph — real books fly into the phone ═══ */
+(() => {
+  const stage = $('#jStage'), wrap = stage.parentElement, scene = $('#photograph');
+  const books = $$('.j-pbook'), grid = $('#jShelfGrid'), toast = $('#jPhotoToast');
+  /* cells 0-6 = landing pads for the 7 shelf books; rest already shelved */
+  const MORE = [[C.klara,''],[C.secret,'read'],[C.poppy,'reading'],[C.piranesi,'read']];
+  const all = SHELF.concat(MORE);
+  all.forEach(([src, st], i) => {
+    const c = document.createElement('div');
+    c.className = 'j-cell' + (i > 6 ? ' static' : '');
+    c.innerHTML = '<img src="' + src + '" alt="">' + (st ? '<span class="j-dot ' + st + '"></span>' : '');
+    grid.appendChild(c);
+  });
+  const cells = $$('.j-cell', grid);
+  const HOME = [
+    { x:140, y:330, z:-8 }, { x:166, y:302, z:6 },
+    { x:134, y:274, z:-5 }, { x:160, y:246, z:7 }
+  ];
+  const homeT = i => 'translate(' + HOME[i].x + 'px,' + HOME[i].y + 'px) rotateX(56deg) rotateZ(' + HOME[i].z + 'deg)';
+  function fit(){
+    const s = Math.min(1, wrap.clientWidth / 980);
+    stage.style.transform = 'scale(' + s + ')';
+    wrap.style.height = Math.round(620 * s) + 'px';
+  }
+  addEventListener('resize', fit); fit();
+  books.forEach((b, i) => { b.style.transform = homeT(i); b.dataset.home = homeT(i); });
+  function cellCenter(cell){
+    const sc = stage.getBoundingClientRect(), cr = cell.getBoundingClientRect();
+    const s = sc.width / 980;
+    return { x:(cr.left - sc.left)/s + cr.width/s/2 - 88, y:(cr.top - sc.top)/s + cr.height/s/2 - 132 };
+  }
+  function reset(){
+    books.forEach(b => { stopAnims(b); b.style.transform = b.dataset.home; b.style.opacity = 1; });
+    cells.slice(0, 7).forEach(c => $('img', c).classList.remove('landed'));
+    toast.classList.remove('on');
+  }
+  async function flyBook(i, g, gen){
+    const b = books[i], im = $('img', cells[i]), c = cellCenter(cells[i]), h = HOME[i];
+    const t = setTimeout(() => { if (ok(g, gen)) im.classList.add('landed'); }, 1500);
+    await anim(b, [
+      { transform: homeT(i), easing:'cubic-bezier(.22,1,.36,1)', offset:0 },
+      { transform:'translate(' + (h.x + 26) + 'px,' + (h.y - 200) + 'px) rotateX(8deg) rotateZ(0deg)', offset:.34 },
+      { transform:'translate(' + c.x + 'px,' + (c.y - 120) + 'px) rotateX(0deg) scale(.5)', easing:'cubic-bezier(.25,1,.5,1)', offset:.68 },
+      { transform:'translate(' + c.x + 'px,' + c.y + 'px) scale(.37)', offset:.88 },
+      { transform:'translate(' + c.x + 'px,' + c.y + 'px) scale(.36)', opacity:0, offset:1 }
+    ], { duration:1800, easing:'ease-in-out' });
+    clearTimeout(t);
+  }
+  if (REDUCE){ cells.forEach(c => $('img', c).classList.add('landed')); return; }
+  guard(scene, async (g, gen) => {
+    reset();
+    await sleep(800);  if (!ok(g, gen)) return;
+    for (let i = 0; i < 4; i++){ flyBook(i, g, gen); await sleep(1500); if (!ok(g, gen)) return; }
+    await sleep(1100); if (!ok(g, gen)) return;
+    toast.classList.add('on');
+    await sleep(3200); if (!ok(g, gen)) return;
+    toast.classList.remove('on');
+    cells.slice(0, 4).forEach(c => $('img', c).classList.remove('landed'));
+    books.forEach(b => { stopAnims(b); b.style.transform = b.dataset.home; anim(b, [{ opacity:0 }, { opacity:1 }], { duration:420 }); });
+    await sleep(1000);
+  });
+})();
+
+/* ═══ 04 · know — detail sheet ═══ */
+(() => {
+  const sec = $('#know'), grid = $('#jKnowGrid'), sheet = $('#jSheet');
+  const fl = $('#jProgFl'), txt = $('#jProgTxt');
+  const segBtns = $$('#jSeg button');
+  const stMap = { unread:'#7a7068', reading:'#c9714a', read:'#5a8a6a' };
+  SHELF.forEach(([src, st]) => {
+    const c = document.createElement('div');
+    c.className = 'j-cell';
+    c.innerHTML = '<img src="' + src + '">' + (st ? '<span class="j-dot ' + st + '"></span>' : '');
+    grid.appendChild(c);
+  });
+  const first = $$('.j-cell', grid)[1]; /* babel */
+  const dot = $('.j-dot', first) || (() => { const d = document.createElement('span'); d.className = 'j-dot'; first.appendChild(d); return d; })();
+  const PAGES = 545, GOAL = 212;
+  function setSeg(s){ segBtns.forEach(b => b.classList.toggle('on', b.dataset.s === s)); dot.className = 'j-dot' + (s === 'unread' ? '' : ' ' + s); dot.style.background = stMap[s]; }
+  segBtns.forEach(b => b.addEventListener('click', () => setSeg(b.dataset.s)));
+  if (REDUCE){ sheet.classList.add('on'); fl.style.width = (GOAL/PAGES*100) + '%'; txt.textContent = GOAL + ' / ' + PAGES; return; }
+  guard(sec, async (g, gen) => {
+    sheet.classList.remove('on'); fl.style.width = 0; txt.textContent = '0 / ' + PAGES;
+    setSeg('reading');
+    await sleep(900);  if (!ok(g, gen)) return;
+    sheet.classList.add('on');
+    await sleep(700);  if (!ok(g, gen)) return;
+    const t0 = performance.now();
+    (function tick(t){
+      if (!ok(g, gen)) return;
+      const p = Math.min((t - t0) / 1400, 1);
+      const pg = Math.round(GOAL * (1 - Math.pow(1 - p, 3)));
+      fl.style.width = (pg/PAGES*100) + '%';
+      txt.textContent = pg + ' / ' + PAGES;
+      if (p < 1) requestAnimationFrame(tick);
+    })(t0);
+    await sleep(2600); if (!ok(g, gen)) return;
+    sheet.classList.remove('on');
+    await sleep(800);
+  });
+})();
+
+/* ═══ 05 · grow — three ways in ═══ */
+(() => {
+  const sec = $('#grow');
+  /* search */
+  const res = $('#jSrchRes');
+  const R = [[C.poppy,'the poppy war','r.f. kuang · 2018'],[C.babel,'babel','r.f. kuang · 2022'],[C.piranesi,'piranesi','susanna clarke · 2020']];
+  R.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = '<img src="' + t[0] + '"><span style="min-width:0"><b>' + t[1] + '</b><span>' + t[2] + '</span></span><button>add</button>';
+    res.appendChild(row);
+  });
+  const rows = $$('.row', res);
+  /* manual typing */
+  const mT = $('#jManT'), mA = $('#jManA');
+  async function typeInto(el, text, g, gen){
+    el.classList.add('typing');
+    for (let i = 1; i <= text.length; i++){
+      if (!ok(g, gen)) break;
+      el.textContent = text.slice(0, i);
+      await sleep(55 + Math.random() * 60);
+    }
+    el.classList.remove('typing');
+  }
+  /* isbn */
+  const isbn = $('#jIsbn');
+  if (REDUCE){ rows.forEach(r => r.classList.add('on')); mT.textContent = 'the stone sky'; mA.textContent = 'n.k. jemisin'; isbn.classList.add('on'); return; }
+  guard(sec, async (g, gen) => {
+    rows.forEach(r => r.classList.remove('on'));
+    mT.textContent = ''; mA.textContent = '';
+    isbn.classList.remove('on');
+    await sleep(600);  if (!ok(g, gen)) return;
+    rows.forEach((r, i) => setTimeout(() => { if (ok(g, gen)) r.classList.add('on'); }, 300 + i * 280));
+    await sleep(2200); if (!ok(g, gen)) return;
+    await typeInto(mT, 'the stone sky', g, gen); if (!ok(g, gen)) return;
+    await sleep(250);  if (!ok(g, gen)) return;
+    await typeInto(mA, 'n.k. jemisin', g, gen); if (!ok(g, gen)) return;
+    await sleep(600);  if (!ok(g, gen)) return;
+    isbn.classList.add('on');
+    await sleep(3400);
+  });
+})();
+
+/* ═══ 06 · organize — lists · paste · genres ═══ */
+(() => {
+  const sec = $('#organize');
+  const lrows = $$('#jListDemo .j-lrow');
+  const plines = $$('#jPasteArea .ln'), pcnt = $('#jPasteCnt'), pdone = $('#jPasteDone');
+  [C.poppy, C.piranesi, C.secret, C.klara].forEach(src => {
+    const i = document.createElement('i');
+    i.style.backgroundImage = 'url(' + src + ')';
+    pdone.appendChild(i);
+  });
+  const pcovers = $$('i', pdone);
+  const GENS = [['fantasy', 1], ['literary fiction', 1], ['dark academia', 1], ['sci-fi', 0], ['historical fiction', 0], ['mystery', 0], ['essays', 0], ['poetry', 0]];
+  const cloud = $('#jGenCloud');
+  GENS.forEach(([n, hot]) => {
+    const s = document.createElement('span');
+    s.className = 'j-gen' + (hot ? ' hot' : '');
+    s.textContent = n;
+    cloud.appendChild(s);
+  });
+  const chips = $$('.j-gen', cloud);
+  const gmap = $('#jGenMap');
+  for (let i = 0; i < 12; i++){
+    const im = document.createElement('i');
+    im.style.backgroundImage = 'url(' + SHELF[i % SHELF.length][0] + ')';
+    gmap.appendChild(im);
+  }
+  const gcovers = $$('i', gmap);
+  if (REDUCE){ lrows.forEach(r => r.classList.add('on')); plines.forEach(l => l.classList.add('on')); pcnt.textContent = '4 / 4 found'; pcovers.forEach(c => c.classList.add('on')); chips.forEach(c => c.classList.add('on')); gcovers.forEach(c => c.classList.add('on')); return; }
+  guard(sec, async (g, gen) => {
+    lrows.forEach(r => r.classList.remove('on'));
+    plines.forEach(l => l.classList.remove('on'));
+    pcovers.forEach(c => c.classList.remove('on'));
+    chips.forEach(c => c.classList.remove('on'));
+    gcovers.forEach(c => c.classList.remove('on'));
+    pcnt.textContent = '0 / 4 found';
+    await sleep(500);  if (!ok(g, gen)) return;
+    lrows.forEach((r, i) => setTimeout(() => { if (ok(g, gen)) r.classList.add('on'); }, i * 220));
+    await sleep(1400); if (!ok(g, gen)) return;
+    for (let i = 0; i < plines.length; i++){
+      plines[i].classList.add('on');
+      pcnt.textContent = (i + 1) + ' / 4 found';
+      await sleep(420); if (!ok(g, gen)) return;
+    }
+    await sleep(400);  if (!ok(g, gen)) return;
+    pcovers.forEach((c, i) => setTimeout(() => { if (ok(g, gen)) c.classList.add('on'); }, i * 130));
+    await sleep(1600); if (!ok(g, gen)) return;
+    chips.forEach((c, i) => setTimeout(() => { if (ok(g, gen)) c.classList.add('on'); }, i * 110));
+    gcovers.forEach((c, i) => setTimeout(() => { if (ok(g, gen)) c.classList.add('on'); }, 500 + i * 90));
+    await sleep(3400);
+  });
+})();
+
+/* ═══ 07 · glance — heatmap · pie · share ═══ */
+(() => {
+  const sec = $('#glance');
+  const heat = $('#jHeat');
+  const days = [];
+  for (let i = 0; i < 42; i++) days.push(Math.random() < .42 ? (Math.random() < .4 ? 3 : (Math.random() < .6 ? 2 : 1)) : 0);
+  days.forEach(l => {
+    const i = document.createElement('i');
+    if (l) i.className = 'on l' + l;
+    heat.appendChild(i);
+  });
+  const cellsH = $$('i', heat);
+  const svg = $('#jMiniPie'), leg = $('#jMiniPieLeg');
+  const SEGS = [['fiction', 42, '#c9714a'], ['fantasy', 27, '#d98b6a'], ['sci-fi', 15, '#5a8a6a'], ['essays', 16, '#a89e94']];
+  const R2 = 46, CIRC = 2 * Math.PI * R2;
+  let acc = 0;
+  const circles = SEGS.map(([n, p, col]) => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', 60); c.setAttribute('cy', 60); c.setAttribute('r', R2);
+    c.setAttribute('stroke', col);
+    const len = CIRC * p / 100;
+    c.setAttribute('stroke-dasharray', '0 ' + CIRC);
+    c.setAttribute('transform', 'rotate(' + acc + ' 60 60)');
+    c.dataset.len = len;
+    svg.appendChild(c);
+    acc += p * 3.6;
+    const d = document.createElement('div');
+    d.innerHTML = '<i style="background:' + col + '"></i>' + n + ' · ' + p + '%';
+    leg.appendChild(d);
+    return c;
+  });
+  const sg = $('#jShareG');
+  SHELF.forEach(([src]) => {
+    const i = document.createElement('i');
+    i.style.backgroundImage = 'url(' + src + ')';
+    sg.appendChild(i);
+  });
+  const minis = $$('i', sg);
+  const copyBtn = $('#jShareCopy'), toast2 = document.createElement('div');
+  toast2.className = 'j-toast'; toast2.textContent = 'link copied — happy sharing';
+  $('#glance .j-gcard2:last-child').appendChild(toast2);
+  if (REDUCE){ cellsH.forEach(c => c.classList.add('on')); circles.forEach(c => c.setAttribute('stroke-dasharray', c.dataset.len + ' ' + CIRC)); minis.forEach(m => m.classList.add('on')); return; }
+  guard(sec, async (g, gen) => {
+    cellsH.forEach(c => c.classList.remove('on'));
+    circles.forEach(c => c.setAttribute('stroke-dasharray', '0 ' + CIRC));
+    minis.forEach(m => m.classList.remove('on'));
+    copyBtn.textContent = 'copy';
+    toast2.classList.remove('on');
+    await sleep(600);  if (!ok(g, gen)) return;
+    cellsH.forEach((c, i) => setTimeout(() => { if (ok(g, gen)) c.classList.add('on'); }, i * 26));
+    circles.forEach((c, i) => setTimeout(() => { if (ok(g, gen)) c.setAttribute('stroke-dasharray', c.dataset.len + ' ' + CIRC); }, 400 + i * 180));
+    await sleep(1400); if (!ok(g, gen)) return;
+    minis.forEach((m, i) => setTimeout(() => { if (ok(g, gen)) m.classList.add('on'); }, i * 100));
+    await sleep(1600); if (!ok(g, gen)) return;
+    copyBtn.textContent = 'copied ✓';
+    toast2.classList.add('on');
+    await sleep(2200); if (!ok(g, gen)) return;
+    toast2.classList.remove('on');
+    await sleep(600);
+  });
+})();
+
+/* ═══ 08 · home — physical shelf ═══ */
+(() => {
+  const shelf = $('#jShelfBooks');
+  const H = [150, 168, 142, 176, 158, 148, 170, 138, 160, 146];
+  SHELF.concat([[C.midnight, '']]).forEach(([src, st], i) => {
+    const b = document.createElement('div');
+    b.className = 'j-sb';
+    const h = H[i % H.length];
+    b.style.height = h + 'px';
+    b.style.width = Math.round(h * .68) + 'px';
+    b.style.zIndex = i;
+    b.style.transform = 'rotate(' + ((i % 3) - 1) * 2.4 + 'deg)';
+    b.innerHTML = '<img src="' + src + '">';
+    shelf.appendChild(b);
+  });
+  const k2 = $('#jK2'), k1 = $('#jK1');
+  if (k2 && k1){
+    const draw = () => {
+      anim(k2, [{ strokeDashoffset: 240 }, { strokeDashoffset: 0 }], { duration: 2200, easing: 'ease-out' });
+      anim(k1, [{ strokeDashoffset: 290 }, { strokeDashoffset: 0 }], { duration: 2400, easing: 'ease-out' });
+    };
+    if (REDUCE){ k2.style.strokeDashoffset = 0; k1.style.strokeDashoffset = 0; }
+    else new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting){ draw(); o.disconnect(); } }), { threshold:.3 }).observe(k1);
+  }
+})();
+})();
+</script>
+</body>
+</html>
