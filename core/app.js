@@ -7901,7 +7901,14 @@ window.addEventListener('orientationchange', () => {
     const it = cur && cur.items.find(x => x.i === i);
     if (!it || !it.book) return;
     cur.fix = it;
-    navPop(ov, document.getElementById('bookSearchOverlay'));
+    const bs = document.getElementById('bookSearchOverlay');
+    if (bs.classList.contains('open')) {
+      navPop(ov, bs);                       // search is still underneath: just reveal it
+    } else {
+      navPop(ov, null);                     // a previous fix closed the search: open it again
+      navPush(null, bs);
+      const bar = document.getElementById('floatingBar'); if (bar) bar.style.display = 'none';
+    }
     _updateAppRecede();
     window.wlAddMode = true;
     const inp = document.getElementById('bsInput');
