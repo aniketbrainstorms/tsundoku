@@ -424,6 +424,20 @@ async function handleAuth() {
     setTimeout(() => document.getElementById('authOtpInput').focus(), 350);
   }
 }
+// Ctrl+Shift+R for phones: re-download every file the page uses, bypassing the HTTP cache, then reload
+async function hardReload() {
+  const st = document.getElementById('hrStatus');
+  if (st) st.textContent = 'refreshing…';
+  try {
+    const urls = [location.pathname, ...[...document.querySelectorAll('script[src], link[rel="stylesheet"]')]
+      .map(el => el.src || el.href).filter(u => u.startsWith(location.origin))];
+    await Promise.all(urls.map(u => fetch(u, { cache: 'reload' }).catch(() => {})));
+    if (window.caches) await Promise.all((await caches.keys()).map(k => caches.delete(k)));
+    if (navigator.serviceWorker) await Promise.all((await navigator.serviceWorker.getRegistrations()).map(r => r.unregister()));
+  } catch (e) { console.warn('hard refresh:', e); }
+  location.reload();
+}
+
 async function signOut() {
   closeModal('profileModal');
   try { await sb.auth.signOut(); } catch (e) { }
