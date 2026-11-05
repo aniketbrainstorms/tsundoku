@@ -944,7 +944,12 @@ window.openDetailModal = async function openDetailModal(id) {
 
     if (summarySection) summarySection.style.display = 'flex';
 
-    if (aiSummaryIsRegenerated(book.id) && !genresAreGeneric(book)) {
+    if (book.ai_summary_at || aiSummaryIsRegenerated(book.id)) {
+      // books summarised before this column existed: stamp them once so every device agrees
+      if (!book.ai_summary_at) {
+        book.ai_summary_at = new Date().toISOString();
+        dbUpdate(book.id, { ai_summary_at: book.ai_summary_at });
+      }
       if (summaryLabel) summaryLabel.textContent = 'SUMMARY';
       if (summaryEl) summaryEl.textContent = book.description || 'No summary available.';
       DS.summaryExpanded = false;
@@ -972,6 +977,8 @@ window.openDetailModal = async function openDetailModal(id) {
           apiUpdates.description = ai.summary;
           if (summaryEl) summaryEl.textContent = ai.summary;
           aiSummaryMarkRegenerated(book.id);
+          book.ai_summary_at = new Date().toISOString();
+          apiUpdates.ai_summary_at = book.ai_summary_at;
         } else {
           if (summaryEl) summaryEl.textContent = book.description || 'No summary available.';
         }
