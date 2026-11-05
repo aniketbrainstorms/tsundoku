@@ -6688,7 +6688,7 @@ window.addEventListener('orientationchange', () => {
           const genres = needsGenres ? gtNormalize(parsed.genres) : [];
           const themes = Array.isArray(parsed.themes) ? parsed.themes.filter(Boolean) : [];
           if (!summary) break;
-          const updates = { description: summary };
+          const updates = { description: summary, ai_summary_at: new Date().toISOString() };
           if (genres.length && needsGenres) { updates.genres = genres; updates.genre = genres.join(', '); updates.primary_genre = genres[0]; }
           if (themes.length && needsThemes) updates.themes = themes;
           const ok = await dbUpdate(book.id, updates);
