@@ -11,7 +11,9 @@ let _gpDetailType = 'genres';   // 'genres' (raw tag) | 'main' (rolled-up main g
 const GP_PIE_MAX = 12;          // slices drawn in the pie; the rest merge into one "more" slice
 window._gpSubs = new Map();
 let _gpDetailSub = null;   // sub-genre chip filter on the detail screen
-const GP_MIX_COLORS = ['#c9714a', '#1D9E75', '#7F77DD', '#EF9F27', '#378ADD', '#D4537E', '#639922'];   // one distinct hue per slice     // main genre -> Map(sub tag -> book count)
+const GP_MIX_COLORS = ['#c9714a', '#1D9E75', '#7F77DD', '#EF9F27', '#378ADD', '#D4537E', '#639922'];   // one distinct hue per slice
+const GP_MORE_STOPS = ['#ff5fa2', '#ffb142', '#ffe66d', '#4cd964', '#3ec6ff', '#a66bff'];               // "More" = many genres, so many colours
+const GP_MORE_CSS = `linear-gradient(135deg, ${GP_MORE_STOPS.join(', ')})`;     // main genre -> Map(sub tag -> book count)
 
 // Palette generation is done per-tag via gpHashColor() below (wider warm HSL spread).
 
@@ -352,7 +354,7 @@ function gpRenderMix() {
   const untagged = entries.find(e => e[0] === 'Untagged');
   const rest = named.slice(GP_MIX_COLORS.length);
   const slices = named.slice(0, GP_MIX_COLORS.length).map(([name, arr], i) => ({ key: name, label: name, n: arr.length, color: GP_MIX_COLORS[i] }));
-  if (rest.length) slices.push({ key: '__more', label: `More (${rest.length} genres)`, n: rest.reduce((s, [, a]) => s + a.length, 0), color: '#888780' });
+  if (rest.length) slices.push({ key: '__more', label: `More (${rest.length} genres)`, n: rest.reduce((s, [, a]) => s + a.length, 0), color: GP_MORE_CSS, grad: true });
   if (untagged) slices.push({ key: 'Untagged', label: 'Untagged', n: untagged[1].length, color: '#5F5E5A' });
 
   const total = slices.reduce((s, x) => s + x.n, 0);
@@ -361,7 +363,7 @@ function gpRenderMix() {
   let off = 0;
   const arcs = slices.map(x => {
     const len = x.n / total * C, dash = Math.max(len - 2, 1);
-    const el = `<circle class="gp-arc" data-key="${escapeAttr(x.key)}" cx="75" cy="75" r="${R}" fill="none" stroke="${x.color}" stroke-width="22" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 75 75)"><title>${escapeHtml(x.label)} · ${x.n}</title></circle>`;
+    const el = `<circle class="gp-arc" data-key="${escapeAttr(x.key)}" cx="75" cy="75" r="${R}" fill="none" stroke="${x.grad ? 'url(#gpMoreGrad)' : x.color}" stroke-width="22" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 75 75)"><title>${escapeHtml(x.label)} · ${x.n}</title></circle>`;
     off += len;
     return el;
   }).join('');
@@ -373,7 +375,9 @@ function gpRenderMix() {
     </div>`).join('');
 
   scroll.innerHTML = `<div class="gp-mix-wrap">
-    <div class="gp-donut"><svg viewBox="0 0 150 150" role="img" aria-label="Genre share">${arcs}
+    <div class="gp-donut"><svg viewBox="0 0 150 150" role="img" aria-label="Genre share">
+      <defs><linearGradient id="gpMoreGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="150" y2="150">${GP_MORE_STOPS.map((c, i) => `<stop offset="${Math.round(i / (GP_MORE_STOPS.length - 1) * 100)}%" stop-color="${c}"/>`).join('')}</linearGradient></defs>
+      ${arcs}
       <g class="gp-pie-center-label" text-anchor="middle">
         <text x="75" y="76" font-size="22" class="gp-pie-center-count">${total}</text>
         <text x="75" y="92" font-size="11" class="gp-pie-center-sub">books</text>
