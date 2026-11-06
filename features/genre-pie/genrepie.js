@@ -3,15 +3,15 @@
 // Takes over #genresListOverlay: adds Genres/Themes tabs + pie↔list toggle.
 // Detail drill-in reuses existing #genreDetailOverlay via a type flag.
 // ══════════════════════════════════════════════════════════════
-
-let gpActiveTab = 'genres';   // 'genres' | 'themes'
-let gpView = 'pie';           // 'pie' | 'list'
-let gpSort = 'az';            // 'az' | 'count' (list view only)
-let gpOpenPanelIndex = null;
+let gpActiveTab = 'genres';   // themes tab is off; kept so the detail code still has a value
+let gpView = 'browse';        // 'browse' | 'mix' (remembered)
+try { gpView = localStorage.getItem('tsundoku_genres_view') === 'mix' ? 'mix' : 'browse'; } catch {}
 let gpEntriesCache = [];
 let _gpDetailType = 'genres';   // 'genres' (raw tag) | 'main' (rolled-up main genre) | 'themes'
 const GP_PIE_MAX = 12;          // slices drawn in the pie; the rest merge into one "more" slice
-window._gpSubs = new Map();     // main genre -> Map(sub tag -> book count)
+window._gpSubs = new Map();
+let _gpDetailSub = null;   // sub-genre chip filter on the detail screen
+const GP_MIX_COLORS = ['#c9714a', '#1D9E75', '#7F77DD', '#EF9F27', '#378ADD', '#D4537E', '#639922'];   // one distinct hue per slice     // main genre -> Map(sub tag -> book count)
 
 // Palette generation is done per-tag via gpHashColor() below (wider warm HSL spread).
 
@@ -55,10 +55,45 @@ const GP_ICON_LIST = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none
     .gp-sub-chip span { opacity:0.55; margin-left:2px; }
     .gp-sub-chip:active { opacity:0.7; }
     .gp-sub-chip--all { border-color:var(--accent); color:var(--accent); background:transparent; }
+    .gp-seg { display:flex; gap:2px; margin:0 16px 10px; padding:3px; border-radius:100px; background:var(--surface2); border:1px solid var(--border); flex-shrink:0; }
+    .gp-seg-btn { flex:1; padding:7px 0; border:none; border-radius:100px; background:transparent; color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:background 0.18s, color 0.18s; }
+    .gp-seg-btn.active { background:var(--accent); color:#fff; }
+    .gp-cards { display:flex; flex-direction:column; gap:8px; padding:2px 16px 24px; }
+    .gp-card { display:flex; align-items:center; gap:12px; padding:11px 12px 11px 14px; border-radius:14px; background:var(--surface2); border:1px solid var(--border); cursor:pointer; transition:border-color 0.15s, transform 0.15s; }
+    .gp-card:active { transform:scale(0.985); }
+    .gp-card--none { border-style:dashed; }
+    .gp-card-main { flex:1; min-width:0; }
+    .gp-card-name { font-size:15px; font-weight:600; color:var(--text); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .gp-card-meta { font-size:12px; color:var(--text-muted); margin-top:2px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .gp-cvs { display:flex; flex-shrink:0; }
+    .gp-cv { width:26px; height:39px; border-radius:4px; overflow:hidden; margin-left:-9px; border:1.5px solid var(--surface2); background:var(--surface2); }
+    .gp-cv:first-child { margin-left:0; }
+    .gp-cv img { width:100%; height:100%; object-fit:cover; display:block; }
+    .gp-card-chev { color:var(--text-muted); flex-shrink:0; }
+    .gp-mix-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; padding:6px 16px 24px; }
+    .gp-donut svg { width:196px; height:196px; display:block; }
+    .gp-arc { cursor:pointer; transition:opacity 0.15s; }
+    .gp-arc:hover { opacity:0.82; }
+    .gp-mix-rows { width:100%; }
+    .gp-mix-row { display:flex; align-items:center; gap:10px; padding:11px 4px; border-bottom:1px solid var(--border); cursor:pointer; }
+    .gp-mix-row:last-child { border-bottom:none; }
+    .gp-mix-row:active { opacity:0.6; }
+    .gp-mix-name { width:140px; flex-shrink:0; font-size:14px; font-weight:600; color:var(--text); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .gp-mix-bar { flex:1; height:4px; border-radius:2px; background:var(--surface2); overflow:hidden; }
+    .gp-mix-bar b { display:block; height:100%; border-radius:2px; }
+    .gp-mix-pct { width:66px; flex-shrink:0; text-align:right; font-size:12px; color:var(--text-muted); }
+    .gp-detail-chips { display:flex; gap:6px; overflow-x:auto; padding:0 16px 10px; flex-shrink:0; scrollbar-width:none; }
+    .gp-detail-chips::-webkit-scrollbar { display:none; }
     @media (min-width:1024px) {
-      #genresListOverlay .gp-tabs, #genresListOverlay .al-shelf-sub, #genresListOverlay .gp-pie-sticky, #genresListOverlay #genScroll, #genresListOverlay .al-search-wrap { max-width:760px; margin-left:auto; margin-right:auto; width:100%; box-sizing:border-box; }
-      .gp-sub-chip:hover { border-color:var(--accent); color:var(--text); }
-      .gp-legend-row:hover { background:rgba(255,255,255,0.03); }
+      .gp-seg { max-width:300px; margin-left:24px; }
+      #gpSearchWrap { max-width:420px; }
+      #genresListOverlay .gp-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:10px; padding:2px 24px 32px; }
+      #genresListOverlay .gp-mix-wrap { flex-direction:row; align-items:flex-start; justify-content:center; gap:48px; max-width:960px; margin:0 auto; padding:12px 24px 32px; }
+      .gp-donut { position:sticky; top:8px; flex-shrink:0; }
+      .gp-mix-rows { flex:1; min-width:0; }
+      .gp-mix-name { width:180px; }
+      .gp-card:hover { border-color:var(--accent); }
+      .gp-mix-row:hover { background:rgba(255,255,255,0.03); }
     }
     .gp-panel-scroll { display:flex; gap:8px; padding:4px 4px 14px 24px; overflow-x:auto; scrollbar-width:none; }
     .gp-panel-scroll::-webkit-scrollbar { display:none; }
@@ -154,36 +189,30 @@ function gpEnsureMarkup() {
   const overlay = document.getElementById('genresListOverlay');
   if (!overlay || overlay.dataset.gpInit === '1') return;
   overlay.dataset.gpInit = '1';
-  const fastscrollHtml = `
+  overlay.innerHTML = `
     <div class="gp-fastbar" id="gpFastBar">
       <div class="gp-fastbar-track"></div>
       <div class="gp-fastbar-thumb" id="gpFastThumb"></div>
-    </div>`;
-  overlay.innerHTML = fastscrollHtml + `
+    </div>
     <div class="shelf-header">
       <button class="shelf-back-btn" onclick="closeGenresOverlay()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
         Back
       </button>
       <span class="shelf-header-title" id="gpHeaderTitle">Genres</span>
-      <div style="display:flex;gap:6px;align-items:center">
-        <button class="al-sort-btn" id="gpViewToggleBtn" onclick="gpToggleView()"></button>
-        <button class="al-sort-btn" id="genSortBtn" onclick="toggleGenSort()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
-          <span id="genSortLabel">Sort A–Z</span>
-        </button>
-      </div>
+      <span style="min-width:62px"></span>
     </div>
-
-    <p class="al-shelf-sub" id="genShelfSub"></p>
-    <div style="padding:0 16px 10px;">
+    <div class="gp-seg" role="tablist" aria-label="Genres view">
+      <button class="gp-seg-btn" data-view="browse" role="tab" onclick="gpSetView('browse')">Browse</button>
+      <button class="gp-seg-btn" data-view="mix" role="tab" onclick="gpSetView('mix')">Mix</button>
+    </div>
+    <div id="gpSearchWrap" style="padding:0 16px 10px;">
       <div class="al-search-wrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--text-muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="al-search-input" id="genSearchInput" placeholder="Search genres…" oninput="gpRenderCurrent()" autocomplete="off" autocorrect="off" spellcheck="false" />
+        <input type="text" class="al-search-input" id="genSearchInput" placeholder="Search genres or sub-genres…" oninput="gpRenderCurrent()" autocomplete="off" autocorrect="off" spellcheck="false" />
       </div>
     </div>
     <div class="divider"></div>
-    <div class="gp-pie-sticky" id="genPieSticky"></div>
     <div class="al-scroll" id="genScroll"></div>
   `;
   gpInitFastScroll();
@@ -248,225 +277,146 @@ function gpRefreshFastScroll() {
 
 // ── HEADER STATE ──
 function gpUpdateHeaderState() {
-  document.querySelectorAll('#genresListOverlay .gp-tab').forEach(btn =>
-    btn.classList.toggle('active', btn.dataset.tab === gpActiveTab));
-  const title = document.getElementById('gpHeaderTitle');
-  if (title) title.textContent = gpActiveTab === 'themes' ? 'Themes' : 'Genres';
-  const viewBtn = document.getElementById('gpViewToggleBtn');
-  if (viewBtn) viewBtn.innerHTML = gpView === 'pie' ? `${GP_ICON_LIST} List` : `${GP_ICON_PIE} Pie`;
-  const sortBtn = document.getElementById('genSortBtn');
-  if (sortBtn) sortBtn.style.display = gpView === 'list' ? '' : 'none';
-  const searchInput = document.getElementById('genSearchInput');
-  if (searchInput) searchInput.placeholder = gpActiveTab === 'themes' ? 'Search themes…' : 'Search genres…';
+  document.querySelectorAll('#genresListOverlay .gp-seg-btn').forEach(b => {
+    const on = b.dataset.view === gpView;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  const sw = document.getElementById('gpSearchWrap');
+  if (sw) sw.style.display = gpView === 'browse' ? '' : 'none';
 }
 
-// ── RENDER DISPATCH ──
 function gpRenderCurrent() {
   gpUpdateHeaderState();
-  if (gpView === 'pie') gpRenderPie(gpActiveTab);
-  else gpRenderList(gpActiveTab);
+  if (gpView === 'mix') gpRenderMix(); else gpRenderBrowse();
 }
 
-function gpSetTab(tab) {
-  gpActiveTab = tab;
-  gpOpenPanelIndex = null;
+function gpSetView(v) {
+  gpView = v === 'mix' ? 'mix' : 'browse';
+  try { localStorage.setItem('tsundoku_genres_view', gpView); } catch {}
   gpRenderCurrent();
+  const sc = document.getElementById('genScroll');
+  if (sc) sc.scrollTop = 0;
 }
 
-function gpToggleView() {
-  gpView = gpView === 'pie' ? 'list' : 'pie';
-  gpOpenPanelIndex = null;
-  gpRenderCurrent();
+// main genres, biggest first, Untagged always last
+function gpEntries(q) {
+  const entries = gpFilterEntries(Array.from(gpBuildMap('genres').entries()), q, 'genres');
+  const rank = n => (n === 'Untagged' ? 1 : 0);
+  return entries.sort((a, b) => rank(a[0]) - rank(b[0]) || b[1].length - a[1].length || a[0].localeCompare(b[0]));
 }
 
-// ── PIE VIEW ──
-function gpRenderPie(type) {
+// ── BROWSE ──
+function gpRenderBrowse() {
   const scroll = document.getElementById('genScroll');
   if (!scroll) return;
   const q = (document.getElementById('genSearchInput')?.value || '').toLowerCase().trim();
-  const map = gpBuildMap(type);
-  let entries = gpFilterEntries(Array.from(map.entries()), q, type);
-  entries.sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
-
-  const subEl = document.getElementById('genShelfSub');
-  if (subEl) subEl.textContent = type === 'themes' ? 'All themes in your shelf.' : 'All genres in your shelf.';
-
+  const entries = gpEntries(q);
+  gpEntriesCache = entries;
   if (!entries.length) {
-    const pieStickyEmpty = document.getElementById('genPieSticky');
-    if (pieStickyEmpty) pieStickyEmpty.innerHTML = '';
-    scroll.innerHTML = `<div class="al-empty">📭<br>${q ? `No ${type} match your search.` : `No ${type} yet.`}</div>`;
-    gpOpenPanelIndex = null;
+    scroll.innerHTML = `<div class="al-empty">📭<br>${q ? 'No genres match your search.' : 'No genres yet.'}</div>`;
+    gpRefreshFastScroll();
     return;
   }
+  scroll.innerHTML = '<div class="gp-cards">' + entries.map(([name, arr], i) => {
+    const subMap = window._gpSubs.get(name);
+    const subs = subMap ? [...subMap.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 2).map(s => escapeHtml(s[0])) : [];
+    const covers = arr.slice().sort((a, b) => !!b.cover_url - !!a.cover_url).slice(0, 3)
+      .map(b => `<div class="gp-cv">${coverHtml(b, 10)}</div>`).join('');
+    const meta = `${arr.length} ${arr.length === 1 ? 'book' : 'books'}` + (subs.length ? ' · ' + subs.join(', ') : '');
+    return `<div class="gp-card${name === 'Untagged' ? ' gp-card--none' : ''}" data-name="${escapeAttr(name)}" role="button" tabindex="0" style="animation:loFadeIn 0.28s ease ${Math.min(i, 10) * 0.03}s both">
+      <div class="gp-card-main"><div class="gp-card-name">${escapeHtml(name)}</div><div class="gp-card-meta">${meta}</div></div>
+      <div class="gp-cvs">${covers}</div>
+      <svg class="gp-card-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('') + '</div>';
+  scroll.querySelectorAll('.gp-card').forEach(c => {
+    c.addEventListener('click', () => window.openGenreDetail(c.dataset.name, 'main'));
+    c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.click(); } });
+  });
+  gpRefreshFastScroll();
+}
 
-  // Pie draws the top GP_PIE_MAX only; everything smaller merges into one grey "more" slice.
-  const slices = entries.slice(0, GP_PIE_MAX).map(([name, arr], i) => ({ name, c: arr.length, idx: String(i) }));
-  const moreCount = entries.slice(GP_PIE_MAX).reduce((s, [, arr]) => s + arr.length, 0);
-  if (moreCount) slices.push({ name: '', c: moreCount, idx: 'more', more: true });
-  const total = slices.reduce((s, x) => s + x.c, 0);
-  const cx = 100, cy = 100, rOuter = 92, rInner = 38;
-  const MIN_DEG = 5; // guarantees every slice is visible and tappable
-  const raw = slices.map(x => (x.c / total) * 360);
-  const floored = raw.map(d => Math.max(d, MIN_DEG));
-  const flooredTotal = floored.reduce((s, d) => s + d, 0);
-  const degrees = floored.map(d => (d / flooredTotal) * 360);
-  const gradOf = x => x.more ? { from: 'hsl(30 8% 52%)', to: 'hsl(30 8% 28%)' } : gpHashColorGradient(x.name);
-  const gradDef = (x, g) => `<radialGradient id="gpGrad-${x.idx}" cx="50%" cy="50%" r="65%"><stop offset="0%" stop-color="${g.from}"/><stop offset="100%" stop-color="${g.to}"/></radialGradient>`;
-
-  let pathsHtml, gradientDefs;
-  if (slices.length === 1) {
-    gradientDefs = gradDef(slices[0], gradOf(slices[0]));
-    pathsHtml = `<path d="${gpArcPath(cx, cy, rOuter, 0, 359.99)}" fill="url(#gpGrad-${slices[0].idx})" data-idx="${slices[0].idx}" class="gp-slice"/>`;
-  } else {
-    let cum = 0;
-    const grads = [];
-    pathsHtml = slices.map((x, i) => {
-      const start = cum;
-      cum += degrees[i];
-      grads.push(gradDef(x, gradOf(x)));
-      return `<path d="${gpArcPath(cx, cy, rOuter, start, cum)}" fill="url(#gpGrad-${x.idx})" data-idx="${x.idx}" class="gp-slice"/>`;
-    }).join('');
-    gradientDefs = grads.join('');
+// ── MIX ──
+function gpRenderMix() {
+  const scroll = document.getElementById('genScroll');
+  if (!scroll) return;
+  const entries = gpEntries('');
+  gpEntriesCache = entries;
+  if (!entries.length) {
+    scroll.innerHTML = '<div class="al-empty">📭<br>No genres yet.</div>';
+    gpRefreshFastScroll();
+    return;
   }
-  const centerLabel = `<g class="gp-pie-center-label" text-anchor="middle">
-      <text x="${cx}" y="${cy - 3}" font-size="22" class="gp-pie-center-count">${entries.length}</text>
-      <text x="${cx}" y="${cy + 15}" font-size="9" class="gp-pie-center-sub">${type === 'themes' ? 'themes' : 'genres'}</text>
-    </g>`;
+  const named = entries.filter(e => e[0] !== 'Untagged');
+  const untagged = entries.find(e => e[0] === 'Untagged');
+  const rest = named.slice(GP_MIX_COLORS.length);
+  const slices = named.slice(0, GP_MIX_COLORS.length).map(([name, arr], i) => ({ key: name, label: name, n: arr.length, color: GP_MIX_COLORS[i] }));
+  if (rest.length) slices.push({ key: '__more', label: `More (${rest.length} genres)`, n: rest.reduce((s, [, a]) => s + a.length, 0), color: '#888780' });
+  if (untagged) slices.push({ key: 'Untagged', label: 'Untagged', n: untagged[1].length, color: '#5F5E5A' });
 
-  const legendHtml = entries.map(([name, arr], i) => `
-    <div class="gp-legend-item">
-      <div class="gp-legend-row" data-idx="${i}">
-        <span class="gp-dot" style="background:${gpHashColor(name)}"></span>
-        <span class="gp-legend-name">${escapeHtml(name)}</span>
-        <span class="gp-legend-count">${arr.length}</span>
-      </div>
-      <div class="gp-panel" id="gp-panel-${i}">
-        <div class="gp-panel-scroll" id="gp-panel-scroll-${i}"></div>
-      </div>
+  const total = slices.reduce((s, x) => s + x.n, 0);
+  const maxN = Math.max(...slices.map(x => x.n));
+  const R = 52, C = 2 * Math.PI * R;
+  let off = 0;
+  const arcs = slices.map(x => {
+    const len = x.n / total * C, dash = Math.max(len - 2, 1);
+    const el = `<circle class="gp-arc" data-key="${escapeAttr(x.key)}" cx="75" cy="75" r="${R}" fill="none" stroke="${x.color}" stroke-width="22" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 75 75)"><title>${escapeHtml(x.label)} · ${x.n}</title></circle>`;
+    off += len;
+    return el;
+  }).join('');
+  const rows = slices.map(x => `<div class="gp-mix-row" data-key="${escapeAttr(x.key)}" role="button" tabindex="0">
+      <span class="gp-dot" style="background:${x.color}"></span>
+      <span class="gp-mix-name">${escapeHtml(x.label)}</span>
+      <span class="gp-mix-bar"><b style="width:${Math.round(x.n / maxN * 100)}%;background:${x.color}"></b></span>
+      <span class="gp-mix-pct">${x.n} · ${Math.round(x.n / total * 100)}%</span>
     </div>`).join('');
 
-  const pieSticky = document.getElementById('genPieSticky');
-  if (pieSticky) pieSticky.innerHTML = `<div class="gp-pie-wrap"><svg viewBox="0 0 200 200" width="196" height="196"><defs>${gradientDefs}</defs>${pathsHtml}${centerLabel}</svg></div>`;
-  scroll.innerHTML = `<div class="gp-legend">${legendHtml}</div>`;
+  scroll.innerHTML = `<div class="gp-mix-wrap">
+    <div class="gp-donut"><svg viewBox="0 0 150 150" role="img" aria-label="Genre share">${arcs}
+      <g class="gp-pie-center-label" text-anchor="middle">
+        <text x="75" y="76" font-size="22" class="gp-pie-center-count">${total}</text>
+        <text x="75" y="92" font-size="11" class="gp-pie-center-sub">books</text>
+      </g></svg></div>
+    <div class="gp-mix-rows">${rows}</div>
+  </div>`;
 
-  gpEntriesCache = entries;
+  const open = key => { if (key === '__more') gpSetView('browse'); else window.openGenreDetail(key, 'main'); };
+  scroll.querySelectorAll('.gp-arc, .gp-mix-row').forEach(el => {
+    el.addEventListener('click', () => open(el.dataset.key));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(el.dataset.key); } });
+  });
+  gpRefreshFastScroll();
+}
 
-  document.querySelectorAll('#genPieSticky .gp-slice, #genScroll .gp-legend-row').forEach(el => {
-    el.addEventListener('click', () => {
-      if (el.dataset.idx === 'more') {
-        const row = document.querySelector(`#genScroll .gp-legend-row[data-idx="${GP_PIE_MAX}"]`);
-        if (row) row.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        return;
-      }
-      gpTogglePanel(+el.dataset.idx);
+// ── DETAIL: sub-genre filter chips ──
+function gpRenderDetailChips(grid, all) {
+  let row = document.getElementById('gpDetailChips');
+  const counts = new Map();
+  if (_gpDetailType === 'main') all.forEach(b => getBookGenres(b).slice(1).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
+  const subs = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 12);
+  if (!subs.length) { if (row) row.remove(); return; }
+  if (!row) {
+    row = document.createElement('div');
+    row.id = 'gpDetailChips';
+    row.className = 'gp-detail-chips';
+    grid.parentNode.insertBefore(row, grid);
+    row.addEventListener('click', e => {
+      const c = e.target.closest('.ld-chip');
+      if (!c) return;
+      _gpDetailSub = c.dataset.sub || null;
+      window.renderGenreDetailGrid();
     });
-  });
-
-  if (gpOpenPanelIndex !== null && entries[gpOpenPanelIndex]) {
-    gpRenderPanelContent(gpOpenPanelIndex);
-    const panel = document.getElementById('gp-panel-' + gpOpenPanelIndex);
-    if (panel) panel.classList.add('open');
-  } else {
-    gpOpenPanelIndex = null;
   }
-  gpRefreshFastScroll();
+  row.innerHTML = `<button class="ld-chip${_gpDetailSub ? '' : ' active'}" data-sub="">All <span style="opacity:0.65">${all.length}</span></button>`
+    + subs.map(([s, n]) => `<button class="ld-chip${_gpDetailSub === s ? ' active' : ''}" data-sub="${escapeAttr(s)}">${escapeHtml(s)} <span style="opacity:0.65">${n}</span></button>`).join('');
 }
-
-function gpTogglePanel(idx) {
-  const prev = gpOpenPanelIndex;
-  if (prev !== null) {
-    const prevPanel = document.getElementById('gp-panel-' + prev);
-    if (prevPanel) prevPanel.classList.remove('open');
-  }
-  if (prev === idx) { gpOpenPanelIndex = null; return; }
-  gpOpenPanelIndex = idx;
-  gpRenderPanelContent(idx);
-  const panel = document.getElementById('gp-panel-' + idx);
-  if (panel) panel.classList.add('open');
-}
-
-function gpRenderPanelContent(idx) {
-  const entry = gpEntriesCache[idx];
-  if (!entry) return;
-  const scrollEl = document.getElementById('gp-panel-scroll-' + idx);
-  if (!scrollEl) return;
-  const list = entry[1].slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-
-  // chips row: "all N books" plus this main genre's sub-genres (genres tab only)
-  const panel = scrollEl.parentElement;
-  panel.querySelector('.gp-subs')?.remove();
-  const subMap = gpActiveTab === 'genres' ? window._gpSubs.get(entry[0]) : null;
-  const subs = subMap ? [...subMap.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 8) : [];
-  const chipHtml = `<button class="gp-sub-chip gp-sub-chip--all" data-open="all">all ${list.length} ›</button>`
-    + subs.map(([s, n]) => `<button class="gp-sub-chip" data-sub="${escapeAttr(s)}">${escapeHtml(s)} <span>${n}</span></button>`).join('');
-  panel.insertAdjacentHTML('afterbegin', `<div class="gp-subs">${chipHtml}</div>`);
-  panel.querySelectorAll('.gp-sub-chip').forEach(ch => ch.addEventListener('click', e => {
-    e.stopPropagation();
-    if (ch.dataset.open) window.openGenreDetail(entry[0], gpActiveTab === 'themes' ? 'themes' : 'main');
-    else window.openGenreDetail(ch.dataset.sub, 'genres');
-  }));
-
-  scrollEl.innerHTML = list.map(b => `
-    <div class="gp-panel-cover" data-id="${b.id}">${coverHtml(b, 10)}</div>`).join('');
-  scrollEl.querySelectorAll('.gp-panel-cover').forEach(el => {
-    el.addEventListener('click', () => openDetailModal(el.dataset.id));
-  });
-}
-
-// ── LIST VIEW ──
-function gpRenderList(type) {
-  const scroll = document.getElementById('genScroll');
-  if (!scroll) return;
-  const pieSticky = document.getElementById('genPieSticky');
-  if (pieSticky) pieSticky.innerHTML = '';
-  const q = (document.getElementById('genSearchInput')?.value || '').toLowerCase().trim();
-  const map = gpBuildMap(type);
-  let entries = gpFilterEntries(Array.from(map.entries()), q, type);
-  if (gpSort === 'az') entries.sort((a, b) => a[0].localeCompare(b[0]));
-  else entries.sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
-
-  const subEl = document.getElementById('genShelfSub');
-  if (subEl) subEl.textContent = type === 'themes' ? 'All themes in your shelf.' : 'All genres in your shelf.';
-
-  gpEntriesCache = entries;
-
-  if (!entries.length) {
-    scroll.innerHTML = `<div class="al-empty">📭<br>${q ? `No ${type} match your search.` : `No ${type} yet.`}</div>`;
-    return;
-  }
-
-  scroll.innerHTML = entries.map(([name, arr], i) => {
-    const bookWord = arr.length === 1 ? 'book' : 'books';
-    return `<div class="al-author-row" data-name="${escapeAttr(name)}" style="animation-delay:${Math.min(i, 14) * 0.028}s">
-      <div class="al-author-avatar" style="font-size:16px">📚</div>
-      <div class="al-author-info">
-        <div class="al-author-name">${escapeHtml(name)}</div>
-        <div class="al-author-count">${arr.length} ${bookWord}</div>
-      </div>
-      <svg class="al-author-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>`;
-  }).join('');
-
-  scroll.querySelectorAll('.al-author-row').forEach(row => {
-    row.addEventListener('click', () => window.openGenreDetail(row.dataset.name, type === 'themes' ? 'themes' : 'main'));
-  });
-  gpRefreshFastScroll();
-}
-
-// ── SORT TOGGLE OVERRIDE ──
-window.toggleGenSort = function toggleGenSort() {
-  gpSort = gpSort === 'az' ? 'count' : 'az';
-  const label = document.getElementById('genSortLabel');
-  if (label) label.textContent = gpSort === 'az' ? 'Sort A–Z' : 'Sort by count';
-  gpRenderCurrent();
-};
 
 // ── OPEN OVERLAY OVERRIDE ──
 window.openGenresOverlay = function openGenresOverlay() {
   gpEnsureMarkup();
-  gpActiveTab = 'genres';
-  gpView = 'pie';
-  gpOpenPanelIndex = null;
+  const _si = document.getElementById('genSearchInput');
+  if (_si) _si.value = '';
   gpRenderCurrent();
   navPush(document.getElementById('profileModal'), document.getElementById('genresListOverlay'));
 };
@@ -475,17 +425,24 @@ window.openGenresOverlay = function openGenresOverlay() {
 const _gpOrigOpenGenreDetail = window.openGenreDetail;
 window.openGenreDetail = function openGenreDetail(name, type) {
   _gpDetailType = type || 'genres';
+  _gpDetailSub = null;
   _gpOrigOpenGenreDetail(name);
 };
 
 const _gpOrigRenderGenreDetailGrid = window.renderGenreDetailGrid;
 window.renderGenreDetailGrid = function renderGenreDetailGrid() {
-  if (_gpDetailType !== 'themes' && _gpDetailType !== 'main') { _gpOrigRenderGenreDetailGrid(); return; }
+  if (_gpDetailType !== 'themes' && _gpDetailType !== 'main') {
+    document.getElementById('gpDetailChips')?.remove();
+    _gpOrigRenderGenreDetailGrid();
+    return;
+  }
 
   const grid = document.getElementById('genreDetailGrid');
   const countEl = document.getElementById('genreDetailCount');
   const map = _gpDetailType === 'main' ? buildMainGenreMap() : buildThemeMap();
-  const list = (map.get(genreDetailName) || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const all = (map.get(genreDetailName) || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  gpRenderDetailChips(grid, all);
+  const list = _gpDetailSub ? all.filter(b => getBookGenres(b).includes(_gpDetailSub)) : all;
   if (countEl) countEl.textContent = list.length === 1 ? '1 book' : `${list.length} books`;
   if (!list.length) {
     grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>No books here.</p></div>`;
