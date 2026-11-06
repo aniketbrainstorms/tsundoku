@@ -82,28 +82,15 @@ function buildThemeMap() {
 }
 // Rolls raw tags up to main genres. Returns Map(main -> books[]); sub-tags land in window._gpSubs.
 function buildMainGenreMap() {
-  const tax = window.GENRE_TAXONOMY || [];
-  const norm = s => String(s || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
-  const subParent = new Map();
-  tax.forEach(g => (g.subgenres || []).forEach(s => subParent.set(norm(s), g.name)));
-  const mainOf = t => (window.gtResolve && window.gtResolve(t)) || subParent.get(norm(t)) || null;
-
   const map = new Map();
   const subs = new Map();
   const entry = m => { if (!map.has(m)) { map.set(m, []); subs.set(m, new Map()); } return m; };
-
   books.filter(b => !isHiddenFromShelf(b)).forEach(b => {
     const tags = getBookGenres(b);
-    const resolved = tags.map(mainOf);
-    const mains = [...new Set(resolved.filter(Boolean))];
-    if (!mains.length) mains.push('Other');
-    mains.forEach(m => map.get(entry(m)).push(b));
-    tags.forEach((t, i) => {
-      const m = resolved[i] || mains[0];
-      if (window.gtResolve && window.gtResolve(t) === m) return;   // the main genre itself
-      const sm = subs.get(entry(m));
-      sm.set(t, (sm.get(t) || 0) + 1);
-    });
+    const first = tags[0] || 'Untagged';          // the pie reads only the first tag
+    map.get(entry(first)).push(b);
+    const sm = subs.get(first);
+    tags.slice(1).forEach(t => sm.set(t, (sm.get(t) || 0) + 1));   // 2nd/3rd tags become sub chips
   });
   window._gpSubs = subs;
   return map;
@@ -187,10 +174,7 @@ function gpEnsureMarkup() {
         </button>
       </div>
     </div>
-    <div class="gp-tabs">
-      <button class="gp-tab active" data-tab="genres" onclick="gpSetTab('genres')">Genres</button>
-      <button class="gp-tab" data-tab="themes" onclick="gpSetTab('themes')">Themes</button>
-    </div>
+
     <p class="al-shelf-sub" id="genShelfSub"></p>
     <div style="padding:0 16px 10px;">
       <div class="al-search-wrap">
