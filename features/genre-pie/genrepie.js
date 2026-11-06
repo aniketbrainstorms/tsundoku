@@ -9,7 +9,9 @@ let gpView = 'pie';           // 'pie' | 'list'
 let gpSort = 'az';            // 'az' | 'count' (list view only)
 let gpOpenPanelIndex = null;
 let gpEntriesCache = [];
-let _gpDetailType = 'genres';
+let _gpDetailType = 'genres';   // 'genres' (raw tag) | 'main' (rolled-up main genre) | 'themes'
+const GP_PIE_MAX = 12;          // slices drawn in the pie; the rest merge into one "more" slice
+window._gpSubs = new Map();     // main genre -> Map(sub tag -> book count)
 
 // Palette generation is done per-tag via gpHashColor() below (wider warm HSL spread).
 
@@ -47,7 +49,17 @@ const GP_ICON_LIST = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none
     .gp-legend-name { flex:1; font-size:14px; font-weight:600; color:var(--text); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
     .gp-legend-count { font-size:12px; color:var(--text-muted); font-weight:500; }
     .gp-panel { max-height:0; overflow:hidden; transition:max-height 0.32s cubic-bezier(0.32,0.72,0,1); }
-    .gp-panel.open { max-height:132px; }
+    .gp-panel.open { max-height:230px; }
+    .gp-subs { display:flex; flex-wrap:wrap; gap:6px; padding:2px 4px 8px 24px; }
+    .gp-sub-chip { font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; padding:5px 11px; border-radius:100px; border:1px solid var(--border); background:var(--surface2); color:var(--text-dim); cursor:pointer; transition:border-color 0.15s, color 0.15s; }
+    .gp-sub-chip span { opacity:0.55; margin-left:2px; }
+    .gp-sub-chip:active { opacity:0.7; }
+    .gp-sub-chip--all { border-color:var(--accent); color:var(--accent); background:transparent; }
+    @media (min-width:1024px) {
+      #genresListOverlay .gp-tabs, #genresListOverlay .al-shelf-sub, #genresListOverlay .gp-pie-sticky, #genresListOverlay #genScroll, #genresListOverlay .al-search-wrap { max-width:760px; margin-left:auto; margin-right:auto; width:100%; box-sizing:border-box; }
+      .gp-sub-chip:hover { border-color:var(--accent); color:var(--text); }
+      .gp-legend-row:hover { background:rgba(255,255,255,0.03); }
+    }
     .gp-panel-scroll { display:flex; gap:8px; padding:4px 4px 14px 24px; overflow-x:auto; scrollbar-width:none; }
     .gp-panel-scroll::-webkit-scrollbar { display:none; }
     .gp-panel-cover { width:54px; aspect-ratio:2/3; border-radius:6px; overflow:hidden; flex-shrink:0; background:var(--surface2); cursor:pointer; }
@@ -68,7 +80,46 @@ function buildThemeMap() {
   });
   return map;
 }
-function gpBuildMap(type) { return type === 'themes' ? buildThemeMap() : buildGenreMap(); }
+// Rolls raw tags up to main genres. Returns Map(main -> books[]); sub-tags land in window._gpSubs.
+function buildMainGenreMap() {
+  const tax = window.GENRE_TAXONOMY || [];
+  const norm = s => String(s || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+  const subParent = new Map();
+  tax.forEach(g => (g.subgenres || []).forEach(s => subParent.set(norm(s), g.name)));
+  const mainOf = t => (window.gtResolve && window.gtResolve(t)) || subParent.get(norm(t)) || null;
+
+  const map = new Map();
+  const subs = new Map();
+  const entry = m => { if (!map.has(m)) { map.set(m, []); subs.set(m, new Map()); } return m; };
+
+  books.filter(b => !isHiddenFromShelf(b)).forEach(b => {
+    const tags = getBookGenres(b);
+    const resolved = tags.map(mainOf);
+    const mains = [...new Set(resolved.filter(Boolean))];
+    if (!mains.length) mains.push('Other');
+    mains.forEach(m => map.get(entry(m)).push(b));
+    tags.forEach((t, i) => {
+      const m = resolved[i] || mains[0];
+      if (window.gtResolve && window.gtResolve(t) === m) return;   // the main genre itself
+      const sm = subs.get(entry(m));
+      sm.set(t, (sm.get(t) || 0) + 1);
+    });
+  });
+  window._gpSubs = subs;
+  return map;
+}
+function gpBuildMap(type) { return type === 'themes' ? buildThemeMap() : buildMainGenreMap(); }
+
+// search matches a main genre's name or any of its sub-genres
+function gpFilterEntries(entries, q, type) {
+  if (!q) return entries;
+  return entries.filter(([name]) => {
+    if (name.toLowerCase().includes(q)) return true;
+    if (type === 'themes') return false;
+    const sm = window._gpSubs.get(name);
+    return !!sm && [...sm.keys()].some(s => s.toLowerCase().includes(q));
+  });
+}
 
 function gpHashColor(name) {
   let h = 0;
@@ -250,8 +301,7 @@ function gpRenderPie(type) {
   if (!scroll) return;
   const q = (document.getElementById('genSearchInput')?.value || '').toLowerCase().trim();
   const map = gpBuildMap(type);
-  let entries = Array.from(map.entries());
-  if (q) entries = entries.filter(([name]) => name.toLowerCase().includes(q));
+  let entries = gpFilterEntries(Array.from(map.entries()), q, type);
   entries.sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
 
   const subEl = document.getElementById('genShelfSub');
@@ -265,29 +315,32 @@ function gpRenderPie(type) {
     return;
   }
 
-  const total = entries.reduce((s, [, arr]) => s + arr.length, 0);
+  // Pie draws the top GP_PIE_MAX only; everything smaller merges into one grey "more" slice.
+  const slices = entries.slice(0, GP_PIE_MAX).map(([name, arr], i) => ({ name, c: arr.length, idx: String(i) }));
+  const moreCount = entries.slice(GP_PIE_MAX).reduce((s, [, arr]) => s + arr.length, 0);
+  if (moreCount) slices.push({ name: '', c: moreCount, idx: 'more', more: true });
+  const total = slices.reduce((s, x) => s + x.c, 0);
   const cx = 100, cy = 100, rOuter = 92, rInner = 38;
-  const MIN_DEG = 5; // guarantees every slice, even a count-of-1 tag, is visible and tappable
-  const raw = entries.map(([, arr]) => (arr.length / total) * 360);
+  const MIN_DEG = 5; // guarantees every slice is visible and tappable
+  const raw = slices.map(x => (x.c / total) * 360);
   const floored = raw.map(d => Math.max(d, MIN_DEG));
   const flooredTotal = floored.reduce((s, d) => s + d, 0);
   const degrees = floored.map(d => (d / flooredTotal) * 360);
+  const gradOf = x => x.more ? { from: 'hsl(30 8% 52%)', to: 'hsl(30 8% 28%)' } : gpHashColorGradient(x.name);
+  const gradDef = (x, g) => `<radialGradient id="gpGrad-${x.idx}" cx="50%" cy="50%" r="65%"><stop offset="0%" stop-color="${g.from}"/><stop offset="100%" stop-color="${g.to}"/></radialGradient>`;
 
   let pathsHtml, gradientDefs;
-  if (entries.length === 1) {
-    const g0 = gpHashColorGradient(entries[0][0]);
-    gradientDefs = `<radialGradient id="gpGrad-0" cx="50%" cy="50%" r="65%"><stop offset="0%" stop-color="${g0.from}"/><stop offset="100%" stop-color="${g0.to}"/></radialGradient>`;
-    pathsHtml = `<path d="${gpArcPath(cx, cy, rOuter, 0, 359.99)}" fill="url(#gpGrad-0)" data-idx="0" class="gp-slice"/>`;
+  if (slices.length === 1) {
+    gradientDefs = gradDef(slices[0], gradOf(slices[0]));
+    pathsHtml = `<path d="${gpArcPath(cx, cy, rOuter, 0, 359.99)}" fill="url(#gpGrad-${slices[0].idx})" data-idx="${slices[0].idx}" class="gp-slice"/>`;
   } else {
     let cum = 0;
     const grads = [];
-    pathsHtml = entries.map(([name], i) => {
+    pathsHtml = slices.map((x, i) => {
       const start = cum;
       cum += degrees[i];
-      const end = cum;
-      const g = gpHashColorGradient(name);
-      grads.push(`<radialGradient id="gpGrad-${i}" cx="50%" cy="50%" r="65%"><stop offset="0%" stop-color="${g.from}"/><stop offset="100%" stop-color="${g.to}"/></radialGradient>`);
-      return `<path d="${gpArcPath(cx, cy, rOuter, start, end)}" fill="url(#gpGrad-${i})" data-idx="${i}" class="gp-slice"/>`;
+      grads.push(gradDef(x, gradOf(x)));
+      return `<path d="${gpArcPath(cx, cy, rOuter, start, cum)}" fill="url(#gpGrad-${x.idx})" data-idx="${x.idx}" class="gp-slice"/>`;
     }).join('');
     gradientDefs = grads.join('');
   }
@@ -315,7 +368,14 @@ function gpRenderPie(type) {
   gpEntriesCache = entries;
 
   document.querySelectorAll('#genPieSticky .gp-slice, #genScroll .gp-legend-row').forEach(el => {
-    el.addEventListener('click', () => gpTogglePanel(+el.dataset.idx));
+    el.addEventListener('click', () => {
+      if (el.dataset.idx === 'more') {
+        const row = document.querySelector(`#genScroll .gp-legend-row[data-idx="${GP_PIE_MAX}"]`);
+        if (row) row.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        return;
+      }
+      gpTogglePanel(+el.dataset.idx);
+    });
   });
 
   if (gpOpenPanelIndex !== null && entries[gpOpenPanelIndex]) {
@@ -347,6 +407,21 @@ function gpRenderPanelContent(idx) {
   const scrollEl = document.getElementById('gp-panel-scroll-' + idx);
   if (!scrollEl) return;
   const list = entry[1].slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+
+  // chips row: "all N books" plus this main genre's sub-genres (genres tab only)
+  const panel = scrollEl.parentElement;
+  panel.querySelector('.gp-subs')?.remove();
+  const subMap = gpActiveTab === 'genres' ? window._gpSubs.get(entry[0]) : null;
+  const subs = subMap ? [...subMap.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 8) : [];
+  const chipHtml = `<button class="gp-sub-chip gp-sub-chip--all" data-open="all">all ${list.length} ›</button>`
+    + subs.map(([s, n]) => `<button class="gp-sub-chip" data-sub="${escapeAttr(s)}">${escapeHtml(s)} <span>${n}</span></button>`).join('');
+  panel.insertAdjacentHTML('afterbegin', `<div class="gp-subs">${chipHtml}</div>`);
+  panel.querySelectorAll('.gp-sub-chip').forEach(ch => ch.addEventListener('click', e => {
+    e.stopPropagation();
+    if (ch.dataset.open) window.openGenreDetail(entry[0], gpActiveTab === 'themes' ? 'themes' : 'main');
+    else window.openGenreDetail(ch.dataset.sub, 'genres');
+  }));
+
   scrollEl.innerHTML = list.map(b => `
     <div class="gp-panel-cover" data-id="${b.id}">${coverHtml(b, 10)}</div>`).join('');
   scrollEl.querySelectorAll('.gp-panel-cover').forEach(el => {
@@ -362,8 +437,7 @@ function gpRenderList(type) {
   if (pieSticky) pieSticky.innerHTML = '';
   const q = (document.getElementById('genSearchInput')?.value || '').toLowerCase().trim();
   const map = gpBuildMap(type);
-  let entries = Array.from(map.entries());
-  if (q) entries = entries.filter(([name]) => name.toLowerCase().includes(q));
+  let entries = gpFilterEntries(Array.from(map.entries()), q, type);
   if (gpSort === 'az') entries.sort((a, b) => a[0].localeCompare(b[0]));
   else entries.sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
 
@@ -390,7 +464,7 @@ function gpRenderList(type) {
   }).join('');
 
   scroll.querySelectorAll('.al-author-row').forEach(row => {
-    row.addEventListener('click', () => window.openGenreDetail(row.dataset.name, type));
+    row.addEventListener('click', () => window.openGenreDetail(row.dataset.name, type === 'themes' ? 'themes' : 'main'));
   });
   gpRefreshFastScroll();
 }
@@ -422,15 +496,15 @@ window.openGenreDetail = function openGenreDetail(name, type) {
 
 const _gpOrigRenderGenreDetailGrid = window.renderGenreDetailGrid;
 window.renderGenreDetailGrid = function renderGenreDetailGrid() {
-  if (_gpDetailType !== 'themes') { _gpOrigRenderGenreDetailGrid(); return; }
+  if (_gpDetailType !== 'themes' && _gpDetailType !== 'main') { _gpOrigRenderGenreDetailGrid(); return; }
 
   const grid = document.getElementById('genreDetailGrid');
   const countEl = document.getElementById('genreDetailCount');
-  const map = buildThemeMap();
+  const map = _gpDetailType === 'main' ? buildMainGenreMap() : buildThemeMap();
   const list = (map.get(genreDetailName) || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   if (countEl) countEl.textContent = list.length === 1 ? '1 book' : `${list.length} books`;
   if (!list.length) {
-    grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>No books with this theme.</p></div>`;
+    grid.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>No books here.</p></div>`;
     return;
   }
   grid.classList.remove('reading-mode');
