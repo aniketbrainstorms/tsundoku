@@ -118,16 +118,48 @@ function buildThemeMap() {
   return map;
 }
 // Rolls raw tags up to main genres. Returns Map(main -> books[]); sub-tags land in window._gpSubs.
+// ── map any stored tag to one of the 43 main genres in genres.js ──
+const GP_NORM = s => String(s || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+const GP_LEGACY = {   // older tags that aren't in genres.js; edit freely
+  'magical realism': 'Literary Fiction', 'surrealist fiction': 'Literary Fiction', 'epistolary': 'Literary Fiction', 'contemporary literature': 'Literary Fiction',
+  'literary criticism': 'Essays', 'cultural studies': 'Essays',
+  'epic adventure': 'Adventure', 'political satire': 'Humor', 'new weird': 'Fantasy', 'psychological sci fi': 'Science Fiction'
+};
+const GP_HEAD = {     // last matching word wins: "Epic Poetry" -> Poetry
+  fantasy: 'Fantasy', poetry: 'Poetry', romance: 'Romance', thriller: 'Thriller', philosophy: 'Philosophy', horror: 'Horror', mystery: 'Mystery',
+  mythology: 'Mythology & Folklore', folklore: 'Mythology & Folklore', biography: 'Biography', memoir: 'Memoir', psychology: 'Psychology',
+  economics: 'Economics', politics: 'Politics', business: 'Business', marketing: 'Business', stories: 'Short Stories', history: 'History', crime: 'Crime', essays: 'Essays'
+};
+let _gpSubIndex = null;
+function gpMainOf(tag) {
+  const k = GP_NORM(tag);
+  if (!k) return 'Other';
+  const direct = window.gtResolve && window.gtResolve(tag);          // main genre or alias
+  if (direct) return direct;
+  if (!_gpSubIndex) {                                                 // built lazily: genres.js loads after this file
+    _gpSubIndex = new Map();
+    (window.GENRE_TAXONOMY || []).forEach(g => (g.subgenres || []).forEach(s => _gpSubIndex.set(GP_NORM(s), g.name)));
+  }
+  if (_gpSubIndex.has(k)) return _gpSubIndex.get(k);                  // a listed sub-genre
+  if (GP_LEGACY[k]) return GP_LEGACY[k];
+  const words = k.split(' ');
+  for (let i = words.length - 1; i >= 0; i--) if (GP_HEAD[words[i]]) return GP_HEAD[words[i]];
+  return 'Other';                                                     // the taxonomy's own "Other"
+}
+
 function buildMainGenreMap() {
   const map = new Map();
   const subs = new Map();
   const entry = m => { if (!map.has(m)) { map.set(m, []); subs.set(m, new Map()); } return m; };
   books.filter(b => !isHiddenFromShelf(b)).forEach(b => {
     const tags = getBookGenres(b);
-    const first = tags[0] || 'Untagged';          // the pie reads only the first tag
-    map.get(entry(first)).push(b);
-    const sm = subs.get(first);
-    tags.slice(1).forEach(t => sm.set(t, (sm.get(t) || 0) + 1));   // 2nd/3rd tags become sub chips
+    const main = tags.length ? gpMainOf(tags[0]) : 'Untagged';     // only the first tag decides the genre
+    map.get(entry(main)).push(b);
+    const sm = subs.get(main);
+    tags.forEach(t => {                                            // everything except the main genre itself becomes a sub chip
+      if (window.gtResolve && window.gtResolve(t) === main) return;
+      sm.set(t, (sm.get(t) || 0) + 1);
+    });
   });
   window._gpSubs = subs;
   return map;
