@@ -128,7 +128,7 @@ const GP_LEGACY = {   // older tags that aren't in genres.js; edit freely
 const GP_HEAD = {     // last matching word wins: "Epic Poetry" -> Poetry
   fantasy: 'Fantasy', poetry: 'Poetry', romance: 'Romance', thriller: 'Thriller', philosophy: 'Philosophy', horror: 'Horror', mystery: 'Mystery',
   mythology: 'Mythology & Folklore', folklore: 'Mythology & Folklore', biography: 'Biography', memoir: 'Memoir', psychology: 'Psychology',
-  economics: 'Economics', politics: 'Politics', business: 'Business', marketing: 'Business', stories: 'Short Stories', history: 'History', crime: 'Crime', essays: 'Essays'
+  dystopia: 'Dystopian Fiction', dystopian: 'Dystopian Fiction', economics: 'Economics', politics: 'Politics', business: 'Business', marketing: 'Business', stories: 'Short Stories', history: 'History', crime: 'Crime', essays: 'Essays'
 };
 let _gpSubIndex = null;
 function gpMainOf(tag) {
