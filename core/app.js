@@ -4194,7 +4194,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`
         },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ prompt, generationConfig: AI_CONTENT_GEN_CONFIG })
       }
     );
     if (!res.ok) {
@@ -6595,7 +6595,9 @@ window.addEventListener('orientationchange', () => {
 // ── BACKFILL TOOLS — genre/theme + author bio, in-app ──────────────────────
 ;(function () {
   const GENRE_PROGRESS_KEY = 'tsundoku_backfill_progress_v1';
-  const AICONTENT_PROGRESS_KEY = 'tsundoku_ai_content_backfill_progress_v2';
+const AI_CONTENT_GEN_CONFIG = { temperature: 0, responseMimeType: 'application/json' };
+
+function buildAiContentPrompt(title, author, rawDescription, needGenreThemes) {
   const AUTHOR_PROGRESS_KEY = 'tsundoku_author_bio_backfill_progress_v1';
   const DELAY_MS = 5500;
   const RATE_LIMIT_BACKOFF_MS = 25000;
@@ -6611,12 +6613,12 @@ window.addEventListener('orientationchange', () => {
     return data?.session?.access_token || SUPABASE_ANON_KEY;
   }
 
-  async function bfCallGemini(prompt) {
+  async function bfCallGemini(prompt, generationConfig) {
     const token = await bfToken();
     return fetch('https://rrnryszgvctxainqyuyr.supabase.co/functions/v1/gemini-proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify(generationConfig ? { prompt, generationConfig } : { prompt })
     });
   }
 
@@ -6677,7 +6679,7 @@ window.addEventListener('orientationchange', () => {
       while (attempt < 3) {
         attempt++;
         let res;
-        try { res = await bfCallGemini(prompt); }
+        try { res = await bfCallGemini(prompt, AI_CONTENT_GEN_CONFIG); }
         catch { break; }
         if (res.status === 429) { await bfSleep(RATE_LIMIT_BACKOFF_MS); continue; }
         if (!res.ok) break;
