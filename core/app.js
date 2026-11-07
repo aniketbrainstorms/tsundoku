@@ -6594,9 +6594,7 @@ window.addEventListener('orientationchange', () => {
 // ── BACKFILL TOOLS — genre/theme + author bio, in-app ──────────────────────
 ;(function () {
   const GENRE_PROGRESS_KEY = 'tsundoku_backfill_progress_v1';
-const AI_CONTENT_GEN_CONFIG = { temperature: 0, responseMimeType: 'application/json' };
-
-function buildAiContentPrompt(title, author, rawDescription, needGenreThemes) {
+  const AI_CONTENT_GEN_CONFIG = { temperature: 0, responseMimeType: 'application/json' };
   const AUTHOR_PROGRESS_KEY = 'tsundoku_author_bio_backfill_progress_v1';
   const DELAY_MS = 5500;
   const RATE_LIMIT_BACKOFF_MS = 25000;
