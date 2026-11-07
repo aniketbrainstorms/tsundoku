@@ -11,7 +11,7 @@ let _gpDetailType = 'genres';   // 'genres' (raw tag) | 'main' (rolled-up main g
 const GP_PIE_MAX = 12;          // slices drawn in the pie; the rest merge into one "more" slice
 window._gpSubs = new Map();
 let _gpDetailSub = null;   // sub-genre chip filter on the detail screen
-const GP_MIX_COLORS = ['#c9714a', '#1D9E75', '#7F77DD', '#EF9F27', '#378ADD', '#D4537E', '#639922'];   // one distinct hue per slice
+const GP_MIX_COLORS = ['#c9714a', '#1D9E75', '#7F77DD', '#EF9F27', '#378ADD', '#D4537E', '#639922', '#B5547A', '#2F9CA8', '#8A6FD1'];   // 10 hues; "More" only after that
 const GP_MORE_STOPS = ['#ff5fa2', '#ffb142', '#ffe66d', '#4cd964', '#3ec6ff', '#a66bff'];               // "More" = many genres, so many colours
 const GP_MORE_CSS = `linear-gradient(135deg, ${GP_MORE_STOPS.join(', ')})`;     // main genre -> Map(sub tag -> book count)
 
@@ -125,6 +125,20 @@ const GP_LEGACY = {   // older tags that aren't in genres.js; edit freely
   'literary criticism': 'Essays', 'cultural studies': 'Essays',
   'epic adventure': 'Adventure', 'political satire': 'Humor', 'new weird': 'Fantasy', 'psychological sci fi': 'Science Fiction'
 };
+const GP_PHRASES = [  // checked before head words, first match wins
+  [/\b(mytholog|puran|epic poetry|religious scripture|religious mythology)/, 'Mythology & Folklore'],
+  [/\b(sci ?fi|science fiction|space)\b/, 'Science Fiction'],
+  [/\bgothic\b/, 'Horror'],
+  [/\b(personal finance|finance|investing)\b/, 'Business'],
+  [/\b(autobiograph)/, 'Memoir'],
+  [/\b(satir|comic|comedy|humou?r)/, 'Humor'],
+  [/\b(creativ|time management|productivity)/, 'Self-Help'],
+  [/\b(ecolog|engineering|science)\b/, 'Science'],
+  [/\b(philosophical (treatise|essay|literature))/, 'Philosophy'],
+  [/\b(juvenile|contemporary ya|young adult)/, 'Young Adult'],
+  [/\b(novel of manners|family drama|queer|tragedy|tragi comedy|japanese literature|dark academia)/, 'Literary Fiction'],
+  [/^fiction$/, 'Contemporary Fiction']
+];
 const GP_HEAD = {     // last matching word wins: "Epic Poetry" -> Poetry
   fantasy: 'Fantasy', poetry: 'Poetry', romance: 'Romance', thriller: 'Thriller', philosophy: 'Philosophy', horror: 'Horror', mystery: 'Mystery',
   mythology: 'Mythology & Folklore', folklore: 'Mythology & Folklore', biography: 'Biography', memoir: 'Memoir', psychology: 'Psychology',
@@ -142,6 +156,7 @@ function gpMainOf(tag) {
   }
   if (_gpSubIndex.has(k)) return _gpSubIndex.get(k);                  // a listed sub-genre
   if (GP_LEGACY[k]) return GP_LEGACY[k];
+  for (const [re, main] of GP_PHRASES) if (re.test(k)) return main;
   const words = k.split(' ');
   for (let i = words.length - 1; i >= 0; i--) if (GP_HEAD[words[i]]) return GP_HEAD[words[i]];
   return 'Other';                                                     // the taxonomy's own "Other"
