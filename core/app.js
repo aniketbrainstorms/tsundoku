@@ -4175,7 +4175,6 @@ function aiSummaryMarkRegenerated(bookId) {
     if (!arr.includes(String(bookId))) { arr.push(String(bookId)); localStorage.setItem(key, JSON.stringify(arr)); }
   } catch {}
 }
-
 async function fetchAiBookContent(title, author, rawDescription, needGenreThemes) {
   if (!title) return null;
   const cacheKey = `${title}-${author || ''}-${needGenreThemes ? 'full' : 'summary'}`;
