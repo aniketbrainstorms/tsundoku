@@ -4147,6 +4147,7 @@ function genresAreGeneric(book) {
 function buildAiContentPrompt(title, author, rawDescription, needGenreThemes) {
   const genreThemeKeys = needGenreThemes ? `
 - "genres": array of 2-3 items. Item 1 MUST be exactly one main genre copied verbatim from the list below. Items 2-3 are specific sub-genres: prefer the hints after that genre, or use another short, well-known sub-genre. Never use a topic or subject heading (like "Aging") as a genre. Use "Other" only if nothing fits.
+Tie-break rules: choose the main genre a bookstore would shelve the book under. Epics, Puranas, Vedic or religious-myth retellings => "Mythology & Folklore" (not Poetry or Fantasy). Memoirs and autobiographies => "Memoir". Personal finance => "Business". Never output a format word alone ("Fiction", "Nonfiction", "Novel") as any item. Be consistent: the same book must always get the same answer.
 Main genres, with sub-genre hints after the colon:
 ${gtPromptLines()}
 - "themes": array of 2-4 short thematic keywords` : '';
@@ -6594,7 +6595,7 @@ window.addEventListener('orientationchange', () => {
 // ── BACKFILL TOOLS — genre/theme + author bio, in-app ──────────────────────
 ;(function () {
   const GENRE_PROGRESS_KEY = 'tsundoku_backfill_progress_v1';
-  const AICONTENT_PROGRESS_KEY = 'tsundoku_ai_content_backfill_progress_v1';
+  const AICONTENT_PROGRESS_KEY = 'tsundoku_ai_content_backfill_progress_v2';
   const AUTHOR_PROGRESS_KEY = 'tsundoku_author_bio_backfill_progress_v1';
   const DELAY_MS = 5500;
   const RATE_LIMIT_BACKOFF_MS = 25000;
