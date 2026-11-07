@@ -4143,7 +4143,7 @@ function genresAreGeneric(book) {
   const g = getBookGenres(book);
   return !g.length || !gtResolve(g[0]);
 }
-
+const AI_CONTENT_GEN_CONFIG = { temperature: 0, responseMimeType: 'application/json' };
 function buildAiContentPrompt(title, author, rawDescription, needGenreThemes) {
   const genreThemeKeys = needGenreThemes ? `
 - "genres": array of 2-3 items. Item 1 MUST be exactly one main genre copied verbatim from the list below. Items 2-3 are specific sub-genres: prefer the hints after that genre, or use another short, well-known sub-genre. Never use a topic or subject heading (like "Aging") as a genre. Use "Other" only if nothing fits.
