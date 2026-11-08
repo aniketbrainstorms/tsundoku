@@ -2523,13 +2523,21 @@ let shelfSort = 'recent';
 let shelfGenreFilter = null;
 let myShelfView = 'grid';
 try { myShelfView = localStorage.getItem('tsundoku_myshelf_view') || 'grid'; } catch {}
-function toggleMyShelfView() {
-  myShelfView = myShelfView === 'shelf' ? 'grid' : 'shelf';
-  try { localStorage.setItem('tsundoku_myshelf_view', myShelfView); } catch {}
-  updateMyShelfViewToggleIcon();
+if (!['shelf', 'grid', 'wall'].includes(myShelfView)) myShelfView = 'grid';
+let myShelfSize = 50;
+try { const s = parseInt(localStorage.getItem('tsundoku_myshelf_size'), 10); if (s >= 0 && s <= 100) myShelfSize = s; } catch {}
+let shelfStatusFilter = null;
+function msSetView(v) {
+  if (!['shelf', 'grid', 'wall'].includes(v) || myShelfView === v) return;
+  myShelfView = v;
+  try { localStorage.setItem('tsundoku_myshelf_view', v); } catch {}
+  const c = document.getElementById('shelfGridContainer');
+  if (c) c.scrollTop = 0;
   renderShelfGrid();
 }
+function toggleMyShelfView() { msSetView(myShelfView === 'shelf' ? 'grid' : 'shelf'); }
 function updateMyShelfViewToggleIcon() {
+  msSyncToolbar();
   const icon = document.getElementById('myShelfViewToggleIcon');
   if (!icon) return;
   icon.innerHTML = myShelfView === 'shelf'
@@ -2541,12 +2549,8 @@ function updateMyShelfViewToggleIcon() {
 function renderMyShelfRows(list) {
   const wrap = document.getElementById('myShelfShelfRows');
   if (!wrap) return;
-  const containerEl = document.getElementById('shelfGridContainer');
-  let containerWidth = 340;
-  if (containerEl) {
-    const cs = getComputedStyle(containerEl);
-    containerWidth = containerEl.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
-  }
+  msApplySize();
+  const containerWidth = wrap.clientWidth || 340;
   const GAP = 3;
   const rows = [];
   let current = [];
@@ -2571,6 +2575,7 @@ function renderMyShelfRows(list) {
 
   wrap.querySelectorAll('.pub-spine').forEach(el => {
     const id = el.dataset.id;
+    el.title = (el.dataset.title || '') + (el.dataset.author ? ' — ' + el.dataset.author : '');
     el.addEventListener('touchstart', e => startPress(e, id, el), { passive: true });
     el.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, el); });
     el.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(el); });
@@ -2594,22 +2599,21 @@ function renderMyShelfRows(list) {
   });
 }
 function renderShelfGenreChips() {
-  const row = document.getElementById('shelfGenreChipRow');
-  if (!row) return;
   const map = buildGenreMap();
-  if (!map.size) { row.style.display = 'none'; return; }
-  row.style.display = 'flex';
+  const visible = books.filter(b => !isHiddenFromShelf(b));
+  const cnt = s => visible.filter(b => b.status === s).length;
+  const row = (attr, val, label, n, on) => `<button type="button" class="ps-genre${on ? ' active' : ''}" ${attr}="${escapeAttr(val)}"><span>${escapeHtml(label)}</span><span class="ps-genre-n">${n}</span></button>`;
   const sorted = Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
-  const chips = [`<button class="ld-chip${shelfGenreFilter === null ? ' active' : ''}" data-genre="">All</button>`]
-    .concat(sorted.map(([name, arr]) => `<button class="ld-chip${shelfGenreFilter === name ? ' active' : ''}" data-genre="${escapeAttr(name)}">${escapeHtml(name)} <span style="opacity:0.65">${arr.length}</span></button>`));
-  row.innerHTML = chips.join('');
-  row.querySelectorAll('.ld-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      shelfGenreFilter = chip.dataset.genre || null;
-      renderShelfGenreChips();
-      renderShelfGrid();
-    });
-  });
+  const statusRows = row('data-status', '', 'All', visible.length, shelfStatusFilter === null)
+    + ['reading', 'read', 'unread'].map(s => row('data-status', s, s, cnt(s), shelfStatusFilter === s)).join('');
+  const genreRows = row('data-genre', '', 'All', visible.length, shelfGenreFilter === null)
+    + sorted.map(([name, arr]) => row('data-genre', name, name, arr.length, shelfGenreFilter === name)).join('');
+  const html = `<div class="ps-flabel">Status</div>${statusRows}` + (map.size ? `<div class="ps-flabel">Genre</div>${genreRows}` : '');
+  ['msFilterList', 'msFilterSheetList'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+  const n = (shelfStatusFilter ? 1 : 0) + (shelfGenreFilter ? 1 : 0);
+  const lbl = document.getElementById('msFilterBtnLabel');
+  if (lbl) lbl.textContent = n === 0 ? 'Filter' : (n === 1 ? (shelfStatusFilter || shelfGenreFilter) : '2 filters');
+  document.getElementById('msFilterBtn')?.classList.toggle('on', n > 0);
 }
 function updateShelfStats() {
   const visible = books.filter(b => !isHiddenFromShelf(b));
@@ -2621,6 +2625,8 @@ function updateShelfStats() {
 function openShelfView() {
   const si = document.getElementById('shelfViewSearchInput');
   if (si) { si.value = ''; document.getElementById('shelfSearchClear').classList.remove('visible'); }
+  document.getElementById('shelfOverlay')?.classList.remove('ms-searching');
+  const ss = document.getElementById('msSideSearch'); if (ss) ss.value = '';
   updateShelfStats();
   updateMyShelfViewToggleIcon();
   renderShelfGrid();
@@ -2747,12 +2753,14 @@ function setShelfSort(s) {
 }
 function renderShelfGrid() {
   renderShelfGenreChips();
+  msSyncToolbar();
   const grid = document.getElementById('shelfGrid');
   const countEl = document.getElementById('shelfOverlayCount');
   const q = (document.getElementById('shelfViewSearchInput')?.value || '').toLowerCase().trim();
   let all = books.filter(b => !isHiddenFromShelf(b));
   if (q) all = all.filter(b => (b.title || '').toLowerCase().includes(q) || (b.author || '').toLowerCase().includes(q));
   if (shelfGenreFilter) all = all.filter(b => getBookGenres(b).includes(shelfGenreFilter));
+  if (shelfStatusFilter) all = all.filter(b => b.status === shelfStatusFilter);
   document.getElementById('shelfSearchClear')?.classList.toggle('visible', q.length > 0);
   all.sort((a, b) => {
     if (shelfSort === 'title') return (a.title || '').localeCompare(b.title || '');
@@ -2768,14 +2776,44 @@ function renderShelfGrid() {
   });
   if (countEl) countEl.textContent = all.length === 1 ? '1 book' : `${all.length} books`;
   const myShelfRowsWrap = document.getElementById('myShelfShelfRows');
+  msApplySize();
+  const filtered = !!(q || shelfGenreFilter || shelfStatusFilter);
+  const emptyHtml = `<div class="empty-state"><span class="empty-icon">📭</span><p>${filtered ? 'Nothing matches.' : 'Your shelf is empty.<br>Tap <strong style="color:var(--accent)">+</strong> to add books.'}</p></div>`;
   if (myShelfView === 'shelf') {
     grid.style.display = 'none';
+    grid.innerHTML = '';
     if (myShelfRowsWrap) myShelfRowsWrap.style.display = '';
-    if (!all.length) {
-      if (myShelfRowsWrap) myShelfRowsWrap.innerHTML = `<div class="empty-state"><span class="empty-icon">📭</span><p>Your shelf is empty.<br>Tap <strong style="color:var(--accent)">+</strong> to add books.</p></div>`;
-      if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
-      return;
-    }
+    if (!all.length) { if (myShelfRowsWrap) myShelfRowsWrap.innerHTML = emptyHtml; }
+    else renderMyShelfRows(all);
+    if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
+    return;
+  }
+  grid.style.display = '';
+  if (myShelfRowsWrap) { myShelfRowsWrap.style.display = 'none'; myShelfRowsWrap.innerHTML = ''; }
+  grid.classList.remove('reading-mode');
+  grid.classList.toggle('ps-wall', myShelfView === 'wall');
+  if (!all.length) {
+    grid.innerHTML = emptyHtml;
+    if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
+    return;
+  }
+  grid.innerHTML = myShelfView === 'wall' ? buildShelfWallHtml(all) : buildShelfGroupedHtml(all);
+  grid.querySelectorAll('.book-card').forEach(card => {
+    const id = card.dataset.id;
+    card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
+    card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
+    card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
+    card.addEventListener('click', e => {
+      if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+        openDetailModal(id);
+        return;
+      }
+      if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
+      else openQuickMenu(id, card);
+    });
+  });
+  if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
+}
     renderMyShelfRows(all);
     if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
     return;
@@ -2806,7 +2844,45 @@ function renderShelfGrid() {
     });
   });
   // refresh A–Z bar after DOM settles
+    const myShelfRowsWrap = document.getElementById('myShelfShelfRows');
+  msApplySize();
+  const filtered = !!(q || shelfGenreFilter || shelfStatusFilter);
+  const emptyHtml = `<div class="empty-state"><span class="empty-icon">📭</span><p>${filtered ? 'Nothing matches.' : 'Your shelf is empty.<br>Tap <strong style="color:var(--accent)">+</strong> to add books.'}</p></div>`;
+  if (myShelfView === 'shelf') {
+    grid.style.display = 'none';
+    grid.innerHTML = '';
+    if (myShelfRowsWrap) myShelfRowsWrap.style.display = '';
+    if (!all.length) { if (myShelfRowsWrap) myShelfRowsWrap.innerHTML = emptyHtml; }
+    else renderMyShelfRows(all);
+    if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
+    return;
+  }
+  grid.style.display = '';
+  if (myShelfRowsWrap) { myShelfRowsWrap.style.display = 'none'; myShelfRowsWrap.innerHTML = ''; }
+  grid.classList.remove('reading-mode');
+  grid.classList.toggle('ps-wall', myShelfView === 'wall');
+  if (!all.length) {
+    grid.innerHTML = emptyHtml;
+    if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
+    return;
+  }
+  grid.innerHTML = myShelfView === 'wall' ? buildShelfWallHtml(all) : buildShelfGroupedHtml(all);
+  grid.querySelectorAll('.book-card').forEach(card => {
+    const id = card.dataset.id;
+    card.addEventListener('touchstart', e => startPress(e, id, card), { passive: true });
+    card.addEventListener('touchend', e => { e.stopPropagation(); endPress(e, id, card); });
+    card.addEventListener('touchcancel', () => { if (!didLongPress) cancelPress(card); });
+    card.addEventListener('click', e => {
+      if (isTouch() || window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+        openDetailModal(id);
+        return;
+      }
+      if (qmBookId === id && document.getElementById('quickMenu').classList.contains('visible')) closeQuickMenu();
+      else openQuickMenu(id, card);
+    });
+  });
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('shelf');
+}
 }
 
 // ── BOOK SEARCH ──
@@ -4279,7 +4355,7 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
 
     const sort = cfg.getSort();
 
-    if (ctx === 'public' && publicView === 'wall') {
+    if ((ctx === 'public' && publicView === 'wall') || (ctx === 'shelf' && (myShelfView === 'wall' || shelfSort === 'genre'))) {
       bar.classList.remove('visible');
       hideBubble(ctx);
       return;
@@ -4366,11 +4442,11 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
         // Adding container.scrollTop converts that to an absolute scroll position.
         // This is scroll-position-independent and works correctly at any scroll depth.
         const cTop = container.getBoundingClientRect().top;
-        const anchor = (ctx === 'public' && card.closest('.ps-group')) || card;
+        const anchor = ((ctx === 'public' || ctx === 'shelf') && card.closest('.ps-group')) || card;
         const cardTop = anchor.getBoundingClientRect().top;
         let off = 8;
-        if (ctx === 'public') {
-          const bar = document.getElementById('psBar');
+        if (ctx === 'public' || ctx === 'shelf') {
+          const bar = document.getElementById(ctx === 'public' ? 'psBar' : 'msBar');
           if (bar && getComputedStyle(bar).position === 'sticky') off += bar.offsetHeight;
         }
         const target = container.scrollTop + (cardTop - cTop) - off;
@@ -8061,5 +8137,123 @@ function psOpenBook(id) {
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && document.getElementById('psBookPop')?.classList.contains('visible')) closeModal('psBookPop');
+  });
+})();
+
+// ── MY SHELF (ms-) — shelf / grid / wall, size slider, status + genre filter ──
+function msApplySize() {
+  const t = Math.max(0, Math.min(100, myShelfSize)) / 100;
+  const desk = window.innerWidth >= 1024;
+  const lo = desk ? 72 : 54, hi = desk ? 160 : 130;
+  const k = 0.7 + 0.6 * t;
+  const base = window.innerWidth < 600 ? 1.3 : (window.innerWidth < 1024 ? 1.2 : 1.15);
+  window._pubSpineScale = base * k;
+  const el = document.getElementById('shelfGridContainer');
+  if (!el) return;
+  el.style.setProperty('--ps-cover', Math.round(lo + (hi - lo) * t) + 'px');
+  el.style.setProperty('--ps-spine-h', Math.round((desk ? 196 : 176) * k) + 'px');
+}
+function msSetSize(v) {
+  myShelfSize = Math.max(0, Math.min(100, +v || 0));
+  try { localStorage.setItem('tsundoku_myshelf_size', String(myShelfSize)); } catch {}
+  msApplySize();
+  if (myShelfView === 'shelf') {   // spines are packed by width, so repack (grid and wall follow the CSS var)
+    cancelAnimationFrame(window._msRaf);
+    window._msRaf = requestAnimationFrame(renderShelfGrid);
+  }
+}
+function msSyncToolbar() {
+  document.querySelectorAll('#msBar .ps-seg-btn').forEach(b => {
+    const on = b.dataset.view === myShelfView;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  const names = { recent: 'recently added', title: 'title', author: 'author', genre: 'genre' };
+  const sl = document.getElementById('msSortLabel');
+  if (sl) sl.textContent = names[shelfSort] || shelfSort;
+  const rg = document.getElementById('msSize');
+  if (rg) rg.value = myShelfSize;
+  document.getElementById('shelfOverlay')?.classList.toggle('ps-is-wall', myShelfView === 'wall');
+  const ss = document.getElementById('msSideSearch'), si = document.getElementById('shelfViewSearchInput');
+  if (ss && si && ss.value !== si.value && document.activeElement !== ss) ss.value = si.value;
+}
+function msOpenFilter() { document.getElementById('msFilterSheet')?.classList.add('visible'); }
+function msSearch(v) {
+  const si = document.getElementById('shelfViewSearchInput');
+  if (si) si.value = v;
+  renderShelfGrid();
+}
+function msSearchOpen() {
+  document.getElementById('shelfOverlay')?.classList.add('ms-searching');
+  setTimeout(() => document.getElementById('shelfViewSearchInput')?.focus(), 30);
+}
+function msSearchClose() {
+  const si = document.getElementById('shelfViewSearchInput');
+  if (si) si.value = '';
+  document.getElementById('shelfOverlay')?.classList.remove('ms-searching');
+  renderShelfGrid();
+}
+function msCardHtml(b, i, dot) {
+  return `<div class="book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" title="${escapeAttr((b.title || '') + (b.author ? ' — ' + b.author : ''))}" style="animation-delay:${Math.min(i, 12) * 0.035}s">${coverHtml(b)}${dot ? `<div class="status-dot ${b.status}"></div>` : ''}</div>`;
+}
+function buildShelfWallHtml(list) {
+  return list.map((b, i) => msCardHtml(b, i, false)).join('');
+}
+function buildShelfGroupedHtml(list) {
+  if (shelfSort === 'recent') return `<div class="ps-group-cards">${list.map((b, i) => msCardHtml(b, i, true)).join('')}</div>`;
+  const keyOf = b => {
+    if (shelfSort === 'author') return (b.author || '').trim().toLowerCase() || '\u0000';
+    if (shelfSort === 'genre') return (b.primary_genre || '').trim().toLowerCase() || '\u0000';
+    const c = (b.title || '').trim()[0];
+    return c && /[a-z]/i.test(c) ? c.toUpperCase() : '#';
+  };
+  const labelOf = b => {
+    if (shelfSort === 'author') return (b.author || '').trim() || 'Unknown author';
+    if (shelfSort === 'genre') return (b.primary_genre || '').trim() || 'No genre';
+    return keyOf(b);
+  };
+  const groups = [];
+  list.forEach(b => {
+    const k = keyOf(b), last = groups[groups.length - 1];
+    if (last && last.key === k) last.items.push(b);
+    else groups.push({ key: k, label: labelOf(b), items: [b] });
+  });
+  const mod = shelfSort === 'title' ? 'letter' : 'author';
+  let n = 0;
+  return groups.map(g => `
+    <section class="ps-group ps-group--${mod}">
+      <div class="pub-group-header pub-group-header--${mod}">${escapeHtml(g.label)}</div>
+      <div class="ps-group-cards">${g.items.map(b => msCardHtml(b, n++, true)).join('')}</div>
+    </section>`).join('');
+}
+;(function () {
+  ['msFilterList', 'msFilterSheetList'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', e => {
+      const b = e.target.closest('.ps-genre');
+      if (!b) return;
+      if (b.hasAttribute('data-status')) shelfStatusFilter = b.dataset.status || null;
+      else shelfGenreFilter = b.dataset.genre || null;
+      renderShelfGrid();
+      const c = document.getElementById('shelfGridContainer');
+      if (c) c.scrollTop = 0;
+    });
+  });
+  // the sort menu lives under the overlay's dismiss layer, so close it ourselves
+  document.addEventListener('pointerdown', e => {
+    if (e.target.closest('#shelfSortMenu') || e.target.closest('#shelfSortBtn')) return;
+    if (typeof closeShelfSortMenu === 'function') closeShelfSortMenu();
+    document.getElementById('qmDismiss')?.classList.remove('active');
+  });
+  // spines are packed by width, so repack when the width changes
+  let lastW = window.innerWidth, timer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
+      if (document.getElementById('shelfOverlay')?.classList.contains('open') && myShelfView === 'shelf') renderShelfGrid();
+    }, 200);
   });
 })();
