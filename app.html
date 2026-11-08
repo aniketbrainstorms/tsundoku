@@ -844,6 +844,21 @@
         <div class="ps-genres ps-genres--sheet" id="psGenreSheetList"></div>
       </div>
     </div>
+    <div class="modal-overlay" id="psBookPop" onclick="if(event.target===this)closeModal('psBookPop')">
+      <div class="ps-pop" role="dialog" aria-modal="true" aria-labelledby="psPopTitle">
+        <button type="button" class="ps-pop-x" aria-label="Close" onclick="closeModal('psBookPop')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="ps-pop-row">
+          <div class="ps-pop-cover" id="psPopCover"></div>
+          <div class="ps-pop-hd">
+            <div class="ps-pop-title" id="psPopTitle"></div>
+            <div class="ps-pop-author" id="psPopAuthor"></div>
+          </div>
+          <div class="ps-pop-sum" id="psPopSum"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
 <!-- SHELF SEARCH — backdrop + unified sheet -->
