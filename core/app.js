@@ -815,22 +815,6 @@ function renderPublicShelf() {
   grid.classList.toggle('ps-wall', publicView === 'wall');
   psApplySize();
   grid.innerHTML = publicView === 'wall' ? buildPublicWallHtml(list) : buildPublicGroupedHtml(list);
-  grid.querySelectorAll('.pub-book-card').forEach(card => {
-    const id = card.dataset.id;
-    let pubPeekTimer = null, pubPressed = false;
-    card.addEventListener('touchstart', () => {
-      pubPressed = true;
-      pubPeekTimer = setTimeout(() => { if (pubPressed) openPublicPeek(id); }, 300);
-    }, { passive: true });
-    card.addEventListener('touchend', () => { pubPressed = false; clearTimeout(pubPeekTimer); closePeek(); });
-    card.addEventListener('touchcancel', () => { pubPressed = false; clearTimeout(pubPeekTimer); closePeek(); });
-    card.addEventListener('mousedown', () => {
-      pubPressed = true;
-      pubPeekTimer = setTimeout(() => { if (pubPressed) openPublicPeek(id); }, 300);
-    });
-    card.addEventListener('mouseup', () => { pubPressed = false; clearTimeout(pubPeekTimer); closePeek(); });
-    card.addEventListener('mouseleave', () => { pubPressed = false; clearTimeout(pubPeekTimer); closePeek(); });
-  });
   if (typeof alphaBarRefresh === 'function') alphaBarRefresh('public');
 }
 
@@ -942,20 +926,6 @@ function renderPublicShelfRows(list) {
   wrap.querySelectorAll('.pub-spine').forEach(el => {
     const id = el.dataset.id;
     el.title = (el.dataset.title || '') + (el.dataset.author ? ' — ' + el.dataset.author : '');
-    let pressed = false, timer = null;
-    el.addEventListener('touchstart', () => {
-      pressed = true;
-      el.classList.add('pressing');
-      timer = setTimeout(() => { if (pressed) openPublicPeek(id); }, 300);
-    }, { passive: true });
-    el.addEventListener('touchend', () => { pressed = false; el.classList.remove('pressing'); clearTimeout(timer); closePeek(); });
-    el.addEventListener('touchcancel', () => { pressed = false; el.classList.remove('pressing'); clearTimeout(timer); closePeek(); });
-    el.addEventListener('mousedown', () => {
-      pressed = true; el.classList.add('pressing');
-      timer = setTimeout(() => { if (pressed) openPublicPeek(id); }, 300);
-    });
-    el.addEventListener('mouseup', () => { pressed = false; el.classList.remove('pressing'); clearTimeout(timer); closePeek(); });
-    el.addEventListener('mouseleave', () => { pressed = false; el.classList.remove('pressing'); clearTimeout(timer); closePeek(); });
 
     const book = list.find(b => String(b.id) === String(id));
     if (book && book.cover_url && !pubGetCachedSpineColor(book.id)) {
@@ -8073,5 +8043,33 @@ function psSearch(v) {
       const scr = document.getElementById('publicShelfScreen');
       if (scr && scr.classList.contains('open') && publicBooks.length) renderPublicShelf();
     }, 200);
+  });
+})();
+
+// ── PUBLIC SHELF (ps-) — tap a cover or spine to open the book popup ───────
+function psOpenBook(id) {
+  const b = publicBooks.find(x => String(x.id) === String(id));
+  if (!b) return;
+  document.getElementById('psPopCover').innerHTML = coverHtml(b, 28);
+  document.getElementById('psPopTitle').textContent = b.title || '';
+  const a = document.getElementById('psPopAuthor');
+  a.textContent = b.author || '';
+  a.style.display = b.author ? '' : 'none';
+  const summary = (b.description || b.ai_summary || '').trim();
+  const s = document.getElementById('psPopSum');
+  s.textContent = summary;
+  s.style.display = summary ? '' : 'none';
+  s.scrollTop = 0;
+  document.getElementById('psBookPop').classList.add('visible');
+  document.querySelector('#psBookPop .ps-pop-x')?.focus({ preventScroll: true });
+}
+;(function () {
+  const content = document.getElementById('publicShelfContent');
+  if (content) content.addEventListener('click', e => {
+    const el = e.target.closest('.pub-book-card, .pub-spine');
+    if (el) psOpenBook(el.dataset.id);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('psBookPop')?.classList.contains('visible')) closeModal('psBookPop');
   });
 })();
