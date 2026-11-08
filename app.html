@@ -775,32 +775,48 @@
           <img src="assets/images/tsundoku.png"
                alt="Tsundoku" onerror="this.outerHTML='<span style=\'font-family:Bristol,DM Sans,sans-serif;font-size:20px;font-weight:400;color:var(--text)\'>Tsundoku</span>'">
         </div>
-        <span class="public-shelf-badge">public shelf</span>
+        <a class="ps-cta" href="index.html">make your own shelf</a>
       </div>
-      <div style="display:flex;gap:14px;align-items:center;margin-bottom:12px">
-        <div id="publicShelfAvatar" style="width:52px;height:52px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--accent);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:var(--accent);overflow:hidden">?</div>
-        <div style="min-width:0;flex:1">
-          <div class="public-shelf-owner" id="publicShelfOwner">Loading…</div>
-          <div id="publicShelfTagline" style="font-size:12px;color:var(--text-muted);margin-top:2px"></div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
-          <button id="publicSortToggleBtn" onclick="togglePublicSort()" style="flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
-            sort by title
-          </button>
-          <button id="publicViewToggleBtn" onclick="togglePublicView()" style="flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap">
-            <svg id="publicViewToggleIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            <span id="publicViewToggleLabel">shelf view</span>
-          </button>
-        </div>
-      </div>
-      <div id="publicShelfCountPill" style="display:none;font-size:11px;color:var(--accent);background:rgba(201,113,74,0.12);border-radius:100px;padding:4px 11px;margin-bottom:14px"></div>
-      <div id="publicGenreChipRow" style="display:none;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:2px"></div>
     </div>
-    <div class="divider"></div>
     <div class="public-shelf-content" id="publicShelfContent">
-      <div class="book-grid" id="publicBookGrid"></div>
-      <div class="pub-shelf-rows" id="publicShelfRows" style="display:none"></div>
+      <div class="ps-side">
+        <div class="ps-id">
+          <div class="ps-avatar" id="publicShelfAvatar">?</div>
+          <div class="ps-id-text">
+            <div class="public-shelf-owner" id="publicShelfOwner">Loading…</div>
+            <div class="ps-meta" id="publicShelfCountPill" style="display:none"></div>
+          </div>
+        </div>
+        <p class="ps-tagline" id="publicShelfTagline"></p>
+        <div class="ps-bar" id="psBar">
+          <div class="ps-seg" role="tablist" aria-label="View">
+            <button type="button" class="ps-seg-btn on" data-view="shelf" role="tab" aria-selected="true" onclick="psSetView('shelf')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>shelf
+            </button>
+            <button type="button" class="ps-seg-btn" data-view="grid" role="tab" aria-selected="false" onclick="psSetView('grid')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>grid
+            </button>
+          </div>
+          <button type="button" class="ps-btn" id="psSortBtn" aria-label="Sort" onclick="openPublicSortMenu(this)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+            <span class="ps-btn-label">sort: <b id="psSortLabel">title</b></span>
+          </button>
+          <button type="button" class="ps-btn ps-btn--genres" id="psGenreBtn" data-ps-genres onclick="psOpenGenres()">
+            <span id="psGenreBtnLabel">Genres</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <label class="ps-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="psSearchInput" placeholder="Search" oninput="psSearch(this.value)" autocomplete="off" autocorrect="off" spellcheck="false" />
+            <kbd>/</kbd>
+          </label>
+        </div>
+        <div class="ps-genres" id="psGenreList" data-ps-genres></div>
+      </div>
+      <div class="ps-main">
+        <div class="book-grid" id="publicBookGrid"></div>
+        <div class="pub-shelf-rows" id="publicShelfRows" style="display:none"></div>
+      </div>
     </div>
     <div class="alpha-bar" id="publicAlphaBar">
       <div class="alpha-track" id="publicAlphaTrack"></div>
@@ -810,6 +826,14 @@
       <div class="floating-search-field" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14" y2="14"/></svg>
         <input type="text" class="floating-search-input" id="publicSearchInput" placeholder="Search by title or author…" oninput="onPublicSearchInput()" autocomplete="off" autocorrect="off" spellcheck="false" style="cursor:text;caret-color:var(--accent)" />
+      </div>
+    </div>
+    <div class="modal-overlay" id="psGenreSheet" onclick="if(event.target===this)closeModal('psGenreSheet')">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <h2 class="modal-title">Genres</h2>
+        <p class="modal-subtitle">Filter this shelf</p>
+        <div class="ps-genres ps-genres--sheet" id="psGenreSheetList"></div>
       </div>
     </div>
   </div>
