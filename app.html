@@ -790,17 +790,25 @@
         <p class="ps-tagline" id="publicShelfTagline"></p>
         <div class="ps-bar" id="psBar">
           <div class="ps-seg" role="tablist" aria-label="View">
-            <button type="button" class="ps-seg-btn on" data-view="shelf" role="tab" aria-selected="true" onclick="psSetView('shelf')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>shelf
+            <button type="button" class="ps-seg-btn on" data-view="shelf" role="tab" aria-selected="true" aria-label="Shelf view" onclick="psSetView('shelf')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="ps-seg-t">shelf</span>
             </button>
-            <button type="button" class="ps-seg-btn" data-view="grid" role="tab" aria-selected="false" onclick="psSetView('grid')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>grid
-            </button>
-          </div>
+            <button type="button" class="ps-seg-btn" data-view="grid" role="tab" aria-selected="false" aria-label="Grid view" onclick="psSetView('grid')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="ps-seg-t">grid</span>
+</button>
+      <button type="button" class="ps-seg-btn" data-view="wall" role="tab" aria-selected="false" aria-label="Wall view" onclick="psSetView('wall')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg><span class="ps-seg-t">wall</span>
+      </button>
+    </div>
           <button type="button" class="ps-btn" id="psSortBtn" aria-label="Sort" onclick="openPublicSortMenu(this)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
             <span class="ps-btn-label">sort: <b id="psSortLabel">title</b></span>
           </button>
+          <div class="ps-size">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="9" y="7" width="6" height="10" rx="1"/></svg>
+            <input type="range" id="psSize" min="0" max="100" value="50" aria-label="Cover size" oninput="psSetSize(this.value)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="1.5"/></svg>
+          </div>
           <button type="button" class="ps-btn ps-btn--genres" id="psGenreBtn" data-ps-genres onclick="psOpenGenres()">
             <span id="psGenreBtnLabel">Genres</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
