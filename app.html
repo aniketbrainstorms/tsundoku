@@ -1852,34 +1852,73 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
         Back
       </button>
-      <span class="shelf-header-title">My Shelf</span>
-      <span class="shelf-header-count" id="shelfOverlayCount"></span>
-    </div>
-    <div id="shelfGenreChipRow" style="display:none;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 16px 12px;"></div>
-    <div style="display:flex;align-items:center;gap:8px;padding:0 16px 12px;">
-      <div class="search-row-input-wrap" style="flex:1">
-        <span class="search-row-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </span>
-        <input type="text" class="search-row-input" id="shelfViewSearchInput" placeholder="Search shelf" oninput="renderShelfGrid()" autocomplete="off" autocorrect="off" spellcheck="false" />
-        <button class="search-row-clear" id="shelfSearchClear" onclick="clearShelfViewSearch()">×</button>
+      <span class="shelf-header-title">My Shelf<span class="ms-sub" id="shelfOverlayCount"></span></span>
+      <button type="button" class="ms-search-btn" aria-label="Search" onclick="msSearchOpen()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <div class="ms-searchrow">
+        <div class="search-row-input-wrap" style="flex:1">
+          <span class="search-row-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <input type="text" class="search-row-input" id="shelfViewSearchInput" placeholder="Search shelf" oninput="renderShelfGrid()" autocomplete="off" autocorrect="off" spellcheck="false" />
+          <button class="search-row-clear" id="shelfSearchClear" onclick="clearShelfViewSearch()">×</button>
+        </div>
+        <button type="button" class="shelf-back-btn" onclick="msSearchClose()">Cancel</button>
       </div>
-      <button class="sort-btn" id="shelfSortBtn" onclick="openShelfSortMenu(this)">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
-      </button>
-      <button class="sort-btn" id="myShelfViewToggleBtn" onclick="toggleMyShelfView()">
-        <svg id="myShelfViewToggleIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      </button>
     </div>
-    <div class="divider"></div>
     <div class="grid-container" id="shelfGridContainer">
-      <div class="book-grid" id="shelfGrid"></div>
-      <div class="pub-shelf-rows" id="myShelfShelfRows" style="display:none"></div>
+      <div class="ps-side">
+        <div class="ps-bar" id="msBar">
+          <div class="ps-seg" role="tablist" aria-label="View">
+            <button type="button" class="ps-seg-btn on" data-view="shelf" role="tab" aria-selected="true" aria-label="Shelf view" onclick="msSetView('shelf')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="ps-seg-t">shelf</span>
+            </button>
+            <button type="button" class="ps-seg-btn" data-view="grid" role="tab" aria-selected="false" aria-label="Grid view" onclick="msSetView('grid')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="ps-seg-t">grid</span>
+            </button>
+            <button type="button" class="ps-seg-btn" data-view="wall" role="tab" aria-selected="false" aria-label="Wall view" onclick="msSetView('wall')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg><span class="ps-seg-t">wall</span>
+            </button>
+          </div>
+          <button type="button" class="ps-btn" id="shelfSortBtn" aria-label="Sort" onclick="openShelfSortMenu(this)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+            <span class="ps-btn-label">sort: <b id="msSortLabel">recently added</b></span>
+          </button>
+          <div class="ps-size">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="9" y="7" width="6" height="10" rx="1"/></svg>
+            <input type="range" id="msSize" min="0" max="100" value="50" aria-label="Cover size" oninput="msSetSize(this.value)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="1.5"/></svg>
+          </div>
+          <button type="button" class="ps-btn ps-btn--genres" id="msFilterBtn" onclick="msOpenFilter()">
+            <span id="msFilterBtnLabel">Filter</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <label class="ps-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="msSideSearch" placeholder="Search" oninput="msSearch(this.value)" autocomplete="off" autocorrect="off" spellcheck="false" />
+          </label>
+        </div>
+        <div class="ps-genres" id="msFilterList"></div>
+      </div>
+      <div class="ps-main">
+        <div class="book-grid" id="shelfGrid"></div>
+        <div class="pub-shelf-rows" id="myShelfShelfRows" style="display:none"></div>
+      </div>
     </div>
     <div class="alpha-bar" id="shelfAlphaBar">
       <div class="alpha-track" id="shelfAlphaTrack"></div>
     </div>
     <div class="alpha-bubble" id="shelfAlphaBubble"></div>
+    <div class="modal-overlay" id="msFilterSheet" onclick="if(event.target===this)closeModal('msFilterSheet')">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <h2 class="modal-title">Filter</h2>
+        <p class="modal-subtitle">Status and genre</p>
+        <div class="ps-genres ps-genres--sheet" id="msFilterSheetList"></div>
+        <button type="button" class="modal-btn" style="margin-top:14px" onclick="closeModal('msFilterSheet')">Done</button>
+      </div>
+    </div>
   </div>
 
   <!-- MY LISTS OVERLAY -->
