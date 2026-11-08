@@ -5849,3 +5849,58 @@ html.is-android .nav-panel.open:not(.nav-behind) {
   .ps-pop-author { font-size: 14px; margin: 6px 0 14px; }
   .ps-pop-sum { font-size: 14px; line-height: 1.65; max-height: 170px; }
 }
+
+/* ═══ MY SHELF (ms-) — remade like the public shelf; reuses the ps- toolbar, lists and groups ═══ */
+#shelfOverlay { --ps-bar-h: 97px; }
+
+/* header: count under the title, search folds into the header on phones */
+#shelfOverlay .shelf-header-title { text-align: center; line-height: 1.15; }
+.ms-sub { display: block; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--text-muted); letter-spacing: 0; text-transform: none; }
+.ms-search-btn { width: 40px; height: 40px; margin-left: auto; border: 0; border-radius: 50%; background: transparent; color: var(--text-dim); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.ms-searchrow { display: none; position: absolute; inset: 0; z-index: 2; align-items: center; gap: 8px; background: var(--bg); padding: max(var(--safe-top), 10px) max(var(--safe-right), 12px) 4px max(var(--safe-left), 12px); }
+#shelfOverlay.ms-searching .ms-searchrow { display: flex; }
+
+/* content: gutter so covers never sit under the A–Z rail */
+#shelfOverlay #shelfGridContainer { padding: 0 calc(max(var(--safe-right), 2px) + 30px) max(calc(var(--safe-bottom) + 24px), 32px) max(var(--safe-left), 16px); }
+#shelfOverlay.ps-is-wall #shelfGridContainer { padding-left: 0; padding-right: 0; }
+#shelfOverlay.ps-is-wall .ps-bar { padding-left: max(var(--safe-left), 16px); padding-right: max(var(--safe-right), 16px); }
+
+/* grid + wall */
+#shelfGrid { display: block; }
+#shelfGrid .book-card { border-radius: 4px; animation-fill-mode: backwards; }
+#shelfGrid.ps-wall {
+  display: grid; align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(var(--ps-cover, 96px), 1fr)) !important;
+  gap: 0 !important; justify-content: stretch !important;
+}
+#shelfGrid.ps-wall .book-card { border-radius: 0; }
+@media (hover: hover) and (pointer: fine) {
+  #shelfGrid.ps-wall .book-card:hover { transform: none; box-shadow: none; outline: 2px solid var(--text); outline-offset: -2px; z-index: 1; }
+}
+
+/* shelf spines */
+#shelfOverlay .pub-spine { height: var(--ps-spine-h, 176px); background-image: none !important; background-color: #1b1814; animation-fill-mode: backwards; transition: transform .18s var(--ease-out), filter .12s ease; }
+#shelfOverlay .pub-spine-title { font-size: 13px; font-weight: 600; }
+#shelfOverlay .pub-spine-author { display: none; }
+#shelfOverlay .pub-shelf-row { margin-bottom: 18px; }
+@media (hover: hover) and (pointer: fine) { #shelfOverlay .pub-spine:hover { transform: translateY(-8px); } }
+
+/* status + genre filter */
+.ps-flabel { padding: 16px 2px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); font-weight: 600; }
+.ps-flabel:first-child { padding-top: 4px; }
+#msFilterList { display: none; }
+@media (min-width: 768px) { #msFilterSheet { justify-content: center; } }
+
+/* desktop: sticky left column + shelf */
+@media (min-width: 1024px) {
+  .ms-search-btn { display: none; }
+  #shelfOverlay #shelfGridContainer { display: grid; grid-template-columns: 264px minmax(0, 1fr); column-gap: 56px; align-items: start; padding: 8px 48px 56px; }
+  #shelfOverlay.ps-is-wall #shelfGridContainer { padding-right: 0; padding-bottom: 0; }
+  #shelfOverlay .ps-side { max-height: calc(100dvh - 130px); }
+  #shelfOverlay .pub-spine { height: var(--ps-spine-h, 196px); }
+  #msFilterList { display: flex; margin-top: 14px; }
+  #msFilterList .ps-genre { min-height: 36px; padding: 0 12px; border-radius: 8px; font-size: 13px; }
+  #msFilterList .ps-genre:hover { background: var(--surface); }
+  #msFilterList .ps-genre.active { background: var(--surface2); color: var(--text); }
+  #msFilterList .ps-genre.active .ps-genre-n { color: var(--accent); }
+}
