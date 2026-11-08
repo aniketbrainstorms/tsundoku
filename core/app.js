@@ -662,7 +662,7 @@ async function loadPublicShelf(slug) {
   const publicShelfScreenEl = document.getElementById('publicShelfScreen');
   publicShelfScreenEl.style.display = 'flex';
   publicShelfScreenEl.classList.add('open');
-  try { publicView = localStorage.getItem('tsundoku_public_view') || 'shelf'; } catch { publicView = 'shelf'; }
+  publicView = 'shelf';
   updatePublicViewToggleIcon();
 
   const { data: profile, error: profileErr } = await sb
@@ -704,7 +704,8 @@ async function loadPublicShelf(slug) {
   const countPill = document.getElementById('publicShelfCountPill');
   if (countPill) {
     const visibleCount = publicBooks.filter(b => b.status !== 'not-owned').length;
-    countPill.textContent = `${visibleCount} ${visibleCount === 1 ? 'book' : 'books'}`;
+    const genreCount = buildPublicGenreMap().size;
+    countPill.textContent = `${visibleCount} ${visibleCount === 1 ? 'book' : 'books'}` + (genreCount ? ` · ${genreCount} ${genreCount === 1 ? 'genre' : 'genres'}` : '');
     countPill.style.display = 'inline-block';
   }
 
@@ -724,22 +725,20 @@ function buildPublicGenreMap() {
 }
 
 function renderPublicGenreChips() {
-  const row = document.getElementById('publicGenreChipRow');
-  if (!row) return;
   const map = buildPublicGenreMap();
-  if (!map.size) { row.style.display = 'none'; return; }
-  row.style.display = 'flex';
   const sorted = Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
-  const chips = [`<button class="ld-chip${publicGenreFilter === null ? ' active' : ''}" data-genre="">All</button>`]
-    .concat(sorted.map(([name, arr]) => `<button class="ld-chip${publicGenreFilter === name ? ' active' : ''}" data-genre="${escapeAttr(name)}">${escapeHtml(name)} <span style="opacity:0.65">${arr.length}</span></button>`));
-  row.innerHTML = chips.join('');
-  row.querySelectorAll('.ld-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      publicGenreFilter = chip.dataset.genre || null;
-      renderPublicGenreChips();
-      renderPublicShelf();
-    });
+  const total = publicBooks.filter(b => b.status !== 'not-owned').length;
+  const rows = [`<button type="button" class="ps-genre${publicGenreFilter === null ? ' active' : ''}" data-genre=""><span>All</span><span class="ps-genre-n">${total}</span></button>`]
+    .concat(sorted.map(([name, arr]) => `<button type="button" class="ps-genre${publicGenreFilter === name ? ' active' : ''}" data-genre="${escapeAttr(name)}"><span>${escapeHtml(name)}</span><span class="ps-genre-n">${arr.length}</span></button>`))
+    .join('');
+  ['psGenreList', 'psGenreSheetList'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = rows;
   });
+  const lbl = document.getElementById('psGenreBtnLabel');
+  if (lbl) lbl.textContent = publicGenreFilter || 'Genres';
+  document.getElementById('psGenreBtn')?.classList.toggle('on', !!publicGenreFilter);
+  document.querySelectorAll('[data-ps-genres]').forEach(el => { el.style.display = map.size ? '' : 'none'; });
 }
 
 function pubGroupKey(book) {
@@ -752,24 +751,26 @@ function pubGroupLabel(book) {
   return pubGroupKey(book);
 }
 function buildPublicGroupedHtml(list) {
-  let html = '';
-  let lastKey = null;
-  list.forEach((b, i) => {
+  const groups = [];
+  list.forEach(b => {
     const key = pubGroupKey(b);
-    if (key !== lastKey) {
-      const cls = publicSort === 'author' ? 'pub-group-header pub-group-header--author' : 'pub-group-header pub-group-header--letter';
-      html += `<div class="${cls}">${escapeHtml(pubGroupLabel(b))}</div>`;
-      lastKey = key;
-    }
-    html += `
-    <div class="book-card pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">
-      ${coverHtml(b)}
-      <div class="status-dot ${b.status}"></div>
-    </div>`;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(b);
+    else groups.push({ key, label: pubGroupLabel(b), items: [b] });
   });
-  return html;
+  const mod = publicSort === 'author' ? 'author' : 'letter';
+  let n = 0;
+  return groups.map(g => `
+    <section class="ps-group ps-group--${mod}">
+      <div class="pub-group-header pub-group-header--${mod}">${escapeHtml(g.label)}</div>
+      <div class="ps-group-cards">${g.items.map(b => `
+        <div class="book-card pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" title="${escapeAttr((b.title || '') + (b.author ? ' — ' + b.author : ''))}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(n++, 12) * 0.035}s">
+          ${coverHtml(b)}
+        </div>`).join('')}</div>
+    </section>`).join('');
 }
 function renderPublicShelf() {
+  psSyncToolbar();
   const q = (document.getElementById('publicSearchInput')?.value || '').toLowerCase().trim();
   let list = publicBooks.filter(b => b.status !== 'not-owned');
   if (publicGenreFilter) list = list.filter(b => getBookGenres(b).includes(publicGenreFilter));
@@ -842,9 +843,10 @@ function updatePublicViewToggleIcon() {
 function pubSpineWidth(book) {
   const pc = book.page_count;
   const MIN = 22, MAX = 46, DEFAULT = 30;
-  if (!pc || pc <= 0) return DEFAULT;
+  const k = window._pubSpineScale || 1;
+  if (!pc || pc <= 0) return Math.round(DEFAULT * k);
   const clamped = Math.max(100, Math.min(700, pc));
-  return Math.round(MIN + (clamped - 100) / (700 - 100) * (MAX - MIN));
+  return Math.round((MIN + (clamped - 100) / (700 - 100) * (MAX - MIN)) * k);
 }
 function pubGetCachedSpineColor(bookId) {
   try { return localStorage.getItem('tsundoku_spine_color_' + bookId); } catch { return null; }
@@ -905,12 +907,8 @@ function pubSpineHtml(book) {
 function renderPublicShelfRows(list) {
   const wrap = document.getElementById('publicShelfRows');
   if (!wrap) return;
-  const contentEl = document.getElementById('publicShelfContent');
-  let containerWidth = 340;
-  if (contentEl) {
-    const cs = getComputedStyle(contentEl);
-    containerWidth = contentEl.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
-  }
+  window._pubSpineScale = window.innerWidth < 600 ? 1.3 : (window.innerWidth < 1024 ? 1.2 : 1.15);
+  const containerWidth = wrap.clientWidth || 340;
   const GAP = 3;
   const rows = [];
   let current = [];
@@ -935,6 +933,7 @@ function renderPublicShelfRows(list) {
 
   wrap.querySelectorAll('.pub-spine').forEach(el => {
     const id = el.dataset.id;
+    el.title = (el.dataset.title || '') + (el.dataset.author ? ' — ' + el.dataset.author : '');
     let pressed = false, timer = null;
     el.addEventListener('touchstart', () => {
       pressed = true;
@@ -4383,8 +4382,14 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
         // Adding container.scrollTop converts that to an absolute scroll position.
         // This is scroll-position-independent and works correctly at any scroll depth.
         const cTop = container.getBoundingClientRect().top;
-        const cardTop = card.getBoundingClientRect().top;
-        const target = container.scrollTop + (cardTop - cTop) - 8;
+        const anchor = (ctx === 'public' && card.closest('.ps-group')) || card;
+        const cardTop = anchor.getBoundingClientRect().top;
+        let off = 8;
+        if (ctx === 'public') {
+          const bar = document.getElementById('psBar');
+          if (bar && getComputedStyle(bar).position === 'sticky') off += bar.offsetHeight;
+        }
+        const target = container.scrollTop + (cardTop - cTop) - off;
         container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
         return;
       }
@@ -7956,4 +7961,76 @@ window.addEventListener('orientationchange', () => {
     _updateAppRecede();
     if (window.wlRender) window.wlRender();
   };
+})();
+
+// ── PUBLIC SHELF (ps-) — toolbar, genres sheet, shortcuts ──────────────────
+function psSyncToolbar() {
+  document.querySelectorAll('.ps-seg-btn').forEach(b => {
+    const on = b.dataset.view === publicView;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  const sl = document.getElementById('psSortLabel');
+  if (sl) sl.textContent = publicSort === 'author' ? 'author' : 'title';
+}
+function psSetView(v) {
+  if (publicView === v) return;
+  publicView = v;
+  renderPublicShelf();
+}
+function psOpenGenres() { document.getElementById('psGenreSheet')?.classList.add('visible'); }
+function psSearch(v) {
+  const i = document.getElementById('publicSearchInput');
+  if (i) i.value = v;
+  onPublicSearchInput();
+}
+;(function () {
+  const bindGenre = id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', e => {
+      const b = e.target.closest('.ps-genre');
+      if (!b) return;
+      publicGenreFilter = b.dataset.genre || null;
+      closeModal('psGenreSheet');
+      renderPublicGenreChips();
+      renderPublicShelf();
+      const c = document.getElementById('publicShelfContent');
+      if (c) c.scrollTop = 0;
+    });
+  };
+  bindGenre('psGenreList');
+  bindGenre('psGenreSheetList');
+
+  // the sort menu lives in #app, under the public screen's dismiss layer, so close it ourselves
+  document.addEventListener('pointerdown', e => {
+    if (e.target.closest('#publicSortMenu') || e.target.closest('#psSortBtn')) return;
+    closePublicSortMenu();
+  });
+
+  // "/" or Ctrl/Cmd+K focuses search on the public page (instead of opening the owner's search sheet)
+  document.addEventListener('keydown', e => {
+    const scr = document.getElementById('publicShelfScreen');
+    if (!scr || !scr.classList.contains('open')) return;
+    const t = e.target;
+    const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    const wants = e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k');
+    if (!wants || typing) return;
+    const inp = window.matchMedia('(min-width: 1024px)').matches
+      ? document.getElementById('psSearchInput')
+      : document.getElementById('publicSearchInput');
+    if (inp) { e.preventDefault(); e.stopImmediatePropagation(); inp.focus(); }
+  }, true);
+
+  // spines are packed by width, so repack when the width changes
+  let lastW = window.innerWidth, timer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
+      const scr = document.getElementById('publicShelfScreen');
+      if (scr && scr.classList.contains('open') && publicBooks.length) renderPublicShelf();
+    }, 200);
+  });
 })();
