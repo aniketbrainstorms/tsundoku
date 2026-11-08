@@ -53,6 +53,7 @@ let publicSort = 'title';
 let avatarUploading = false;
 let publicGenreFilter = null;
 let publicView = 'shelf';
+let publicSize = 50;
 
 // ── THEME ──
 function setTheme(theme) {
@@ -663,6 +664,7 @@ async function loadPublicShelf(slug) {
   publicShelfScreenEl.style.display = 'flex';
   publicShelfScreenEl.classList.add('open');
   publicView = 'shelf';
+  try { const s = parseInt(localStorage.getItem('tsundoku_public_size'), 10); if (s >= 0 && s <= 100) publicSize = s; } catch {}
   updatePublicViewToggleIcon();
 
   const { data: profile, error: profileErr } = await sb
@@ -769,6 +771,10 @@ function buildPublicGroupedHtml(list) {
         </div>`).join('')}</div>
     </section>`).join('');
 }
+function buildPublicWallHtml(list) {
+  return list.map((b, i) => `
+    <div class="book-card pub-book-card" data-id="${b.id}" data-title="${escapeAttr(b.title || '')}" data-author="${escapeAttr(b.author || '')}" title="${escapeAttr((b.title || '') + (b.author ? ' — ' + b.author : ''))}" style="animation-delay:${window._swipeNoStagger ? 0 : Math.min(i, 12) * 0.035}s">${coverHtml(b)}</div>`).join('');
+}
 function renderPublicShelf() {
   psSyncToolbar();
   const q = (document.getElementById('publicSearchInput')?.value || '').toLowerCase().trim();
@@ -806,7 +812,9 @@ function renderPublicShelf() {
     return;
   }
   grid.classList.remove('reading-mode');
-  grid.innerHTML = buildPublicGroupedHtml(list);
+  grid.classList.toggle('ps-wall', publicView === 'wall');
+  psApplySize();
+  grid.innerHTML = publicView === 'wall' ? buildPublicWallHtml(list) : buildPublicGroupedHtml(list);
   grid.querySelectorAll('.pub-book-card').forEach(card => {
     const id = card.dataset.id;
     let pubPeekTimer = null, pubPressed = false;
@@ -907,7 +915,7 @@ function pubSpineHtml(book) {
 function renderPublicShelfRows(list) {
   const wrap = document.getElementById('publicShelfRows');
   if (!wrap) return;
-  window._pubSpineScale = window.innerWidth < 600 ? 1.3 : (window.innerWidth < 1024 ? 1.2 : 1.15);
+  psApplySize();
   const containerWidth = wrap.clientWidth || 340;
   const GAP = 3;
   const rows = [];
@@ -4300,6 +4308,12 @@ async function fetchAiBookContent(title, author, rawDescription, needGenreThemes
     if (!bar || !track || !bubble) return;
 
     const sort = cfg.getSort();
+
+    if (ctx === 'public' && publicView === 'wall') {
+      bar.classList.remove('visible');
+      hideBubble(ctx);
+      return;
+    }
 
     if (sort === 'recent') {
       bar.classList.remove('visible');
@@ -7972,11 +7986,38 @@ function psSyncToolbar() {
   });
   const sl = document.getElementById('psSortLabel');
   if (sl) sl.textContent = publicSort === 'author' ? 'author' : 'title';
+  const rg = document.getElementById('psSize');
+  if (rg) rg.value = publicSize;
+  document.getElementById('publicShelfScreen')?.classList.toggle('ps-is-wall', publicView === 'wall');
 }
 function psSetView(v) {
   if (publicView === v) return;
   publicView = v;
+  const c = document.getElementById('publicShelfContent');
+  if (c) c.scrollTop = 0;
   renderPublicShelf();
+}
+// slider 0–100 → cover width, spine scale and spine height (CSS vars on the content area)
+function psApplySize() {
+  const t = Math.max(0, Math.min(100, publicSize)) / 100;
+  const desk = window.innerWidth >= 1024;
+  const lo = desk ? 72 : 54, hi = desk ? 160 : 130;
+  const k = 0.7 + 0.6 * t;
+  const base = window.innerWidth < 600 ? 1.3 : (window.innerWidth < 1024 ? 1.2 : 1.15);
+  window._pubSpineScale = base * k;
+  const el = document.getElementById('publicShelfContent');
+  if (!el) return;
+  el.style.setProperty('--ps-cover', Math.round(lo + (hi - lo) * t) + 'px');
+  el.style.setProperty('--ps-spine-h', Math.round((desk ? 196 : 176) * k) + 'px');
+}
+function psSetSize(v) {
+  publicSize = Math.max(0, Math.min(100, +v || 0));
+  try { localStorage.setItem('tsundoku_public_size', String(publicSize)); } catch {}
+  psApplySize();
+  if (publicView === 'shelf') {   // spines are packed by width, so repack (grid and wall just follow the CSS var)
+    cancelAnimationFrame(window._psRaf);
+    window._psRaf = requestAnimationFrame(renderPublicShelf);
+  }
 }
 function psOpenGenres() { document.getElementById('psGenreSheet')?.classList.add('visible'); }
 function psSearch(v) {
