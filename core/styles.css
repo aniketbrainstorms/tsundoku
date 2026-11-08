@@ -5804,3 +5804,48 @@ html.is-android .nav-panel.open:not(.nav-behind) {
   .ps-size { order: 0; flex: none; }
   .public-shelf-screen.ps-is-wall .public-shelf-content { padding-right: 0; padding-bottom: 0; }
 }
+
+/* ═══ PUBLIC SHELF (ps-) — book popup ═══ */
+#psBookPop { align-items: center; justify-content: center; padding: 16px; background: rgba(14,12,10,0.74); backdrop-filter: none; -webkit-backdrop-filter: none; transition: opacity .18s ease; z-index: 90; }
+.ps-pop {
+  position: relative; width: 100%; max-width: 520px; max-height: calc(100dvh - 32px); overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 16px 16px;
+  opacity: 0; transform: scale(.96);
+  transition: opacity .18s ease, transform .18s cubic-bezier(0.23, 1, 0.32, 1);
+}
+#psBookPop.visible .ps-pop { opacity: 1; transform: none; }
+.ps-pop-x {
+  position: absolute; top: 6px; right: 6px; width: 40px; height: 40px; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%; background: transparent; color: var(--text-muted); cursor: pointer;
+}
+.ps-pop-x:active { color: var(--text); }
+
+.ps-pop-row {
+  display: grid; align-items: start; column-gap: 14px; row-gap: 12px;
+  grid-template-columns: 88px minmax(0, 1fr);
+  grid-template-areas: "cv hd" "sm sm";
+}
+.ps-pop-cover { grid-area: cv; width: 88px; aspect-ratio: 2/3; border-radius: 6px; overflow: hidden; background: var(--surface2); }
+.ps-pop-cover img, .ps-pop-cover .book-placeholder { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ps-pop-hd { grid-area: hd; min-width: 0; padding-right: 30px; }
+.ps-pop-title {
+  font-size: 17px; font-weight: 600; line-height: 1.25; letter-spacing: -.01em; color: var(--text);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ps-pop-author { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.ps-pop-sum {
+  grid-area: sm; font-size: 13px; line-height: 1.6; color: var(--text-dim);
+  max-height: 150px; overflow-y: auto; overscroll-behavior: contain;
+  user-select: text; -webkit-user-select: text;
+}
+
+@media (min-width: 640px) {
+  .ps-pop { padding: 24px; }
+  .ps-pop-x { top: 10px; right: 10px; }
+  .ps-pop-row { grid-template-columns: 150px minmax(0, 1fr); grid-template-areas: "cv hd" "cv sm"; column-gap: 24px; row-gap: 0; }
+  .ps-pop-cover { width: 150px; border-radius: 8px; }
+  .ps-pop-title { font-size: 21px; }
+  .ps-pop-author { font-size: 14px; margin: 6px 0 14px; }
+  .ps-pop-sum { font-size: 14px; line-height: 1.65; max-height: 170px; }
+}
