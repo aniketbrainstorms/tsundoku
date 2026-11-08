@@ -6786,25 +6786,25 @@ window.addEventListener('orientationchange', () => {
   });
 })();
 
-// ── ANDROID HARDWARE/GESTURE BACK BUTTON ────────────────────────────────
-// Makes back close the topmost open overlay/modal/sheet instead of exiting
-// the installed PWA. Fully additive — no existing open/close functions
-// are modified, only called.
+// ── ANDROID HARDWARE/GESTURE BACK BUTTON + IOS EDGE-SWIPE BACK ───────────
+// One history entry per open overlay, tracked by depth. Back (Android button,
+// Android gesture, iOS left-edge swipe) pops an entry; we close the most
+// recently opened overlay to match. Closing an overlay from the UI pops the
+// matching entries with a single history.go(-n). A base entry (plus a guard
+// entry in the installed PWA) means back at the root can never leave the app.
 ;(function () {
-  const OVERLAY_SELECTOR = '.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open, .sr-page.open';
+  'use strict';
 
-  // Close functions that need more than a generic classList removal.
-  const SPECIAL_MODAL_CLOSE = {
-    scannerModal: () => { if (typeof closeScannerModal === 'function') closeScannerModal(); },
-    editSheetOverlay: () => { if (typeof closeEditSheet === 'function') closeEditSheet(); },
-    listBookDetailModal: () => { if (typeof closeListBookDetail === 'function') closeListBookDetail(); },
-    finishBorrowedSheet: () => { if (typeof closeFinishBorrowedSheet === 'function') closeFinishBorrowedSheet(); },
-    authorPhotoModal: () => { if (typeof closeAuthorPhotoModal === 'function') closeAuthorPhotoModal(); },
-    avatarCropModal: () => { if (typeof closeAvatarCropModal === 'function') closeAvatarCropModal(); },
-    loSheetOverlay: () => { if (typeof window.loCloseSheet === 'function') window.loCloseSheet(); },
-  };
+  const OVERLAY_SELECTOR = '.nav-panel.open, .modal-overlay.visible, .sbs-sheet.open, .sr-page.open, #ldAddSheet.open';
+  const IGNORE_IDS = new Set(['publicShelfScreen', 'loadingScreen']);
+  const EXIT_WINDOW_MS = 2000;
 
-  const NAV_PANEL_CLOSE = {
+  const standalone = navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  const isAndroid = () => document.documentElement.classList.contains('is-android');
+
+  // Close handlers by element id. Anything not listed falls back to closeModal() / removing the open class.
+  const CLOSERS = {
+    profileModal: () => closeModal('profileModal'),
     shelfOverlay: () => window.closeShelfView?.(),
     bookSearchOverlay: () => window.closeBookSearch?.(),
     readNotOwnedOverlay: () => window.closeReadNotOwnedOverlay?.(),
@@ -6815,125 +6815,115 @@ window.addEventListener('orientationchange', () => {
     genresListOverlay: () => window.closeGenresOverlay?.(),
     genreDetailOverlay: () => window.closeGenreDetail?.(),
     wlPasteOverlay: () => window.wlPasteBack?.(),
+    shelfSearchOverlay: () => window.closeShelfSearch?.(),
+    ldAddSheet: () => window.ldCloseAddSheet?.(),
+    scannerModal: () => window.closeScannerModal?.(),
+    editSheetOverlay: () => window.closeEditSheet?.(),
+    listBookDetailModal: () => window.closeListBookDetail?.(),
+    finishBorrowedSheet: () => window.closeFinishBorrowedSheet?.(),
+    authorPhotoModal: () => window.closeAuthorPhotoModal?.(),
+    avatarCropModal: () => window.closeAvatarCropModal?.(),
+    loSheetOverlay: () => window.loCloseSheet?.(),
+    libraryTableModal: () => document.getElementById('libraryTableModal')?.remove(),
   };
 
-  function pwaCountOpen() {
-    return document.querySelectorAll(OVERLAY_SELECTOR).length;
+  function closeEl(el) {
+    if (el.classList.contains('sr-page') && window.TsundokuSeries) { window.TsundokuSeries.close(); return; }
+    const fn = CLOSERS[el.id];
+    if (fn) fn();
+    else if (el.id && el.classList.contains('modal-overlay') && el.classList.contains('visible')) closeModal(el.id);
+    else el.classList.remove('open', 'visible');
+    try { _updateAppRecede(); } catch (e) { }
   }
 
-  function pwaCloseTopmost() {
-    // Series page sits above everything (z-index 2500)
-    if (document.querySelector('.sr-page.open') && window.TsundokuSeries) {
-      window.TsundokuSeries.close();
-      return true;
-    }
-    // Modals/sheets (includes detailModal + editSheetOverlay + profileModal + addModal etc.)
-    const modals = document.querySelectorAll('.modal-overlay.visible');
-    if (modals.length) {
-      const top = modals[modals.length - 1];
-      const special = SPECIAL_MODAL_CLOSE[top.id];
-      if (special) { special(); return true; }
-      if (top.id && typeof closeModal === 'function') { closeModal(top.id); return true; }
-      top.classList.remove('visible');
-      return true;
-    }
-    // Paste-a-list overlay sits above the add-book search and whatever opened it
-    const wlp = document.getElementById('wlPasteOverlay');
-    if (wlp && wlp.classList.contains('open')) { window.wlPasteBack?.(); return true; }
-    // Shelf search bottom sheet
-    const sbs = document.getElementById('shelfSearchOverlay');
-    if (sbs && sbs.classList.contains('open')) {
-      if (typeof closeShelfSearch === 'function') closeShelfSearch();
-      return true;
-    }
-    // Nav-panel overlays (profile/lists/authors/etc.)
-    const panels = document.querySelectorAll('.nav-panel.open');
-    if (panels.length) {
-      const top = panels[panels.length - 1];
-      const fn = NAV_PANEL_CLOSE[top.id];
-      if (fn) { fn(); return true; }
-      top.classList.remove('open');
-      return true;
-    }
-    return false;
+  // ── which overlays are open, oldest → newest (last = topmost) ──
+  let order = [];
+  function refreshOrder() {
+    const now = Array.from(document.querySelectorAll(OVERLAY_SELECTOR)).filter(el => !IGNORE_IDS.has(el.id));
+    const live = new Set(now);
+    order = order.filter(el => live.has(el));
+    const fresh = now.filter(el => !order.includes(el))
+      .sort((a, b) => (parseInt(getComputedStyle(a).zIndex, 10) || 0) - (parseInt(getComputedStyle(b).zIndex, 10) || 0));
+    order.push(...fresh);
+    return order;
   }
 
-  let lastCount = 0;
-  let suppressCount = 0; // how many upcoming popstates were triggered by us, not the user
-
-  function pwaSyncHistory() {
-    const n = pwaCountOpen();
-    if (n > lastCount) {
-      for (let i = 0; i < n - lastCount; i++) history.pushState({ tsundokuOverlay: true }, '');
-    } else if (n < lastCount) {
-      const diff = lastCount - n;
-      for (let i = 0; i < diff; i++) { suppressCount++; history.back(); }
+  function closeDownTo(target) {
+    for (let i = 0; i < 12; i++) {
+      const before = refreshOrder().length;
+      if (before <= target) return;
+      closeEl(order[order.length - 1]);
+      if (refreshOrder().length >= before) return;   // nothing closed — don't spin
     }
-    lastCount = n;
   }
 
-  window.addEventListener('popstate', () => {
-    if (suppressCount > 0) { suppressCount--; return; }
-    pwaCloseTopmost();
-    requestAnimationFrame(() => { lastCount = pwaCountOpen(); });
+  // ── history bookkeeping ──
+  let depth = 0;          // overlay entries we have pushed above the base/guard entry
+  let expectPops = 0;     // popstates caused by our own history.go()
+  let popTimer = null;
+  let exitUntil = 0;
+
+  function sync() {
+    if (expectPops > 0) return;           // settle() re-syncs when the traversal lands
+    const n = refreshOrder().length;
+    if (n > depth) {
+      while (depth < n) { depth++; history.pushState({ tsu: 1, d: depth }, ''); }
+    } else if (n < depth) {
+      const diff = depth - n;
+      depth = n;
+      expectPops = 1;
+      popTimer = setTimeout(settle, 700);  // safety: the popstate never came
+      history.go(-diff);
+    }
+  }
+
+  function settle() {
+    clearTimeout(popTimer);
+    expectPops = 0;
+    depth = (history.state && history.state.d) || 0;
+    sync();
+  }
+
+  // user backed past the guard entry, i.e. back was pressed with nothing open
+  function onRoot() {
+    depth = 0;
+    const hadOpen = refreshOrder().length > 0;
+    if (hadOpen) closeDownTo(0);
+    if (!hadOpen && isAndroid()) {
+      if (Date.now() < exitUntil) { history.back(); return; }   // second press: really leave
+      exitUntil = Date.now() + EXIT_WINDOW_MS;
+      if (typeof showToast === 'function') showToast('press back again to exit');
+    }
+    history.pushState({ tsu: 1, d: 0, guard: 1 }, '');
+  }
+
+  window.addEventListener('popstate', e => {
+    if (expectPops > 0) { settle(); return; }
+    const st = e.state;
+    if (!st || !st.tsu) return;
+    if (st.base && standalone) { onRoot(); return; }
+    const target = st.d || 0;
+    closeDownTo(target);
+    depth = target;
+    sync();
   });
 
-  let mutationScheduled = false;
-  const observer = new MutationObserver(() => {
-    if (mutationScheduled) return;
-    mutationScheduled = true;
-    requestAnimationFrame(() => {
-      mutationScheduled = false;
-      pwaSyncHistory();
-    });
-  });
-
-  function pwaBackInit() {
-    lastCount = pwaCountOpen();
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
+  function init() {
+    try {
+      history.replaceState({ tsu: 1, base: 1 }, '');
+      if (standalone) history.pushState({ tsu: 1, d: 0, guard: 1 }, '');
+    } catch (e) { }
+    refreshOrder();
+    let raf = 0;
+    new MutationObserver(() => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; sync(); });
+    }).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', pwaBackInit);
-  } else {
-    pwaBackInit();
-  }
-
-  // ── Left-edge swipe = back action ──
-  // Independent of the system gesture — works even when the OS/browser
-  // doesn't forward its own edge-swipe as popstate (common in installed PWAs).
-  const EDGE_ZONE = 24;      // px from left edge that starts tracking
-  const TRIGGER_DX = 70;     // px dragged right before we treat it as "back"
-  const MAX_DY = 60;         // px of vertical drift allowed before we bail
-  let edgeStartX = 0, edgeStartY = 0, edgeTracking = false, edgeTriggered = false;
-
-  document.addEventListener('touchstart', e => {
-    if (pwaCountOpen() === 0) { edgeTracking = false; return; }
-    const t = e.touches[0];
-    if (t.clientX > EDGE_ZONE) { edgeTracking = false; return; }
-    edgeTracking = true;
-    edgeTriggered = false;
-    edgeStartX = t.clientX;
-    edgeStartY = t.clientY;
-  }, { passive: true });
-
-  document.addEventListener('touchmove', e => {
-    if (!edgeTracking || edgeTriggered) return;
-    const t = e.touches[0];
-    const dx = t.clientX - edgeStartX;
-    const dy = Math.abs(t.clientY - edgeStartY);
-    if (dy > MAX_DY) { edgeTracking = false; return; }
-    if (dx > TRIGGER_DX) {
-      edgeTriggered = true;
-      edgeTracking = false;
-      pwaCloseTopmost();
-      requestAnimationFrame(() => pwaSyncHistory());
-    }
-  }, { passive: true });
-
-  document.addEventListener('touchend', () => { edgeTracking = false; });
-  document.addEventListener('touchcancel', () => { edgeTracking = false; });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
-// ── END ANDROID HARDWARE/GESTURE BACK BUTTON ────────────────────────────
+// ── END ANDROID HARDWARE/GESTURE BACK BUTTON + IOS EDGE-SWIPE BACK ───────
 
 // ── ANDROID ONLY: status-bar colour follows the theme toggle (first paint is set in app.html <head>) ──
 ;(function () {
