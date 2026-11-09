@@ -1364,7 +1364,8 @@ const CHAPTERS = [
     if (i === cur) return; cur = i;
     chEls.forEach((c, j) => c.classList.toggle('cur', j === i)); scrEls.forEach((s, j) => s.classList.toggle('on', j === i));
     chipEls.forEach((b, j) => b.classList.toggle('on', j === i)); railEls.forEach((d, j) => d.classList.toggle('on', j === i));
-    chipEls[i].scrollIntoView({ block:'nearest', inline:'center', behavior:REDUCE ? 'auto' : 'smooth' });
+    { const cr = chips.getBoundingClientRect(), br = chipEls[i].getBoundingClientRect();
+      chips.scrollTo({ left: chips.scrollLeft + (br.left - cr.left) - (cr.width - br.width) / 2, behavior: REDUCE ? 'auto' : 'smooth' }); }
     play();
   }
   chipEls.forEach(b => b.addEventListener('click', () => setActive(+b.dataset.i)));
