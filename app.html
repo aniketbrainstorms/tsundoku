@@ -185,8 +185,7 @@
       (function lxLoader() {
         var screen = document.getElementById('loadingScreen');
         if (!screen || typeof screen.animate !== 'function') return;
-        // public shelf links (?shelf=…) never show the loader, so leave window.lxLoader undefined
-        if (new URLSearchParams(location.search).get('shelf')) return;
+        // public shelf links (?shelf=…) show the loader too; init() in app.js calls lxLoader.ready() once the shelf is drawn
 
         var reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
         var stack = document.getElementById('lxStack');
