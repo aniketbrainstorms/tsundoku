@@ -299,8 +299,11 @@ function getShelfParam() {
   }
 
   if (slug) {
-    document.getElementById('loadingScreen').classList.add('hidden');
-    await loadPublicShelf(slug);
+    // no Web Animations support: the loader can't run, so skip it
+    if (!window.lxLoader) document.getElementById('loadingScreen').classList.add('hidden');
+    // the shelf loads and renders behind the loader; the exit starts once it is drawn
+    try { await loadPublicShelf(slug); }
+    finally { if (window.lxLoader) window.lxLoader.ready(); }
     return;
   }
 
