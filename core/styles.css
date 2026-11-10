@@ -1960,6 +1960,20 @@ html.standalone-webapp .add-popup {
   #profileModal .modal-sheet { border-left: 1px solid var(--border); }
 }
 #profileModal .modal-handle { display: none; }
+
+/* phones: size the panel from the overlay (not 100vw) and make it opaque,
+   so no strip, shadow or underlying app can show on the left */
+@media (max-width: 767px) {
+  #profileModal { background: var(--surface); }
+  #profileModal .modal-sheet {
+    width: 100% !important;
+    height: 100%;
+    max-height: 100%;
+    box-shadow: none;
+    border-left: 0;
+    overflow-x: hidden;
+  }
+}
 .profile-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
 .profile-email-text { font-size: 15px; font-weight: 500; color: var(--text); word-break: break-all; }
 .profile-role { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
