@@ -6341,6 +6341,7 @@ window.addEventListener('orientationchange', () => {
     }
 
     // Summary
+    if (window.RP) RP.mount(book, 'rpHostDdp');
     document.getElementById('ddpSummary').textContent = book.description || book.ai_summary || '—';
 
     // CTAs
