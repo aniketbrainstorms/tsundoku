@@ -237,6 +237,7 @@ function dsOnTouchStart(e) {
   if (document.getElementById('progressModal').classList.contains('visible')) return;
   if (!e.target.closest('#detailSheet')) return;
   if (e.target.closest('#dsScroll') && !e.target.closest('#dsSummaryHeader')) return;
+  if (e.target.closest('.rp-box')) return;
   // Block drag-up to full — only summary tap can expand
   // In FULL state, only allow drag from handle area
   if (DS.isExpanded) {
@@ -266,6 +267,7 @@ function dsOnTouchEnd(e) {
 // Mouse equivalents for desktop
 function dsOnMouseDown(e) {
   if (!DS.isOpen) return;
+  if (e.target.closest('.rp-box')) return;
   if (DS.isExpanded) {
     const handle = document.getElementById('dsHandleWrap');
     const top = document.getElementById('dsTop');
@@ -314,6 +316,7 @@ function dsRenderCTA(status, notOwned) {
   if (!primary || !secondary) return;
 
   const book = books.find(b => b.id === editingId);
+  if (window.RP) RP.mount(book, 'rpHostSheet');
   const isBorrowed = book?.borrowed_from != null;
 
   // Hide tertiary by default — only Surface 1 shows it
