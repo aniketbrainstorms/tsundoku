@@ -5918,3 +5918,61 @@ html.is-android .nav-panel.open:not(.nav-behind) {
   #msFilterList .ps-genre.active { background: var(--surface2); color: var(--text); }
   #msFilterList .ps-genre.active .ps-genre-n { color: var(--accent); }
 }
+
+/* ═══ READING PROGRESS IN DETAIL SHEET (rp-) — additive ═══ */
+.rp-box { display: none; flex-shrink: 0; margin: 0 0 12px; }
+.rp-box.on { display: block; }
+.rp-cap {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-muted); font-weight: 600;
+}
+.rp-pct { color: var(--accent); font-size: 12px; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.rp-track { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; margin: 8px 0 6px; }
+.rp-fill { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width 0.45s var(--ease-out); }
+.rp-sub { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.rp-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.rp-in {
+  width: 60px; min-width: 0; height: var(--tap); text-align: center;
+  background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px;
+  color: var(--text); font: 500 16px 'DM Sans', sans-serif; outline: none;
+  -moz-appearance: textfield; user-select: text; -webkit-user-select: text;
+}
+.rp-in::-webkit-inner-spin-button, .rp-in::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.rp-in:focus { border-color: var(--accent); }
+.rp-sep { color: var(--text-muted); font-size: 14px; }
+.rp-q {
+  height: var(--tap); padding: 0 10px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: transparent; color: var(--text-dim);
+  font: 600 12px 'DM Sans', sans-serif; cursor: pointer;
+  transition: border-color var(--dur-fast), color var(--dur-fast), transform var(--dur-med) var(--ease-spring);
+}
+.rp-q:active { transform: scale(0.97); border-color: var(--accent); color: var(--accent); }
+.rp-save {
+  flex: 1; min-width: 56px; height: var(--tap); border: 0; border-radius: 10px;
+  background: var(--surface2); color: var(--text-muted);
+  font: 600 13px 'DM Sans', sans-serif; cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast), transform var(--dur-med) var(--ease-spring);
+}
+.rp-save.dirty { background: var(--accent); color: #fff; }
+.rp-save:active { transform: scale(0.97); }
+@media (max-width: 340px) {
+  .rp-row { flex-wrap: wrap; }
+  .rp-save { flex: 1 1 100%; order: 5; }
+}
+
+/* the block adds ~116px, so the cover formulas shrink the cover just enough to keep the CTA visible */
+.detail-sheet:has(.rp-box.on) { --ds-extra: 116px; }
+.detail-sheet:has(.rp-box.on):has(.om-prog) { --ds-extra: 168px; }
+
+/* desktop panel (ddp-) has no side margins on its scroll area */
+@media (min-width: 1024px) {
+  .ddp-scroll .rp-box { margin: 0 0 14px; }
+}
+/* rp- additions */
+.detail-sheet { transition: margin-bottom 0.25s var(--ease-out); }
+.rp-box.on ~ .ddp-progress-wrap { display: none !important; }
+@media (min-width: 1024px) {
+  .ddp-scroll .rp-in, .ddp-scroll .rp-q, .ddp-scroll .rp-save { height: 34px; border-radius: 8px; }
+  .ddp-scroll .rp-in { width: 56px; }
+}
