@@ -5961,9 +5961,17 @@ html.is-android .nav-panel.open:not(.nav-behind) {
   .rp-save { flex: 1 1 100%; order: 5; }
 }
 
-/* the block adds ~116px, so the cover formulas shrink the cover just enough to keep the CTA visible */
-.detail-sheet:has(.rp-box.on) { --ds-extra: 116px; }
-.detail-sheet:has(.rp-box.on):has(.om-prog) { --ds-extra: 168px; }
+/* progress block: taller card cap, so the cover stays full size while the summary is collapsed */
+.detail-sheet:has(.rp-box.on) {
+  --ds-rest: 660px; /* height of everything else in the sheet at a 224px cover; raise it if the summary header ever hides behind the buttons */
+  --ds-cap: min(700px, calc(100dvh - max(var(--safe-top), 12px) - 8px - 132px)); /* 132px = the part of a full cover that hangs outside the card */
+  --ds-cover-h: clamp(72px, calc(224px - (var(--ds-rest) - var(--ds-cap)) / 0.4107), 224px);
+}
+.detail-sheet:has(.rp-box.on) .ds-sheet-inner:not(.ds-summary-expanded) { max-height: var(--ds-cap); }
+/* summary open: the cover tucks down to make room, same as before */
+.detail-sheet:has(.rp-box.on):has(.summary-section.expanded) {
+  --ds-cover-h: clamp(72px, calc(100dvh - max(var(--safe-top), 12px) - 8px - 852px), 224px);
+}
 
 /* desktop panel (ddp-) has no side margins on its scroll area */
 @media (min-width: 1024px) {
