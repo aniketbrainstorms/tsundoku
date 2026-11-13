@@ -6593,6 +6593,7 @@ window.addEventListener('orientationchange', () => {
 // ── BACKFILL TOOLS — genre/theme + author bio, in-app ──────────────────────
 ;(function () {
   const GENRE_PROGRESS_KEY = 'tsundoku_backfill_progress_v1';
+  const AICONTENT_PROGRESS_KEY = 'tsundoku_aicontent_backfill_v2';
   const AI_CONTENT_GEN_CONFIG = { temperature: 0, responseMimeType: 'application/json' };
   const AUTHOR_PROGRESS_KEY = 'tsundoku_author_bio_backfill_progress_v1';
   const DELAY_MS = 5500;
@@ -6655,7 +6656,7 @@ window.addEventListener('orientationchange', () => {
     const s = window._bfState;
     const progress = bfLoad(AICONTENT_PROGRESS_KEY);
     const doneSet = new Set(progress.done);
-    const remaining = books.filter(b => !doneSet.has(b.id));
+    const remaining = books.filter(b => !doneSet.has(b.id) && !b.ai_summary_at);
 
     s.job = 'genre'; s.running = true;
     s.done = doneSet.size; s.failed = progress.failed.length;
@@ -8047,6 +8048,25 @@ function psSearch(v) {
 })();
 
 // ── PUBLIC SHELF (ps-) — tap a cover or spine to open the book popup ───────
+async function psFetchSummary(b, el) {
+  if (b._sumBusy) return;
+  b._sumBusy = true;
+  let text = '';
+  try {
+    const res = await fetch('https://rrnryszgvctxainqyuyr.supabase.co/functions/v1/shelf-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ book_id: b.id })
+    });
+    const data = res.ok ? await res.json() : null;
+    text = ((data && data.summary) || '').trim();
+    if (text) { b.description = text; b.ai_summary_at = data.ai_summary_at || new Date().toISOString(); }
+  } catch {}
+  b._sumBusy = false;
+  if (window._psPopId !== String(b.id)) return;   // popup moved on to another book
+  el.textContent = text;
+  el.style.display = text ? '' : 'none';
+}
 function psOpenBook(id) {
   const b = publicBooks.find(x => String(x.id) === String(id));
   if (!b) return;
@@ -8055,11 +8075,17 @@ function psOpenBook(id) {
   const a = document.getElementById('psPopAuthor');
   a.textContent = b.author || '';
   a.style.display = b.author ? '' : 'none';
-  const summary = (b.description || b.ai_summary || '').trim();
+  window._psPopId = String(b.id);
   const s = document.getElementById('psPopSum');
-  s.textContent = summary;
-  s.style.display = summary ? '' : 'none';
   s.scrollTop = 0;
+  if (b.ai_summary_at && (b.description || '').trim()) {
+    s.textContent = b.description.trim();
+    s.style.display = '';
+  } else {
+    s.textContent = 'writing a summary…';
+    s.style.display = '';
+    psFetchSummary(b, s);
+  }
   document.getElementById('psBookPop').classList.add('visible');
   document.querySelector('#psBookPop .ps-pop-x')?.focus({ preventScroll: true });
 }
