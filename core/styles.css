@@ -5065,6 +5065,20 @@ html.standalone-webapp .add-popup {
    transforms + clip-path, so no layout runs per frame. .expanded = intent
    (chevron, fade); .open = the body is laid out. */
 
+.habit-card.habit-off { display: none; }
+
+/* track-reading switch (profile modal) */
+.trk-switch {
+  width: 40px; height: 24px; border-radius: 12px; flex-shrink: 0; position: relative;
+  background: var(--border); transition: background var(--dur-med) var(--ease-out);
+}
+.trk-knob {
+  position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; transition: transform var(--dur-med) var(--ease-out);
+}
+.trk-row.on .trk-switch { background: var(--accent); }
+.trk-row.on .trk-knob { transform: translateX(16px); }
+
 .habit-head {
   display: flex;
   align-items: stretch;
