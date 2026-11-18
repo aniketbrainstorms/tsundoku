@@ -22,8 +22,29 @@ function habitFmtDate(d) {
 }
 
 // ── LOAD ──
+// ── TRACK READING PREF (off by default; toggle lives in the profile modal) ──
+const HABIT_PREF_KEY = 'tsundoku_track_reading';
+function habitEnabled() {
+  try { return localStorage.getItem(HABIT_PREF_KEY) === '1'; } catch { return false; }
+}
+function habitApplyEnabled() {
+  const on = habitEnabled();
+  const card = document.getElementById('habitCard');
+  if (card) card.classList.toggle('habit-off', !on);
+  const t = document.getElementById('trackReadingToggle');
+  if (t) { t.classList.toggle('on', on); t.setAttribute('aria-checked', String(on)); }
+}
+function habitSetEnabled(on) {
+  try { localStorage.setItem(HABIT_PREF_KEY, on ? '1' : '0'); } catch {}
+  habitApplyEnabled();
+  if (on) loadHabitTracker();
+}
+function habitToggleEnabled() { habitSetEnabled(!habitEnabled()); }
+habitApplyEnabled();
+
 async function loadHabitTracker() {
-  if (!currentUser) return;
+  habitApplyEnabled();
+  if (!habitEnabled() || !currentUser) return;
   const myToken = ++habitLoadToken; // this call "owns" the result only if still latest when it resolves
   const todayIso = habitTodayIso();
   const dateEl = document.getElementById('habitDate');
